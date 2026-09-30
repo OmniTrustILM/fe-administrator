@@ -1,19 +1,16 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
-import { createMockStore } from 'utils/test-helpers';
+import { type CertificatesTestState, testInitialState } from 'ducks/test-reducers';
+import { useRecordingStore } from 'utils/test-helpers';
 import PendingActionButtons from './index';
 import PendingActionDialogs from './PendingActionDialogs';
 import type { PendingAction } from './types';
 
 export type PendingActionButtonsWithStoreProps = Readonly<
     Omit<React.ComponentProps<typeof PendingActionButtons>, 'onAction'> & {
-        preloadedState?: Partial<{
-            finalizingIssueCertificateUuids: string[];
-            confirmingRevokeCertificateUuids: string[];
-            cancelingPendingCertificateUuids: string[];
-        }>;
+        preloadedState?: Partial<CertificatesTestState>;
     }
 >;
 
@@ -28,11 +25,15 @@ function ButtonsAndDialogs({ certificate, compact }: Omit<PendingActionButtonsWi
 }
 
 export default function PendingActionButtonsWithStore({ preloadedState, ...props }: PendingActionButtonsWithStoreProps) {
-    const store = createMockStore(preloadedState ? ({ certificates: preloadedState } as Parameters<typeof createMockStore>[0]) : undefined);
+    const state = useMemo(() => ({ certificates: { ...testInitialState.certificates, ...preloadedState } }), [preloadedState]);
+    const { store, dispatched } = useRecordingStore(state, 'certificates/manuallyIssueCertificate');
+    const manualIssuePayload = dispatched.at(-1)?.payload;
+
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/']}>
                 <ButtonsAndDialogs {...props} />
+                <div data-testid="manual-issue-payload">{manualIssuePayload ? JSON.stringify(manualIssuePayload) : ''}</div>
             </MemoryRouter>
         </Provider>
     );

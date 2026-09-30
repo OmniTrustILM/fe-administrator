@@ -11,6 +11,7 @@ import Asn1Dialog from '../Asn1Dialog/Asn1Dialog';
 import CertificateRenewDialog from '../CertificateRenewDialog';
 import CertificateRekeyDialog from '../CertificateRekeyDialog';
 import CertificateRevokeDialog from '../CertificateRevokeDialog';
+import CertificateRAProfileDialog from '../CertificateRAProfileDialog';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders } from 'utils/widget';
@@ -22,7 +23,7 @@ import { actions as userInterfaceActions } from 'ducks/user-interface';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { actions as certificateGroupActions, selectors as groupSelectors } from 'ducks/certificateGroups';
 import { actions as userActions, selectors as userSelectors } from 'ducks/users';
-import { actions as raProfileActions, selectors as raProfileSelectors } from 'ducks/ra-profiles';
+import type { AttributeRequestModel } from 'types/attributes';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import {
     CertificateRegistrationState,
@@ -68,7 +69,6 @@ export default function CertificateDetailsContent({ certificate, validationResul
     const copyToClipboard = useCopyToClipboard();
 
     const groupsList = useSelector(groupSelectors.certificateGroups);
-    const raProfiles = useSelector(raProfileSelectors.raProfiles);
     const users = useSelector(userSelectors.users);
     const certificateKeyUsageEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateKeyUsage));
     const qcTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.QcType));
@@ -77,7 +77,6 @@ export default function CertificateDetailsContent({ certificate, validationResul
     const isUpdatingTrustedStatus = useSelector(selectors.isUpdatingTrustedStatus);
     const isUpdatingGroup = useSelector(selectors.isUpdatingGroup);
     const isUpdatingOwner = useSelector(selectors.isUpdatingOwner);
-    const isUpdatingRaProfile = useSelector(selectors.isUpdatingRaProfile);
 
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [renew, setRenew] = useState(false);
@@ -91,11 +90,8 @@ export default function CertificateDetailsContent({ certificate, validationResul
 
     const [groups, setGroups] = useState<SelectChangeValue[]>([]);
     const [ownerUuid, setOwnerUuid] = useState<string>();
-    const [raProfile, setRaProfile] = useState<string>();
-    const [raProfileAuthorityUuid, setRaProfileAuthorityUuid] = useState<string>();
 
     const [userOptions, setUserOptions] = useState<{ label: string; value: string }[]>([]);
-    const [raProfileOptions, setRaProfileOptions] = useState<{ label: string; value: string }[]>([]);
 
     const isCertificateArchived = !!certificate?.archived;
 
@@ -107,12 +103,6 @@ export default function CertificateDetailsContent({ certificate, validationResul
             })),
         );
     }, [users]);
-
-    useEffect(() => {
-        setRaProfileOptions(
-            raProfiles.map((profile) => ({ value: profile.uuid + ':#' + profile.authorityInstanceUuid, label: profile.name })),
-        );
-    }, [raProfiles]);
 
     useEffect(() => {
         const certificatePreselectedGroups = certificate?.groups?.length
@@ -164,13 +154,14 @@ export default function CertificateDetailsContent({ certificate, validationResul
     }, [certificate, dispatch]);
 
     const onRenew = useCallback(
-        (data: { fileContent?: string }) => {
+        (data: { fileContent?: string; attributes: AttributeRequestModel[] }) => {
             dispatch(
                 actions.renewCertificate({
                     uuid: certificate?.uuid || '',
                     renewRequest: {
                         format: CertificateRequestFormat.Pkcs10,
                         request: data.fileContent,
+                        attributes: data.attributes,
                     },
                     raProfileUuid: certificate?.raProfile?.uuid || '',
                     authorityUuid: certificate?.raProfile?.authorityInstanceUuid || '',
@@ -203,11 +194,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
         setOwnerUuid(undefined);
     }, []);
 
-    const onCancelRaProfileUpdate = useCallback(() => {
-        setUpdateRaProfile(false);
-        setRaProfile(undefined);
-        setRaProfileAuthorityUuid(undefined);
-    }, []);
+    const onCancelRaProfileUpdate = useCallback(() => setUpdateRaProfile(false), []);
 
     const onUpdateGroup = useCallback(() => {
         if (!certificate || !groups) return;
@@ -227,23 +214,6 @@ export default function CertificateDetailsContent({ certificate, validationResul
         dispatch(actions.updateOwner({ uuid: certificate.uuid, user, updateOwnerRequest: { ownerUuid: ownerUuid } }));
         setUpdateOwner(false);
     }, [certificate, dispatch, ownerUuid, users]);
-
-    const onUpdateRaProfile = useCallback(() => {
-        if (!certificate || !raProfile) return;
-        dispatch(
-            actions.updateRaProfile({
-                uuid: certificate.uuid,
-                updateRaProfileRequest: { raProfileUuid: raProfile },
-                authorityUuid: raProfileAuthorityUuid || '',
-            }),
-        );
-        setUpdateRaProfile(false);
-    }, [certificate, dispatch, raProfile, raProfileAuthorityUuid]);
-
-    const updateRaAndAuthorityState = useCallback((value: string) => {
-        setRaProfile(value.split(':#')[0]);
-        setRaProfileAuthorityUuid(value.split(':#')[1]);
-    }, []);
 
     const switchCallback = useCallback(
         (checked: boolean) => {
@@ -598,19 +568,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                                   disabled={isCertificateArchived}
                                   variant="transparent"
                                   color="secondary"
-                                  onClick={() => {
-                                      setUpdateRaProfile(true);
-
-                                      const currentRaProfileUuid = certificate?.raProfile?.uuid;
-                                      const currentAuthorityUuid = certificate?.raProfile?.authorityInstanceUuid;
-
-                                      setRaProfile(currentRaProfileUuid && currentAuthorityUuid ? currentRaProfileUuid : undefined);
-                                      setRaProfileAuthorityUuid(
-                                          currentRaProfileUuid && currentAuthorityUuid ? currentAuthorityUuid : undefined,
-                                      );
-
-                                      dispatch(raProfileActions.listRaProfiles());
-                                  }}
+                                  onClick={() => setUpdateRaProfile(true)}
                                   title="Update RA Profile"
                               >
                                   <EditIcon size={16} />
@@ -695,6 +653,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                         onCancel={() => setRenew(false)}
                         onRenew={onRenew}
                         allowWithoutFile={certificate?.privateKeyAvailability || false}
+                        certificate={certificate}
                     />
                 }
                 toggle={() => setRenew(false)}
@@ -794,30 +753,18 @@ export default function CertificateDetailsContent({ certificate, validationResul
                 isOpen={updateRaProfile}
                 caption={`Update RA Profile`}
                 body={
-                    <Select
-                        id="updateRaProfile"
-                        options={raProfileOptions}
-                        placeholder={`Select RA Profile`}
-                        value={raProfile && raProfileAuthorityUuid ? `${raProfile}:#${raProfileAuthorityUuid}` : ''}
-                        onChange={(value) => {
-                            updateRaAndAuthorityState((value as string) || '');
-                        }}
-                        label="RA Profile"
-                    />
+                    certificate ? (
+                        <CertificateRAProfileDialog
+                            target={{ kind: 'certificate', certificate }}
+                            onCancel={onCancelRaProfileUpdate}
+                            onUpdate={onCancelRaProfileUpdate}
+                        />
+                    ) : null
                 }
                 icon="shield-check"
                 size="md"
                 toggle={onCancelRaProfileUpdate}
-                buttons={[
-                    { key: 'cancel', color: 'primary', variant: 'outline', onClick: onCancelRaProfileUpdate, body: 'Cancel' },
-                    {
-                        key: 'update',
-                        color: 'primary',
-                        onClick: onUpdateRaProfile,
-                        body: 'Update',
-                        disabled: raProfile === undefined || isUpdatingRaProfile,
-                    },
-                ]}
+                buttons={[]}
             />
 
             <PendingActionDialogs action={pendingAction} onClose={() => setPendingAction(null)} />

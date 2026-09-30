@@ -24,6 +24,7 @@ vi.mock('./transform/certificates', () => ({
     transformCertificateBulkDeleteRequestModelToDto: (req: unknown) => req,
     transformCertificateBulkDeleteResponseDtoToModel: (res: unknown) => res,
     transformCertificateBulkObjectModelToDto: (req: unknown) => req,
+    transformCertificateObjectModelToDto: (req: unknown) => req,
     transformCertificateRenewRequestModelToDto: (req: unknown) => req,
     transformCertificateRekeyRequestModelToDto: (req: unknown) => req,
     transformCertificateSignRequestModelToDto: (req: unknown) => req,
@@ -75,6 +76,9 @@ const BULK_DELETE_EPIC_INDEX = findEpicIndex('bulkDelete');
 const UPLOAD_EPIC_INDEX = findEpicIndex('uploadCertificate');
 const GET_REGISTER_ATTRIBUTES_EPIC_INDEX = findEpicIndex('getRegisterAttributes');
 const GET_CSR_ATTRIBUTES_EPIC_INDEX = findEpicIndex('getCsrAttributes');
+const GET_RENEW_ATTRIBUTES_EPIC_INDEX = findEpicIndex('getRenewAttributes');
+const GET_IDENTIFY_ATTRIBUTES_EPIC_INDEX = findEpicIndex('getIdentifyAttributes');
+const UPDATE_RA_PROFILE_EPIC_INDEX = findEpicIndex('updateRaProfile');
 const IMPORT_CERTIFICATES_EPIC_INDEX = findEpicIndex('importCertificates');
 const DOWNLOAD_KEYSTORE_EPIC_INDEX = findEpicIndex('downloadKeystore');
 
@@ -248,6 +252,30 @@ async function runGetRegisterAttributesEpic(
         },
     };
     const output$ = epics[GET_REGISTER_ATTRIBUTES_EPIC_INDEX](of(action), of({}) as any, deps as any);
+    const emitted = await firstValueFrom(output$.pipe(take(takeCount), toArray()));
+    return { emitted, calls };
+}
+
+async function runSchemaEpic(
+    epicIndex: number,
+    listOperation: 'listRenewCertificateAttributes' | 'listIdentifyCertificateAttributes',
+    action: UnknownAction,
+    list: (args: any) => Observable<any> = () => of([]),
+    takeCount = 1,
+): Promise<{ emitted: UnknownAction[]; calls: any[] }> {
+    const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+    const calls: any[] = [];
+    const deps = {
+        apiClients: {
+            clientOperations: {
+                [listOperation]: (args: any) => {
+                    calls.push(args);
+                    return list(args);
+                },
+            },
+        },
+    };
+    const output$ = epics[epicIndex](of(action), of({}) as any, deps as any);
     const emitted = await firstValueFrom(output$.pipe(take(takeCount), toArray()));
     return { emitted, calls };
 }
@@ -1005,6 +1033,164 @@ describe('certificates epics', () => {
 
             expect(emitted).toEqual([]);
             subscription.unsubscribe();
+        });
+    });
+
+    describe('getRenewAttributes', () => {
+        const action = certificatesActions.getRenewAttributes({ raProfileUuid: 'ra-1', authorityUuid: 'auth-1' });
+
+        test('reads the renew schema of the RA profile and maps its descriptors', async () => {
+            const { emitted, calls } = await runSchemaEpic(GET_RENEW_ATTRIBUTES_EPIC_INDEX, 'listRenewCertificateAttributes', action, () =>
+                of([{ uuid: 'renew-attr-1' }]),
+            );
+
+            expect(calls).toEqual([{ authorityUuid: 'auth-1', raProfileUuid: 'ra-1' }]);
+            expect(emitted).toEqual([
+                certificatesActions.getRenewAttributesSuccess({ renewAttributes: [{ uuid: 'renew-attr-1' }] as any }),
+            ]);
+        });
+
+        test('an absent schema (404) is a failure without a toast', async () => {
+            const { emitted } = await runSchemaEpic(
+                GET_RENEW_ATTRIBUTES_EPIC_INDEX,
+                'listRenewCertificateAttributes',
+                action,
+                () => throwError(() => ({ status: 404, response: { message: 'connector unavailable' } })),
+                2,
+            );
+
+            expect(emitted).toHaveLength(1);
+            expect(emitted[0].type).toBe(certificatesActions.getRenewAttributesFailure.type);
+        });
+
+        test('any other failure is reported through a toast', async () => {
+            const { emitted } = await runSchemaEpic(
+                GET_RENEW_ATTRIBUTES_EPIC_INDEX,
+                'listRenewCertificateAttributes',
+                action,
+                () => throwError(() => new Error('boom')),
+                2,
+            );
+
+            expect(emitted[0].type).toBe(certificatesActions.getRenewAttributesFailure.type);
+            expect((emitted[0] as any).payload.error).toContain('boom');
+            expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
+        });
+
+        test('closing the dialog before the answer drops it, so no schema or toast arrives for a dialog that is gone', async () => {
+            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+            const actions$ = new Subject<UnknownAction>();
+            const answer$ = new Subject<any>();
+            const deps = { apiClients: { clientOperations: { listRenewCertificateAttributes: () => answer$ } } };
+            const emitted: UnknownAction[] = [];
+            epics[GET_RENEW_ATTRIBUTES_EPIC_INDEX](actions$, of({}) as any, deps as any).subscribe((a) => emitted.push(a));
+
+            actions$.next(action);
+            actions$.next(certificatesActions.clearRenewAttributes());
+            answer$.error(new Error('late failure'));
+
+            expect(emitted).toEqual([]);
+        });
+    });
+
+    describe('getIdentifyAttributes', () => {
+        const action = certificatesActions.getIdentifyAttributes({ raProfileUuid: 'ra-2', authorityUuid: 'auth-1' });
+
+        test('reads the identify schema of the RA profile and maps its descriptors', async () => {
+            const { emitted, calls } = await runSchemaEpic(
+                GET_IDENTIFY_ATTRIBUTES_EPIC_INDEX,
+                'listIdentifyCertificateAttributes',
+                action,
+                () => of([{ uuid: 'identify-attr-1' }]),
+            );
+
+            expect(calls).toEqual([{ authorityUuid: 'auth-1', raProfileUuid: 'ra-2' }]);
+            expect(emitted).toEqual([
+                certificatesActions.getIdentifyAttributesSuccess({ identifyAttributes: [{ uuid: 'identify-attr-1' }] as any }),
+            ]);
+        });
+
+        test('an absent schema (404) is a failure without a toast', async () => {
+            const { emitted } = await runSchemaEpic(
+                GET_IDENTIFY_ATTRIBUTES_EPIC_INDEX,
+                'listIdentifyCertificateAttributes',
+                action,
+                () => throwError(() => ({ status: 404, response: { message: 'connector unavailable' } })),
+                2,
+            );
+
+            expect(emitted).toHaveLength(1);
+            expect(emitted[0].type).toBe(certificatesActions.getIdentifyAttributesFailure.type);
+        });
+
+        test('any other failure is reported through a toast', async () => {
+            const { emitted } = await runSchemaEpic(
+                GET_IDENTIFY_ATTRIBUTES_EPIC_INDEX,
+                'listIdentifyCertificateAttributes',
+                action,
+                () => throwError(() => new Error('boom')),
+                2,
+            );
+
+            expect(emitted[0].type).toBe(certificatesActions.getIdentifyAttributesFailure.type);
+            expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
+        });
+
+        test('a clear that arrives before the answer drops it, so a stale schema never lands on a newer profile', async () => {
+            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+            const actions$ = new Subject<UnknownAction>();
+            const answer$ = new Subject<any>();
+            const deps = { apiClients: { clientOperations: { listIdentifyCertificateAttributes: () => answer$ } } };
+            const emitted: UnknownAction[] = [];
+            epics[GET_IDENTIFY_ATTRIBUTES_EPIC_INDEX](actions$, of({}) as any, deps as any).subscribe((a) => emitted.push(a));
+
+            actions$.next(action);
+            actions$.next(certificatesActions.clearIdentifyAttributes());
+            answer$.next([{ uuid: 'late' }]);
+            answer$.complete();
+
+            expect(emitted).toEqual([]);
+        });
+    });
+
+    describe('updateRaProfile', () => {
+        const runUpdateRaProfile = (getRaProfile: () => Observable<unknown>) => {
+            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+            const deps = {
+                apiClients: {
+                    certificates: { updateCertificateObjects: () => of(undefined) },
+                    raProfiles: { getRaProfile },
+                },
+            };
+            const action = certificatesActions.updateRaProfile({
+                uuid: 'cert-1',
+                updateRaProfileRequest: { raProfileUuid: 'ra-2', attributes: [] },
+                authorityUuid: 'auth-2',
+            });
+            return firstValueFrom(epics[UPDATE_RA_PROFILE_EPIC_INDEX](of(action), of({}) as any, deps as any).pipe(toArray()));
+        };
+
+        test('re-reads the certificate after the switch, since core replaces its identify values and metadata', async () => {
+            const emitted = await runUpdateRaProfile(() =>
+                of({ uuid: 'ra-2', name: 'RA Two', enabled: true, authorityInstanceUuid: 'auth-2' }),
+            );
+
+            expect(emitted.map((a) => a.type)).toEqual([
+                certificatesActions.updateRaProfileSuccess.type,
+                certificatesActions.getCertificateHistory.type,
+                certificatesActions.getCertificateDetail.type,
+            ]);
+            expect(emitted[2]).toEqual(certificatesActions.getCertificateDetail({ uuid: 'cert-1' }));
+        });
+
+        test('still re-reads the certificate when the profile lookup fails, since the switch itself went through', async () => {
+            const emitted = await runUpdateRaProfile(() => throwError(() => new Error('lookup failed')));
+
+            expect(emitted.map((a) => a.type)).toEqual([
+                certificatesActions.updateRaProfileFailure.type,
+                appRedirectActions.fetchError.type,
+                certificatesActions.getCertificateDetail.type,
+            ]);
         });
     });
 

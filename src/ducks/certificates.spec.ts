@@ -659,6 +659,62 @@ describe('certificates slice', () => {
         expect(next.isFetchingRevocationAttributes).toBe(false);
     });
 
+    test('getRenewAttributes drops the previous schema while fetching, then success stores the new one', () => {
+        const stale = [{ uuid: 'stale' }] as any;
+        let next = reducer(
+            { ...initialState, renewAttributes: stale },
+            actions.getRenewAttributes({ raProfileUuid: 'ra-1', authorityUuid: 'auth-1' }),
+        );
+        expect(next.isFetchingRenewAttributes).toBe(true);
+        expect(next.renewAttributes).toEqual([]);
+
+        const attrs = [{ uuid: 'renew-1' }] as any;
+        next = reducer(next, actions.getRenewAttributesSuccess({ renewAttributes: attrs }));
+        expect(next.isFetchingRenewAttributes).toBe(false);
+        expect(next.renewAttributes).toEqual(attrs);
+    });
+
+    test('getRenewAttributesFailure and clearRenewAttributes leave an empty schema', () => {
+        const attrs = [{ uuid: 'renew-1' }] as any;
+        const populated = { ...initialState, renewAttributes: attrs, isFetchingRenewAttributes: true };
+
+        const failed = reducer(populated, actions.getRenewAttributesFailure({ error: 'err' }));
+        expect(failed.renewAttributes).toEqual([]);
+        expect(failed.isFetchingRenewAttributes).toBe(false);
+
+        const cleared = reducer(populated, actions.clearRenewAttributes());
+        expect(cleared.renewAttributes).toEqual([]);
+        expect(cleared.isFetchingRenewAttributes).toBe(false);
+    });
+
+    test('getIdentifyAttributes drops the previous profile schema while fetching, then success stores the new one', () => {
+        const stale = [{ uuid: 'stale' }] as any;
+        let next = reducer(
+            { ...initialState, identifyAttributes: stale },
+            actions.getIdentifyAttributes({ raProfileUuid: 'ra-2', authorityUuid: 'auth-1' }),
+        );
+        expect(next.isFetchingIdentifyAttributes).toBe(true);
+        expect(next.identifyAttributes).toEqual([]);
+
+        const attrs = [{ uuid: 'identify-1' }] as any;
+        next = reducer(next, actions.getIdentifyAttributesSuccess({ identifyAttributes: attrs }));
+        expect(next.isFetchingIdentifyAttributes).toBe(false);
+        expect(next.identifyAttributes).toEqual(attrs);
+    });
+
+    test('getIdentifyAttributesFailure and clearIdentifyAttributes leave an empty schema', () => {
+        const attrs = [{ uuid: 'identify-1' }] as any;
+        const populated = { ...initialState, identifyAttributes: attrs, isFetchingIdentifyAttributes: true };
+
+        const failed = reducer(populated, actions.getIdentifyAttributesFailure({ error: 'err' }));
+        expect(failed.identifyAttributes).toEqual([]);
+        expect(failed.isFetchingIdentifyAttributes).toBe(false);
+
+        const cleared = reducer(populated, actions.clearIdentifyAttributes());
+        expect(cleared.identifyAttributes).toEqual([]);
+        expect(cleared.isFetchingIdentifyAttributes).toBe(false);
+    });
+
     test('checkCompliance / success / failure update isCheckingCompliance', () => {
         let next = reducer(initialState, actions.checkCompliance({} as any));
         expect(next.isCheckingCompliance).toBe(true);

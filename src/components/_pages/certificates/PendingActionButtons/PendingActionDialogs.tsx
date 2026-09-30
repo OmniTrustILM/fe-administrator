@@ -15,7 +15,11 @@ type Props = Readonly<{
 export default function PendingActionDialogs({ action, onClose }: Props) {
     const dispatch = useDispatch();
 
-    const onUpload = (data: { fileContent: string; customAttributes?: AttributeRequestModel[] }) => {
+    const onUpload = (data: {
+        fileContent: string;
+        customAttributes?: AttributeRequestModel[];
+        identifyAttributes?: AttributeRequestModel[];
+    }) => {
         if (action?.kind !== 'finalize') return;
         const { certificate } = action;
         if (!certificate.raProfile?.authorityInstanceUuid) return;
@@ -27,6 +31,7 @@ export default function PendingActionDialogs({ action, onClose }: Props) {
                 uploadRequest: {
                     certificate: data.fileContent,
                     customAttributes: data.customAttributes ?? [],
+                    identifyAttributes: data.identifyAttributes,
                 },
             }),
         );
@@ -45,6 +50,7 @@ export default function PendingActionDialogs({ action, onClose }: Props) {
                             onUpload={onUpload}
                             showCustomAttributes={false}
                             okButtonTitle="Finalize issue"
+                            identifyRaProfile={action.certificate.raProfile}
                         />
                     }
                     toggle={onClose}

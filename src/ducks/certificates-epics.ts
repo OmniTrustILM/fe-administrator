@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
 import { EMPTY, merge, of, race, timer } from 'rxjs';
-import { catchError, filter, map, mergeMap, switchMap, take, takeUntil, takeWhile, tap, timeout } from 'rxjs/operators';
+import { catchError, endWith, filter, map, mergeMap, switchMap, take, takeUntil, takeWhile, tap, timeout } from 'rxjs/operators';
 import { extractError, withReadableResponse } from 'utils/net';
 import { extractComplianceErrors } from 'utils/raProfileValidation';
 import { fileNameFromContentDisposition, triggerBlobDownload } from 'utils/download';
@@ -718,6 +718,8 @@ const updateRaProfile: AppEpic = (action$, state, deps) => {
                                         appRedirectActions.fetchError({ error: err, message: 'Failed to update RA profile' }),
                                     ),
                                 ),
+                                // The switch has already gone through, so the certificate is re-read even when the lookup fails.
+                                endWith(slice.actions.getCertificateDetail({ uuid: action.payload.uuid })),
                             ),
                     ),
 
@@ -1334,6 +1336,69 @@ const checkCompliance: AppEpic = (action$, state$, deps) => {
     );
 };
 
+// A 404 means the authority has no connector, so there is no schema: an outcome to render, not an error to report.
+const isSchemaAbsent = (err: unknown) => (err as { status?: unknown })?.status === 404;
+
+const getRenewAttributes: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.getRenewAttributes.match),
+        switchMap((action) =>
+            deps.apiClients.clientOperations
+                .listRenewCertificateAttributes({
+                    authorityUuid: action.payload.authorityUuid,
+                    raProfileUuid: action.payload.raProfileUuid,
+                })
+                .pipe(
+                    map((attributes) =>
+                        slice.actions.getRenewAttributesSuccess({
+                            renewAttributes: attributes.map((attribute) => transformAttributeDescriptorDtoToModel(attribute)),
+                        }),
+                    ),
+
+                    catchError((err) => {
+                        const failure = slice.actions.getRenewAttributesFailure({
+                            error: extractError(err, 'Failed to get renew attributes'),
+                        });
+                        return isSchemaAbsent(err)
+                            ? of(failure)
+                            : of(failure, appRedirectActions.fetchError({ error: err, message: 'Failed to get renew attributes' }));
+                    }),
+                    takeUntil(action$.pipe(filter(slice.actions.clearRenewAttributes.match))),
+                ),
+        ),
+    );
+};
+
+const getIdentifyAttributes: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.getIdentifyAttributes.match),
+        switchMap((action) =>
+            deps.apiClients.clientOperations
+                .listIdentifyCertificateAttributes({
+                    authorityUuid: action.payload.authorityUuid,
+                    raProfileUuid: action.payload.raProfileUuid,
+                })
+                .pipe(
+                    map((attributes) =>
+                        slice.actions.getIdentifyAttributesSuccess({
+                            identifyAttributes: attributes.map((attribute) => transformAttributeDescriptorDtoToModel(attribute)),
+                        }),
+                    ),
+
+                    catchError((err) => {
+                        const failure = slice.actions.getIdentifyAttributesFailure({
+                            error: extractError(err, 'Failed to get identify attributes'),
+                        });
+                        return isSchemaAbsent(err)
+                            ? of(failure)
+                            : of(failure, appRedirectActions.fetchError({ error: err, message: 'Failed to get identify attributes' }));
+                    }),
+                    takeUntil(action$.pipe(filter(slice.actions.clearIdentifyAttributes.match))),
+                ),
+        ),
+    );
+};
+
 const getCsrAttributes: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.getCsrAttributes.match),
@@ -1660,6 +1725,8 @@ const epics = [
     getIssuanceAttributes,
     getRegisterAttributes,
     getRevocationAttributes,
+    getRenewAttributes,
+    getIdentifyAttributes,
     checkCompliance,
     getCsrAttributes,
     getCertificateContent,
