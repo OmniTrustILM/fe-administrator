@@ -540,8 +540,9 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                         }
                     }}
                     className={({ isActive }) =>
-                        cn('font-medium flex px-4 py-2 no-underline hover:bg-surface-hover rounded-lg h-[38px] items-center text-content', {
+                        cn('font-medium flex px-4 py-2 no-underline hover:bg-surface-hover rounded-lg h-[38px] items-center', {
                             'text-brand': isActive,
+                            'text-content': !isActive,
                             'w-full gap-x-2': menuSize !== 'small',
                         })
                     }
