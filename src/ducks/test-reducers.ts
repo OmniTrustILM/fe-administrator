@@ -479,11 +479,15 @@ function connectorsTestReducer(state: ConnectorsTestState = connectorsTestInitia
 export type SecretsTestState = {
     syncVaultProfileAttributeDescriptors: unknown[];
     isFetchingSyncVaultProfileAttributes: boolean;
+    secretCreationAttributeDescriptors?: unknown[];
+    isFetchingSecretCreationAttributes?: boolean;
 };
 
 const secretsTestInitialState: SecretsTestState = {
     syncVaultProfileAttributeDescriptors: [],
     isFetchingSyncVaultProfileAttributes: false,
+    secretCreationAttributeDescriptors: [],
+    isFetchingSecretCreationAttributes: false,
 };
 
 function secretsTestReducer(state: SecretsTestState | undefined, _action: UnknownAction): SecretsTestState {

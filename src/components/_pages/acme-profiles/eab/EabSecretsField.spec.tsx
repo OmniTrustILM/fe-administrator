@@ -2,7 +2,10 @@ import { type SecretDto, SecretState, SecretType } from 'types/openapi';
 import { withProviders } from 'utils/test-helpers';
 import { expect, test } from '../../../../../playwright/ct-test';
 import { EAB_HINT } from 'utils/acme-eab';
+import { CREATED_SECRET_UUID } from './eabKeyFixture';
+import { createButton, fillEabSecretForm } from './eabKeyDialogSteps';
 import EabSecretsField from './EabSecretsField';
+import EabSecretsFieldHarness from './EabSecretsFieldHarness';
 
 const secret = (overrides: Partial<SecretDto>): SecretDto =>
     ({
@@ -119,10 +122,47 @@ test.describe('EabSecretsField', () => {
         await expect(page.getByTestId('eabSecrets')).toContainText('missing-uuid');
     });
 
-    test('a disabled field cannot be opened', async ({ mount, page }) => {
+    test('a disabled field cannot be opened or generate a key', async ({ mount, page }) => {
         await mount(withProviders(<EabSecretsField value={[]} onChange={() => {}} secrets={secrets} disabled />));
 
         await expect(page.getByTestId('eabSecrets-trigger')).toBeDisabled();
+        await expect(page.getByTestId('generate-eab-key')).toBeDisabled();
+    });
+
+    test('a secret created from a generated key is selected next to the others and shown by name', async ({ mount, page }) => {
+        await mount(<EabSecretsFieldHarness />);
+
+        await page.getByTestId('generate-eab-key').click();
+        await fillEabSecretForm(page, 'acme-eab');
+        await createButton(page).click();
+
+        await expect(page.getByTestId('value')).toHaveText(JSON.stringify(['s-1', CREATED_SECRET_UUID]));
+        await page.getByTestId('generate-eab-key-dialog').getByRole('button', { name: 'Close', exact: true }).last().click();
+        await expect(page.getByTestId('eabSecrets')).toContainText('EAB key one');
+        await expect(page.getByTestId('eabSecrets')).toContainText('acme-eab');
+        await expect(page.getByTestId('enclosing-submits')).toHaveText('0');
+    });
+
+    test('cancelling the generated key leaves the selection unchanged', async ({ mount, page }) => {
+        await mount(<EabSecretsFieldHarness />);
+
+        await page.getByTestId('generate-eab-key').click();
+        await fillEabSecretForm(page, 'acme-eab');
+        await page.getByTestId('generate-eab-key-dialog').getByRole('button', { name: 'Cancel' }).click();
+
+        await expect(page.getByTestId('generate-eab-key-dialog')).toHaveCount(0);
+        await expect(page.getByTestId('value')).toHaveText(JSON.stringify(['s-1']));
+    });
+
+    test('a created secret that is not usable yet is left unselected', async ({ mount, page }) => {
+        await mount(<EabSecretsFieldHarness approvalRequired />);
+
+        await page.getByTestId('generate-eab-key').click();
+        await fillEabSecretForm(page, 'acme-eab');
+        await createButton(page).click();
+
+        await expect(page.getByTestId('eab-secret-outcome')).toContainText('requires approval');
+        await expect(page.getByTestId('value')).toHaveText(JSON.stringify(['s-1']));
     });
 
     test('explains what the list does', async ({ mount, page }) => {

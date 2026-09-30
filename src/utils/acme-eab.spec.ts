@@ -1,6 +1,6 @@
 import { SecretState, SecretType } from 'types/openapi';
 import { describe, expect, test } from 'vitest';
-import { eabRequestFields, isEabSecret, sameUuidSet, secretLabel } from './acme-eab';
+import { eabRequestFields, isEabSecret, newEabSecretProblem, sameUuidSet, secretLabel } from './acme-eab';
 
 describe('isEabSecret', () => {
     test('accepts enabled secretKey and generic secrets', () => {
@@ -69,5 +69,29 @@ describe('eabRequestFields', () => {
     test('on create, an empty list is left out and a chosen one is sent', () => {
         expect(eabRequestFields({ eabSecretUuids: [] }, undefined)).toEqual({});
         expect(eabRequestFields({ eabSecretUuids: ['s-1'] }, undefined)).toEqual({ eabSecretUuids: ['s-1'] });
+    });
+});
+
+describe('newEabSecretProblem', () => {
+    test('an enabled secret without approval binds right away', () => {
+        expect(newEabSecretProblem({ vaultProfileName: 'Vault One', needsApproval: false, enabled: true })).toBeUndefined();
+    });
+
+    test('a secret waiting for approval is left out, and enabling is asked for only when it did not happen', () => {
+        expect(newEabSecretProblem({ vaultProfileName: 'Vault One', needsApproval: true, enabled: true })).toBe(
+            'Not usable yet: vault profile Vault One requires approval of new secrets. Once this one is approved, add it to the profile.',
+        );
+        expect(newEabSecretProblem({ vaultProfileName: 'Vault One', needsApproval: true, enabled: false })).toContain(
+            'Once this one is approved, enable it and add it to the profile.',
+        );
+    });
+
+    test('a secret that could not be enabled is left out with the reason', () => {
+        expect(
+            newEabSecretProblem({ vaultProfileName: 'Vault One', needsApproval: false, enabled: false, enableError: 'Access Denied' }),
+        ).toBe('Not usable: the secret could not be enabled (Access Denied). Enable it, then add it to the profile.');
+        expect(newEabSecretProblem({ vaultProfileName: 'Vault One', needsApproval: false, enabled: false })).toBe(
+            'Not usable: the secret could not be enabled. Enable it, then add it to the profile.',
+        );
     });
 });

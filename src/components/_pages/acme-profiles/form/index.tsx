@@ -41,7 +41,6 @@ import { collectFormAttributes, transformAttributes, mapProfileAttribute } from 
 import { deepEqual } from 'utils/deep-equal';
 import { eabRequestFields } from 'utils/acme-eab';
 import EabSecretsField from 'components/_pages/acme-profiles/eab/EabSecretsField';
-import GenerateEabKeyDialog from 'components/_pages/acme-profiles/eab/GenerateEabKeyDialog';
 import PreauthorizedIdentifiersFields, {
     type IdentifierPolicyFormValues,
 } from 'components/_pages/acme-profiles/identifiers/PreauthorizedIdentifiersFields';
@@ -103,7 +102,6 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
     const secrets = useSelector(secretsSelectors.secretOptions);
     const isFetchingSecrets = useSelector(secretsSelectors.isFetchingSecretOptions);
     const secretsListError = useSelector(secretsSelectors.secretOptionsError);
-    const [isKeyDialogOpen, setIsKeyDialogOpen] = useState(false);
 
     const [issueGroupAttributesCallbackAttributes, setIssueGroupAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
     const [revokeGroupAttributesCallbackAttributes, setRevokeGroupAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
@@ -681,6 +679,26 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                             </div>
                         </Widget>
 
+                        <Widget title="External Account Binding" noBorder busy={isFetchingSecrets}>
+                            <Controller
+                                name="eabSecretUuids"
+                                control={control}
+                                render={({ field }) => (
+                                    <EabSecretsField
+                                        value={field.value ?? []}
+                                        onChange={field.onChange}
+                                        secrets={secrets}
+                                        listError={secretsListError}
+                                        disabled={isBusy}
+                                    />
+                                )}
+                            />
+                        </Widget>
+
+                        <Widget title="Pre-authorized identifiers" noBorder>
+                            <PreauthorizedIdentifiersFields disabled={isBusy} />
+                        </Widget>
+
                         <Widget
                             title="RA Profile Configuration"
                             busy={
@@ -752,37 +770,6 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                                     ]}
                                 />
                             </div>
-                        </Widget>
-
-                        <Widget title="External Account Binding" noBorder busy={isFetchingSecrets}>
-                            <div className="space-y-3">
-                                <Controller
-                                    name="eabSecretUuids"
-                                    control={control}
-                                    render={({ field }) => (
-                                        <EabSecretsField
-                                            value={field.value ?? []}
-                                            onChange={field.onChange}
-                                            secrets={secrets}
-                                            listError={secretsListError}
-                                            disabled={isBusy}
-                                        />
-                                    )}
-                                />
-                                <Button
-                                    variant="outline"
-                                    type="button"
-                                    onClick={() => setIsKeyDialogOpen(true)}
-                                    data-testid="generate-eab-key"
-                                >
-                                    Generate key
-                                </Button>
-                                <GenerateEabKeyDialog isOpen={isKeyDialogOpen} onClose={() => setIsKeyDialogOpen(false)} />
-                            </div>
-                        </Widget>
-
-                        <Widget title="Pre-authorized identifiers" noBorder>
-                            <PreauthorizedIdentifiersFields disabled={isBusy} />
                         </Widget>
 
                         <CertificateAssociationsFormWidget
