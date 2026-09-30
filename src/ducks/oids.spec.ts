@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { delay, of, throwError } from 'rxjs';
+import { delay, of, Subject, throwError } from 'rxjs';
 
 // Break the oid-epics → ../App → ../store → ducks/index → oid-epics cycle by
 // stubbing the App module. Epic logic doesn't need the real store in unit tests.
@@ -107,15 +107,28 @@ describe('oids slice', () => {
         expect(selectors.extensionOidDetails({ oids: next } as any)).toEqual({ '1.2.3': detail });
     });
 
-    test('a reloaded custom extension list drops the cached extension details', () => {
+    test('getExtensionOidDetail marks the OID as requested, and a failure leaves it so', () => {
+        let next = reducer(initialState, actions.getExtensionOidDetail({ oid: '1.2.3' }));
+        expect(next.extensionOidDetailsRequested).toEqual({ '1.2.3': true });
+        expect(selectors.extensionOidDetailsRequested({ oids: next } as any)).toEqual({ '1.2.3': true });
+
+        next = reducer(next, actions.getExtensionOidDetailFailure({ oid: '1.2.3', error: 'err' }));
+        expect(next.extensionOidDetailsRequested).toEqual({ '1.2.3': true });
+        expect(next.extensionOidDetails).toEqual({});
+    });
+
+    test('a reloaded custom extension list drops the cached details and the requested set', () => {
         const detail = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER', valueSchema: 'M' } } as any;
-        let next = reducer(initialState, actions.getExtensionOidDetailSuccess({ oid: detail }));
+        let next = reducer(initialState, actions.getExtensionOidDetail({ oid: '1.2.3' }));
+        next = reducer(next, actions.getExtensionOidDetailSuccess({ oid: detail }));
 
         next = reducer(next, actions.listOidsByCategorySuccess({ category: OidCategory.RdnAttributeType, oids: [] }));
         expect(next.extensionOidDetails).toEqual({ '1.2.3': detail });
+        expect(next.extensionOidDetailsRequested).toEqual({ '1.2.3': true });
 
         next = reducer(next, actions.listOidsByCategorySuccess({ category: OidCategory.CertificateExtension, oids: [] }));
         expect(next.extensionOidDetails).toEqual({});
+        expect(next.extensionOidDetailsRequested).toEqual({});
     });
 
     test('updateOID / success / failure', () => {
@@ -484,27 +497,44 @@ describe('oid-epics', () => {
         expect(out).toEqual([actions.getExtensionOidDetailSuccess({ oid: detail as any })]);
     });
 
-    test('getExtensionOidDetail epic lets a repeated request for the same OID cancel the one in flight', async () => {
-        const stale = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER', valueSchema: 'before edit' } };
-        const fresh = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER', valueSchema: 'after edit' } };
-        // The first response is the slower one: the request that started before the details were
-        // invalidated must not outlive the request the refresh dispatched.
-        const getCustomOidEntry = vi
-            .fn()
-            .mockReturnValueOnce(of(stale).pipe(delay(20)))
-            .mockReturnValueOnce(of(fresh).pipe(delay(1)));
-        const action$ = of(actions.getExtensionOidDetail({ oid: '1.2.3' }), actions.getExtensionOidDetail({ oid: '1.2.3' }));
+    /** Runs the detail epic on a live action stream, so a later action can reach a request in flight. */
+    const runDetailEpicWith = async (later: unknown, response: unknown) => {
+        const getCustomOidEntry = vi.fn().mockReturnValue(of(response).pipe(delay(5)));
+        const action$ = new Subject<unknown>();
         const epic = epics.find((e) => e.name === 'getExtensionOidDetail')!;
         const out: any[] = [];
-        await new Promise<void>((resolve) => {
+        const done = new Promise<void>((resolve) => {
             epic(action$ as any, {} as any, { apiClients: { oids: { getCustomOidEntry } } } as any).subscribe({
                 next: (a) => out.push(a),
                 complete: () => resolve(),
             });
         });
+        action$.next(actions.getExtensionOidDetail({ oid: '1.2.3' }));
+        action$.next(later);
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        action$.complete();
+        await done;
+        return out;
+    };
 
-        expect(getCustomOidEntry).toHaveBeenCalledTimes(2);
-        expect(out).toEqual([actions.getExtensionOidDetailSuccess({ oid: fresh as any })]);
+    test('getExtensionOidDetail epic drops a request in flight when the custom extension list is reloaded', async () => {
+        const stale = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER', valueSchema: 'before edit' } };
+        const out = await runDetailEpicWith(
+            actions.listOidsByCategorySuccess({ category: OidCategory.CertificateExtension, oids: [] }),
+            stale,
+        );
+
+        expect(out).toEqual([]);
+    });
+
+    test('getExtensionOidDetail epic keeps a request in flight when another category is reloaded', async () => {
+        const detail = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER' } };
+        const out = await runDetailEpicWith(
+            actions.listOidsByCategorySuccess({ category: OidCategory.RdnAttributeType, oids: [] }),
+            detail,
+        );
+
+        expect(out).toEqual([actions.getExtensionOidDetailSuccess({ oid: detail as any })]);
     });
 
     test('getExtensionOidDetail epic maps a failure without an alert', async () => {

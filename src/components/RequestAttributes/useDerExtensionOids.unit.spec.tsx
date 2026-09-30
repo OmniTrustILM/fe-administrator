@@ -32,11 +32,12 @@ describe('useFetchExtensionOidRegistry', () => {
                 oidsByCategory: {
                     certificateExtension: [
                         { oid: '1.2.3.1', displayName: 'Mapped, not loaded', category: 'certificateExtension' },
-                        { oid: '1.2.3.2', displayName: 'Mapped, loaded', category: 'certificateExtension' },
+                        { oid: '1.2.3.2', displayName: 'Mapped, already requested', category: 'certificateExtension' },
                         { oid: '1.2.3.3', displayName: 'Not mapped', category: 'certificateExtension' },
                     ],
                 },
-                extensionOidDetails: { '1.2.3.2': { oid: '1.2.3.2' } },
+                extensionOidDetails: {},
+                extensionOidDetailsRequested: { '1.2.3.2': true },
                 systemOids: [],
             },
         };
@@ -48,11 +49,31 @@ describe('useFetchExtensionOidRegistry', () => {
         vi.clearAllMocks();
     });
 
-    it('reads the detail of each mapped custom extension it does not hold yet', async () => {
+    const detailRequests = () => dispatchFn.mock.calls.map(([action]) => action).filter(actions.getExtensionOidDetail.match);
+
+    it('reads the detail of each mapped custom extension not asked for yet', async () => {
         await act(async () => root.render(<Probe mappedOids={MAPPED} />));
 
-        const detailRequests = dispatchFn.mock.calls.map(([action]) => action).filter(actions.getExtensionOidDetail.match);
-        expect(detailRequests.map((action) => action.payload.oid)).toEqual(['1.2.3.1']);
+        expect(detailRequests().map((action) => action.payload.oid)).toEqual(['1.2.3.1']);
+    });
+
+    it('does not ask again for the OIDs still loading when a detail arrives for another', async () => {
+        await act(async () => root.render(<Probe mappedOids={MAPPED} />));
+        expect(detailRequests()).toHaveLength(1);
+
+        const previous = useSelectorMock.getMockImplementation()!;
+        const before = previous((s: unknown) => s) as { oids: Record<string, unknown> };
+        const after = {
+            oids: {
+                ...before.oids,
+                extensionOidDetailsRequested: { '1.2.3.1': true, '1.2.3.2': true },
+                extensionOidDetails: { '1.2.3.2': { oid: '1.2.3.2' } },
+            },
+        };
+        useSelectorMock.mockImplementation((selector: any) => selector(after));
+        await act(async () => root.render(<Probe mappedOids={MAPPED} />));
+
+        expect(detailRequests()).toHaveLength(1);
     });
 
     it('fetches nothing when no attribute maps to an extension', async () => {

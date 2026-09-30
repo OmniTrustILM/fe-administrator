@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
 import { slice } from 'ducks/oids';
-import { catchError, defer, filter, groupBy, mergeMap, of, switchMap } from 'rxjs';
+import { catchError, defer, filter, groupBy, mergeMap, of, switchMap, takeUntil } from 'rxjs';
 import { store } from '../App';
 import { actions as pagingActions } from './paging';
 import { EntityType } from './filters';
@@ -8,8 +8,7 @@ import { transformSearchRequestModelToDto } from 'ducks/transform/certificates';
 import { actions as appRedirectActions } from './app-redirect';
 import { extractError } from 'utils/net';
 import { extractValueSchemaError } from 'utils/oid';
-import type { OidCategory } from 'types/openapi';
-import { FilterConditionOperator, FilterFieldSource } from 'types/openapi';
+import { FilterConditionOperator, FilterFieldSource, OidCategory } from 'types/openapi';
 import type { SearchRequestModel } from 'types/certificate';
 
 const listOIDs: AppEpic = (action$, state, deps) => {
@@ -98,26 +97,27 @@ const listSystemOids: AppEpic = (action$, state$, deps) => {
 };
 
 const getExtensionOidDetail: AppEpic = (action$, state, deps) => {
+    // A reloaded custom extension list drops the cached details, so a request started before it
+    // is cancelled the moment the list arrives: its response could otherwise land in the refreshed
+    // cache and pass for current.
+    const extensionListReloaded$ = action$.pipe(
+        filter(slice.actions.listOidsByCategorySuccess.match),
+        filter((action) => action.payload.category === OidCategory.CertificateExtension),
+    );
     return action$.pipe(
         filter(slice.actions.getExtensionOidDetail.match),
-        // One request per OID. A repeated request for the same OID cancels the one in flight, so a
-        // response from before the details were invalidated cannot land in the refreshed cache.
-        groupBy((action) => action.payload.oid),
-        mergeMap((group$) =>
-            group$.pipe(
-                switchMap((action) =>
-                    deps.apiClients.oids.getCustomOidEntry({ oid: action.payload.oid }).pipe(
-                        mergeMap((oid) => of(slice.actions.getExtensionOidDetailSuccess({ oid }))),
-                        catchError((error) =>
-                            of(
-                                slice.actions.getExtensionOidDetailFailure({
-                                    oid: action.payload.oid,
-                                    error: extractError(error, 'Failed to load OID entry'),
-                                }),
-                            ),
-                        ),
+        mergeMap((action) =>
+            deps.apiClients.oids.getCustomOidEntry({ oid: action.payload.oid }).pipe(
+                mergeMap((oid) => of(slice.actions.getExtensionOidDetailSuccess({ oid }))),
+                catchError((error) =>
+                    of(
+                        slice.actions.getExtensionOidDetailFailure({
+                            oid: action.payload.oid,
+                            error: extractError(error, 'Failed to load OID entry'),
+                        }),
                     ),
                 ),
+                takeUntil(extensionListReloaded$),
             ),
         ),
     );

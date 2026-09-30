@@ -20,6 +20,8 @@ export type State = {
      * an extension's encoding and module are known only from its detail.
      */
     extensionOidDetails: Record<string, OIDResponseModel>;
+    /** The OIDs whose detail has been asked for since the custom extension list was last read. */
+    extensionOidDetailsRequested: Record<string, boolean>;
 
     isFetching: boolean;
     isCreating: boolean;
@@ -41,6 +43,7 @@ export const initialState: State = {
     systemOidsLoaded: false,
     systemOidsError: false,
     extensionOidDetails: {},
+    extensionOidDetailsRequested: {},
 
     isFetching: false,
     isCreating: false,
@@ -86,6 +89,7 @@ export const slice = createSlice({
             // were read, so they are read again for the OIDs still mapped.
             if (action.payload.category === OidCategory.CertificateExtension) {
                 state.extensionOidDetails = {};
+                state.extensionOidDetailsRequested = {};
             }
         },
 
@@ -113,12 +117,15 @@ export const slice = createSlice({
             state.systemOidsError = true;
         },
 
-        getExtensionOidDetail: (state, action: PayloadAction<{ oid: string }>) => {},
+        getExtensionOidDetail: (state, action: PayloadAction<{ oid: string }>) => {
+            state.extensionOidDetailsRequested[action.payload.oid] = true;
+        },
 
         getExtensionOidDetailSuccess: (state, action: PayloadAction<{ oid: OIDResponseModel }>) => {
             state.extensionOidDetails[action.payload.oid.oid] = action.payload.oid;
         },
 
+        // A failed detail stays requested: it is asked for again when the list is next read, not on every render.
         getExtensionOidDetailFailure: (state, action: PayloadAction<{ oid: string; error: string }>) => {},
 
         getOID: (state, action: PayloadAction<{ oid: string }>) => {
@@ -221,6 +228,7 @@ const systemOids = createSelector(state, (state) => state.systemOids);
 const systemOidsLoaded = createSelector(state, (state) => state.systemOidsLoaded);
 const systemOidsError = createSelector(state, (state) => state.systemOidsError);
 const extensionOidDetails = createSelector(state, (state) => state.extensionOidDetails);
+const extensionOidDetailsRequested = createSelector(state, (state) => state.extensionOidDetailsRequested);
 const systemOidsByCategory = createSelector(systemOids, (systemOids) =>
     systemOids.reduce<Partial<Record<OidCategory, OIDResponseModel[]>>>((acc, entry) => {
         const categoryOids = acc[entry.category] ?? [];
@@ -251,6 +259,7 @@ export const selectors = {
     systemOidsError,
     systemOidsByCategory,
     extensionOidDetails,
+    extensionOidDetailsRequested,
 
     isFetching,
     isCreating,

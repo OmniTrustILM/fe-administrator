@@ -1118,6 +1118,7 @@ export type OidsTestState = {
     systemOidsLoaded: boolean;
     systemOidsError: boolean;
     extensionOidDetails: Record<string, any>;
+    extensionOidDetailsRequested: Record<string, boolean>;
     isFetching: boolean;
     isCreating: boolean;
     createOidSucceeded: boolean;
@@ -1136,6 +1137,7 @@ const oidsTestInitialState: OidsTestState = {
     systemOidsLoaded: false,
     systemOidsError: false,
     extensionOidDetails: {},
+    extensionOidDetailsRequested: {},
     isFetching: false,
     isCreating: false,
     createOidSucceeded: false,

@@ -52,6 +52,7 @@ const oidsState = {
             },
         ],
         systemOidsLoaded: true,
+        extensionOidDetailsRequested: { '1.3.6.1.4.1.99999.1': true },
         extensionOidDetails: {
             '1.3.6.1.4.1.99999.1': {
                 oid: '1.3.6.1.4.1.99999.1',

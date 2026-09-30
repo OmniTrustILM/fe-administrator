@@ -14,7 +14,7 @@ import { isCertificateExtensionProperties } from 'utils/oid';
 export function useFetchExtensionOidRegistry(mappedOids: readonly string[]): void {
     const dispatch = useDispatch();
     const customOids = useSelector(oidSelectors.oidsByCategory)[OidCategory.CertificateExtension];
-    const extensionOidDetails = useSelector(oidSelectors.extensionOidDetails);
+    const requested = useSelector(oidSelectors.extensionOidDetailsRequested);
     const enabled = mappedOids.length > 0;
 
     useEffect(() => {
@@ -25,14 +25,16 @@ export function useFetchExtensionOidRegistry(mappedOids: readonly string[]): voi
         dispatch(oidActions.listOidsByCategory({ category: OidCategory.CertificateExtension }));
     }, [dispatch, enabled]);
 
+    // Each detail is asked for once per list read: a detail arriving for one OID must not restart
+    // the requests still running for the others.
     useEffect(() => {
         const mapped = new Set(mappedOids);
         for (const entry of customOids ?? []) {
-            if (mapped.has(entry.oid) && !extensionOidDetails[entry.oid]) {
+            if (mapped.has(entry.oid) && !requested[entry.oid]) {
                 dispatch(oidActions.getExtensionOidDetail({ oid: entry.oid }));
             }
         }
-    }, [dispatch, mappedOids, customOids, extensionOidDetails]);
+    }, [dispatch, mappedOids, customOids, requested]);
 }
 
 export interface DerExtensionOids {
