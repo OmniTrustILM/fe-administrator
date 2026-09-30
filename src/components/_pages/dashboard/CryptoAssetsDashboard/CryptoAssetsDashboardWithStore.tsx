@@ -63,12 +63,16 @@ function CurrentFiltersProbe() {
 export default function CryptoAssetsDashboardWithStore({
     variant = 'synced',
     initialCbomFilter,
-}: Readonly<{ variant?: Variant; initialCbomFilter?: SearchFilterModel }>) {
+    initialCryptoFilter,
+}: Readonly<{ variant?: Variant; initialCbomFilter?: SearchFilterModel; initialCryptoFilter?: SearchFilterModel }>) {
     const store = createMockStore({
         cryptoAssetsDashboard: { isFetching: false, statistics: statisticsFor(variant) },
     } as Parameters<typeof createMockStore>[0]);
     if (initialCbomFilter) {
         store.dispatch(filterActions.setCurrentFilters({ entity: EntityType.CBOM, currentFilters: [initialCbomFilter] }));
+    }
+    if (initialCryptoFilter) {
+        store.dispatch(filterActions.setCurrentFilters({ entity: EntityType.CRYPTO_ASSET, currentFilters: [initialCryptoFilter] }));
     }
 
     return (

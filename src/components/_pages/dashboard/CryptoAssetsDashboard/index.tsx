@@ -17,6 +17,7 @@ import {
 } from 'utils/cryptoAssetsDashboard';
 import { getDonutChartColorsByRandomNumberOfOptions } from 'utils/dashboard';
 import { dateFormatter } from 'utils/dateUtil';
+import { isUnmodifiedPrimaryClick } from 'utils/linkClick';
 import CountBadge from '../DashboardItem/CountBadge';
 import DashboardSkeleton from '../DashboardItem/DashboardSkeleton';
 import DonutChart from '../DashboardItem/DonutChart';
@@ -125,14 +126,15 @@ function CryptoAssetsDashboard() {
                                 <Link
                                     to={dashboardFilterLink(LINK, 'no-family')}
                                     className="text-sm text-brand hover:underline"
-                                    onClick={() =>
+                                    onClick={(event) => {
+                                        if (!isUnmodifiedPrimaryClick(event)) return;
                                         dispatch(
                                             filterActions.setCurrentFilters({
                                                 entity: EntityType.CRYPTO_ASSET,
                                                 currentFilters: buildEmptyFilter(CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily),
                                             }),
-                                        )
-                                    }
+                                        );
+                                    }}
                                 >
                                     {unassignedCaption}
                                 </Link>
@@ -172,14 +174,15 @@ function CryptoAssetsDashboard() {
                                     <Link
                                         to={dashboardFilterLink(CBOMS_LINK, `sync:${state.code}`)}
                                         className="text-brand hover:underline"
-                                        onClick={() =>
+                                        onClick={(event) => {
+                                            if (!isUnmodifiedPrimaryClick(event)) return;
                                             dispatch(
                                                 filterActions.setCurrentFilters({
                                                     entity: EntityType.CBOM,
                                                     currentFilters: buildEqualsFilter('CBOM_ASSET_SYNC_STATE', state.code),
                                                 }),
-                                            )
-                                        }
+                                            );
+                                        }}
                                     >
                                         {getEnumLabel(syncStateEnum, state.code)}
                                     </Link>
