@@ -1,12 +1,12 @@
-import { configureStore, type Middleware, type UnknownAction } from '@reduxjs/toolkit';
 import { useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 
 import certificatesReducer, { actions as certificateActions } from 'ducks/certificates';
-import { testInitialState, testReducers } from 'ducks/test-reducers';
+
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import { type CertificateRegistrationState, CertificateState } from 'types/openapi';
+import { overlaySliceReducer, useRecordingStore } from 'utils/test-helpers';
 
 import CertificateDetailsContent from './CertificateDetailsContent';
 
@@ -26,8 +26,6 @@ const testCertificate = (registrationState: CertificateRegistrationState | undef
         registration: registrationState ? { state: registrationState, failedAttempts: 0 } : undefined,
     }) as unknown as CertificateDetailResponseModel;
 
-type CertificatesSlice = ReturnType<typeof testReducers>['certificates'];
-
 // The operation transitions the dialogs react to run through the real certificates reducer; everything else
 // stays a no-op on the stubbed slice.
 const dialogActions = [
@@ -43,30 +41,13 @@ const dialogActions = [
     certificateActions.clearRegisterErrors,
 ];
 
-function rootReducer(state: ReturnType<typeof testReducers> | undefined, action: UnknownAction) {
-    const next = testReducers(state, action);
-    if (!dialogActions.some((creator) => creator.match(action))) return next;
-    const certificates = certificatesReducer(next.certificates as never, action) as unknown as CertificatesSlice;
-    return { ...next, certificates };
-}
+const rootReducer = overlaySliceReducer('certificates', certificatesReducer, dialogActions);
 
 export function CertificateDetailsContentTestWrapper({ registrationState }: CertificateDetailsContentTestWrapperProps) {
     const certificate = useMemo(() => testCertificate(registrationState), [registrationState]);
-    const [dispatched, setDispatched] = useState<UnknownAction[]>([]);
     const [refetches, setRefetches] = useState(0);
 
-    const store = useMemo(() => {
-        const recorder: Middleware = () => (next) => (action) => {
-            const recorded = action as UnknownAction;
-            if (recorded.type.startsWith('certificates/')) setDispatched((actions) => [...actions, recorded]);
-            return next(action);
-        };
-        return configureStore({
-            reducer: rootReducer,
-            middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(recorder),
-            preloadedState: testInitialState,
-        });
-    }, []);
+    const { store, dispatched } = useRecordingStore(undefined, 'certificates/', rootReducer);
 
     return (
         <Provider store={store}>

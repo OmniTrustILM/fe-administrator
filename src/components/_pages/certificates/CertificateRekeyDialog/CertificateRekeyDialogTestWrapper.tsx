@@ -1,12 +1,12 @@
-import { configureStore, type Middleware, type UnknownAction } from '@reduxjs/toolkit';
 import { useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 
 import certificatesReducer, { actions as certificateActions } from 'ducks/certificates';
-import { testInitialState, testReducers } from 'ducks/test-reducers';
+import type { testReducers } from 'ducks/test-reducers';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import { type CertificateRegistrationState, CertificateState } from 'types/openapi';
+import { overlaySliceReducer, useRecordingStore } from 'utils/test-helpers';
 
 import CertificateRekeyDialog from './index';
 
@@ -29,8 +29,6 @@ const testCertificate = (registrationState: CertificateRegistrationState | undef
         registration: registrationState ? { state: registrationState, failedAttempts: 0 } : undefined,
     }) as unknown as CertificateDetailResponseModel;
 
-type CertificatesSlice = ReturnType<typeof testReducers>['certificates'];
-
 // The rekey transitions the dialog reacts to run through the real certificates reducer; everything else stays
 // a no-op on the stubbed slice.
 const dialogActions = [
@@ -40,12 +38,7 @@ const dialogActions = [
     certificateActions.clearRekeyErrors,
 ];
 
-function rootReducer(state: ReturnType<typeof testReducers> | undefined, action: UnknownAction) {
-    const next = testReducers(state, action);
-    if (!dialogActions.some((creator) => creator.match(action))) return next;
-    const certificates = certificatesReducer(next.certificates as never, action) as unknown as CertificatesSlice;
-    return { ...next, certificates };
-}
+const rootReducer = overlaySliceReducer('certificates', certificatesReducer, dialogActions);
 
 /** Mirrors the real parent (CertificateDetailsContent): onCancel or onDone closes the dialog and unmounts its body. */
 export function CertificateRekeyDialogTestWrapper({
@@ -55,20 +48,8 @@ export function CertificateRekeyDialogTestWrapper({
     onCancel,
 }: CertificateRekeyDialogTestWrapperProps) {
     const certificate = useMemo(() => certificateOverride ?? testCertificate(registrationState), [certificateOverride, registrationState]);
-    const [dispatched, setDispatched] = useState<UnknownAction[]>([]);
 
-    const store = useMemo(() => {
-        const recorder: Middleware = () => (next) => (action) => {
-            const recorded = action as UnknownAction;
-            if (recorded.type.startsWith('certificates/')) setDispatched((actions) => [...actions, recorded]);
-            return next(action);
-        };
-        return configureStore({
-            reducer: rootReducer,
-            middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(recorder),
-            preloadedState: { ...testInitialState, ...preloadedState },
-        });
-    }, [preloadedState]);
+    const { store, dispatched } = useRecordingStore(preloadedState, 'certificates/', rootReducer);
 
     const [open, setOpen] = useState(true);
 

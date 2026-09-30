@@ -13,13 +13,31 @@ const lastOfType = async (page: Page, type: string) => (await dispatched(page)).
 // The simulate buttons sit behind the open modal, so their clicks are dispatched straight at them.
 const simulate = (page: Page, testId: string) => page.getByTestId(testId).dispatchEvent('click');
 
+const submitRenewal = async (page: Page, challenge: string) => {
+    await page.locator('#renewAuthorizationSecret').fill(challenge);
+    await page.getByTestId('renewSubmit').click();
+};
+
+// Opens the renew dialog and has Core refuse one challenge.
+const failRenewal = async (page: Page) => {
+    await page.getByTestId('retweet-button').click();
+    await submitRenewal(page, 'wrong-challenge');
+    await simulate(page, 'simulate-renew-failure');
+};
+
+const dismissExpectingRefetches = async (page: Page, submitTestId: string, refetches: number) => {
+    await page.getByRole('button', { name: 'Cancel' }).click();
+
+    await expect(page.getByTestId(submitTestId)).toHaveCount(0);
+    await expect(page.getByTestId('refetches')).toHaveText(String(refetches));
+};
+
 test.describe('CertificateDetailsContent — renew and rekey dialogs', () => {
     test('a challenged renewal carries authorizationSecret and keeps the dialog open until confirmed', async ({ mount, page }) => {
         await mount(<CertificateDetailsContentTestWrapper registrationState={CertificateRegistrationState.Active} />);
 
         await page.getByTestId('retweet-button').click();
-        await page.locator('#renewAuthorizationSecret').fill('holder-challenge');
-        await page.getByTestId('renewSubmit').click();
+        await submitRenewal(page, 'holder-challenge');
 
         await expect.poll(() => lastOfType(page, 'certificates/renewCertificate')).toBeTruthy();
         expect((await lastOfType(page, 'certificates/renewCertificate'))?.payload).toMatchObject({
@@ -34,43 +52,27 @@ test.describe('CertificateDetailsContent — renew and rekey dialogs', () => {
     test('dismissing the renew dialog after a failure refetches the certificate', async ({ mount, page }) => {
         await mount(<CertificateDetailsContentTestWrapper registrationState={CertificateRegistrationState.Active} />);
 
-        await page.getByTestId('retweet-button').click();
-        await page.locator('#renewAuthorizationSecret').fill('wrong-challenge');
-        await page.getByTestId('renewSubmit').click();
-        await simulate(page, 'simulate-renew-failure');
+        await failRenewal(page);
         await expect(page.getByTestId('renewDialogError')).toBeVisible();
 
-        await page.getByRole('button', { name: 'Cancel' }).click();
-
-        await expect(page.getByTestId('renewSubmit')).toHaveCount(0);
-        await expect(page.getByTestId('refetches')).toHaveText('1');
+        await dismissExpectingRefetches(page, 'renewSubmit', 1);
     });
 
     test('dismissing after a failure still refetches once the Register switch has cleared the error', async ({ mount, page }) => {
         await mount(<CertificateDetailsContentTestWrapper registrationState={CertificateRegistrationState.Active} />);
 
-        await page.getByTestId('retweet-button').click();
-        await page.locator('#renewAuthorizationSecret').fill('wrong-challenge');
-        await page.getByTestId('renewSubmit').click();
-        await simulate(page, 'simulate-renew-failure');
+        await failRenewal(page);
         await page.getByText('Register instead of renewing now').click();
         await expect(page.getByTestId('renewDialogError')).toHaveCount(0);
 
-        await page.getByRole('button', { name: 'Cancel' }).click();
-
-        await expect(page.getByTestId('renewSubmit')).toHaveCount(0);
-        await expect(page.getByTestId('refetches')).toHaveText('1');
+        await dismissExpectingRefetches(page, 'renewSubmit', 1);
     });
 
     test('a confirmed renewal after a failed one closes without refetching the certificate it left', async ({ mount, page }) => {
         await mount(<CertificateDetailsContentTestWrapper registrationState={CertificateRegistrationState.Active} />);
 
-        await page.getByTestId('retweet-button').click();
-        await page.locator('#renewAuthorizationSecret').fill('wrong-challenge');
-        await page.getByTestId('renewSubmit').click();
-        await simulate(page, 'simulate-renew-failure');
-        await page.locator('#renewAuthorizationSecret').fill('holder-challenge');
-        await page.getByTestId('renewSubmit').click();
+        await failRenewal(page);
+        await submitRenewal(page, 'holder-challenge');
         await simulate(page, 'simulate-renew-success');
 
         await expect(page.getByTestId('renewSubmit')).toHaveCount(0);
@@ -92,10 +94,8 @@ test.describe('CertificateDetailsContent — renew and rekey dialogs', () => {
         await mount(<CertificateDetailsContentTestWrapper />);
 
         await page.getByTestId('retweet-button').click();
-        await page.getByRole('button', { name: 'Cancel' }).click();
 
-        await expect(page.getByTestId('renewSubmit')).toHaveCount(0);
-        await expect(page.getByTestId('refetches')).toHaveText('0');
+        await dismissExpectingRefetches(page, 'renewSubmit', 0);
     });
 
     test('the Register switch stages a successor of this certificate with inline errors', async ({ mount, page }) => {
@@ -122,9 +122,6 @@ test.describe('CertificateDetailsContent — renew and rekey dialogs', () => {
         await simulate(page, 'simulate-rekey-failure');
         await expect(page.getByTestId('rekeyDialogError')).toBeVisible();
 
-        await page.getByRole('button', { name: 'Cancel' }).click();
-
-        await expect(page.getByTestId('progress-button')).toHaveCount(0);
-        await expect(page.getByTestId('refetches')).toHaveText('1');
+        await dismissExpectingRefetches(page, 'progress-button', 1);
     });
 });

@@ -1,12 +1,12 @@
-import { configureStore, type Middleware, type UnknownAction } from '@reduxjs/toolkit';
 import { useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 
 import certificatesReducer, { actions as certificateActions } from 'ducks/certificates';
-import { testInitialState, testReducers } from 'ducks/test-reducers';
+import type { testReducers } from 'ducks/test-reducers';
 import type { CertificateDetailResponseModel, CertificateRegistrationRequestModel } from 'types/certificate';
 import { AttributeContentType, AttributeType, AttributeVersion, type CertificateRegistrationState, CertificateState } from 'types/openapi';
+import { overlaySliceReducer, useRecordingStore } from 'utils/test-helpers';
 
 import CertificateRenewDialog from './index';
 
@@ -68,8 +68,6 @@ const testCertificate = (
                 : undefined,
     }) as unknown as CertificateDetailResponseModel;
 
-type CertificatesSlice = ReturnType<typeof testReducers>['certificates'];
-
 // The renew/register transitions the dialog reacts to (in-flight flags, inline errors) run through the real
 // certificates reducer; every other action stays a no-op on the stubbed slice so preloaded fixtures hold.
 const dialogActions = [
@@ -83,12 +81,7 @@ const dialogActions = [
     certificateActions.clearRegisterErrors,
 ];
 
-function rootReducer(state: ReturnType<typeof testReducers> | undefined, action: UnknownAction) {
-    const next = testReducers(state, action);
-    if (!dialogActions.some((creator) => creator.match(action))) return next;
-    const certificates = certificatesReducer(next.certificates as never, action) as unknown as CertificatesSlice;
-    return { ...next, certificates };
-}
+const rootReducer = overlaySliceReducer('certificates', certificatesReducer, dialogActions);
 
 /** Mirrors the real parent (CertificateDetailsContent): renew/register dispatch, and onCancel or onDone unmounts the dialog. */
 export function CertificateRenewDialogTestWrapper({
@@ -105,21 +98,9 @@ export function CertificateRenewDialogTestWrapper({
         () => certificateOverride ?? testCertificate(registrationState, identity),
         [certificateOverride, registrationState, identity],
     );
-    const [dispatched, setDispatched] = useState<UnknownAction[]>([]);
     const [renewPayload, setRenewPayload] = useState<RenewData>();
 
-    const store = useMemo(() => {
-        const recorder: Middleware = () => (next) => (action) => {
-            const recorded = action as UnknownAction;
-            if (recorded.type.startsWith('certificates/')) setDispatched((actions) => [...actions, recorded]);
-            return next(action);
-        };
-        return configureStore({
-            reducer: rootReducer,
-            middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(recorder),
-            preloadedState: { ...testInitialState, ...preloadedState },
-        });
-    }, [preloadedState]);
+    const { store, dispatched } = useRecordingStore(preloadedState, 'certificates/', rootReducer);
 
     const [open, setOpen] = useState(true);
 
