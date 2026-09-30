@@ -26,6 +26,9 @@ const TYPE_OPTIONS = [AcmeIdentifierType.Dns, AcmeIdentifierType.Ip].map((type) 
 
 const MODES = [AcmeIdentifierAuthorizationMode.PreauthorizedOrChallenge, AcmeIdentifierAuthorizationMode.PreauthorizedOnly];
 
+// As tall as one input, so the cell centres on the inputs and not on a row a validation message has grown.
+const INPUT_HEIGHT_CELL = 'flex h-11.5 items-center';
+
 type Props = Readonly<{ disabled?: boolean }>;
 
 export default function PreauthorizedIdentifiersFields({ disabled }: Props) {
@@ -205,7 +208,7 @@ export default function PreauthorizedIdentifiersFields({ disabled }: Props) {
                                 name={`preauthorizedIdentifiers.${index}.allowWildcard`}
                                 control={control}
                                 render={({ field }) => (
-                                    <div className="flex h-full items-center">
+                                    <div className={INPUT_HEIGHT_CELL}>
                                         <Checkbox
                                             id={`identifier-${index}-wildcard`}
                                             dataTestId={`identifier-${index}-wildcard`}
@@ -217,21 +220,23 @@ export default function PreauthorizedIdentifiersFields({ disabled }: Props) {
                                     </div>
                                 )}
                             />
-                            <Button
-                                variant="transparent"
-                                color="danger"
-                                type="button"
-                                className="!p-2"
-                                title="Remove identifier"
-                                aria-label={`Remove identifier ${index + 1}`}
-                                disabled={disabled}
-                                onClick={() => {
-                                    remove(index);
-                                    revalidateMode();
-                                }}
-                            >
-                                <Trash2 size={16} />
-                            </Button>
+                            <div className={INPUT_HEIGHT_CELL}>
+                                <Button
+                                    variant="transparent"
+                                    color="danger"
+                                    type="button"
+                                    className="!p-2"
+                                    title="Remove identifier"
+                                    aria-label={`Remove identifier ${index + 1}`}
+                                    disabled={disabled}
+                                    onClick={() => {
+                                        remove(index);
+                                        revalidateMode();
+                                    }}
+                                >
+                                    <Trash2 size={16} />
+                                </Button>
+                            </div>
                         </div>
                     );
                 })}

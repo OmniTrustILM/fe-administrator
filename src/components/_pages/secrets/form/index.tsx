@@ -20,7 +20,15 @@ import { useCallback, useEffect, useMemo } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 
-import { KeyStoreType, PlatformEnum, Resource, type SecretDetailDto, SecretType } from 'types/openapi';
+import {
+    type CreateSecretRequest,
+    KeyStoreType,
+    PlatformEnum,
+    Resource,
+    type SecretDetailDto,
+    type SecretRequestDto,
+    SecretType,
+} from 'types/openapi';
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { selectors as enumSelectors, getEnumDescription, getEnumLabel } from 'ducks/enums';
 import { validateAlphaNumericWithSpecialChars, validateRequired } from 'utils/validators';
@@ -37,6 +45,11 @@ type SecretFormProps = Readonly<{
     onCancel?: () => void;
     onSuccess?: () => void;
     initialSecret?: SecretDetailDto;
+    // A new Generic secret whose content was decided elsewhere: both are shown, neither can be edited.
+    preset?: Readonly<{ type: SecretType.Generic; content: string }>;
+    // Takes over creating, so the content goes out with the request only and never through the store.
+    onCreate?: (request: CreateSecretRequest) => void;
+    createInProgress?: boolean;
 }>;
 
 interface FormValues {
@@ -55,12 +68,13 @@ interface FormValues {
     keyValueContent?: string;
 }
 
-export default function SecretForm({ onCancel, onSuccess, initialSecret }: SecretFormProps) {
+export default function SecretForm({ onCancel, onSuccess, initialSecret, preset, onCreate, createInProgress }: SecretFormProps) {
     const dispatch = useDispatch();
 
     const users = useSelector(userSelectors.users);
     const groups = useSelector(groupSelectors.certificateGroups);
-    const isCreating = useSelector(secretsSelectors.isCreating);
+    const isCreatingInStore = useSelector(secretsSelectors.isCreating);
+    const isCreating = onCreate ? !!createInProgress : isCreatingInStore;
     const createSecretSucceeded = useSelector(secretsSelectors.createSecretSucceeded);
     const isUpdating = useSelector(secretsSelectors.isUpdating);
     const updateSecretSucceeded = useSelector(secretsSelectors.updateSecretSucceeded);
@@ -153,10 +167,10 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
                       name: '',
                       description: '',
                       sourceVaultProfile: undefined,
-                      type: undefined,
+                      type: preset?.type,
                       owner: undefined,
                       groups: [],
-                      content: '',
+                      content: preset?.content ?? '',
                       username: '',
                       password: '',
                       keyStoreType: undefined,
@@ -164,7 +178,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
                       keyStorePassword: '',
                       keyValueContent: '',
                   },
-        [initialSecret],
+        [initialSecret, preset],
     );
 
     const optionsForKeyStoreType = useMemo(
@@ -190,6 +204,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
 
     const watchedType = useWatch({ control, name: 'type', defaultValue: defaultValues.type });
     const watchedSourceVaultProfile = useWatch({ control, name: 'sourceVaultProfile' });
+    const fixedType = initialSecret?.type ?? preset?.type;
 
     useEffect(() => {
         if (!watchedSourceVaultProfile || !watchedType) return;
@@ -309,19 +324,18 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
                 }
             } else {
                 // Create mode – secret content is required by API
-                dispatch(
-                    secretsActions.createSecret({
-                        vaultUuid,
-                        vaultProfileUuid: sourceVaultProfileUuid,
-                        request: {
-                            name: values.name,
-                            description: values.description ?? '',
-                            secret: secretContent,
-                            attributes,
-                            customAttributes,
-                        },
-                    }),
-                );
+                const request: SecretRequestDto = {
+                    name: values.name,
+                    description: values.description ?? '',
+                    secret: secretContent,
+                    attributes,
+                    customAttributes,
+                };
+                if (onCreate) {
+                    onCreate({ vaultUuid, vaultProfileUuid: sourceVaultProfileUuid, secretRequestDto: request });
+                } else {
+                    dispatch(secretsActions.createSecret({ vaultUuid, vaultProfileUuid: sourceVaultProfileUuid, request }));
+                }
             }
         },
         [
@@ -329,6 +343,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
             dispatch,
             getValues,
             initialSecret,
+            onCreate,
             resourceCustomAttributes,
             secretCreationAttributeDescriptors,
             vaultProfiles,
@@ -343,7 +358,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
         if (initialSecret && secret) onSuccess?.();
     }, [initialSecret, secret, onSuccess]);
 
-    useRunOnSuccessfulFinish(isCreating, createSecretSucceeded, handleCreateSuccess);
+    useRunOnSuccessfulFinish(isCreatingInStore, createSecretSucceeded, handleCreateSuccess);
     useRunOnSuccessfulFinish(isUpdating, updateSecretSucceeded, handleUpdateSuccess);
 
     const handleCancel = useCallback(() => {
@@ -355,7 +370,13 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
 
     return (
         <FormProvider {...methods}>
-            <form onSubmit={handleSubmit(onSubmit)}>
+            <form
+                onSubmit={(event) => {
+                    // A dialog portals the DOM out of an enclosing form, but React still bubbles the submit into it.
+                    event.stopPropagation();
+                    return handleSubmit(onSubmit)(event);
+                }}
+            >
                 <Widget busy={initialSecret ? isUpdating : isCreating} noBorder>
                     <div className="space-y-4">
                         {!initialSecret && (
@@ -413,11 +434,11 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
 
                         <Widget title="Content" noBorder>
                             <div className="space-y-4">
-                                {initialSecret ? (
+                                {fixedType ? (
                                     <TextInput
                                         id="secret-type"
                                         label="Secret type"
-                                        value={getEnumLabel(secretTypeEnum, initialSecret.type)}
+                                        value={getEnumLabel(secretTypeEnum, fixedType)}
                                         disabled
                                         onChange={() => {}}
                                     />
@@ -728,6 +749,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
                                                 onChange={field.onChange}
                                                 onBlur={field.onBlur}
                                                 error={getFieldErrorMessage(fieldState)}
+                                                disabled={!!preset}
                                                 required={!initialSecret}
                                             />
                                         )}
@@ -805,12 +827,12 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret }: Secre
                         </Widget>
 
                         <Container className="flex-row justify-end modal-footer" gap={4}>
-                            <Button variant="outline" onClick={handleCancel} type="button">
+                            <Button variant="outline" onClick={handleCancel} type="button" disabled={isCreating}>
                                 Cancel
                             </Button>
                             <ProgressButton
                                 inProgress={isSubmitting || isCreating}
-                                disabled={!isDirty || !isValid || isSubmitting || isCreating}
+                                disabled={!isDirty || !isValid || isSubmitting || isCreating || isFetchingSecretCreationAttributes}
                                 title={submitTitle}
                                 inProgressTitle={inProgressTitle}
                                 type="submit"

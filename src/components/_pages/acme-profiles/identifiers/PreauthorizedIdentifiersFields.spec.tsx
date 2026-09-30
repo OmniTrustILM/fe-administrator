@@ -1,4 +1,4 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { AcmeIdentifierAuthorizationMode, AcmeIdentifierMatchType, AcmeIdentifierType } from 'types/openapi';
 import { MATCH_TYPE_HELP } from 'utils/acme-identifier-policy';
 import { expect, test } from '../../../../../playwright/ct-test';
@@ -9,6 +9,12 @@ const values = async (page: Page) => JSON.parse(await page.getByTestId('values')
 async function pick(page: Page, testId: string, option: string) {
     await page.getByTestId(`${testId}-trigger`).click();
     await page.getByRole('option', { name: option, exact: true }).click();
+}
+
+async function verticalCentre(locator: Locator) {
+    const box = await locator.boundingBox();
+    if (!box) throw new Error('not rendered');
+    return box.y + box.height / 2;
 }
 
 async function typeValue(page: Page, index: number, value: string) {
@@ -160,5 +166,30 @@ test.describe('PreauthorizedIdentifiersFields', () => {
 
         await expect(page.getByTestId('identifier-mode-error')).toContainText('Pre-authorized only needs at least one identifier');
         await expect(page.getByTestId('valid')).toHaveText('false');
+    });
+
+    test('the wildcard flag and the remove button are centred on the inputs, also under a validation message', async ({ mount, page }) => {
+        await mount(
+            <PreauthorizedIdentifiersFieldsHarness
+                identifiers={[
+                    { type: AcmeIdentifierType.Dns, value: 'apps.example.com', matchType: AcmeIdentifierMatchType.Subdomain },
+                    { type: AcmeIdentifierType.Ip, value: '192.0.2.10', matchType: AcmeIdentifierMatchType.Exact },
+                    { type: AcmeIdentifierType.Dns, value: 'example.com', matchType: AcmeIdentifierMatchType.Exact },
+                ]}
+            />,
+        );
+        await typeValue(page, 0, '*.example.com');
+        await typeValue(page, 1, '192.0.2.300');
+        await expect(page.getByText("Enter the name without '*.'")).toBeVisible();
+        await expect(page.getByText('Not a valid IPv4 or IPv6 address')).toBeVisible();
+
+        for (const index of [0, 1, 2]) {
+            const inputCentre = await verticalCentre(page.getByTestId(`identifier-${index}-value`));
+            const wildcardCentre = await verticalCentre(page.getByTestId(`identifier-${index}-wildcard`));
+            const removeCentre = await verticalCentre(page.getByRole('button', { name: `Remove identifier ${index + 1}` }));
+
+            expect(Math.abs(wildcardCentre - inputCentre)).toBeLessThanOrEqual(1);
+            expect(Math.abs(removeCentre - inputCentre)).toBeLessThanOrEqual(1);
+        }
     });
 });

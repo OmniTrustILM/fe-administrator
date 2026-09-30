@@ -1,6 +1,6 @@
 import { SecretState, SecretType } from 'types/openapi';
 import { describe, expect, test } from 'vitest';
-import { eabRequestFields, isEabSecret, sameUuidSet, secretLabel } from './acme-eab';
+import { eabRequestFields, isEabSecret, newEabSecretProblem, sameUuidSet, secretLabel } from './acme-eab';
 
 describe('isEabSecret', () => {
     test('accepts enabled secretKey and generic secrets', () => {
@@ -69,5 +69,65 @@ describe('eabRequestFields', () => {
     test('on create, an empty list is left out and a chosen one is sent', () => {
         expect(eabRequestFields({ eabSecretUuids: [] }, undefined)).toEqual({});
         expect(eabRequestFields({ eabSecretUuids: ['s-1'] }, undefined)).toEqual({ eabSecretUuids: ['s-1'] });
+    });
+});
+
+describe('newEabSecretProblem', () => {
+    const created = (overrides: { state?: SecretState; enabled?: boolean } = {}) => ({
+        type: SecretType.Generic,
+        state: SecretState.Inactive,
+        enabled: true,
+        ...overrides,
+    });
+    const problem = (secret: ReturnType<typeof created>, needsApproval: boolean | undefined, enableError?: string, stateRead = true) =>
+        newEabSecretProblem({ secret, vaultProfileName: 'Vault One', needsApproval, enableError, stateRead });
+
+    test('an enabled secret whose vault profile needs no approval binds right away', () => {
+        expect(problem(created(), false)).toBeUndefined();
+        expect(problem(created({ state: SecretState.Active }), false)).toBeUndefined();
+    });
+
+    test('a secret held for approval, predicted or already pending, is left out', () => {
+        const held =
+            'Not usable yet: vault profile Vault One requires approval of new secrets. Once this one is approved, add it to the profile.';
+        expect(problem(created(), true)).toBe(held);
+        expect(problem(created({ state: SecretState.PendingApproval }), false)).toBe(held);
+        expect(problem(created({ state: SecretState.PendingApproval, enabled: false }), undefined)).toContain(
+            'Once this one is approved, enable it and add it to the profile.',
+        );
+    });
+
+    test('an active secret is trusted over an approval prediction', () => {
+        expect(problem(created({ state: SecretState.Active }), true)).toBeUndefined();
+    });
+
+    test('a secret its vault could not store, or rejected, is left out', () => {
+        expect(problem(created({ state: SecretState.Failed }), false)).toBe(
+            'Not usable: storing the secret in vault profile Vault One failed. Once that is fixed, add it to the profile.',
+        );
+        expect(problem(created({ state: SecretState.Rejected }), false)).toBe('Not usable: vault profile Vault One rejected the secret.');
+    });
+
+    test('a secret that could not be enabled is left out with the reason', () => {
+        expect(problem(created({ enabled: false }), false, 'Access Denied')).toBe(
+            'Not usable: the secret could not be enabled (Access Denied). Enable it, then add it to the profile.',
+        );
+        expect(problem(created({ enabled: false }), false)).toBe(
+            'Not usable: the secret could not be enabled. Enable it, then add it to the profile.',
+        );
+    });
+
+    test('an approval check that failed leaves an inactive secret unselected rather than assuming no approval', () => {
+        expect(problem(created(), undefined)).toBe(
+            'Not selected: whether vault profile Vault One requires approval of new secrets could not be checked. Add it to the profile yourself if it needs none, or once it is approved.',
+        );
+        expect(problem(created({ state: SecretState.Active }), undefined)).toBeUndefined();
+    });
+
+    test('a secret that could not be read back is left out even when every other check passed', () => {
+        expect(problem(created(), false, undefined, false)).toBe(
+            'Not selected: the secret could not be read back from vault profile Vault One, so it is not confirmed usable. Once it shows as active, add it to the profile.',
+        );
+        expect(problem(created(), true, undefined, false)).toContain('requires approval');
     });
 });

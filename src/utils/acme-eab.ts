@@ -34,4 +34,51 @@ export const EAB_HINT =
     "Accounts must bind with one of these keys. The secret's UUID is the kid an ACME client presents, its content the HMAC key. Only enabled Secret Key and Generic secrets are listed, leaving out failed, pending approval and rejected ones. Saving needs permission to read each secret's content and membership of its vault profile. Leave empty to let any client register.";
 
 export const EAB_KEY_NOTICE =
-    'The platform does not store this key. Copy it now, save it as the content of a Secret Key or Generic secret, enable that secret and add it to the profile. It is not shown again.';
+    'The platform keeps this key only as the content of the secret created here. Closing without creating the secret discards the key.';
+
+export const EAB_SECRET_SELECTED = 'Selected in External Account Binding secrets. Save the profile to bind it.';
+
+export const EAB_SECRET_CREATED = 'Created. Edit the profile to add it to External Account Binding secrets.';
+
+export const EAB_CLIENT_HINT = 'An ACME client registers with the Key ID as its EAB kid and the key as its HMAC key.';
+
+// Why a secret just created for a binding cannot be added to the profile yet; undefined when it can bind right away.
+// `needsApproval` is what the vault profile's approval profiles say, undefined when they could not be read; it only
+// matters while the secret is still inactive, since a later state already tells whether approval held it.
+// `stateRead` is false when the secret could not be read again, leaving only the state the create replied with.
+export function newEabSecretProblem({
+    secret,
+    vaultProfileName,
+    needsApproval,
+    enableError,
+    stateRead,
+}: {
+    secret: Pick<SecretDto, 'type' | 'enabled' | 'state'>;
+    vaultProfileName: string;
+    needsApproval: boolean | undefined;
+    enableError?: string;
+    stateRead: boolean;
+}): string | undefined {
+    const next = secret.enabled ? 'add it to the profile' : 'enable it and add it to the profile';
+    const inactive = secret.state === SecretState.Inactive;
+    if (secret.state === SecretState.PendingApproval || (inactive && needsApproval === true)) {
+        return `Not usable yet: vault profile ${vaultProfileName} requires approval of new secrets. Once this one is approved, ${next}.`;
+    }
+    if (secret.state === SecretState.Failed) {
+        return `Not usable: storing the secret in vault profile ${vaultProfileName} failed. Once that is fixed, ${next}.`;
+    }
+    if (secret.state === SecretState.Rejected) {
+        return `Not usable: vault profile ${vaultProfileName} rejected the secret.`;
+    }
+    if (!secret.enabled) {
+        const reason = enableError ? ` (${enableError})` : '';
+        return `Not usable: the secret could not be enabled${reason}. Enable it, then add it to the profile.`;
+    }
+    if (!stateRead) {
+        return `Not selected: the secret could not be read back from vault profile ${vaultProfileName}, so it is not confirmed usable. Once it shows as active, add it to the profile.`;
+    }
+    if (inactive && needsApproval === undefined) {
+        return `Not selected: whether vault profile ${vaultProfileName} requires approval of new secrets could not be checked. Add it to the profile yourself if it needs none, or once it is approved.`;
+    }
+    return undefined;
+}
