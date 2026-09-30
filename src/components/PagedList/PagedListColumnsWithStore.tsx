@@ -34,7 +34,6 @@ type Props = Readonly<{
     withheldViews?: boolean;
     /** Filters already in the duck when the host mounts, as a deep link leaves them. */
     initialFilters?: SearchFilterModel[];
-    urlFilters?: SearchFilterModel[];
     withRefreshControl?: boolean;
     /**
      * Renders a control that moves to page 2 with a row selected. Preloading the duck proves nothing:
@@ -186,7 +185,6 @@ export default function PagedListColumnsWithStore({
     withheldCatalogue = false,
     withheldViews = false,
     initialFilters = [],
-    urlFilters,
     withRefreshControl = false,
     withPagingControl = false,
     withDeferredConfig = false,
@@ -270,7 +268,6 @@ export default function PagedListColumnsWithStore({
                     onListCallback={onListCallback}
                     addHidden
                     configurableColumns={config}
-                    urlFilters={urlFilters}
                     refreshToken={refreshToken}
                 />
 
