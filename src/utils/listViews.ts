@@ -101,28 +101,54 @@ export function splitTabs(tabs: readonly ViewTab[], activeId: string, cap: numbe
     };
 }
 
+/** The longest name Core stores for a view. */
+export const MAX_VIEW_NAME_LENGTH = 255;
+
+const COPY_SUFFIXES = /(?: \(copy\)(?: \d+)?)+$/;
+const LAST_COPY_NUMBER = / \(copy\)(?: (\d+))?$/;
+
 /**
  * The name a duplicate is auto-named with, so duplicating never interrupts with a dialog.
  *
  * Names are unique per user and resource, so `<name> (copy)` alone would fail the second time. A
- * numeric suffix is appended rather than stacking `(copy) (copy)`, which reads as an accident.
+ * numeric suffix is appended rather than stacking `(copy) (copy)`, which reads as an accident, and a
+ * duplicate of a duplicate joins the same series instead of copying the copy.
  */
 export function duplicateName(name: string, existing: readonly string[]): string {
-    return uniqueName(`${name} (copy)`, existing);
+    const stem = name.replace(COPY_SUFFIXES, '') || name;
+
+    // Numbering resumes at the source's own number: a shortened stem was cut for that suffix, and a lower one would cut it wider.
+    const parsed = Number(LAST_COPY_NUMBER.exec(name)?.[1] ?? 1);
+    const sourceSuffix = parsed >= 1 && Number.isSafeInteger(parsed) ? parsed : 1;
+
+    const taken = new Set(existing);
+    for (let suffix = sourceSuffix; ; suffix = suffix < Number.MAX_SAFE_INTEGER ? suffix + 1 : 1) {
+        const ending = suffix === 1 ? ' (copy)' : ` (copy) ${suffix}`;
+        const candidate = `${fitStem(stem, MAX_VIEW_NAME_LENGTH - ending.length)}${ending}`;
+        if (!taken.has(candidate)) return candidate;
+    }
 }
 
 export function newViewName(existing: readonly string[]): string {
-    return uniqueName('New view', existing);
-}
-
-function uniqueName(base: string, existing: readonly string[]): string {
     const taken = new Set(existing);
-    if (!taken.has(base)) return base;
+    if (!taken.has('New view')) return 'New view';
 
     for (let suffix = 2; ; suffix++) {
-        const candidate = `${base} ${suffix}`;
+        const candidate = `New view ${suffix}`;
         if (!taken.has(candidate)) return candidate;
     }
+}
+
+// A cut can end the stem on a copy suffix that sat mid-name, which would stack a second one onto it.
+function fitStem(stem: string, length: number): string {
+    const cut = truncate(stem, length);
+    return cut.replace(COPY_SUFFIXES, '').trimEnd() || cut;
+}
+
+// Core counts UTF-16 code units, so the cut is by unit, backed off a unit rather than split a surrogate pair.
+function truncate(text: string, length: number): string {
+    const cut = text.slice(0, length);
+    return (/[\uD800-\uDBFF]$/.test(cut) ? cut.slice(0, -1) : cut).trimEnd();
 }
 
 /** A stored sort as the table expresses one. */
