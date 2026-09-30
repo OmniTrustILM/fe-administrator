@@ -24,6 +24,7 @@ export type EabKeyApi = Readonly<{
     generateKey: () => Observable<AcmeEabKeyDto>;
     createSecret: (request: CreateSecretRequest) => Observable<SecretDetailDto>;
     enableSecret: (uuid: string) => Observable<void>;
+    getSecret: (uuid: string) => Observable<SecretDetailDto>;
     vaultProfileApprovalProfiles: (vaultProfileUuid: string) => Observable<ApprovalProfileDto[]>;
 }>;
 
@@ -31,6 +32,7 @@ const backendEabKeyApi: EabKeyApi = {
     generateKey: () => backendClient.acmeProfiles.generateEabKey(),
     createSecret: (request) => backendClient.secrets.createSecret(request),
     enableSecret: (uuid) => backendClient.secrets.enableSecret({ uuid }),
+    getSecret: (uuid) => backendClient.secrets.getSecretDetails({ uuid }),
     vaultProfileApprovalProfiles: (vaultProfileUuid) =>
         backendClient.approvalProfiles.getAssociatedApprovalProfiles1({
             resource: Resource.VaultProfiles,
@@ -98,28 +100,39 @@ export default function GenerateEabKeyDialog({ isOpen, onClose, onSelect, api = 
         creation.current = calls
             .createSecret(request)
             .pipe(
-                // Core creates a secret disabled, and its reply does not say whether the vault profile holds it for approval.
+                // Core creates a secret disabled and settles its state only after replying, so it is read again once
+                // enabled; while it is still inactive, the vault profile's approval profiles say whether it will be held.
                 switchMap((secret) =>
                     forkJoin({
                         enable: calls.enableSecret(secret.uuid).pipe(
                             map(() => ({ enabled: true, enableError: undefined as string | undefined })),
                             catchError((err) => of({ enabled: false, enableError: extractErrorReason(err) })),
                         ),
-                        // Taken as not held when the operator may not list approval profiles.
                         needsApproval: calls.vaultProfileApprovalProfiles(request.vaultProfileUuid).pipe(
                             map((profiles) => profiles.length > 0),
-                            catchError(() => of(false)),
+                            catchError(() => of(undefined)),
                         ),
-                    }).pipe(map((checks) => ({ secret, ...checks }))),
+                    }).pipe(
+                        switchMap((checks) =>
+                            calls.getSecret(secret.uuid).pipe(
+                                catchError(() => of({ ...secret, enabled: checks.enable.enabled })),
+                                map((current) => ({ secret: current, ...checks })),
+                            ),
+                        ),
+                    ),
                 ),
             )
             .subscribe({
                 next: ({ secret, enable, needsApproval }) => {
-                    const problem = newEabSecretProblem({ vaultProfileName: secret.sourceVaultProfile.name, needsApproval, ...enable });
-                    const createdSecret = { ...secret, enabled: enable.enabled };
+                    const problem = newEabSecretProblem({
+                        secret,
+                        vaultProfileName: secret.sourceVaultProfile.name,
+                        needsApproval,
+                        enableError: enable.enableError,
+                    });
                     setIsCreating(false);
-                    setCreated({ secret: createdSecret, problem });
-                    if (!problem) onSelectRef.current?.(createdSecret);
+                    setCreated({ secret, problem });
+                    if (!problem) onSelectRef.current?.(secret);
                     // The listing read before this secret existed is what the form and the detail page name secrets from.
                     dispatch(secretsActions.listSecretOptions());
                 },
@@ -130,10 +143,13 @@ export default function GenerateEabKeyDialog({ isOpen, onClose, onSelect, api = 
             });
     };
 
+    // A close mid-creation would drop the key and the reply of a create that may already have gone through.
+    const close = isCreating ? undefined : onClose;
+
     return (
         <Dialog
             isOpen={isOpen}
-            toggle={onClose}
+            toggle={close}
             caption="External Account Binding key"
             size="xl"
             dataTestId="generate-eab-key-dialog"
@@ -174,7 +190,7 @@ export default function GenerateEabKeyDialog({ isOpen, onClose, onSelect, api = 
                                     <output className="block text-sm text-warning" data-testid="eab-key-notice">
                                         {EAB_KEY_NOTICE}
                                     </output>
-                                    <SecretForm preset={preset} onCreate={createSecret} createInProgress={isCreating} onCancel={onClose} />
+                                    <SecretForm preset={preset} onCreate={createSecret} createInProgress={isCreating} onCancel={close} />
                                 </>
                             )}
                         </>

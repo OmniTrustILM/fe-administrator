@@ -829,12 +829,12 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
                         </Widget>
 
                         <Container className="flex-row justify-end modal-footer" gap={4}>
-                            <Button variant="outline" onClick={handleCancel} type="button">
+                            <Button variant="outline" onClick={handleCancel} type="button" disabled={isCreating}>
                                 Cancel
                             </Button>
                             <ProgressButton
                                 inProgress={isSubmitting || isCreating}
-                                disabled={!isDirty || !isValid || isSubmitting || isCreating}
+                                disabled={!isDirty || !isValid || isSubmitting || isCreating || isFetchingSecretCreationAttributes}
                                 title={submitTitle}
                                 inProgressTitle={inProgressTitle}
                                 type="submit"

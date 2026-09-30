@@ -1,3 +1,4 @@
+import { SecretState } from 'types/openapi';
 import { EAB_CLIENT_HINT, EAB_KEY_NOTICE, EAB_SECRET_CREATED, EAB_SECRET_SELECTED } from 'utils/acme-eab';
 import { expect, test } from '../../../../../playwright/ct-test';
 import { CREATED_SECRET_UUID } from './eabKeyFixture';
@@ -126,6 +127,71 @@ test.describe('GenerateEabKeyDialog', () => {
         );
         await expect(page.getByTestId('eab-key-id')).toContainText(CREATED_SECRET_UUID);
         await expect(page.getByTestId('selected')).toHaveText('[]');
+    });
+
+    test('a secret its vault profile has already held for approval is not selected, whatever the lookup said', async ({ mount, page }) => {
+        await mount(<GenerateEabKeyDialogHarness stateAfterCreate={SecretState.PendingApproval} />);
+        await page.getByTestId('open').click();
+
+        await fillEabSecretForm(page, 'acme-eab');
+        await createButton(page).click();
+
+        await expect(page.getByTestId('eab-secret-outcome')).toContainText('requires approval of new secrets');
+        await expect(page.getByTestId('selected')).toHaveText('[]');
+    });
+
+    test('a secret its vault could not store is not selected, and the dialog says why', async ({ mount, page }) => {
+        await mount(<GenerateEabKeyDialogHarness stateAfterCreate={SecretState.Failed} />);
+        await page.getByTestId('open').click();
+
+        await fillEabSecretForm(page, 'acme-eab');
+        await createButton(page).click();
+
+        await expect(page.getByTestId('eab-secret-outcome')).toHaveText(
+            'Not usable: storing the secret in vault profile Vault One failed. Once that is fixed, add it to the profile.',
+        );
+        await expect(page.getByTestId('selected')).toHaveText('[]');
+    });
+
+    test('an approval check that failed leaves the secret unselected instead of assuming no approval', async ({ mount, page }) => {
+        await mount(<GenerateEabKeyDialogHarness approvalLookupFails />);
+        await page.getByTestId('open').click();
+
+        await fillEabSecretForm(page, 'acme-eab');
+        await createButton(page).click();
+
+        await expect(page.getByTestId('eab-secret-outcome')).toContainText('could not be checked');
+        await expect(page.getByTestId('eab-key-id')).toContainText(CREATED_SECRET_UUID);
+        await expect(page.getByTestId('selected')).toHaveText('[]');
+    });
+
+    test('the dialog cannot be closed while the secret is being created', async ({ mount, page }) => {
+        await mount(<GenerateEabKeyDialogHarness createDelayMs={1500} />);
+        await page.getByTestId('open').click();
+
+        await fillEabSecretForm(page, 'acme-eab');
+        await createButton(page).click();
+
+        const dialog = page.getByTestId('generate-eab-key-dialog');
+        await expect(dialog.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+        await dialog.getByRole('button', { name: 'Close', exact: true }).first().click();
+        await page.keyboard.press('Escape');
+        await expect(page.getByTestId('state')).toHaveText('open');
+        await expect(page.getByTestId('eab-key-id')).toHaveCount(0);
+
+        await expect(page.getByTestId('eab-secret-outcome')).toHaveText(EAB_SECRET_SELECTED);
+        await dialog.getByRole('button', { name: 'Close', exact: true }).last().click();
+        await expect(page.getByTestId('state')).toHaveText('closed');
+    });
+
+    test("Create waits until the vault profile's attributes have loaded", async ({ mount, page }) => {
+        await mount(<GenerateEabKeyDialogHarness attributesLoading />);
+        await page.getByTestId('open').click();
+
+        await fillEabSecretForm(page, 'acme-eab');
+
+        await expect(page.getByText('Loading attributes...')).toBeVisible();
+        await expect(createButton(page)).toBeDisabled();
     });
 
     test('a secret that could not be enabled is not selected, and the dialog says why', async ({ mount, page }) => {

@@ -43,24 +43,36 @@ export const EAB_SECRET_CREATED = 'Created. Edit the profile to add it to Extern
 export const EAB_CLIENT_HINT = 'An ACME client registers with the Key ID as its EAB kid and the key as its HMAC key.';
 
 // Why a secret just created for a binding cannot be added to the profile yet; undefined when it can bind right away.
+// `needsApproval` is what the vault profile's approval profiles say, undefined when they could not be read; it only
+// matters while the secret is still inactive, since a later state already tells whether approval held it.
 export function newEabSecretProblem({
+    secret,
     vaultProfileName,
     needsApproval,
-    enabled,
     enableError,
 }: {
+    secret: Pick<SecretDto, 'type' | 'enabled' | 'state'>;
     vaultProfileName: string;
-    needsApproval: boolean;
-    enabled: boolean;
+    needsApproval: boolean | undefined;
     enableError?: string;
 }): string | undefined {
-    if (needsApproval) {
-        const next = enabled ? 'add it to the profile' : 'enable it and add it to the profile';
+    const next = secret.enabled ? 'add it to the profile' : 'enable it and add it to the profile';
+    const inactive = secret.state === SecretState.Inactive;
+    if (secret.state === SecretState.PendingApproval || (inactive && needsApproval === true)) {
         return `Not usable yet: vault profile ${vaultProfileName} requires approval of new secrets. Once this one is approved, ${next}.`;
     }
-    if (!enabled) {
+    if (secret.state === SecretState.Failed) {
+        return `Not usable: storing the secret in vault profile ${vaultProfileName} failed. Once that is fixed, ${next}.`;
+    }
+    if (secret.state === SecretState.Rejected) {
+        return `Not usable: vault profile ${vaultProfileName} rejected the secret.`;
+    }
+    if (!secret.enabled) {
         const reason = enableError ? ` (${enableError})` : '';
         return `Not usable: the secret could not be enabled${reason}. Enable it, then add it to the profile.`;
+    }
+    if (inactive && needsApproval === undefined) {
+        return `Not selected: whether vault profile ${vaultProfileName} requires approval of new secrets could not be checked. Add it to the profile yourself if it needs none, or once it is approved.`;
     }
     return undefined;
 }

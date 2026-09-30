@@ -9,9 +9,15 @@ type Props = EabKeyApiBehaviour &
         // The detail page opens the dialog without a field to select the secret in.
         selectable?: boolean;
         vaultProfileHasAttribute?: boolean;
+        attributesLoading?: boolean;
     }>;
 
-export default function GenerateEabKeyDialogHarness({ selectable = true, vaultProfileHasAttribute = false, ...behaviour }: Props) {
+export default function GenerateEabKeyDialogHarness({
+    selectable = true,
+    vaultProfileHasAttribute = false,
+    attributesLoading = false,
+    ...behaviour
+}: Props) {
     const [isOpen, setIsOpen] = useState(false);
     const [renders, setRenders] = useState(0);
     const [requests, setRequests] = useState<CreateSecretRequest[]>([]);
@@ -22,6 +28,7 @@ export default function GenerateEabKeyDialogHarness({ selectable = true, vaultPr
         () =>
             createEabSecretStore({
                 vaultAttributes: vaultProfileHasAttribute ? [VAULT_PATH_ATTRIBUTE] : [],
+                attributesLoading,
                 onAction: (action) => setActions((current) => [...current, action]),
             }),
         [],

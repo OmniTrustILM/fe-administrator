@@ -73,25 +73,54 @@ describe('eabRequestFields', () => {
 });
 
 describe('newEabSecretProblem', () => {
-    test('an enabled secret without approval binds right away', () => {
-        expect(newEabSecretProblem({ vaultProfileName: 'Vault One', needsApproval: false, enabled: true })).toBeUndefined();
+    const created = (overrides: { state?: SecretState; enabled?: boolean } = {}) => ({
+        type: SecretType.SecretKey,
+        state: SecretState.Inactive,
+        enabled: true,
+        ...overrides,
+    });
+    const problem = (secret: ReturnType<typeof created>, needsApproval: boolean | undefined, enableError?: string) =>
+        newEabSecretProblem({ secret, vaultProfileName: 'Vault One', needsApproval, enableError });
+
+    test('an enabled secret whose vault profile needs no approval binds right away', () => {
+        expect(problem(created(), false)).toBeUndefined();
+        expect(problem(created({ state: SecretState.Active }), false)).toBeUndefined();
     });
 
-    test('a secret waiting for approval is left out, and enabling is asked for only when it did not happen', () => {
-        expect(newEabSecretProblem({ vaultProfileName: 'Vault One', needsApproval: true, enabled: true })).toBe(
-            'Not usable yet: vault profile Vault One requires approval of new secrets. Once this one is approved, add it to the profile.',
-        );
-        expect(newEabSecretProblem({ vaultProfileName: 'Vault One', needsApproval: true, enabled: false })).toContain(
+    test('a secret held for approval, predicted or already pending, is left out', () => {
+        const held =
+            'Not usable yet: vault profile Vault One requires approval of new secrets. Once this one is approved, add it to the profile.';
+        expect(problem(created(), true)).toBe(held);
+        expect(problem(created({ state: SecretState.PendingApproval }), false)).toBe(held);
+        expect(problem(created({ state: SecretState.PendingApproval, enabled: false }), undefined)).toContain(
             'Once this one is approved, enable it and add it to the profile.',
         );
     });
 
+    test('an active secret is trusted over an approval prediction', () => {
+        expect(problem(created({ state: SecretState.Active }), true)).toBeUndefined();
+    });
+
+    test('a secret its vault could not store, or rejected, is left out', () => {
+        expect(problem(created({ state: SecretState.Failed }), false)).toBe(
+            'Not usable: storing the secret in vault profile Vault One failed. Once that is fixed, add it to the profile.',
+        );
+        expect(problem(created({ state: SecretState.Rejected }), false)).toBe('Not usable: vault profile Vault One rejected the secret.');
+    });
+
     test('a secret that could not be enabled is left out with the reason', () => {
-        expect(
-            newEabSecretProblem({ vaultProfileName: 'Vault One', needsApproval: false, enabled: false, enableError: 'Access Denied' }),
-        ).toBe('Not usable: the secret could not be enabled (Access Denied). Enable it, then add it to the profile.');
-        expect(newEabSecretProblem({ vaultProfileName: 'Vault One', needsApproval: false, enabled: false })).toBe(
+        expect(problem(created({ enabled: false }), false, 'Access Denied')).toBe(
+            'Not usable: the secret could not be enabled (Access Denied). Enable it, then add it to the profile.',
+        );
+        expect(problem(created({ enabled: false }), false)).toBe(
             'Not usable: the secret could not be enabled. Enable it, then add it to the profile.',
         );
+    });
+
+    test('an approval check that failed leaves an inactive secret unselected rather than assuming no approval', () => {
+        expect(problem(created(), undefined)).toBe(
+            'Not selected: whether vault profile Vault One requires approval of new secrets could not be checked. Add it to the profile yourself if it needs none, or once it is approved.',
+        );
+        expect(problem(created({ state: SecretState.Active }), undefined)).toBeUndefined();
     });
 });

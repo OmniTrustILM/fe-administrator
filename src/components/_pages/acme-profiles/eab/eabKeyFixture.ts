@@ -1,4 +1,4 @@
-import { of, throwError } from 'rxjs';
+import { delay, of, throwError } from 'rxjs';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import {
     type ApprovalProfileDto,
@@ -27,16 +27,18 @@ export const VAULT_PATH_ATTRIBUTE: AttributeDescriptorModel = {
 
 export type EabSecretStoreOptions = Readonly<{
     vaultAttributes?: AttributeDescriptorModel[];
+    attributesLoading?: boolean;
     onAction?: (action: unknown) => void;
 }>;
 
-export function createEabSecretStore({ vaultAttributes = [], onAction }: EabSecretStoreOptions = {}) {
+export function createEabSecretStore({ vaultAttributes = [], attributesLoading = false, onAction }: EabSecretStoreOptions = {}) {
     const store = createMockStore({
         vaultProfiles: { vaultProfiles: [VAULT_PROFILE] },
         secrets: {
             syncVaultProfileAttributeDescriptors: [],
             isFetchingSyncVaultProfileAttributes: false,
             secretCreationAttributeDescriptors: vaultAttributes,
+            isFetchingSecretCreationAttributes: attributesLoading,
         },
         enums: { platformEnums: { SecretType: { [SecretType.SecretKey]: { label: 'Secret Key' } } } },
     });
@@ -54,8 +56,12 @@ export type EabKeyApiBehaviour = Readonly<{
     generatedKey?: string;
     generateFails?: boolean;
     createFails?: boolean;
+    createDelayMs?: number;
     enableFails?: boolean;
     approvalRequired?: boolean;
+    approvalLookupFails?: boolean;
+    // What the secret has become by the time it is read again; Core settles it after replying to the create.
+    stateAfterCreate?: SecretState;
 }>;
 
 // Core replies to a create before the secret is enabled or has reached its vault.
@@ -78,6 +84,8 @@ function createdSecret(request: CreateSecretRequest): SecretDetailDto {
 
 export function stubEabKeyApi(behaviour: EabKeyApiBehaviour, onCreate: (request: CreateSecretRequest) => void): EabKeyApi {
     let generations = 0;
+    let requests: CreateSecretRequest[] = [];
+    const lastRequest = () => requests[requests.length - 1].secretRequestDto;
     return {
         generateKey: () => {
             generations += 1;
@@ -86,11 +94,26 @@ export function stubEabKeyApi(behaviour: EabKeyApiBehaviour, onCreate: (request:
                 : of({ key: `${behaviour.generatedKey ?? 'generated-key'}-${generations}` });
         },
         createSecret: (request) => {
+            requests = [...requests, request];
             onCreate(request);
-            return behaviour.createFails ? throwError(() => new Error('Secret with name already exists')) : of(createdSecret(request));
+            if (behaviour.createFails) return throwError(() => new Error('Secret with name already exists'));
+            return of(createdSecret(request)).pipe(delay(behaviour.createDelayMs ?? 0));
         },
         enableSecret: () => (behaviour.enableFails ? throwError(() => new Error('Access Denied')) : of(undefined)),
-        vaultProfileApprovalProfiles: () =>
-            of(behaviour.approvalRequired ? [{ uuid: 'ap-1', name: 'Four eyes' } as ApprovalProfileDto] : []),
+        getSecret: (uuid) =>
+            of({
+                ...createdSecret({
+                    vaultUuid: VAULT_PROFILE.vaultInstance.uuid,
+                    vaultProfileUuid: VAULT_PROFILE.uuid,
+                    secretRequestDto: lastRequest(),
+                }),
+                uuid,
+                enabled: !behaviour.enableFails,
+                state: behaviour.stateAfterCreate ?? SecretState.Inactive,
+            }),
+        vaultProfileApprovalProfiles: () => {
+            if (behaviour.approvalLookupFails) return throwError(() => new Error('Access Denied'));
+            return of(behaviour.approvalRequired ? [{ uuid: 'ap-1', name: 'Four eyes' } as ApprovalProfileDto] : []);
+        },
     };
 }
