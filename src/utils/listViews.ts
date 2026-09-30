@@ -233,8 +233,10 @@ export function withoutMissingFieldFilters(
 }
 
 /**
- * A field a stored row already holds, as a column or a filter. Core lets an update keep such a field after it
- * has left the catalogue, but not introduce one, and a create carries nothing already, so it passes none.
+ * A field the stored row already holds in the same role. Pass its columns when sieving columns and its filters
+ * when sieving filters, since Core exempts each kind only on its own terms. Core lets an update keep such a
+ * field after it has left the catalogue, but not introduce one, and a create carries nothing already, so it
+ * passes none.
  */
 export type StoredField = Pick<ListViewColumnModel, 'fieldSource' | 'fieldIdentifier'>;
 
@@ -264,9 +266,8 @@ export interface ViewSchema {
  * published catalogue can leave out one the listing still shows.
  *
  * A column that is neither published nor a platform column has a field that is gone, such as a deleted
- * attribute. It is kept when `held` names it, so the column comes back when the field does, and Core accepts
- * a column the stored row already carries. Otherwise it is dropped, because Core refuses a missing field that
- * a write introduces, and a create introduces every field it names.
+ * attribute. It is kept when `held` names it, so the column comes back when the field does, and dropped
+ * otherwise. See {@link StoredField}.
  *
  * An empty catalogue is read as "has not arrived", so a failed read does not empty every view. The raw
  * groups are read rather than {@link toCatalogueFields}, because a column the listing cannot display is
@@ -455,8 +456,8 @@ export function toCreateRequest(
  * rewritten on every one of them. The whole row is filtered on the way out, the patch included, so
  * there is no update path left that can carry such a value. See {@link toStorableFilters}.
  *
- * The columns go through {@link toStorableColumns} for a different reason: a display-only column
- * makes the API reject the whole request.
+ * The columns go through {@link toStorableColumns} for a different reason: a display-only column, or a
+ * field that is gone and that the stored row does not already hold, makes the API reject the whole request.
  */
 export function toUpdateRequest(
     view: ListViewModel,
