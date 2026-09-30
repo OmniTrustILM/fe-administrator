@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test';
 import { test, expect } from '../../../../../playwright/ct-test';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import { AttributeEditorTestWrapper } from '../AttributeEditorTestWrapper';
@@ -60,94 +61,78 @@ const oidsState = {
     },
 };
 
+type MountFn = (jsx: any) => Promise<any>;
+
+/** Mounts one attribute mapped onto `extensionOid` and returns the locators every test reads. */
+async function mountField(mount: MountFn, page: Page, extensionOid: string, contentType?: string) {
+    await mount(
+        <AttributeEditorTestWrapper
+            id={EDITOR_ID}
+            attributeDescriptors={[extensionDescriptor(extensionOid, contentType)]}
+            preloadedState={oidsState}
+        />,
+    );
+    return {
+        input: page.locator(`[id="${FIELD}"]`),
+        hint: page.getByTestId(`${FIELD}-der-value-hint`),
+        jerError: page.getByTestId(`${FIELD}-jer-error`),
+    };
+}
+
 test.describe('extension value input', () => {
     test('a DER extension with a module offers the JER hint and validates a JER value while typing', async ({ mount, page }) => {
-        await mount(
-            <AttributeEditorTestWrapper
-                id={EDITOR_ID}
-                attributeDescriptors={[extensionDescriptor('2.5.29.19')]}
-                preloadedState={oidsState}
-            />,
-        );
+        const { input, hint, jerError } = await mountField(mount, page, '2.5.29.19');
 
-        await expect(page.getByTestId(`${FIELD}-der-value-hint`)).toContainText('is read as JER (X.697)');
-        await expect(page.getByTestId(`${FIELD}-der-value-hint`)).toContainText('anything else as base64-encoded DER');
+        await expect(hint).toContainText('is read as JER (X.697)');
+        await expect(hint).toContainText('anything else as base64-encoded DER');
 
-        const input = page.locator(`[id="${FIELD}"]`);
         // Duplicate keys survive JSON.parse, so this is exactly the case the strict check must catch.
         await input.fill('{"cA":true,"cA":false}');
-        await expect(page.getByTestId(`${FIELD}-jer-error`)).toContainText('Duplicate key');
+        await expect(jerError).toContainText('Duplicate key');
 
         // Every character Core's JerCodec reads as the start of a JER value gets the same check.
         for (const malformed of ['[1,', '"unterminated', '-']) {
             await input.fill('{}');
-            await expect(page.getByTestId(`${FIELD}-jer-error`)).toHaveCount(0);
+            await expect(jerError).toHaveCount(0);
             await input.fill(malformed);
-            await expect(page.getByTestId(`${FIELD}-jer-error`)).toBeVisible();
+            await expect(jerError).toBeVisible();
         }
 
         await input.fill('{"cA":true,"pathLenConstraint":0}');
-        await expect(page.getByTestId(`${FIELD}-jer-error`)).toHaveCount(0);
+        await expect(jerError).toHaveCount(0);
     });
 
     test('a DER-mapped String attribute still gets a textarea, since a JER value needs room', async ({ mount, page }) => {
-        await mount(
-            <AttributeEditorTestWrapper
-                id={EDITOR_ID}
-                attributeDescriptors={[extensionDescriptor('2.5.29.19', 'string')]}
-                preloadedState={oidsState}
-            />,
-        );
+        const { hint } = await mountField(mount, page, '2.5.29.19', 'string');
 
         await expect(page.locator(`textarea[id="${FIELD}"]`)).toBeVisible();
-        await expect(page.getByTestId(`${FIELD}-der-value-hint`)).toBeVisible();
+        await expect(hint).toBeVisible();
     });
 
     test('a value not starting with {, [, " or - is read as base64 DER and never JSON-validated', async ({ mount, page }) => {
-        await mount(
-            <AttributeEditorTestWrapper
-                id={EDITOR_ID}
-                attributeDescriptors={[extensionDescriptor('2.5.29.19')]}
-                preloadedState={oidsState}
-            />,
-        );
+        const { input, jerError } = await mountField(mount, page, '2.5.29.19');
 
-        const input = page.locator(`[id="${FIELD}"]`);
         await input.fill('MAMBAf8=');
-        await expect(page.getByTestId(`${FIELD}-jer-error`)).toHaveCount(0);
+        await expect(jerError).toHaveCount(0);
     });
 
     test('a DER extension without a module asks for base64 DER and offers no JER treatment', async ({ mount, page }) => {
-        await mount(
-            <AttributeEditorTestWrapper
-                id={EDITOR_ID}
-                attributeDescriptors={[extensionDescriptor('2.5.29.101')]}
-                preloadedState={oidsState}
-            />,
-        );
+        const { input, hint, jerError } = await mountField(mount, page, '2.5.29.101');
 
-        await expect(page.getByTestId(`${FIELD}-der-value-hint`)).toContainText('base64-encoded DER');
-        await expect(page.getByTestId(`${FIELD}-der-value-hint`)).toContainText('no ASN.1 module');
+        await expect(hint).toContainText('base64-encoded DER');
+        await expect(hint).toContainText('no ASN.1 module');
 
-        const input = page.locator(`[id="${FIELD}"]`);
         await input.fill('{not json at all');
-        await expect(page.getByTestId(`${FIELD}-jer-error`)).toHaveCount(0);
+        await expect(jerError).toHaveCount(0);
     });
 
     test('an extension with a string encoding gets no DER treatment, since { is literal text there', async ({ mount, page }) => {
-        await mount(
-            <AttributeEditorTestWrapper
-                id={EDITOR_ID}
-                attributeDescriptors={[extensionDescriptor('2.5.29.100')]}
-                preloadedState={oidsState}
-            />,
-        );
+        const { input, hint, jerError } = await mountField(mount, page, '2.5.29.100');
 
-        await expect(page.locator(`[id="${FIELD}"]`)).toBeVisible();
-        await expect(page.getByTestId(`${FIELD}-der-value-hint`)).toHaveCount(0);
+        await expect(input).toBeVisible();
+        await expect(hint).toHaveCount(0);
 
-        const input = page.locator(`[id="${FIELD}"]`);
         await input.fill('{not json at all');
-        await expect(page.getByTestId(`${FIELD}-jer-error`)).toHaveCount(0);
+        await expect(jerError).toHaveCount(0);
     });
 });
