@@ -863,27 +863,32 @@ test.describe('ViewTabs', () => {
         expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
     });
 
-    test('keeps an ordering chosen while a trimmed duplicate is still being created', async ({ mount, page }) => {
-        const sortByName: ColumnSort = { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' };
-        await mount(
-            strip({
-                views: [],
-                standardColumns: [commonName, { ...column('CK_ASSOCIATIONS', 'Associations'), displayOnly: true }],
-                driftSort: sortByName,
-            }),
-        );
+    for (const { outcome, settle, tab, columns } of [
+        { outcome: 'is created', settle: 'simulate-create-success', tab: 'view-tabs-tab-view-created', columns: ['COMMON_NAME'] },
+        { outcome: 'fails', settle: 'simulate-create-failure', tab: 'view-tabs-tab-standard', columns: ['COMMON_NAME', 'CK_ASSOCIATIONS'] },
+    ]) {
+        test(`keeps an ordering chosen while a trimmed duplicate is out when it ${outcome}`, async ({ mount, page }) => {
+            const sortByName: ColumnSort = { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' };
+            await mount(
+                strip({
+                    views: [],
+                    standardColumns: [commonName, { ...column('CK_ASSOCIATIONS', 'Associations'), displayOnly: true }],
+                    driftSort: sortByName,
+                }),
+            );
 
-        await openTabMenu(page, 'Standard');
-        await page.getByRole('menuitem', { name: 'Duplicate' }).click();
-        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
+            await openTabMenu(page, 'Standard');
+            await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+            await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
 
-        await page.getByTestId('drift-sort').click();
-        await page.getByTestId('simulate-create-success').click();
+            await page.getByTestId('drift-sort').click();
+            await page.getByTestId(settle).click();
 
-        await expect(page.getByTestId('view-tabs-tab-view-created')).toHaveAttribute('aria-selected', 'true');
-        expect((await appliedSlice(page)).sort).toEqual(sortByName);
-        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
-    });
+            await expect(page.getByTestId(tab)).toHaveAttribute('aria-selected', 'true');
+            expect((await appliedSlice(page)).sort).toEqual(sortByName);
+            expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(columns);
+        });
+    }
 
     test('puts back the columns a trimmed duplicate left out when the create fails', async ({ mount, page }) => {
         await mount(
@@ -897,28 +902,6 @@ test.describe('ViewTabs', () => {
         await page.getByTestId('simulate-create-failure').click();
 
         await expect(page.getByTestId('view-tabs-tab-standard')).toHaveAttribute('aria-selected', 'true');
-        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'CK_ASSOCIATIONS']);
-    });
-
-    test('keeps an ordering chosen while a trimmed duplicate is out when the create fails', async ({ mount, page }) => {
-        const sortByName: ColumnSort = { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' };
-        await mount(
-            strip({
-                views: [],
-                standardColumns: [commonName, { ...column('CK_ASSOCIATIONS', 'Associations'), displayOnly: true }],
-                driftSort: sortByName,
-            }),
-        );
-
-        await openTabMenu(page, 'Standard');
-        await page.getByRole('menuitem', { name: 'Duplicate' }).click();
-        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
-
-        await page.getByTestId('drift-sort').click();
-        await page.getByTestId('simulate-create-failure').click();
-
-        await expect(page.getByTestId('view-tabs-tab-standard')).toHaveAttribute('aria-selected', 'true');
-        expect((await appliedSlice(page)).sort).toEqual(sortByName);
         expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'CK_ASSOCIATIONS']);
     });
 
@@ -1117,50 +1100,42 @@ test.describe('ViewTabs', () => {
         expect((action?.payload?.view as { filters: unknown } | undefined)?.filters).toEqual([]);
     });
 
-    test('keeps a presence filter whose field is gone through a save when the view already held it', async ({ mount, page }) => {
-        const deadFilter: SearchFilterModel = {
-            fieldSource: FilterFieldSource.Custom,
-            fieldIdentifier: 'retired',
-            condition: FilterConditionOperator.NotEmpty,
-        };
-        await mount(
-            strip({
-                views: [expiryWatch({ defaultView: true, filters: [stateFilter, deadFilter] })],
-                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
-            }),
-        );
+    for (const { title, deadFilter, saved } of [
+        {
+            title: 'keeps a presence filter whose field is gone through a save when the view already held it',
+            deadFilter: { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', condition: FilterConditionOperator.NotEmpty },
+            saved: 'both',
+        },
+        {
+            title: 'leaves the value of a filter whose field is gone out of a save, since it may be secret content',
+            deadFilter: {
+                fieldSource: FilterFieldSource.Custom,
+                fieldIdentifier: 'retired',
+                condition: FilterConditionOperator.Equals,
+                value: 'x',
+            },
+            saved: 'state only',
+        },
+    ] satisfies { title: string; deadFilter: SearchFilterModel; saved: 'both' | 'state only' }[]) {
+        test(title, async ({ mount, page }) => {
+            await mount(
+                strip({
+                    views: [expiryWatch({ defaultView: true, filters: [stateFilter, deadFilter] })],
+                    driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
+                }),
+            );
 
-        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
-        await page.getByTestId('drift-sort').click();
-        await page.getByTestId('view-tabs-summary-save').click();
+            await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+            await page.getByTestId('drift-sort').click();
+            await page.getByTestId('view-tabs-summary-save').click();
 
-        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
-        const action = await lastDispatched(page, 'listViews/updateView');
-        expect((action?.payload?.view as { filters: unknown } | undefined)?.filters).toEqual([stateFilter, deadFilter]);
-    });
-
-    test('leaves the value of a filter whose field is gone out of a save, since it may be secret content', async ({ mount, page }) => {
-        const deadFilter: SearchFilterModel = {
-            fieldSource: FilterFieldSource.Custom,
-            fieldIdentifier: 'retired',
-            condition: FilterConditionOperator.Equals,
-            value: 'x',
-        };
-        await mount(
-            strip({
-                views: [expiryWatch({ defaultView: true, filters: [stateFilter, deadFilter] })],
-                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
-            }),
-        );
-
-        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
-        await page.getByTestId('drift-sort').click();
-        await page.getByTestId('view-tabs-summary-save').click();
-
-        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
-        const action = await lastDispatched(page, 'listViews/updateView');
-        expect((action?.payload?.view as { filters: unknown } | undefined)?.filters).toEqual([stateFilter]);
-    });
+            await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+            const action = await lastDispatched(page, 'listViews/updateView');
+            expect((action?.payload?.view as { filters: unknown } | undefined)?.filters).toEqual(
+                saved === 'both' ? [stateFilter, deadFilter] : [stateFilter],
+            );
+        });
+    }
 
     test('opens on the list its own read returns, not on the one an earlier visit left', async ({ mount, page }) => {
         const earlier = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME')] });
