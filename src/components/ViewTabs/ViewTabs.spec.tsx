@@ -900,6 +900,55 @@ test.describe('ViewTabs', () => {
         expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'CK_ASSOCIATIONS']);
     });
 
+    test('keeps an ordering chosen while a trimmed duplicate is out when the create fails', async ({ mount, page }) => {
+        const sortByName: ColumnSort = { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' };
+        await mount(
+            strip({
+                views: [],
+                standardColumns: [commonName, { ...column('CK_ASSOCIATIONS', 'Associations'), displayOnly: true }],
+                driftSort: sortByName,
+            }),
+        );
+
+        await openTabMenu(page, 'Standard');
+        await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
+
+        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('simulate-create-failure').click();
+
+        await expect(page.getByTestId('view-tabs-tab-standard')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).sort).toEqual(sortByName);
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'CK_ASSOCIATIONS']);
+    });
+
+    test('puts a left-out filter back beside one set while a trimmed duplicate is out when the create fails', async ({ mount, page }) => {
+        const deadFilter: SearchFilterModel = {
+            fieldSource: FilterFieldSource.Custom,
+            fieldIdentifier: 'retired',
+            condition: FilterConditionOperator.Equals,
+            value: 'x',
+        };
+        const nameFilter: SearchFilterModel = {
+            fieldSource: FilterFieldSource.Property,
+            fieldIdentifier: 'COMMON_NAME',
+            condition: FilterConditionOperator.Contains,
+            value: 'example',
+        };
+        await mount(strip({ views: [expiryWatch({ defaultView: true, filters: [stateFilter, deadFilter] })], driftFilter: nameFilter }));
+
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
+        expect((await appliedSlice(page)).filters).toEqual([stateFilter]);
+
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('simulate-create-failure').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).filters).toEqual([nameFilter, deadFilter]);
+    });
+
     test('stores a platform column the catalogue leaves out, so the new view opens unchanged', async ({ mount, page }) => {
         const certificateType = column('CERTIFICATE_TYPE', 'Certificate Type');
         await mount(strip({ views: [], standardColumns: [commonName, certificateType] }));

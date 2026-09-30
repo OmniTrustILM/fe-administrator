@@ -89,6 +89,20 @@ export function isViewStripReady(hasLoadedViews: boolean, isCatalogueLoaded: boo
     return hasLoadedViews && isCatalogueLoaded;
 }
 
+function filterKey(filter: SearchFilterModel): string {
+    return JSON.stringify([filter.fieldSource, filter.fieldIdentifier, filter.condition, filter.value ?? null]);
+}
+
+/** `live` with each of `dropped` put back at the index it held in `original`, unless `live` already has it. */
+function reinsert<T>(live: readonly T[], dropped: readonly T[], original: readonly T[], keyOf: (item: T) => string): T[] {
+    const result = [...live];
+    for (const item of dropped) {
+        if (result.some((each) => keyOf(each) === keyOf(item))) continue;
+        result.splice(Math.min(original.indexOf(item), result.length), 0, item);
+    }
+    return result;
+}
+
 /**
  * The saved-view tab strip: one tab per view, above the filter widget because filters are part of
  * each view.
@@ -245,8 +259,11 @@ export default function ViewTabs({
 
     // The tab the strip was on when a create started, so a create that fails has somewhere to go back
     // to instead of leaving the strip pointing at a row the rollback has taken away. A create that
-    // replaced the table's slice as it started also holds the slice its failure puts back.
-    const tabBeforeCreate = useRef<{ id: string; restore?: ViewSlice }>({ id: STANDARD_VIEW_ID });
+    // changed the table's slice as it started also holds how its failure turns the live slice back.
+    const tabBeforeCreate = useRef<{ id: string; restore?: (live: ViewSlice) => ViewSlice }>({ id: STANDARD_VIEW_ID });
+
+    const liveSlice = useRef<ViewSlice>({ columns, filters, sort });
+    liveSlice.current = { columns, filters, sort };
 
     // A created view arrives with the uuid the API gave it, replacing the optimistic row the strip
     // has been showing, and the tab under the cursor has to follow it rather than vanish. A failed
@@ -265,12 +282,12 @@ export default function ViewTabs({
             // drop them.
             const { id, restore } = tabBeforeCreate.current;
             setActiveId(views.some((view) => view.uuid === id) ? id : STANDARD_VIEW_ID);
-            if (restore) applyRef.current(restore);
+            if (restore) applyRef.current(restore(liveSlice.current));
         }
     }, [activeId, createdUuid, views]);
 
     const create = useCallback(
-        (view: ListViewRequestModel, restore?: ViewSlice) => {
+        (view: ListViewRequestModel, restore?: (live: ViewSlice) => ViewSlice) => {
             tabBeforeCreate.current = { id: activeId, restore };
             dispatch(listViewActions.createView({ resource, view }));
             setActiveId(PENDING_VIEW_UUID);
@@ -281,7 +298,7 @@ export default function ViewTabs({
     // A create leaves out display-only columns and filters on a field that is gone, and the table follows at
     // once, or it keeps listing under a filter and showing a column the view does not hold, which reopening
     // the view would not. Following at once rather than on success leaves an edit made while the create is
-    // out in place.
+    // out in place, and a failure puts back only what was left out, so it keeps that edit too.
     const createFromCurrent = useCallback(
         (name: string) => {
             const view = toCreateRequest(name, resource, currentSlice, schema);
@@ -290,7 +307,15 @@ export default function ViewTabs({
             const keptFilters = withoutMissingFieldFilters(filters, catalogue);
             const isTrimmed = keptFilters.length !== filters.length || keptColumns.length !== columns.length;
 
-            create(view, isTrimmed ? { columns, filters, sort } : undefined);
+            const droppedColumns = columns.filter((column) => !keptColumns.includes(column));
+            const droppedFilters = filters.filter((filter) => !keptFilters.includes(filter));
+            const putBack = (live: ViewSlice): ViewSlice => ({
+                ...live,
+                columns: reinsert(live.columns, droppedColumns, columns, getColumnKey),
+                filters: reinsert(live.filters, droppedFilters, filters, filterKey),
+            });
+
+            create(view, isTrimmed ? putBack : undefined);
             if (isTrimmed) applyRef.current({ columns: keptColumns, filters: keptFilters, sort });
         },
         [create, resource, currentSlice, schema, filters, catalogue, columns, sort],
@@ -303,7 +328,8 @@ export default function ViewTabs({
         (name: string) => {
             const slice = toStandardSlice(standardColumns);
             const view = toCreateRequest(name, resource, slice, schema);
-            create(view, { columns, filters, sort });
+            // The failure goes back to the tab the create started from, so that tab's slice is what comes back.
+            create(view, () => ({ columns, filters, sort }));
             applyRef.current({ ...slice, columns: resolveView(view.columns, fields, standardColumns).renderable });
         },
         [create, resource, schema, standardColumns, fields, columns, filters, sort],
