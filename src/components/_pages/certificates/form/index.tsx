@@ -569,7 +569,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
             if (isFetchingRequestAttributes || issueWarnings) {
                 return;
             }
-            handleSubmit(onSubmit)(event);
+            void handleSubmit(onSubmit)(event);
         },
         [handleSubmit, isFetchingRequestAttributes, issueWarnings, onSubmit],
     );
@@ -697,6 +697,8 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         fileType={'CSR'}
                                         error={parseError}
                                         onContentChange={() => {
+                                            // The previous CSR goes with its content, so that only a newly loaded one is submitted.
+                                            setFileContent('');
                                             dispatch(utilsCertificateRequestActions.reset());
                                             dispatch(certificateActions.clearIssueErrors());
                                         }}

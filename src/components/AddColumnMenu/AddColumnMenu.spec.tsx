@@ -298,6 +298,37 @@ test.describe('AddColumnMenu', () => {
         await expect(page.getByRole('checkbox', { name: /A view must keep at least one column/ })).toBeVisible();
     });
 
+    test('locks only the last column a view can store, and still takes a display-only one off', async ({ mount, page }) => {
+        const duration = { ...column(FilterFieldSource.Property, 'DISCOVERY_DURATION', 'Duration'), displayOnly: true };
+        await mount(<AddColumnMenuHarness fields={fields} columns={[commonName, duration]} />);
+
+        await page.getByTestId('add-column-menu-trigger').click();
+        await expect(page.getByRole('checkbox', { name: /Common Name.*A view must keep at least one column/ })).toBeDisabled();
+
+        await page.getByTestId('add-column-menu-field-property:DISCOVERY_DURATION').click();
+
+        await expect.poll(() => appliedColumns(page)).toEqual(['property:COMMON_NAME']);
+    });
+
+    test('locks the last column a view can store when the only other one has lost its field', async ({ mount, page }) => {
+        const gone = column(FilterFieldSource.Custom, 'retired', 'retired');
+        await mount(<AddColumnMenuHarness fields={fields} columns={[commonName, gone]} goneKeys={['custom:retired']} />);
+
+        await page.getByTestId('add-column-menu-trigger').click();
+
+        await expect(page.getByRole('checkbox', { name: /Common Name.*A view must keep at least one column/ })).toBeDisabled();
+    });
+
+    test('still takes off a column whose field is gone beside the last column a view can store', async ({ mount, page }) => {
+        const gone = column(FilterFieldSource.Custom, 'costCentre|STRING', 'Cost centre');
+        await mount(<AddColumnMenuHarness fields={fields} columns={[commonName, gone]} goneKeys={['custom:costCentre|STRING']} />);
+
+        await page.getByTestId('add-column-menu-trigger').click();
+        await page.getByTestId('add-column-menu-field-custom:costCentre|STRING').click();
+
+        await expect.poll(() => appliedColumns(page)).toEqual(['property:COMMON_NAME']);
+    });
+
     test('shows the reason the last checkbox is locked where a sighted keyboard user can read it', async ({ mount, page }) => {
         await mount(<AddColumnMenuHarness fields={fields} columns={[commonName]} />);
 

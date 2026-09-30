@@ -15,7 +15,7 @@
         "@radix-ui/react-tabs": "^1.1.13",
         "@radix-ui/react-tooltip": "^1.2.8",
         "@radix-ui/react-visually-hidden": "^1.2.4",
-        "@reduxjs/toolkit": "^2.11.2",
+        "@reduxjs/toolkit": "^2.13.0",
         "buffer": "^6.0.3",
         "classnames": "^2.5.1",
         "cron-expression-validator": "^1.0.20",
@@ -87,8 +87,8 @@
     "devDependencies": {
         "@biomejs/biome": "2.5.14",
         "@openapitools/openapi-generator-cli": "^2.31.1",
-        "@playwright/experimental-ct-react": "^1.59.1",
-        "@playwright/test": "^1.59.1",
+        "@playwright/experimental-ct-react": "1.62.1",
+        "@playwright/test": "1.62.1",
         "@tailwindcss/forms": "^0.5.11",
         "@tailwindcss/vite": "~4.2.4",
         "@types/dagre": "^0.7.54",
@@ -116,7 +116,7 @@
     "overrides": {
         "typescript": "$typescript",
         "js-yaml": "$js-yaml",
-        "shell-quote": "^1.8.4",
+        "shell-quote": "^1.11.0",
         "esbuild": "^0.28.1",
         "brace-expansion": "5.0.12",
         "ws@8": "8.21.1",

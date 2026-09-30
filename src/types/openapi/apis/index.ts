@@ -32,6 +32,7 @@ export * from './ExternalNotificationManagementApi';
 export * from './GlobalMetadataApi';
 export * from './GroupManagementApi';
 export * from './InfoApi';
+export * from './InspectionApi';
 export * from './InternalNotificationApi';
 export * from './ListViewApi';
 export * from './LocalOperationsApi';

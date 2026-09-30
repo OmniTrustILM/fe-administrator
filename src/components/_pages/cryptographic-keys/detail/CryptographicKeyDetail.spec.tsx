@@ -1,16 +1,17 @@
 import type { UnknownAction } from '@reduxjs/toolkit';
-import { test, expect } from 'playwright/ct-test';
+import { test, expect, type Locator } from 'playwright/ct-test';
 import CryptographicKeyDetailWithStore from 'components/_pages/cryptographic-keys/detail/CryptographicKeyDetailWithStore';
 import { actions as keyActions } from 'ducks/cryptographic-keys';
 import { actions as cryptographicOperationActions } from 'ducks/cryptographic-operations';
 import { actions as profileActions } from 'ducks/token-profiles';
-import type { CryptographicKeyDetailResponseModel } from 'types/cryptographic-keys';
+import type { CryptographicKeyDetailResponseModel, CryptographicKeyItemDetailResponseModel } from 'types/cryptographic-keys';
 import {
     AttributeContentType,
     AttributeType,
     ComplianceStatus,
     KeyAlgorithm,
     KeyFormat,
+    KeyRequestType,
     KeyState,
     KeyType,
     KeyUsage,
@@ -68,6 +69,55 @@ function aTokenProfile(usages: KeyUsage[]): TokenProfileDetailResponseModel {
         attributes: [],
         usages,
     };
+}
+
+function aKeyWithExportableItem(itemOverrides: Partial<CryptographicKeyItemDetailResponseModel> = {}): CryptographicKeyDetailResponseModel {
+    return {
+        uuid: 'exportable-key',
+        name: 'Exportable key',
+        creationTime: '2026-01-01T00:00:00Z',
+        tokenInstanceUuid: 'token-instance',
+        tokenInstanceName: 'Token instance',
+        tokenProfileUuid: 'token-profile',
+        attributes: [],
+        complianceStatus: ComplianceStatus.NotChecked,
+        items: [
+            {
+                uuid: 'private-key-item',
+                name: 'server-01',
+                type: KeyType.Private,
+                keyAlgorithm: KeyAlgorithm.Rsa,
+                format: KeyFormat.PrivateKeyInfo,
+                length: 2048,
+                usage: [],
+                enabled: true,
+                state: KeyState.Active,
+                complianceStatus: ComplianceStatus.NotChecked,
+                exportable: true,
+                ...itemOverrides,
+            },
+        ],
+    };
+}
+
+function aProfileExporting(exportableKeyTypes: Partial<Record<KeyRequestType, KeyAlgorithm[]>>): TokenProfileDetailResponseModel {
+    return {
+        uuid: 'token-profile',
+        name: 'Token profile',
+        tokenInstanceUuid: 'token-instance',
+        tokenInstanceName: 'Token instance',
+        tokenInstanceStatus: TokenInstanceStatus.Activated,
+        enabled: true,
+        attributes: [],
+        usages: [],
+        keyTransfer: { importAvailable: false, exportAvailable: true, exportableKeyTypes },
+    };
+}
+
+/** A text field stays read-only until it is focused, so it is clicked before it is filled. */
+async function enterText(field: Locator, value: string) {
+    await field.click();
+    await field.fill(value);
 }
 
 test.describe('CryptographicKeyDetail usage editing', () => {
@@ -208,6 +258,143 @@ test.describe('CryptographicKeyDetail usage editing', () => {
         await page.getByTestId('key-button').click();
         await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeEnabled();
     });
+});
+
+test.describe('CryptographicKeyItem key export', () => {
+    test('shows the Export button when the item is exportable, active and enabled, and the profile exports its type and algorithm', async ({
+        mount,
+        page,
+    }) => {
+        const tokenProfile = aProfileExporting({ [KeyRequestType.KeyPair]: [KeyAlgorithm.Rsa] });
+        const cryptographicKey = aKeyWithExportableItem();
+        await mount(<CryptographicKeyDetailWithStore cryptographicKey={cryptographicKey} tokenProfile={tokenProfile} />);
+
+        await expect(page.getByTestId('export-button')).toBeVisible();
+    });
+
+    test("asks for the profile's detail again when the key details are refreshed, and offers Export once it loads", async ({
+        mount,
+        page,
+    }) => {
+        const tokenProfile = aProfileExporting({ [KeyRequestType.KeyPair]: [KeyAlgorithm.Rsa] });
+        const cryptographicKey = aKeyWithExportableItem();
+        const actions: UnknownAction[] = [];
+        await mount(
+            <CryptographicKeyDetailWithStore
+                cryptographicKey={cryptographicKey}
+                tokenProfile={tokenProfile}
+                onAction={(action) => actions.push(action)}
+            />,
+        );
+        await expect(page.getByTestId('export-button')).toBeVisible();
+        await page.getByRole('button', { name: 'Refresh profile', exact: true }).click();
+        await page.getByRole('button', { name: 'Fail profile request' }).click();
+        await expect(page.getByTestId('export-button')).toHaveCount(0);
+        const requested = actions.filter(profileActions.getTokenProfileDetail.match).length;
+
+        await page.getByRole('button', { name: 'Refresh', exact: true }).first().click();
+
+        await expect.poll(() => actions.filter(profileActions.getTokenProfileDetail.match).length).toBe(requested + 1);
+        await page.getByRole('button', { name: 'Complete profile request' }).click();
+        await expect(page.getByTestId('export-button')).toBeVisible();
+    });
+
+    test('hides the Export button without the key export permission', async ({ mount, page }) => {
+        const tokenProfile = aProfileExporting({ [KeyRequestType.KeyPair]: [KeyAlgorithm.Rsa] });
+        const cryptographicKey = aKeyWithExportableItem();
+        await mount(
+            <CryptographicKeyDetailWithStore cryptographicKey={cryptographicKey} tokenProfile={tokenProfile} canExportKeys={false} />,
+        );
+
+        await expect(page.getByTestId('key-button')).toBeEnabled();
+        await expect(page.getByTestId('export-button')).toHaveCount(0);
+    });
+
+    test('hides the Export button for a public key item', async ({ mount, page }) => {
+        const tokenProfile = aProfileExporting({ [KeyRequestType.KeyPair]: [KeyAlgorithm.Rsa] });
+        const cryptographicKey = aKeyWithExportableItem({ type: KeyType.Public });
+        await mount(<CryptographicKeyDetailWithStore cryptographicKey={cryptographicKey} tokenProfile={tokenProfile} />);
+
+        await expect(page.getByTestId('export-button')).toHaveCount(0);
+    });
+
+    test('hides the Export button for a non-exportable item', async ({ mount, page }) => {
+        const tokenProfile = aProfileExporting({ [KeyRequestType.KeyPair]: [KeyAlgorithm.Rsa] });
+        const cryptographicKey = aKeyWithExportableItem({ exportable: false });
+        await mount(<CryptographicKeyDetailWithStore cryptographicKey={cryptographicKey} tokenProfile={tokenProfile} />);
+
+        await expect(page.getByTestId('export-button')).toHaveCount(0);
+    });
+
+    test('hides the Export button for an item that is not active', async ({ mount, page }) => {
+        const tokenProfile = aProfileExporting({ [KeyRequestType.KeyPair]: [KeyAlgorithm.Rsa] });
+        const cryptographicKey = aKeyWithExportableItem({ state: KeyState.Deactivated });
+        await mount(<CryptographicKeyDetailWithStore cryptographicKey={cryptographicKey} tokenProfile={tokenProfile} />);
+
+        await expect(page.getByTestId('export-button')).toHaveCount(0);
+    });
+
+    test('hides the Export button for a disabled item', async ({ mount, page }) => {
+        const tokenProfile = aProfileExporting({ [KeyRequestType.KeyPair]: [KeyAlgorithm.Rsa] });
+        const cryptographicKey = aKeyWithExportableItem({ enabled: false });
+        await mount(<CryptographicKeyDetailWithStore cryptographicKey={cryptographicKey} tokenProfile={tokenProfile} />);
+
+        await expect(page.getByTestId('export-button')).toHaveCount(0);
+    });
+
+    test("hides the Export button when the profile does not export the item's type and algorithm", async ({ mount, page }) => {
+        const tokenProfile = aProfileExporting({ [KeyRequestType.KeyPair]: [KeyAlgorithm.Ecdsa] });
+        const cryptographicKey = aKeyWithExportableItem();
+        await mount(<CryptographicKeyDetailWithStore cryptographicKey={cryptographicKey} tokenProfile={tokenProfile} />);
+
+        await expect(page.getByTestId('export-button')).toHaveCount(0);
+    });
+
+    test('keeps the export dialog open on Escape while the export runs, and closes it on Escape once it has ended', async ({
+        mount,
+        page,
+    }) => {
+        const refusal = 'Failed to export the key (422): The key is not exportable';
+        const tokenProfile = aProfileExporting({ [KeyRequestType.KeyPair]: [KeyAlgorithm.Rsa] });
+        await mount(
+            <CryptographicKeyDetailWithStore
+                cryptographicKey={aKeyWithExportableItem()}
+                tokenProfile={tokenProfile}
+                exportAnswer={{ delay: 1000, error: refusal }}
+            />,
+        );
+        await page.getByTestId('export-button').click();
+        const dialog = page.getByRole('dialog', { name: 'Export key material' });
+        await enterText(dialog.getByTestId('text-input-passphrase'), 'correct horse battery');
+        await enterText(dialog.getByTestId('text-input-passphraseConfirmation'), 'correct horse battery');
+        await dialog.getByRole('button', { name: 'Export' }).click();
+        await expect(dialog.getByRole('button', { name: 'Exporting...' })).toBeDisabled();
+
+        await page.keyboard.press('Escape');
+
+        await expect(dialog.getByRole('alert')).toHaveText(refusal);
+        await page.keyboard.press('Escape');
+        await expect(dialog).toHaveCount(0);
+    });
+
+    test('shows no Exportable row for a public key item, which is public', async ({ mount, page }) => {
+        const cryptographicKey = aKeyWithExportableItem({ type: KeyType.Public, format: KeyFormat.SubjectPublicKeyInfo });
+        await mount(<CryptographicKeyDetailWithStore cryptographicKey={cryptographicKey} />);
+
+        await expect(page.locator('tr[data-id="enabled"]')).toBeVisible();
+        await expect(page.locator('tr[data-id="exportable"]')).toHaveCount(0);
+    });
+
+    for (const exportable of [true, false]) {
+        test(`shows the Exportable row as ${exportable ? 'Enabled' : 'Disabled'}`, async ({ mount, page }) => {
+            const cryptographicKey = aKeyWithExportableItem({ exportable });
+            await mount(<CryptographicKeyDetailWithStore cryptographicKey={cryptographicKey} />);
+
+            await expect(page.locator('tr[data-id="exportable"]').getByTestId('status-badge')).toHaveText(
+                exportable ? 'Enabled' : 'Disabled',
+            );
+        });
+    }
 });
 
 test.describe('CryptographicKeyDetail signature attributes', () => {

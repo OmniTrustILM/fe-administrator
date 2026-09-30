@@ -26,7 +26,7 @@ export interface CertificateEntryKeyDestinationDto {
      */
     tokenProfileUuid: string;
     /**
-     * Name for the imported key. The platform derives one from the certificate when this is absent.
+     * Name for the imported key. When it is absent, the platform takes the entry\'s alias, or when the entry has none, its certificate\'s common name.
      * @type {string}
      * @memberof CertificateEntryKeyDestinationDto
      */

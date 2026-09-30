@@ -86,7 +86,7 @@ export const slice = createSlice({
             state.globalModal.okButtonCallback = action.payload;
         },
 
-        setCancelButtonCallback: (state, action: PayloadAction<() => void>) => {
+        setCancelButtonCallback: (state, action: PayloadAction<(() => void) | undefined>) => {
             state.globalModal.cancelButtonCallback = action.payload;
         },
 

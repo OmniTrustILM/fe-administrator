@@ -1,20 +1,25 @@
 import AttributeEditor from 'components/Attributes/AttributeEditor';
 import TabLayout from 'components/Layout/TabLayout';
 import ProgressButton from 'components/ProgressButton';
+import RetryCallout from 'components/RetryCallout';
+import ImportWizard from 'components/_pages/certificates/ImportWizard';
 
 import Widget from 'components/Widget';
+import type { AppState } from 'ducks';
 import { selectors as authSelectors } from 'ducks/auth';
 import { actions as groupActions, selectors as groupSelectors } from 'ducks/certificateGroups';
 import { actions as connectorActions } from 'ducks/connectors';
 import { actions as userActions, selectors as userSelectors } from 'ducks/users';
 
+import { selectors as certificatesSelectors } from 'ducks/certificates';
 import { actions as cryptographicKeysActions, selectors as cryptographicKeysSelectors } from 'ducks/cryptographic-keys';
 import { actions as tokenProfilesActions, selectors as tokenProfilesSelectors } from 'ducks/token-profiles';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, FormProvider, type Path, useForm, useWatch } from 'react-hook-form';
-import { useDispatch, useSelector } from 'react-redux';
+import { useDispatch, useSelector, useStore } from 'react-redux';
 import { useParams } from 'react-router';
 import Select from 'components/Select';
+import Switch from 'components/Switch';
 import TextInput from 'components/TextInput';
 import TextArea from 'components/TextArea';
 
@@ -28,10 +33,17 @@ import { selectors as enumSelectors, getEnumLabel, getEnumDescription } from 'du
 import { validateAlphaNumericWithSpecialChars, validateLength, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from '../../../../ducks/customAttributes';
-import { type KeyRequestType, PlatformEnum, Resource } from 'types/openapi';
+import { type KeyRequestType, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
 import Container from 'components/Container';
 import Button from 'components/Button';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
+import { hasResourceAction } from 'utils/permissions';
+
+const EXPORTABLE_HINT_FOR_REQUEST =
+    'Required to download the certificate with its private key (PKCS12) after issuance. Cannot be enabled later.';
+const EXPORTABLE_HINT =
+    'Can be exported later by users holding the key export permission. Off by default, and cannot be switched on later.';
+const GENERATE_TAB = 0;
 
 type CryptographicKeyFormProps = Readonly<{
     usesGlobalModal?: boolean;
@@ -51,10 +63,12 @@ interface FormValues {
     type?: string;
     selectedGroups: SelectChangeValue[];
     owner?: string;
+    exportable?: boolean;
 }
 
 export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesGlobalModal = false }: CryptographicKeyFormProps) {
     const dispatch = useDispatch();
+    const store = useStore<AppState>();
 
     const { id: routeId, tokenId } = useParams();
     const id = keyId ?? (usesGlobalModal ? undefined : routeId);
@@ -82,10 +96,13 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
     const isUpdating = useSelector(cryptographicKeysSelectors.isUpdating);
     const createCryptographicKeySucceeded = useSelector(cryptographicKeysSelectors.createCryptographicKeySucceeded);
     const updateCryptographicKeySucceeded = useSelector(cryptographicKeysSelectors.updateCryptographicKeySucceeded);
+    const isImporting = useSelector(certificatesSelectors.isImporting);
 
     const [groupAttributesCallbackAttributes, setGroupAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
 
     const [tokenProfile, setTokenProfile] = useState<TokenProfileResponseModel>();
+    const [activeTab, setActiveTab] = useState(GENERATE_TAB);
+    const shownTab = useRef(activeTab);
 
     useEffect(() => {
         if (!editMode && tokenProfile) {
@@ -122,6 +139,18 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
         dispatch(customAttributesActions.listResourceCustomAttributes(Resource.Keys));
     }, [dispatch]);
 
+    const loadProfileDetail = useCallback(
+        (profile: TokenProfileResponseModel) =>
+            dispatch(
+                tokenProfilesActions.getTokenProfileDetail({
+                    tokenInstanceUuid: profile.tokenInstanceUuid,
+                    uuid: profile.uuid,
+                    skipWidgetLock: true,
+                }),
+            ),
+        [dispatch],
+    );
+
     const onTokenProfileChange = useCallback(
         (tokenProfileUuid: string | undefined) => {
             if (!tokenProfileUuid) return;
@@ -134,9 +163,24 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
 
             if (!provider) return;
             setTokenProfile(provider);
+            if (!editMode) loadProfileDetail(provider);
         },
-        [dispatch, tokenProfiles],
+        [dispatch, editMode, tokenProfiles, loadProfileDetail],
     );
+
+    // The Import material tab loads its own profile's detail into the one detail this form reads, so Generate new asks
+    // again for its profile's when it is shown. The store is read here rather than depended on, so that a request that
+    // keeps failing is sent once per showing, never in a loop. A request for another profile empties the detail, so a
+    // request running while it holds this profile's is for this profile.
+    useEffect(() => {
+        if (shownTab.current === activeTab) return;
+        shownTab.current = activeTab;
+        if (activeTab !== GENERATE_TAB || !tokenProfile) return;
+        const state = store.getState();
+        const loading =
+            tokenProfilesSelectors.isFetchingDetail(state) && tokenProfilesSelectors.tokenProfile(state)?.uuid === tokenProfile.uuid;
+        if (!loading && !tokenProfilesSelectors.loadedTokenProfile(tokenProfile.uuid)(state)) loadProfileDetail(tokenProfile);
+    }, [activeTab, tokenProfile, store, loadProfileDetail]);
 
     const optionsForKeys = useMemo(
         () =>
@@ -175,6 +219,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
             selectedGroups: editMode ? (keyDetail?.groups?.map((group) => ({ value: group.uuid, label: group.name })) ?? []) : [],
             owner: editMode ? keyDetail?.ownerUuid || undefined : undefined,
             type: undefined,
+            exportable: false,
         }),
         [editMode, keyDetail],
     );
@@ -198,6 +243,22 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
         name: 'tokenProfile',
     });
 
+    const watchedType = useWatch({
+        control,
+        name: 'type',
+    });
+
+    const tokenProfileDetail = useSelector(tokenProfilesSelectors.loadedTokenProfile(watchedTokenProfileUuid));
+    const profileDetailError = useSelector(tokenProfilesSelectors.detailError);
+    // Exportable cannot be switched on later, so Create waits while the chosen profile's detail, which offers it, loads.
+    const awaitingProfileDetail = useSelector(tokenProfilesSelectors.isFetchingDetail) && !editMode;
+
+    const showExportable = !!watchedType && !!tokenProfileDetail?.keyTransfer?.exportableKeyTypes?.[watchedType]?.length;
+
+    useEffect(() => {
+        if (!showExportable) setValue('exportable', false);
+    }, [showExportable, setValue]);
+
     const onKeyTypeChange = useCallback(
         (type: KeyRequestType) => {
             if (editMode) return;
@@ -205,6 +266,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
             if (!type) return;
             dispatch(connectorActions.clearCallbackData());
             setGroupAttributesCallbackAttributes([]);
+            setValue('exportable', false);
             // Clear attributes that start with __attributes__cryptographicKey__
             const formValues = getValues();
             Object.keys(formValues).forEach((key) => {
@@ -267,6 +329,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                                 values,
                             ),
                             customAttributes: collectFormAttributes('customCryptographicKey', resourceCustomAttributes, values),
+                            exportable: showExportable && !!values.exportable,
                         },
                         usesGlobalModal: usesGlobalModal,
                     }),
@@ -282,6 +345,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
             resourceCustomAttributes,
             tokenProfiles,
             usesGlobalModal,
+            showExportable,
         ],
     );
 
@@ -362,6 +426,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                 selectedGroups: keyDetail.groups?.length ? keyDetail.groups.map((group) => ({ value: group.uuid, label: group.name })) : [],
                 owner: keyDetail.ownerUuid || undefined,
                 type: undefined,
+                exportable: false,
             };
             reset(newDefaultValues);
 
@@ -385,105 +450,66 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                 }
             });
             setValue('type', undefined);
+            setValue('exportable', false);
             onTokenProfileChange(watchedTokenProfileUuid);
         }
     }, [watchedTokenProfileUuid, setValue, getValues, onTokenProfileChange]);
 
-    return (
-        <Widget noBorder busy={isBusy}>
-            <FormProvider {...methods}>
-                <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                    <Controller
-                        name="name"
-                        control={control}
-                        rules={buildValidationRules([validateRequired(), validateAlphaNumericWithSpecialChars()])}
-                        render={({ field, fieldState }) => (
-                            <TextInput
-                                {...field}
-                                id="name"
-                                type="text"
-                                label="Key Name"
-                                required
-                                placeholder="Enter Key Name"
-                                invalid={fieldState.error && fieldState.isTouched}
-                                error={getFieldErrorMessage(fieldState)}
-                            />
-                        )}
-                    />
-                    <Controller
-                        name="description"
-                        control={control}
-                        rules={buildValidationRules([validateLength(0, 300)])}
-                        render={({ field, fieldState }) => (
-                            <TextArea
-                                {...field}
-                                id="description"
-                                label="Description"
-                                rows={4}
-                                placeholder="Enter Description / Comment"
-                                invalid={fieldState.error && fieldState.isTouched}
-                                error={getFieldErrorMessage(fieldState)}
-                            />
-                        )}
-                    />
-
-                    {editMode ? (
-                        <Controller
-                            name="owner"
-                            control={control}
-                            rules={buildValidationRules([validateAlphaNumericWithSpecialChars()])}
-                            render={({ field, fieldState }) => (
-                                <>
-                                    <Select
-                                        id="ownerSelect"
-                                        label="Owner"
-                                        value={field.value || ''}
-                                        onChange={(value) => {
-                                            field.onChange(value);
-                                        }}
-                                        options={optionsForUsers}
-                                        placeholder="Select Owner"
-                                        placement="bottom"
-                                        isDisabled={false}
-                                    />
-                                    {fieldState.error && fieldState.isTouched && (
-                                        <p className="mt-1 text-sm text-danger">
-                                            {typeof fieldState.error === 'string'
-                                                ? fieldState.error
-                                                : fieldState.error?.message || 'Invalid value'}
-                                        </p>
-                                    )}
-                                </>
-                            )}
-                        />
-                    ) : (
+    const generateNewForm = (
+        <FormProvider {...methods}>
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+                <Controller
+                    name="name"
+                    control={control}
+                    rules={buildValidationRules([validateRequired(), validateAlphaNumericWithSpecialChars()])}
+                    render={({ field, fieldState }) => (
                         <TextInput
-                            id="owner"
+                            {...field}
+                            id="name"
                             type="text"
-                            label="Owner"
-                            placeholder="Enter Key Owner"
-                            disabled
-                            value={auth?.username || ''}
-                            onChange={() => {}}
+                            label="Key Name"
+                            required
+                            placeholder="Enter Key Name"
+                            invalid={fieldState.error && fieldState.isTouched}
+                            error={getFieldErrorMessage(fieldState)}
                         />
                     )}
+                />
+                <Controller
+                    name="description"
+                    control={control}
+                    rules={buildValidationRules([validateLength(0, 300)])}
+                    render={({ field, fieldState }) => (
+                        <TextArea
+                            {...field}
+                            id="description"
+                            label="Description"
+                            rows={4}
+                            placeholder="Enter Description / Comment"
+                            invalid={fieldState.error && fieldState.isTouched}
+                            error={getFieldErrorMessage(fieldState)}
+                        />
+                    )}
+                />
 
+                {editMode ? (
                     <Controller
-                        name="selectedGroups"
+                        name="owner"
                         control={control}
+                        rules={buildValidationRules([validateAlphaNumericWithSpecialChars()])}
                         render={({ field, fieldState }) => (
                             <>
                                 <Select
-                                    id="selectedGroupsSelect"
-                                    label="Groups"
-                                    value={field.value || []}
+                                    id="ownerSelect"
+                                    label="Owner"
+                                    value={field.value || ''}
                                     onChange={(value) => {
                                         field.onChange(value);
                                     }}
-                                    options={optionsForGroups}
-                                    placeholder="Select Groups"
-                                    isMulti
+                                    options={optionsForUsers}
+                                    placeholder="Select Owner"
                                     placement="bottom"
+                                    isDisabled={false}
                                 />
                                 {fieldState.error && fieldState.isTouched && (
                                     <p className="mt-1 text-sm text-danger">
@@ -495,38 +521,110 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                             </>
                         )}
                     />
+                ) : (
+                    <TextInput
+                        id="owner"
+                        type="text"
+                        label="Owner"
+                        placeholder="Enter Key Owner"
+                        disabled
+                        value={auth?.username || ''}
+                        onChange={() => {}}
+                    />
+                )}
 
+                <Controller
+                    name="selectedGroups"
+                    control={control}
+                    render={({ field, fieldState }) => (
+                        <>
+                            <Select
+                                id="selectedGroupsSelect"
+                                label="Groups"
+                                value={field.value || []}
+                                onChange={(value) => {
+                                    field.onChange(value);
+                                }}
+                                options={optionsForGroups}
+                                placeholder="Select Groups"
+                                isMulti
+                                placement="bottom"
+                            />
+                            {fieldState.error && fieldState.isTouched && (
+                                <p className="mt-1 text-sm text-danger">
+                                    {typeof fieldState.error === 'string' ? fieldState.error : fieldState.error?.message || 'Invalid value'}
+                                </p>
+                            )}
+                        </>
+                    )}
+                />
+
+                <Controller
+                    name="tokenProfile"
+                    control={control}
+                    rules={editMode ? undefined : buildValidationRules([validateRequired()])}
+                    render={({ field, fieldState }) => (
+                        <>
+                            <div>
+                                <label htmlFor="tokenProfileSelect" className="block text-sm font-medium mb-2 text-content">
+                                    Token Profile {!editMode && <span className="text-danger">*</span>}
+                                </label>
+                                <Select
+                                    id="tokenProfileSelect"
+                                    value={field.value || ''}
+                                    onChange={(value) => {
+                                        if (value === field.value) return;
+
+                                        const formValues = getValues();
+                                        Object.keys(formValues).forEach((key) => {
+                                            if (key.startsWith('__attributes__cryptographicKey__')) {
+                                                setValue(key as Path<FormValues>, undefined);
+                                            }
+                                        });
+                                        setValue('type', undefined);
+                                        dispatch(cryptographicKeysActions.clearSupportedKeyRequestTypes());
+                                        setTokenProfile(undefined);
+                                        field.onChange(value);
+                                    }}
+                                    options={optionsForKeys}
+                                    placeholder="Select Token Profile"
+                                    placement="bottom"
+                                    isDisabled={editMode}
+                                />
+                            </div>
+                            {fieldState.error && fieldState.isTouched && (
+                                <p className="mt-1 text-sm text-danger">
+                                    {typeof fieldState.error === 'string' ? fieldState.error : fieldState.error?.message || 'Invalid value'}
+                                </p>
+                            )}
+                        </>
+                    )}
+                />
+
+                {tokenProfile && !editMode && (
                     <Controller
-                        name="tokenProfile"
+                        name="type"
                         control={control}
-                        rules={editMode ? undefined : buildValidationRules([validateRequired()])}
+                        rules={buildValidationRules([validateRequired()])}
                         render={({ field, fieldState }) => (
                             <>
                                 <div>
-                                    <label htmlFor="tokenProfileSelect" className="block text-sm font-medium mb-2 text-content">
-                                        Token Profile {!editMode && <span className="text-danger">*</span>}
+                                    <label htmlFor="typeSelect" className="block text-sm font-medium mb-2 text-content">
+                                        Select Key Type <span className="text-danger">*</span>
                                     </label>
                                     <Select
-                                        id="tokenProfileSelect"
+                                        id="typeSelect"
                                         value={field.value || ''}
                                         onChange={(value) => {
-                                            if (value === field.value) return;
-
-                                            const formValues = getValues();
-                                            Object.keys(formValues).forEach((key) => {
-                                                if (key.startsWith('__attributes__cryptographicKey__')) {
-                                                    setValue(key as Path<FormValues>, undefined);
-                                                }
-                                            });
-                                            setValue('type', undefined);
-                                            dispatch(cryptographicKeysActions.clearSupportedKeyRequestTypes());
-                                            setTokenProfile(undefined);
+                                            onKeyTypeChange(value as KeyRequestType);
                                             field.onChange(value);
                                         }}
-                                        options={optionsForKeys}
-                                        placeholder="Select Token Profile"
+                                        options={optionsForType()}
+                                        isDisabled={isFetchingSupportedKeyRequestTypes}
+                                        placeholder="Select to change Key Type"
                                         placement="bottom"
-                                        isDisabled={editMode}
+                                        showOptionDescriptionInDropdown
+                                        showSelectedDescriptionAsHelp
                                     />
                                 </div>
                                 {fieldState.error && fieldState.isTouched && (
@@ -539,61 +637,77 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                             </>
                         )}
                     />
+                )}
 
-                    {tokenProfile && !editMode && (
-                        <Controller
-                            name="type"
-                            control={control}
-                            rules={buildValidationRules([validateRequired()])}
-                            render={({ field, fieldState }) => (
-                                <>
-                                    <div>
-                                        <label htmlFor="typeSelect" className="block text-sm font-medium mb-2 text-content">
-                                            Select Key Type <span className="text-danger">*</span>
-                                        </label>
-                                        <Select
-                                            id="typeSelect"
-                                            value={field.value || ''}
-                                            onChange={(value) => {
-                                                onKeyTypeChange(value as KeyRequestType);
-                                                field.onChange(value);
-                                            }}
-                                            options={optionsForType()}
-                                            isDisabled={isFetchingSupportedKeyRequestTypes}
-                                            placeholder="Select to change Key Type"
-                                            placement="bottom"
-                                            showOptionDescriptionInDropdown
-                                            showSelectedDescriptionAsHelp
-                                        />
-                                    </div>
-                                    {fieldState.error && fieldState.isTouched && (
-                                        <p className="mt-1 text-sm text-danger">
-                                            {typeof fieldState.error === 'string'
-                                                ? fieldState.error
-                                                : fieldState.error?.message || 'Invalid value'}
-                                        </p>
-                                    )}
-                                </>
-                            )}
-                        />
-                    )}
+                {!editMode && tokenProfile && profileDetailError && (
+                    <RetryCallout message={profileDetailError} onRetry={() => loadProfileDetail(tokenProfile)} />
+                )}
 
-                    <TabLayout tabs={attributeTabs(watchedTokenProfileUuid)} noBorder onlyActiveTabContent={false} />
+                {showExportable && (
+                    <Controller
+                        name="exportable"
+                        control={control}
+                        render={({ field }) => (
+                            <div>
+                                <Switch
+                                    id="exportable"
+                                    checked={field.value}
+                                    onChange={field.onChange}
+                                    secondaryLabel="Exportable"
+                                    ariaDescribedBy="exportable-hint"
+                                />
+                                <p id="exportable-hint" className="ml-16 text-sm text-content-muted">
+                                    {usesGlobalModal ? EXPORTABLE_HINT_FOR_REQUEST : EXPORTABLE_HINT}
+                                </p>
+                            </div>
+                        )}
+                    />
+                )}
 
-                    <Container className="flex-row justify-end modal-footer mt-4" gap={4}>
-                        <Button variant="outline" onClick={onCancelClick} disabled={isSubmitting} type="button">
-                            Cancel
-                        </Button>
-                        <ProgressButton
-                            title={editMode ? 'Update' : 'Create'}
-                            inProgressTitle={editMode ? 'Updating...' : 'Creating...'}
-                            inProgress={isSubmitting}
-                            disabled={!isDirty || isSubmitting || !isValid}
-                            type="submit"
-                        />
-                    </Container>
-                </form>
-            </FormProvider>
+                <TabLayout tabs={attributeTabs(watchedTokenProfileUuid)} noBorder onlyActiveTabContent={false} />
+
+                <Container className="flex-row justify-end modal-footer mt-4" gap={4}>
+                    <Button variant="outline" onClick={onCancelClick} disabled={isSubmitting} type="button">
+                        Cancel
+                    </Button>
+                    <ProgressButton
+                        title={editMode ? 'Update' : 'Create'}
+                        inProgressTitle={editMode ? 'Updating...' : 'Creating...'}
+                        inProgress={isSubmitting}
+                        disabled={!isDirty || isSubmitting || !isValid || awaitingProfileDetail}
+                        type="submit"
+                    />
+                </Container>
+            </form>
+        </FormProvider>
+    );
+
+    const offersImport = !editMode && !usesGlobalModal && hasResourceAction(auth, Resource.Keys, ResourceAction.ImportKey);
+
+    return (
+        <Widget noBorder busy={isBusy}>
+            {offersImport ? (
+                <TabLayout
+                    noBorder
+                    onTabChange={setActiveTab}
+                    tabs={[
+                        // Leaving the import while it runs would drop its results, so the other tab waits for it.
+                        { title: 'Generate new', content: generateNewForm, disabled: isImporting },
+                        {
+                            title: 'Import material',
+                            content: (
+                                <ImportWizard
+                                    presetTokenProfileUuid={tokenProfile?.uuid}
+                                    onCancel={onCancelClick}
+                                    onDone={handleCreateSuccess}
+                                />
+                            ),
+                        },
+                    ]}
+                />
+            ) : (
+                generateNewForm
+            )}
         </Widget>
     );
 }

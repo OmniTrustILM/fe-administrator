@@ -542,6 +542,50 @@ describe('PagedList unit coverage', () => {
         expect(container.querySelector('[data-testid="filter-widget"]')).toBeTruthy();
     });
 
+    it('lists again with the same request each time the refresh token moves', async () => {
+        const onListCallback = vi.fn();
+
+        await renderPagedList({ onListCallback, refreshToken: 0 });
+        await renderPagedList({ onListCallback, refreshToken: 0 });
+        expect(onListCallback).toHaveBeenCalledTimes(1);
+
+        await renderPagedList({ onListCallback, refreshToken: 1 });
+        await renderPagedList({ onListCallback, refreshToken: 2 });
+
+        expect(onListCallback).toHaveBeenCalledTimes(3);
+        expect(onListCallback.mock.calls[2][0]).toEqual(onListCallback.mock.calls[0][0]);
+    });
+
+    it('keeps the checked rows when the background refresh token moves', async () => {
+        const onListCallback = vi.fn();
+        const clearsSelection = () =>
+            dispatch.mock.calls.filter(([action]) => action.type === 'pagings/setCheckedRows' && action.payload.checkedRows.length === 0)
+                .length;
+
+        await renderPagedList({ onListCallback, backgroundRefreshToken: 0 });
+        const clearsAfterFirstList = clearsSelection();
+
+        await renderPagedList({ onListCallback, backgroundRefreshToken: 1 });
+
+        expect(onListCallback).toHaveBeenCalledTimes(2);
+        expect(onListCallback.mock.calls[1][0]).toEqual(onListCallback.mock.calls[0][0]);
+        expect(clearsSelection()).toBe(clearsAfterFirstList);
+    });
+
+    it('clears the checked rows when the refresh token moves', async () => {
+        const onListCallback = vi.fn();
+        const clearsSelection = () =>
+            dispatch.mock.calls.filter(([action]) => action.type === 'pagings/setCheckedRows' && action.payload.checkedRows.length === 0)
+                .length;
+
+        await renderPagedList({ onListCallback, refreshToken: 0 });
+        const clearsAfterFirstList = clearsSelection();
+
+        await renderPagedList({ onListCallback, refreshToken: 1 });
+
+        expect(clearsSelection()).toBe(clearsAfterFirstList + 1);
+    });
+
     it('does not list again when the filter catalogue is re-read', async () => {
         const onListCallback = vi.fn();
         const filter = mockState.filters.filters[0].filter;

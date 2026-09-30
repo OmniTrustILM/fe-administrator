@@ -1,4 +1,5 @@
-import { configureStore } from '@reduxjs/toolkit';
+import { configureStore, type Middleware } from '@reduxjs/toolkit';
+import { useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import type React from 'react';
@@ -50,6 +51,38 @@ export function createMockStore(preloadedState?: Partial<ReturnType<typeof testR
     }
 
     return store;
+}
+
+export type RecordedAction = { type: string; payload?: unknown };
+
+type TestState = Partial<ReturnType<typeof testReducers>>;
+
+function recordingMiddleware(onAction: (action: RecordedAction) => void): Middleware {
+    return () => (next) => (action) => {
+        onAction(action as RecordedAction);
+        return next(action);
+    };
+}
+
+export function createRecordingStore(preloadedState: TestState | undefined, onAction: (action: RecordedAction) => void) {
+    return configureStore({
+        reducer: testReducers,
+        middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(recordingMiddleware(onAction)),
+        preloadedState: { ...testInitialState, ...preloadedState },
+    });
+}
+
+/** Keeps the dispatched actions whose type starts with `prefix`. Call it inside the mounted tree: a store made in a CT spec does not reach the browser. */
+export function useRecordingStore(preloadedState: TestState | undefined, prefix: string) {
+    const [dispatched, setDispatched] = useState<RecordedAction[]>([]);
+    const store = useMemo(
+        () =>
+            createRecordingStore(preloadedState, ({ type, payload }) => {
+                if (type.startsWith(prefix)) setDispatched((seen) => [...seen, { type, payload }]);
+            }),
+        [preloadedState, prefix],
+    );
+    return { store, dispatched };
 }
 
 /**

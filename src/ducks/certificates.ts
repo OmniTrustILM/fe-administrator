@@ -25,11 +25,15 @@ import type {
 import type { LocationResponseModel } from 'types/locations';
 import type {
     ApprovalDto,
+    CertificateImportRequestDto,
+    CertificateImportResultDto,
+    CertificateKeystoreRequestDto,
     CertificateRelationsDto,
     CertificateRequestFormat,
     DownloadCertificateChainRequest,
     DownloadCertificateRequest,
     ListCertificateApprovalsRequest,
+    ManuallyIssueCertificateRequestDto,
 } from 'types/openapi';
 import type { RaProfileResponseModel } from 'types/ra-profiles';
 import type { UserResponseModel } from 'types/users';
@@ -97,11 +101,19 @@ export type State = {
     issuanceAttributes: { [raProfileId: string]: AttributeDescriptorModel[] };
     registerAttributes: { [raProfileId: string]: AttributeDescriptorModel[] };
     revocationAttributes: AttributeDescriptorModel[];
+    renewAttributes: AttributeDescriptorModel[];
+    identifyAttributes: AttributeDescriptorModel[];
     validationResult?: ValidationCertificateResultModel;
     approvals?: ApprovalDto[];
     certificateChain?: CertificateChainResponseModel;
     certificateChainDownloadContent?: DownloadCertificateChainResponseModel;
     certificateDownloadContent?: DownloadCertificateResponseModel;
+
+    importResults?: CertificateImportResultDto[];
+    isImporting: boolean;
+    isDownloadingKeystore: boolean;
+    downloadKeystoreSucceeded: boolean;
+    downloadKeystoreError?: string;
 
     isFetchingValidationResult: boolean;
 
@@ -139,6 +151,8 @@ export type State = {
 
     /** Bumped whenever a mutation needs the listing re-read; the page forwards it as `refreshToken`. */
     listRefreshToken: number;
+    /** Bumped for a re-read the user did not ask for; the page forwards it as `backgroundRefreshToken`. */
+    listBackgroundRefreshToken: number;
 
     isBulkUpdatingGroup: boolean;
     isBulkUpdatingRaProfile: boolean;
@@ -149,6 +163,8 @@ export type State = {
     isFetchingIssuanceAttributes: boolean;
     isFetchingRegisterAttributes: boolean;
     isFetchingRevocationAttributes: boolean;
+    isFetchingRenewAttributes: boolean;
+    isFetchingIdentifyAttributes: boolean;
 
     isCheckingCompliance: boolean;
 
@@ -173,7 +189,13 @@ export const initialState: State = {
     issuanceAttributes: {},
     registerAttributes: {},
     revocationAttributes: [],
+    renewAttributes: [],
+    identifyAttributes: [],
     approvals: [],
+
+    isImporting: false,
+    isDownloadingKeystore: false,
+    downloadKeystoreSucceeded: false,
 
     isFetchingValidationResult: false,
 
@@ -207,6 +229,7 @@ export const initialState: State = {
     isUpdatingTrustedStatus: false,
 
     listRefreshToken: 0,
+    listBackgroundRefreshToken: 0,
 
     isBulkUpdatingGroup: false,
     isBulkUpdatingRaProfile: false,
@@ -217,6 +240,8 @@ export const initialState: State = {
     isFetchingIssuanceAttributes: false,
     isFetchingRegisterAttributes: false,
     isFetchingRevocationAttributes: false,
+    isFetchingRenewAttributes: false,
+    isFetchingIdentifyAttributes: false,
 
     isCheckingCompliance: false,
 
@@ -472,7 +497,7 @@ export const slice = createSlice({
                 authorityUuid: string;
                 raProfileUuid: string;
                 uuid: string;
-                uploadRequest: CertificateUploadModel;
+                uploadRequest: ManuallyIssueCertificateRequestDto;
             }>,
         ) => {
             if (!state.finalizingIssueCertificateUuids.includes(action.payload.uuid)) {
@@ -891,6 +916,11 @@ export const slice = createSlice({
 
         bulkDeleteSuccess: (state, action: PayloadAction<{ response: CertificateBulkDeleteResponseModel }>) => {
             state.isBulkDeleting = false;
+            state.listRefreshToken += 1;
+        },
+
+        refreshListInBackground: (state) => {
+            state.listBackgroundRefreshToken += 1;
         },
 
         bulkDeleteFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -969,6 +999,46 @@ export const slice = createSlice({
         clearRevocationAttributes: (state) => {
             state.revocationAttributes = [];
             state.isFetchingRevocationAttributes = false;
+        },
+
+        getRenewAttributes: (state, action: PayloadAction<{ raProfileUuid: string; authorityUuid: string }>) => {
+            state.isFetchingRenewAttributes = true;
+            state.renewAttributes = [];
+        },
+
+        getRenewAttributesSuccess: (state, action: PayloadAction<{ renewAttributes: AttributeDescriptorModel[] }>) => {
+            state.isFetchingRenewAttributes = false;
+            state.renewAttributes = action.payload.renewAttributes;
+        },
+
+        getRenewAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isFetchingRenewAttributes = false;
+            state.renewAttributes = [];
+        },
+
+        clearRenewAttributes: (state) => {
+            state.renewAttributes = [];
+            state.isFetchingRenewAttributes = false;
+        },
+
+        getIdentifyAttributes: (state, action: PayloadAction<{ raProfileUuid: string; authorityUuid: string }>) => {
+            state.isFetchingIdentifyAttributes = true;
+            state.identifyAttributes = [];
+        },
+
+        getIdentifyAttributesSuccess: (state, action: PayloadAction<{ identifyAttributes: AttributeDescriptorModel[] }>) => {
+            state.isFetchingIdentifyAttributes = false;
+            state.identifyAttributes = action.payload.identifyAttributes;
+        },
+
+        getIdentifyAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isFetchingIdentifyAttributes = false;
+            state.identifyAttributes = [];
+        },
+
+        clearIdentifyAttributes: (state) => {
+            state.identifyAttributes = [];
+            state.isFetchingIdentifyAttributes = false;
         },
 
         checkCompliance: (state, action: PayloadAction<CertificateComplianceCheckModel>) => {
@@ -1078,6 +1148,41 @@ export const slice = createSlice({
             state.certificateDownloadContent = undefined;
             state.isFetchingCertificateDownloadContent = false;
         },
+
+        importCertificates: (state, action: PayloadAction<{ certificateImportRequestDto: CertificateImportRequestDto }>) => {
+            state.importResults = undefined;
+            state.isImporting = true;
+        },
+
+        importCertificatesSuccess: (state, action: PayloadAction<{ results: CertificateImportResultDto[] }>) => {
+            state.isImporting = false;
+            state.importResults = action.payload.results;
+            state.listRefreshToken += 1;
+        },
+
+        importCertificatesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isImporting = false;
+        },
+
+        downloadKeystore: (
+            state,
+            action: PayloadAction<{ uuid: string; certificateKeystoreRequestDto: CertificateKeystoreRequestDto; fallbackName: string }>,
+        ) => {
+            state.isDownloadingKeystore = true;
+            state.downloadKeystoreSucceeded = false;
+            state.downloadKeystoreError = undefined;
+        },
+
+        downloadKeystoreSuccess: (state, action: PayloadAction<void>) => {
+            state.isDownloadingKeystore = false;
+            state.downloadKeystoreSucceeded = true;
+        },
+
+        downloadKeystoreFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isDownloadingKeystore = false;
+            state.downloadKeystoreError = action.payload.error;
+        },
+
         archiveCertificate: (state, action: PayloadAction<{ uuid: string }>) => {
             state.isArchiving = true;
         },
@@ -1150,6 +1255,7 @@ const deleteErrorMessage = createSelector(state, (state) => state.deleteErrorMes
 
 const certificates = createSelector(state, (state) => state.certificates);
 const listRefreshToken = createSelector(state, (state) => state.listRefreshToken);
+const listBackgroundRefreshToken = createSelector(state, (state) => state.listBackgroundRefreshToken);
 const certificateChain = createSelector(state, (state) => state.certificateChain);
 
 const certificateDetail = createSelector(state, (state) => state.certificateDetail);
@@ -1161,7 +1267,15 @@ const certificateLocations = createSelector(state, (state) => state.certificateL
 const issuanceAttributes = createSelector(state, (state) => state.issuanceAttributes);
 const registerAttributes = createSelector(state, (state) => state.registerAttributes);
 const revocationAttributes = createSelector(state, (state) => state.revocationAttributes);
+const renewAttributes = createSelector(state, (state) => state.renewAttributes);
+const identifyAttributes = createSelector(state, (state) => state.identifyAttributes);
 const approvals = createSelector(state, (state) => state.approvals);
+
+const importResults = createSelector(state, (state) => state.importResults);
+const isImporting = createSelector(state, (state) => state.isImporting);
+const isDownloadingKeystore = createSelector(state, (state) => state.isDownloadingKeystore);
+const downloadKeystoreSucceeded = createSelector(state, (state) => state.downloadKeystoreSucceeded);
+const downloadKeystoreError = createSelector(state, (state) => state.downloadKeystoreError);
 
 const isFetchingApprovals = createSelector(state, (state) => state.isFetchingApprovals);
 const isFetchingDetail = createSelector(state, (state) => state.isFetchingDetail);
@@ -1194,6 +1308,8 @@ const isUploading = createSelector(state, (state) => state.isUploading);
 const isFetchingIssuanceAttributes = createSelector(state, (state) => state.isFetchingIssuanceAttributes);
 const isFetchingRegisterAttributes = createSelector(state, (state) => state.isFetchingRegisterAttributes);
 const isFetchingRevocationAttributes = createSelector(state, (state) => state.isFetchingRevocationAttributes);
+const isFetchingRenewAttributes = createSelector(state, (state) => state.isFetchingRenewAttributes);
+const isFetchingIdentifyAttributes = createSelector(state, (state) => state.isFetchingIdentifyAttributes);
 
 const isFetchingValidationResult = createSelector(state, (state) => state.isFetchingValidationResult);
 const validationResult = createSelector(state, (state) => state.validationResult);
@@ -1224,6 +1340,7 @@ export const selectors = {
     deleteErrorMessage,
     certificates,
     listRefreshToken,
+    listBackgroundRefreshToken,
     certificateDetail,
     certificateRelations,
     isFetchingRelations,
@@ -1233,11 +1350,18 @@ export const selectors = {
     isFetchingCertificateDownloadContent,
     isFetchingCertificateChainDownloadContent,
     certificateDownloadContent,
+    importResults,
+    isImporting,
+    isDownloadingKeystore,
+    downloadKeystoreSucceeded,
+    downloadKeystoreError,
     certificateHistory,
     certificateLocations,
     issuanceAttributes,
     registerAttributes,
     revocationAttributes,
+    renewAttributes,
+    identifyAttributes,
     approvals,
     isFetchingDetail,
     isFetchingHistory,
@@ -1264,6 +1388,8 @@ export const selectors = {
     isFetchingIssuanceAttributes,
     isFetchingRegisterAttributes,
     isFetchingRevocationAttributes,
+    isFetchingRenewAttributes,
+    isFetchingIdentifyAttributes,
     isFetchingValidationResult,
     validationResult,
     isFetchingCsrAttributes,

@@ -1,5 +1,5 @@
 import Button from 'components/Button';
-import { TriangleAlert } from 'lucide-react';
+import { TriangleAlert, X } from 'lucide-react';
 import type { PickerColumn } from 'types/tableColumns';
 import { getColumnHeading } from 'utils/tableColumns';
 
@@ -12,6 +12,8 @@ type Props = Readonly<{
     fellBackToStandard: boolean;
     /** Drops the columns this table cannot show from the stored view, which is the only cure for them. */
     onRemove?: () => void;
+    /** Hides the notice. Nothing times it out, because it holds the only control for these columns. */
+    onDismiss?: () => void;
     /** Whether a view write is already out. A second one would be built from the first one's optimistic state. */
     isBusy?: boolean;
     dataTestId: string;
@@ -39,6 +41,7 @@ export default function UnresolvedColumnsNotice({
     storedCount,
     fellBackToStandard,
     onRemove,
+    onDismiss,
     isBusy = false,
     dataTestId,
 }: Props) {
@@ -63,6 +66,17 @@ export default function UnresolvedColumnsNotice({
                 <Button variant="transparent" color="secondary" onClick={onRemove} disabled={isBusy} data-testid={`${dataTestId}-remove`}>
                     Remove from view
                 </Button>
+            )}
+            {onDismiss && (
+                <button
+                    type="button"
+                    aria-label="Dismiss"
+                    onClick={onDismiss}
+                    className="ml-auto flex size-8 shrink-0 items-center justify-center rounded-md text-content-muted hover:bg-surface-hover hover:text-content focus-visible:outline-2 focus-visible:outline-offset-2"
+                    data-testid={`${dataTestId}-dismiss`}
+                >
+                    <X size={16} aria-hidden="true" />
+                </button>
             )}
         </output>
     );

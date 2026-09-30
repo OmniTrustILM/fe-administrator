@@ -21,7 +21,8 @@ import type { ViewSlice } from 'types/listViews';
 import type { Resource } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
 import { moveColumn, toCatalogueFields } from 'utils/columnPicker';
-import { type ColumnSort, buildColumnHeaders, getColumnHeading, getColumnKey } from 'utils/tableColumns';
+import { storableColumnTest } from 'utils/listViews';
+import { type ColumnSort, buildColumnHeaders, countStorableColumns, getColumnHeading, getColumnKey } from 'utils/tableColumns';
 import {
     buildListRequest,
     getRenderableProperties,
@@ -90,6 +91,8 @@ type Props<TRow extends object> = {
      * omit the applied columns and ordering, blanking every attribute column and ignoring the sort.
      */
     refreshToken?: number;
+    /** Like `refreshToken`, but for a refresh the user did not ask for, so the checked rows are kept. */
+    backgroundRefreshToken?: number;
 };
 
 const EMPTY_HEADERS: TableHeader[] = [];
@@ -122,6 +125,7 @@ function PagedList<TRow extends object>({
     columnForDetail,
     extraFilterComponent,
     refreshToken,
+    backgroundRefreshToken,
 }: Readonly<Props<TRow>>) {
     const dispatch = useDispatch();
     const store = useStore<AppState>();
@@ -142,6 +146,11 @@ function PagedList<TRow extends object>({
     const catalogue = useSelector(filterSelectors.availableFilters(entity));
     const hasLoadedCatalogue = useSelector(filterSelectors.hasLoadedFilters(entity));
     const hasCatalogueFailed = useSelector(filterSelectors.hasFailedFilters(entity));
+    const isFetchingCatalogue = useSelector(filterSelectors.isFetchingFilters(entity));
+    // A page opened again still holds the catalogue it read last time, and the strip must not open on that copy.
+    const hasSettledCatalogue = hasLoadedCatalogue && !isFetchingCatalogue;
+    // Nor on one a failed read left behind: stored columns would resolve against stale or no fields, and writes send them on.
+    const hasCatalogueForViews = hasSettledCatalogue && !hasCatalogueFailed;
 
     // Taken apart rather than depended on whole: an unmemoised config would rebuild `getFreshData`
     // every render, and the effect watching it would refetch forever.
@@ -166,8 +175,8 @@ function PagedList<TRow extends object>({
      * Sortability merged in, from the catalogue once it has answered and from the page's own declared
      * ordering until then. Applied to whatever set is on the table rather than to the standard one
      * alone: a selection replaces that set, and the catalogue can still answer after one was taken —
-     * the duck keeps a resource's fields across visits, so the strip opens on the held answer while
-     * the refetch is out, and merging only into the standard set would freeze that selection on it.
+     * the duck keeps a resource's fields across visits, so the held answer is merged until the refetch
+     * lands, and merging only into the standard set would freeze a selection on it.
      */
     const withSortability = useCallback(
         (columns: ColumnDefinition[]) =>
@@ -176,6 +185,10 @@ function PagedList<TRow extends object>({
     );
 
     const sortableStandardColumns = useMemo(() => withSortability(standardColumns ?? NO_COLUMNS), [withSortability, standardColumns]);
+    const isStorable = useMemo(
+        () => storableColumnTest({ catalogue, standardColumns: sortableStandardColumns }),
+        [catalogue, sortableStandardColumns],
+    );
 
     // Holds only the deviation and falls back, so a config arriving after the first render cannot
     // leave the table with no columns at all.
@@ -192,8 +205,18 @@ function PagedList<TRow extends object>({
         () => (columnsResource ? listViewSelectors.hasLoaded(columnsResource) : () => false),
         [columnsResource],
     );
+    const selectIsFetchingViews = useMemo(
+        () => (columnsResource ? listViewSelectors.isFetching(columnsResource) : () => false),
+        [columnsResource],
+    );
+    const selectIsStaleViews = useMemo(
+        () => (columnsResource ? listViewSelectors.isStale(columnsResource) : () => false),
+        [columnsResource],
+    );
     const hasLoadedViews = useSelector(selectHasLoadedViews);
-    const isStripReady = isViewStripReady(hasLoadedViews, hasLoadedCatalogue);
+    const isFetchingViews = useSelector(selectIsFetchingViews);
+    const isStaleViews = useSelector(selectIsStaleViews);
+    const isStripReady = isViewStripReady(hasLoadedViews && !isFetchingViews && !isStaleViews, hasSettledCatalogue);
 
     const totalItems = useSelector(selectors.totalItems(entity));
     const checkedRows = useSelector(selectors.checkedRows(entity));
@@ -236,15 +259,16 @@ function PagedList<TRow extends object>({
         (key: string) => {
             // An empty selection reads as "back to Standard", so the last column standing holds here as
             // it does in the menu, rather than resetting the table to a set nobody asked for.
-            if (appliedColumns.length === 1) return;
+            const target = appliedColumns.find((column) => getColumnKey(column) === key);
+            if ((target === undefined || isStorable(target)) && countStorableColumns(appliedColumns, isStorable) === 1) return;
             applyColumns(appliedColumns.filter((column) => getColumnKey(column) !== key));
         },
-        [applyColumns, appliedColumns],
+        [applyColumns, appliedColumns, isStorable],
     );
 
     const onToggleColumn = useCallback(
-        (field: SourcedCatalogueField) => applyColumns(toggleColumn(appliedColumns, field, sortableStandardColumns)),
-        [applyColumns, appliedColumns, sortableStandardColumns],
+        (field: SourcedCatalogueField) => applyColumns(toggleColumn(appliedColumns, field, sortableStandardColumns, isStorable)),
+        [applyColumns, appliedColumns, sortableStandardColumns, isStorable],
     );
 
     const addColumnMenu = useMemo(
@@ -258,9 +282,10 @@ function PagedList<TRow extends object>({
                     // set wholesale, so a change made before that would be wiped without a trace.
                     onToggle={isStripReady ? onToggleColumn : undefined}
                     onReset={isStripReady ? onResetColumns : undefined}
+                    isStorable={isStorable}
                 />
             ) : undefined,
-        [isColumnDriven, catalogueFields, hasLoadedCatalogue, appliedColumns, onToggleColumn, onResetColumns, isStripReady],
+        [isColumnDriven, catalogueFields, hasLoadedCatalogue, appliedColumns, onToggleColumn, onResetColumns, isStripReady, isStorable],
     );
 
     const currentFiltersSnapshot = useMemo(() => JSON.stringify(currentFilters ?? []), [currentFilters]);
@@ -316,16 +341,22 @@ function PagedList<TRow extends object>({
     listRequestRef.current = listRequest;
 
     /** What the last request actually stood for, so the one effect below cannot send it twice. */
-    const lastSent = useRef<{ request: string; refreshToken: unknown; onList: typeof onListCallback } | undefined>(undefined);
+    const lastSent = useRef<
+        { request: string; refreshToken: unknown; backgroundRefreshToken: unknown; onList: typeof onListCallback } | undefined
+    >(undefined);
 
-    const getFreshData = useCallback(() => {
+    const requestList = useCallback(() => {
         // What this request asks to be projected is what the rows will carry, so a column dropped since
         // the last fetch stops counting as available and asks for a new one if it comes back. A request
         // that fails leaves no rows, and the effect below takes the claim back.
         projectedKeys.current = toProjectedKeys(listRequestRef.current.columns);
         onListCallback(listRequestRef.current);
+    }, [onListCallback]);
+
+    const getFreshData = useCallback(() => {
+        requestList();
         onCheckedRowsChanged([]);
-    }, [onListCallback, onCheckedRowsChanged]);
+    }, [requestList, onCheckedRowsChanged]);
 
     const onPageSizeChanged = useCallback(
         (pageSize: number) => {
@@ -441,7 +472,7 @@ function PagedList<TRow extends object>({
                     onRename={(next) => onRenameColumn(header.id, next)}
                     defaultHeading={shippedHeadings.get(header.id) ?? column.catalogueLabel}
                     onRemove={() => onRemoveColumn(header.id)}
-                    isLastColumn={appliedColumns.length === 1}
+                    isLastColumn={isStorable(column) && countStorableColumns(appliedColumns, isStorable) === 1}
                     dataTestId={`column-header-menu-${header.id}`}
                 />
             );
@@ -456,6 +487,7 @@ function PagedList<TRow extends object>({
             onRenameColumn,
             onRemoveColumn,
             shippedHeadings,
+            isStorable,
         ],
     );
 
@@ -563,20 +595,24 @@ function PagedList<TRow extends object>({
         const wanted = wantedProjection === '' ? [] : wantedProjection.split(PROJECTION_SEPARATOR);
         const needsProjection = wanted.some((key) => !projectedKeys.current.includes(key));
         const sent = lastSent.current;
-
-        if (
+        const onlyBackgroundMoved =
             !needsProjection &&
             sent?.request === listRequestSnapshot &&
             sent.refreshToken === refreshToken &&
-            sent.onList === onListCallback
-        ) {
+            sent.onList === onListCallback;
+
+        if (onlyBackgroundMoved && sent.backgroundRefreshToken === backgroundRefreshToken) {
             return;
         }
 
-        lastSent.current = { request: listRequestSnapshot, refreshToken, onList: onListCallback };
-        getFreshData();
+        lastSent.current = { request: listRequestSnapshot, refreshToken, backgroundRefreshToken, onList: onListCallback };
+        if (onlyBackgroundMoved) {
+            requestList();
+        } else {
+            getFreshData();
+        }
         setHasSentFirstRequest(true);
-    }, [getFreshData, wantedProjection, listRequestSnapshot, refreshToken, onListCallback]);
+    }, [getFreshData, requestList, wantedProjection, listRequestSnapshot, refreshToken, backgroundRefreshToken, onListCallback]);
 
     const buttons: WidgetButtonProps[] = useMemo(() => {
         const result = [];
@@ -660,7 +696,7 @@ function PagedList<TRow extends object>({
                 <ViewTabs
                     resource={columnsResource}
                     catalogue={catalogue}
-                    isCatalogueLoaded={hasLoadedCatalogue}
+                    isCatalogueLoaded={hasCatalogueForViews}
                     standardColumns={sortableStandardColumns}
                     standardSort={defaultSort}
                     renderableProperties={renderableProperties}

@@ -1,7 +1,7 @@
-import { describe, expect, test, vi, beforeEach } from 'vitest';
+import { afterEach, describe, expect, test, vi, beforeEach } from 'vitest';
 
 import { runDownloadFileSuite, setupAnchorDownloadMocks } from './__tests__/anchor-download-mock';
-import { downloadFile, downloadFileZip, formatPEM } from './download';
+import { downloadFile, downloadFileZip, fileNameFromContentDisposition, formatPEM, triggerBlobDownload } from './download';
 
 const mockCreateObjectURL = vi.fn(() => 'blob:mock-url');
 const mockRevokeObjectURL = vi.fn();
@@ -40,7 +40,7 @@ describe('downloadFileZip', () => {
         expect(mockCreateObjectURL).toHaveBeenCalledTimes(1);
         expect(fakeAnchor.download).toMatch(/CertificateDownload/);
         expect(mockRemove).toHaveBeenCalledTimes(1);
-        expect(mockRevokeObjectURL).toHaveBeenCalledTimes(1);
+        await vi.waitFor(() => expect(mockRevokeObjectURL).toHaveBeenCalledTimes(1));
     });
 
     test('triggers blob download for der certificates', async () => {
@@ -59,6 +59,33 @@ describe('downloadFileZip', () => {
 
         await vi.waitFor(() => expect(mockCreateObjectURL).toHaveBeenCalledTimes(1));
         expect(mockClick).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('triggerBlobDownload', () => {
+    beforeEach(() => {
+        vi.clearAllMocks();
+        vi.useFakeTimers();
+    });
+
+    afterEach(() => {
+        vi.useRealTimers();
+    });
+
+    test('removes the anchor at once, and revokes the object URL only in the task after the click', () => {
+        const { fakeAnchor, mockClick, mockRemove } = setupAnchorDownloadMocks();
+
+        triggerBlobDownload(new Blob(['bytes']), 'web-01.p12');
+
+        expect(fakeAnchor.download).toBe('web-01.p12');
+        expect(mockClick).toHaveBeenCalledTimes(1);
+        expect(mockRemove).toHaveBeenCalledTimes(1);
+        expect(mockRevokeObjectURL).not.toHaveBeenCalled();
+
+        vi.runAllTimers();
+
+        expect(mockRevokeObjectURL).toHaveBeenCalledWith('blob:mock-url');
+        expect(mockClick.mock.invocationCallOrder[0]).toBeLessThan(mockRevokeObjectURL.mock.invocationCallOrder[0]);
     });
 });
 
@@ -126,5 +153,28 @@ describe('downloadFile', () => {
         const { mockClick } = setupAnchorDownloadMocks();
         downloadFile('', 'empty.txt');
         expect(mockClick).toHaveBeenCalledTimes(1);
+    });
+});
+
+describe('fileNameFromContentDisposition', () => {
+    test('reads filename*', () => {
+        expect(fileNameFromContentDisposition("attachment; filename*=UTF-8''web-01.p12", 'fallback.p12')).toBe('web-01.p12');
+    });
+    test('reads a quoted filename', () => {
+        expect(fileNameFromContentDisposition('attachment; filename="web-01.p12"', 'fallback.p12')).toBe('web-01.p12');
+    });
+    test('falls back when there is no header', () => {
+        expect(fileNameFromContentDisposition(undefined, 'fallback.p12')).toBe('fallback.p12');
+    });
+    test('falls back when the header names no file', () => {
+        expect(fileNameFromContentDisposition('attachment', 'fallback.pem')).toBe('fallback.pem');
+    });
+    test('falls back to a plain filename when the extended one cannot be decoded', () => {
+        expect(fileNameFromContentDisposition('attachment; filename*=UTF-8\'\'%E0%A4%A; filename="plain.p12"', 'fallback.p12')).toBe(
+            'plain.p12',
+        );
+    });
+    test('falls back to the fallback when the extended filename cannot be decoded and there is no plain one', () => {
+        expect(fileNameFromContentDisposition("attachment; filename*=UTF-8''%E0%A4%A", 'fallback.p12')).toBe('fallback.p12');
     });
 });

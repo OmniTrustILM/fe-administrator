@@ -341,6 +341,42 @@ describe('toggleColumn', () => {
         expect(toggleColumn(only, commonName)).toBe(only);
     });
 
+    it('keeps the last column a view can store, though a display-only one stands beside it', () => {
+        const duration = {
+            fieldSource: FilterFieldSource.Property,
+            fieldIdentifier: 'DISCOVERY_DURATION',
+            catalogueLabel: 'Duration',
+            displayOnly: true,
+        };
+        const withDuration = [columns[0], duration];
+
+        expect(toggleColumn(withDuration, commonName)).toBe(withDuration);
+    });
+
+    it('takes a display-only column off beside the last column a view can store', () => {
+        const duration = {
+            fieldSource: FilterFieldSource.Property,
+            fieldIdentifier: 'DISCOVERY_DURATION',
+            catalogueLabel: 'Duration',
+            displayOnly: true,
+        };
+        const durationField = {
+            fieldSource: FilterFieldSource.Property,
+            fieldIdentifier: 'DISCOVERY_DURATION',
+            fieldLabel: 'Duration',
+        } as SourcedCatalogueField;
+
+        expect(toggleColumn([columns[0], duration], durationField)).toEqual([columns[0]]);
+    });
+
+    it('keeps the last column a view can store when the other one has lost its field', () => {
+        const gone: ColumnDefinition = { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', catalogueLabel: 'retired' };
+        const withGone = [columns[0], gone];
+        const isStorable = (column: ColumnDefinition) => column !== gone;
+
+        expect(toggleColumn(withGone, commonName, [], isStorable)).toBe(withGone);
+    });
+
     it('tells a field of one source from the same identifier under another', () => {
         const customCommonName = { ...commonName, fieldSource: FilterFieldSource.Custom } as SourcedCatalogueField;
 

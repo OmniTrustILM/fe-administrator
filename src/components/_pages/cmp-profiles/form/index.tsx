@@ -907,7 +907,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
                                         isSaving ||
                                         !isValid ||
                                         isBusy ||
-                                        !formValues.requestProtectionMethod ||
+                                        (!isRegistrationChallengeSource && !formValues.requestProtectionMethod) ||
                                         !formValues.responseProtectionMethod ||
                                         areDefaultValuesSame(formValues)
                                     }

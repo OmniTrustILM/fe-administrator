@@ -1,5 +1,5 @@
 import cn from 'classnames';
-import { type ReactNode, useEffect, useId, useRef, useState } from 'react';
+import { type KeyboardEvent, type ReactNode, useEffect, useId, useRef, useState } from 'react';
 import { Eye, EyeOff } from 'lucide-react';
 import Label from 'components/Label';
 import DatePicker from 'components/DatePicker';
@@ -13,6 +13,7 @@ type Props = {
     value?: string;
     onChange: (value: string) => void;
     onBlur?: () => void;
+    onKeyDown?: (event: KeyboardEvent<HTMLInputElement>) => void;
     placeholder?: string;
     disabled?: boolean;
     id?: string;
@@ -35,6 +36,7 @@ function TextInput({
     value,
     onChange,
     onBlur,
+    onKeyDown,
     placeholder,
     disabled,
     id,
@@ -166,6 +168,7 @@ function TextInput({
                     value={value || ''}
                     onChange={(e) => onChange(e.target.value)}
                     onBlur={onBlur}
+                    onKeyDown={onKeyDown}
                     disabled={disabled}
                     id={passwordToggleTargetId ?? id}
                     aria-invalid={invalid || undefined}

@@ -36,6 +36,8 @@ import TabLayout from 'components/Layout/TabLayout';
 import Switch from 'components/Switch';
 import { isObjectSame } from 'utils/common-utils';
 import Container from 'components/Container';
+import OperationAttributesEditor from '../OperationAttributesEditor';
+import { useOperationAttributes } from '../OperationAttributesEditor/useOperationAttributes';
 
 interface FormValues {
     pkcs10: File | null;
@@ -65,6 +67,8 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
     const altKeys = useSelector(keySelectors.altCryptographicKeyPairs);
 
     const rekeying = useSelector(certificateSelectors.isRekeying);
+    // Rekey is a renew at the authority, so it takes the renew schema.
+    const renew = useOperationAttributes('renew', certificate?.raProfile?.uuid, certificate?.raProfile?.authorityInstanceUuid);
 
     const parsedCertificateRequest = useSelector(utilsCertificateRequestSelectors.parsedCertificateRequest);
 
@@ -116,6 +120,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                         request: fileContent || undefined,
                         format: CertificateRequestFormat.Pkcs10,
                         signatureAttributes: collectFormAttributes('signatureAttributes', signatureAttributeDescriptors, allValues),
+                        attributes: renew.collect(allValues),
                         keyUuid: values.key?.uuid || '',
                         tokenProfileUuid: values.tokenProfile || '',
                         ...(values.includeAltKey
@@ -134,7 +139,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
             );
             onCancel();
         },
-        [certificate, dispatch, fileContent, signatureAttributeDescriptors, altSignatureAttributeDescriptors, onCancel],
+        [certificate, dispatch, fileContent, signatureAttributeDescriptors, altSignatureAttributeDescriptors, renew, onCancel],
     );
 
     const onTokenProfileChange = useCallback(
@@ -256,6 +261,9 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
         return areValuesSame;
     }, [watchedUploadCsr, fileContent, watchedKey, watchedAltKey, defaultValues]);
 
+    const renewAttributesTabs =
+        renew.descriptors.length > 0 ? [{ title: 'Renew Attributes', content: <OperationAttributesEditor attributes={renew} /> }] : [];
+
     const getSignatureAttributesTabs = useCallback(() => {
         return watchedUploadCsr
             ? []
@@ -303,6 +311,8 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
         altSignatureAttributeDescriptors,
         altSignatureAttributesCallbackAttributes,
     ]);
+    const attributeTabs = [...renewAttributesTabs, ...getSignatureAttributesTabs()];
+
     const onSubmit = (values: FormValues) => {
         const allValues = watchedValues;
         submitCallback(values, allValues);
@@ -312,7 +322,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
         <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)}>
                 <div className="space-y-4">
-                    <Widget noBorder busy={rekeying || isFetchingSignatureAttributes}>
+                    <Widget noBorder busy={rekeying || isFetchingSignatureAttributes || renew.isFetching}>
                         <Controller
                             name="uploadCsr"
                             control={control}
@@ -440,13 +450,15 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                                         name="includeAltKey"
                                         control={control}
                                         render={({ field }) => (
-                                            <Switch
-                                                id="includeAltKey"
-                                                label="Include Alternative Key"
-                                                checked={field.value || false}
-                                                onChange={field.onChange}
-                                                disabled={!!defaultValues.altKey || !!defaultValues.altTokenProfile}
-                                            />
+                                            <div className="mb-4">
+                                                <Switch
+                                                    id="includeAltKey"
+                                                    label="Include Alternative Key"
+                                                    checked={field.value || false}
+                                                    onChange={field.onChange}
+                                                    disabled={!!defaultValues.altKey || !!defaultValues.altTokenProfile}
+                                                />
+                                            </div>
                                         )}
                                     />
                                 )}
@@ -522,12 +534,12 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                                         />
                                     </>
                                 )}
-
-                                {getSignatureAttributesTabs().length ? <TabLayout noBorder tabs={getSignatureAttributesTabs()} /> : <></>}
                             </>
                         ) : (
                             <></>
                         )}
+
+                        {attributeTabs.length ? <TabLayout noBorder tabs={attributeTabs} onlyActiveTabContent={false} /> : <></>}
 
                         <Container className="flex-row justify-end modal-footer" gap={4}>
                             <Button variant="outline" onClick={onCancel} disabled={formState.isSubmitting} type="button">
@@ -537,7 +549,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                                 title="Rekey"
                                 inProgressTitle="Rekeying..."
                                 inProgress={formState.isSubmitting || rekeying}
-                                disabled={!formState.isValid || !isRekeyAllowed()}
+                                disabled={!formState.isValid || !isRekeyAllowed() || renew.isFetching}
                             />
                         </Container>
                     </Widget>

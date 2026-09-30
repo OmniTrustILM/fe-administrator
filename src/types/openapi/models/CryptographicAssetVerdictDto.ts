@@ -35,7 +35,7 @@ export interface CryptographicAssetVerdictDto {
      */
     reason?: string;
     /**
-     * Values of the asset fields the deciding rule evaluated, recorded at decision time
+     * Values of the asset fields the deciding rule evaluated, recorded at decision time and as stored, so assetType may be unroutable for an asset served with no type
      * @type {{ [key: string]: any; }}
      * @memberof CryptographicAssetVerdictDto
      */

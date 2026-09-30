@@ -21,14 +21,13 @@ import type { CertificateListResponseModel, SearchRequestModel } from 'types/cer
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { preservedFilterRestore } from 'utils/preservedFilters';
 import { dateFormatter } from 'utils/dateUtil';
-import type { AttributeRequestModel } from '../../../../types/attributes';
 import { type CertificateState, PlatformEnum, Resource } from '../../../../types/openapi';
 import { getCertificateStatusColor } from 'utils/certificate';
 import { buildColumnHeaders } from 'utils/tableColumns';
 import CertificateGroupDialog from '../CertificateGroupDialog';
+import CertificateImportDialog from '../CertificateImportDialog';
 import CertificateOwnerDialog from '../CertificateOwnerDialog';
 import CertificateRAProfileDialog from '../CertificateRAProfileDialog';
-import CertificateUploadDialog from '../CertificateUploadDialog';
 import { ArrowDownToLine } from 'lucide-react';
 import Switch from 'components/Switch';
 import { CERTIFICATE_COLUMNS, buildCertificateCellRegistry } from '../certificateTableHelpers';
@@ -59,6 +58,7 @@ export default function CertificateList({
 
     const certificates = useSelector(selectors.certificates);
     const listRefreshToken = useSelector(selectors.listRefreshToken);
+    const listBackgroundRefreshToken = useSelector(selectors.listBackgroundRefreshToken);
     const checkedRows = useSelector(pagingSelectors.checkedRows(EntityType.CERTIFICATE));
     const users = useSelector(userSelectors.users);
 
@@ -73,7 +73,7 @@ export default function CertificateList({
     const isBulkUpdatingGroup = useSelector(selectors.isBulkUpdatingGroup);
     const isBulkUpdatingRaProfile = useSelector(selectors.isBulkUpdatingRaProfile);
     const isBulkUpdatingOwner = useSelector(selectors.isBulkUpdatingOwner);
-    const isUploading = useSelector(selectors.isUploading);
+    const isImporting = useSelector(selectors.isImporting);
     const certificateTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateType));
     const isIncludeArchived = useSelector(selectors.isIncludeArchived);
     const currentFilters = useSelector(filterSelectors.currentFilters(EntityType.CERTIFICATE));
@@ -96,8 +96,7 @@ export default function CertificateList({
         isUpdatingOwner ||
         isBulkUpdatingGroup ||
         isBulkUpdatingRaProfile ||
-        isBulkUpdatingOwner ||
-        isUploading;
+        isBulkUpdatingOwner;
 
     useEffect(() => {
         dispatch(actions.clearDeleteErrorMessages());
@@ -112,19 +111,6 @@ export default function CertificateList({
             onCheckedRowsChanged(checkedRows);
         }
     }, [checkedRows, onCheckedRowsChanged]);
-
-    const onUploadClick = useCallback(
-        (data: { fileContent: string; customAttributes?: Array<AttributeRequestModel> }) => {
-            if (data.fileContent) {
-                try {
-                    dispatch(actions.uploadCertificate({ certificate: data.fileContent, customAttributes: data.customAttributes ?? [] }));
-                } catch {}
-            }
-
-            setUpload(false);
-        },
-        [dispatch],
-    );
 
     const downloadDropDown = useMemo(
         () => (
@@ -171,14 +157,14 @@ export default function CertificateList({
                           tooltip: 'Add Certificate',
                           onClick: (event) => {
                               event.preventDefault();
-                              navigate(`/${Resource.Certificates.toLowerCase()}/add`);
+                              void navigate(`/${Resource.Certificates.toLowerCase()}/add`);
                           },
                           id: 'add-certificate',
                       },
                       {
                           icon: 'upload',
                           disabled: false,
-                          tooltip: 'Upload Certificate',
+                          tooltip: 'Import certificates and keys',
                           onClick: () => {
                               setUpload(true);
                           },
@@ -329,6 +315,7 @@ export default function CertificateList({
                 entity={EntityType.CERTIFICATE}
                 onListCallback={onListCallback}
                 refreshToken={listRefreshToken}
+                backgroundRefreshToken={listBackgroundRefreshToken}
                 onDeleteCallback={(uuids, filters) => dispatch(actions.bulkDelete({ uuids, filters }))}
                 getAvailableFiltersApi={useCallback(
                     (apiClients: ApiClients) => apiClients.certificates.getCertificateSearchableFields(),
@@ -358,9 +345,12 @@ export default function CertificateList({
 
             <Dialog
                 isOpen={upload}
-                caption={`Upload Certificate`}
-                body={<CertificateUploadDialog onCancel={() => setUpload(false)} onUpload={(data) => onUploadClick(data)} />}
-                toggle={() => setUpload(false)}
+                caption="Import certificates and keys"
+                body={<CertificateImportDialog onCancel={() => setUpload(false)} onDone={() => setUpload(false)} />}
+                toggle={() => {
+                    // An import in flight is seen through to its results, so the dialog is not closed under it.
+                    if (!isImporting) setUpload(false);
+                }}
                 buttons={[]}
                 size="xl"
                 icon="upload"
@@ -404,7 +394,7 @@ export default function CertificateList({
                 caption="Override RA Profile"
                 body={
                     <CertificateRAProfileDialog
-                        uuids={checkedRows}
+                        target={{ kind: 'selection', uuids: checkedRows.map(String) }}
                         onCancel={() => setUpdateRaProfile(false)}
                         onUpdate={() => setUpdateRaProfile(false)}
                     />

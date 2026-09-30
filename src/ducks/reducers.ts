@@ -32,6 +32,7 @@ import { slice as discoveriesSlice } from './discoveries';
 import { slice as initialEntitiesSlice } from './entities';
 import { slice as enumsSlice } from './enums';
 import { slice as infoSlice } from './info';
+import { slice as inspectionsSlice } from './inspections';
 import { slice as initialFiltersSlice } from './filters';
 import { slice as globalMetadataSlice } from './globalMetadata';
 import { slice as initialLocationsSlice } from './locations';
@@ -123,6 +124,7 @@ export const reducers = combineReducers({
     [notificationProfilesSlice.name]: notificationProfilesSlice.reducer,
     [enumsSlice.name]: enumsSlice.reducer,
     [infoSlice.name]: infoSlice.reducer,
+    [inspectionsSlice.name]: inspectionsSlice.reducer,
     [tokenSlice.name]: tokenSlice.reducer,
     [tokenProfileSlice.name]: tokenProfileSlice.reducer,
     [tablePaginationSlice.name]: tablePaginationSlice.reducer,

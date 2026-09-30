@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { CryptographicAssetType, PqcVerdict } from './';
+import type { BaseAttributeContentDtoV3, CryptographicAssetType, PqcVerdict } from './';
 
 /**
  * @export
@@ -31,11 +31,11 @@ export interface CryptographicAssetDto {
      */
     name?: string;
     /**
-     * Type of the asset
+     * Type of the asset, as the producer declared it in CycloneDX cryptoProperties.assetType. Absent when the producer declared none of the CycloneDX asset types
      * @type {CryptographicAssetType}
      * @memberof CryptographicAssetDto
      */
-    type: CryptographicAssetType;
+    type?: CryptographicAssetType;
     /**
      * Post-quantum readiness verdict computed by the platform rule set
      * @type {PqcVerdict}
@@ -60,4 +60,10 @@ export interface CryptographicAssetDto {
      * @memberof CryptographicAssetDto
      */
     quarantined: boolean;
+    /**
+     * Values of the attribute-sourced fields requested as columns, keyed by field source and then by field identifier. Present only when the listing request asked for attribute-sourced columns; a field the object has no value for is absent rather than empty, and a multi-valued attribute arrives in its stored item_order.
+     * @type {{ [key: string]: { [key: string]: Array<BaseAttributeContentDtoV3>; }; }}
+     * @memberof CryptographicAssetDto
+     */
+    attributeValues?: { [key: string]: { [key: string]: Array<BaseAttributeContentDtoV3> } };
 }

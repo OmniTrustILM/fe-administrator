@@ -10,7 +10,7 @@ import CryptoAssetDetail from './index';
 setupReactActEnvironment();
 
 vi.mock('./CryptoAssetDetailSections', () => ({
-    CryptoAssetSummary: () => <div data-testid="crypto-asset-summary" />,
+    CryptoAssetSummary: ({ typeLabel }: { typeLabel: string }) => <div data-testid="crypto-asset-summary">{typeLabel}</div>,
     CryptoAssetIdentity: () => <div />,
     CryptoAssetVerdict: () => <div />,
     CryptoAssetSources: () => <div />,
@@ -71,6 +71,12 @@ describe('CryptoAssetDetail', () => {
         expect(container.textContent).toContain('Service unavailable');
         expect(buttonLabels()).toContain('Back to Crypto Assets');
         expect(buttonLabels()).toContain('Retry');
+    });
+
+    test('an asset without a type shows Untyped as its type in the summary', async () => {
+        await render(storeWith({ assetDetail: { uuid: 'asset-1', name: 'RSA-2048', pqcVerdict: 'notReady' } }));
+
+        expect(container.querySelector('[data-testid="crypto-asset-summary"]')?.textContent).toContain('Untyped');
     });
 
     test('a loaded asset heads the page with its name and shows the summary', async () => {

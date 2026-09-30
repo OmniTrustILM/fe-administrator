@@ -91,6 +91,7 @@ export interface ListTokenProfileAttributesRequest {
 
 export interface ListTokenProfilesRequest {
     enabled?: boolean;
+    importable?: Array<string>;
 }
 
 export interface UpdateKeyUsagesRequest {
@@ -361,7 +362,7 @@ export class TokenProfileManagementApi extends BaseAPI {
     }
 
     /**
-     * Returns the Key Request Types supported for the specified token profile, based on its token configuration, profile attributes and selected key usages
+     * Returns the Key Request Types supported for the specified token profile, based on its token configuration and profile attributes
      * List supported Key Request Types
      */
     listSupportedKeyRequestTypes({
@@ -438,18 +439,25 @@ export class TokenProfileManagementApi extends BaseAPI {
     }
 
     /**
+     * With importable, lists only the token profiles whose provider imports every given key type and algorithm, as far as the platform has recorded. A profile whose provider declares key import but whose answer is not recorded yet is listed; the import then checks it.
      * List of available Token Profiles
      */
-    listTokenProfiles({ enabled }: ListTokenProfilesRequest): Observable<Array<TokenProfileDto>>;
-    listTokenProfiles({ enabled }: ListTokenProfilesRequest, opts?: OperationOpts): Observable<AjaxResponse<Array<TokenProfileDto>>>;
+    listTokenProfiles({ enabled, importable }: ListTokenProfilesRequest): Observable<Array<TokenProfileDto>>;
     listTokenProfiles(
-        { enabled }: ListTokenProfilesRequest,
+        { enabled, importable }: ListTokenProfilesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<TokenProfileDto>>>;
+    listTokenProfiles(
+        { enabled, importable }: ListTokenProfilesRequest,
         opts?: OperationOpts,
     ): Observable<Array<TokenProfileDto> | AjaxResponse<Array<TokenProfileDto>>> {
         const queryParams: HttpQuery = {};
 
         if (enabled != null) {
             queryParams['enabled'] = enabled;
+        }
+        if (importable != null) {
+            queryParams['importable'] = importable;
         }
 
         return this.request<Array<TokenProfileDto>>(

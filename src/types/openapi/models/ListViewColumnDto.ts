@@ -31,7 +31,7 @@ export interface ListViewColumnDto {
      */
     fieldIdentifier: string;
     /**
-     * Heading to show instead of the field\'s catalogue label. Absent means the column uses the catalogue label, so a field that is later relabelled follows along; setting this pins the heading for this view only. A blank heading is rejected rather than pinned.
+     * Heading to show instead of the field\'s catalogue label, for this view only. Absent or null means the column uses the catalogue label, so a field that is later relabelled follows along. An empty or whitespace-only string is preserved as given and shows no visible heading.
      * @type {string}
      * @memberof ListViewColumnDto
      */

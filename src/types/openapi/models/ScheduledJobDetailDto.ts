@@ -67,6 +67,12 @@ export interface ScheduledJobDetailDto {
      */
     lastExecutionStatus: SchedulerJobExecutionStatus;
     /**
+     * Time at which the job is next due to run, projected from its stored CRON expression -- not an observed value read back from the scheduler, so it does not confirm the scheduler still holds a live trigger for this job. Absent when the job is disabled, when it is a one-time job whose run has succeeded, or when its CRON expression yields no further run. Evaluated in core\'s JVM default timezone; assumes this matches the timezone the scheduler service had when the job\'s trigger was created -- if the two differ, this value can be off by the difference between them.
+     * @type {string}
+     * @memberof ScheduledJobDetailDto
+     */
+    nextFireTime?: string;
+    /**
      * @type {string}
      * @memberof ScheduledJobDetailDto
      */

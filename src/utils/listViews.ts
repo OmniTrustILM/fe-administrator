@@ -9,7 +9,7 @@ import {
     SortDirection,
     type ViewSlice,
 } from 'types/listViews';
-import { AttributeContentType, type Resource, type SearchFieldDataByGroupDto } from 'types/openapi';
+import { AttributeContentType, FilterFieldSource, type Resource, type SearchFieldDataByGroupDto } from 'types/openapi';
 import type { ColumnDefinition, PickerColumn, SourcedCatalogueField } from 'types/tableColumns';
 import { resolveColumns } from './columnPicker';
 import { type ColumnSort, getColumnHeading, getColumnKey, getSortKey } from './tableColumns';
@@ -101,21 +101,54 @@ export function splitTabs(tabs: readonly ViewTab[], activeId: string, cap: numbe
     };
 }
 
+/** The longest name Core stores for a view. */
+export const MAX_VIEW_NAME_LENGTH = 255;
+
+const COPY_SUFFIXES = /(?: \(copy\)(?: \d+)?)+$/;
+const LAST_COPY_NUMBER = / \(copy\)(?: (\d+))?$/;
+
 /**
  * The name a duplicate is auto-named with, so duplicating never interrupts with a dialog.
  *
  * Names are unique per user and resource, so `<name> (copy)` alone would fail the second time. A
- * numeric suffix is appended rather than stacking `(copy) (copy)`, which reads as an accident.
+ * numeric suffix is appended rather than stacking `(copy) (copy)`, which reads as an accident, and a
+ * duplicate of a duplicate joins the same series instead of copying the copy.
  */
 export function duplicateName(name: string, existing: readonly string[]): string {
-    const taken = new Set(existing);
-    const base = `${name} (copy)`;
-    if (!taken.has(base)) return base;
+    const stem = name.replace(COPY_SUFFIXES, '') || name;
 
-    for (let suffix = 2; ; suffix++) {
-        const candidate = `${base} ${suffix}`;
+    // Numbering resumes at the source's own number: a shortened stem was cut for that suffix, and a lower one would cut it wider.
+    const parsed = Number(LAST_COPY_NUMBER.exec(name)?.[1] ?? 1);
+    const sourceSuffix = parsed >= 1 && Number.isSafeInteger(parsed) ? parsed : 1;
+
+    const taken = new Set(existing);
+    for (let suffix = sourceSuffix; ; suffix = suffix < Number.MAX_SAFE_INTEGER ? suffix + 1 : 1) {
+        const ending = suffix === 1 ? ' (copy)' : ` (copy) ${suffix}`;
+        const candidate = `${fitStem(stem, MAX_VIEW_NAME_LENGTH - ending.length)}${ending}`;
         if (!taken.has(candidate)) return candidate;
     }
+}
+
+export function newViewName(existing: readonly string[]): string {
+    const taken = new Set(existing);
+    if (!taken.has('New view')) return 'New view';
+
+    for (let suffix = 2; ; suffix++) {
+        const candidate = `New view ${suffix}`;
+        if (!taken.has(candidate)) return candidate;
+    }
+}
+
+// A cut can end the stem on a copy suffix that sat mid-name, which would stack a second one onto it.
+function fitStem(stem: string, length: number): string {
+    const cut = truncate(stem, length);
+    return cut.replace(COPY_SUFFIXES, '').trimEnd() || cut;
+}
+
+// Core counts UTF-16 code units, so the cut is by unit, backed off a unit rather than split a surrogate pair.
+function truncate(text: string, length: number): string {
+    const cut = text.slice(0, length);
+    return (/[\uD800-\uDBFF]$/.test(cut) ? cut.slice(0, -1) : cut).trimEnd();
 }
 
 /** A stored sort as the table expresses one. */
@@ -187,16 +220,61 @@ function secretFieldKeys(catalogue: readonly SearchFieldDataByGroupDto[]): Set<s
  * would become a durable plaintext copy of secret material outside the storage that protects it. The
  * filter still applies to the table in front of the user; it is only kept out of what is written
  * back. A presence-only condition on the same field survives, because it carries nothing to leak.
+ *
+ * It also drops the filters {@link withoutMissingFieldFilters} drops, which Core refuses unless the stored
+ * row already holds that exact filter. A held filter on an attribute that has left the catalogue keeps only a
+ * presence-only condition: with the field gone nothing says whether its content was a secret, so a value on
+ * it is treated as one.
  */
 export function toStorableFilters(
     filters: readonly SearchFilterModel[],
     catalogue: readonly SearchFieldDataByGroupDto[],
+    held: readonly SearchFilterModel[],
 ): SearchFilterModel[] {
     const secret = secretFieldKeys(catalogue);
-    if (secret.size === 0) return [...filters];
+    const published = catalogueKeys(catalogue);
+    const mayBeSecret = (filter: SearchFilterModel) => {
+        const key = getColumnKey(filter);
+        const isGone = published.size > 0 && filter.fieldSource !== FilterFieldSource.Property && !published.has(key);
+        return secret.has(key) || isGone;
+    };
 
-    return filters.filter((filter) => !(secret.has(getColumnKey(filter)) && carriesValue(filter)));
+    return withoutMissingFieldFilters(filters, catalogue, held).filter((filter) => !(mayBeSecret(filter) && carriesValue(filter)));
 }
+
+/**
+ * The filters minus any on an attribute that has left the catalogue, such as a deleted custom attribute,
+ * unless `held`, the stored row's filters, has that exact filter. Core exempts only the filter as stored, so
+ * a changed condition or value on such a field is refused like a new one. A property filter is kept: Core
+ * checks it against every field the resource defines, which the published catalogue need not list. An empty
+ * catalogue is read as "has not arrived", so nothing is dropped.
+ */
+export function withoutMissingFieldFilters(
+    filters: readonly SearchFilterModel[],
+    catalogue: readonly SearchFieldDataByGroupDto[],
+    held: readonly SearchFilterModel[] = [],
+): SearchFilterModel[] {
+    const published = catalogueKeys(catalogue);
+    if (published.size === 0) return [...filters];
+
+    const carried = new Set(held.map(getFilterKey));
+
+    return filters.filter(
+        (filter) =>
+            filter.fieldSource === FilterFieldSource.Property || published.has(getColumnKey(filter)) || carried.has(getFilterKey(filter)),
+    );
+}
+
+/** A filter reduced to the four fields a view stores, so two can be compared whatever their key order. */
+export function getFilterKey(filter: SearchFilterModel): string {
+    return JSON.stringify([filter.fieldSource, filter.fieldIdentifier, filter.condition, filter.value ?? null]);
+}
+
+/**
+ * A column the stored row already holds. Core lets an update keep such a column after its field has left the
+ * catalogue, but not introduce one, and a create carries nothing already, so it passes none.
+ */
+export type StoredField = Pick<ListViewColumnModel, 'fieldSource' | 'fieldIdentifier'>;
 
 function catalogueKeys(catalogue: readonly SearchFieldDataByGroupDto[]): Set<string> {
     const keys = new Set<string>();
@@ -210,22 +288,56 @@ function catalogueKeys(catalogue: readonly SearchFieldDataByGroupDto[]): Set<str
     return keys;
 }
 
+/** What a write is checked against: the live column catalogue and the page's own platform column set. */
+export interface ViewSchema {
+    catalogue: readonly SearchFieldDataByGroupDto[];
+    standardColumns: readonly ColumnDefinition[];
+}
+
 /**
- * The columns a view is allowed to store: those naming a field the catalogue publishes. Core rejects
- * anything outside it, so a display-only column would make every save of the view fail.
+ * The columns a view is allowed to store.
  *
- * Read from the raw groups rather than through {@link toCatalogueFields}: a column the listing cannot
- * display is still one the API accepts, and is kept — see {@link toStoredColumnsKeepingUnavailable}.
- * An empty catalogue is read as "has not arrived", so a failed read does not empty every view.
+ * A display-only platform column is always dropped, because no field resolves it and Core refuses it. Any
+ * other platform column is always kept: Core validates against every field the resource defines, and the
+ * published catalogue can leave out one the listing still shows.
+ *
+ * A column that is neither published nor a platform column has a field that is gone, such as a deleted
+ * attribute. It is kept when `held` names it, so the column comes back when the field does, and dropped
+ * otherwise. See {@link StoredField}.
+ *
+ * An empty catalogue is read as "has not arrived", so a failed read does not empty every view. The raw
+ * groups are read rather than {@link toCatalogueFields}, because a column the listing cannot display is
+ * still one the API accepts. See {@link toStoredColumnsKeepingUnavailable}.
  */
 export function toStorableColumns(
     columns: readonly ListViewColumnModel[],
-    catalogue: readonly SearchFieldDataByGroupDto[],
+    schema: ViewSchema,
+    held: readonly StoredField[],
 ): ListViewColumnModel[] {
-    const keys = catalogueKeys(catalogue);
-    if (keys.size === 0) return [...columns];
+    const carried = new Set(held.map(getColumnKey));
+    const isStorable = storableColumnTest(schema, carried);
 
-    return columns.filter((column) => keys.has(getColumnKey(column)));
+    return columns.filter(isStorable);
+}
+
+/**
+ * Whether a create would store the column, by the rules of {@link toStorableColumns}. What the table's
+ * last-column lock counts, so the column it keeps is one a new view can hold.
+ */
+export function storableColumnTest(
+    schema: ViewSchema,
+    carried: ReadonlySet<string> = new Set(),
+): (column: Pick<ColumnDefinition, 'fieldSource' | 'fieldIdentifier'>) => boolean {
+    const platform = new Map(schema.standardColumns.map((column) => [getColumnKey(column), column]));
+    const published = catalogueKeys(schema.catalogue);
+
+    return (column) => {
+        const key = getColumnKey(column);
+        const standard = platform.get(key);
+        if (standard) return !standard.displayOnly;
+
+        return published.size === 0 || published.has(key) || carried.has(key);
+    };
 }
 
 /**
@@ -233,14 +345,11 @@ export function toStorableColumns(
  * stored view is read; everything downstream — {@link ResolvedView}, the notice, the table — states
  * only what it does with the result.
  *
- * A view names `(fieldSource, fieldIdentifier)` pairs, and two different things can go wrong with
- * one. A field that has been deleted never arrives: `GET /v1/listViews` resolves the stored pairs
- * against the resource's own catalogue and omits what it cannot offer, so a view built entirely on
- * deleted fields arrives with no columns at all — which is the case `fellBackToStandard` exists for,
- * and the only reachable one, since nothing is left to name. A column the *listing* cannot display —
- * a secret's content, an encrypted value — does arrive intact, because the catalogue the API
- * validates a view against carries no notion of `displayable`; it is kept in place and marked
- * unavailable rather than dropped, so it can be named and reviewed instead of vanishing.
+ * A view names `(fieldSource, fieldIdentifier)` pairs, and a stored pair can fail to resolve in two
+ * ways. Its field can be gone — a deleted attribute — or the *listing* can be unable to display it — a
+ * secret's content, an encrypted value. Either way it arrives intact and is kept in place, marked
+ * unavailable rather than dropped, so it can be named and reviewed instead of vanishing. A view whose
+ * every column is unavailable is the case `fellBackToStandard` exists for.
  *
  * @param standardColumns the platform default set, which both supplies columns the filter-field
  * catalogue does not publish and is what an entirely unresolved view falls back to.
@@ -307,9 +416,8 @@ function columnSignature(columns: readonly ColumnDefinition[]): string {
     return JSON.stringify(columns.map((column) => [getColumnKey(column), getColumnHeading(column)]));
 }
 
-/** A filter list reduced to its four stored fields, so key order in the object cannot matter. */
 function filterSignature(filters: readonly SearchFilterModel[]): string {
-    return JSON.stringify(filters.map((filter) => [filter.fieldSource, filter.fieldIdentifier, filter.condition, filter.value ?? null]));
+    return JSON.stringify(filters.map(getFilterKey));
 }
 
 function sortSignature(sort: ColumnSort | undefined): string {
@@ -322,10 +430,17 @@ function sortSignature(sort: ColumnSort | undefined): string {
  * Sorting and filtering are edits to the view, so both mark the tab and offer Revert / Save to view.
  * Never autosaved: a view is the thing a user comes back to, and a stray click on a header should not
  * quietly redefine "Expiry watch".
+ *
+ * Against a stored view, display-only columns are left out on both sides: the view never stores one, so a
+ * save could neither keep nor take it away, and a view that fell back to the platform set shows them too.
+ * Against Standard they count, because Standard ships them.
  */
-export function isSliceDirty(stored: ViewSlice, current: ViewSlice): boolean {
+export function isSliceDirty(stored: ViewSlice, current: ViewSlice, against: 'standard' | 'view'): boolean {
+    const storable = (columns: readonly ColumnDefinition[]) =>
+        against === 'view' ? columns.filter((column) => !column.displayOnly) : columns;
+
     return (
-        columnSignature(stored.columns) !== columnSignature(current.columns) ||
+        columnSignature(storable(stored.columns)) !== columnSignature(storable(current.columns)) ||
         filterSignature(stored.filters) !== filterSignature(current.filters) ||
         sortSignature(stored.sort) !== sortSignature(current.sort)
     );
@@ -339,9 +454,8 @@ export function isSliceDirty(stored: ViewSlice, current: ViewSlice): boolean {
  * showed it, so the user was never offered the choice — the notice that names it is the one place such a
  * column is removed, because it is the one place it is shown.
  *
- * A column may be unrenderable because the catalogue marks it undisplayable, or because the page has
- * no cell renderer for it. Both are kept. A column outside the catalogue entirely is a third case and
- * does not survive {@link toStorableColumns}, which runs after this on every write.
+ * A column may be unrenderable because the catalogue marks it undisplayable, because the page has no
+ * cell renderer for it, or because its field is gone. All three are kept; see {@link toStorableColumns}.
  */
 export function toStoredColumnsKeepingUnavailable(
     rendered: readonly ColumnDefinition[],
@@ -358,21 +472,21 @@ export function toStoredColumnsKeepingUnavailable(
 }
 
 /**
- * A create request for a new view holding the given slice. The catalogue is required because both
- * sieves run on every write. See {@link toStorableColumns} and {@link toStorableFilters}.
+ * A create request for a new view holding the given slice. The schema is required because both sieves
+ * run on every write. See {@link toStorableColumns} and {@link toStorableFilters}.
  */
 export function toCreateRequest(
     name: string,
     resource: Resource,
     slice: ViewSlice,
-    catalogue: readonly SearchFieldDataByGroupDto[],
+    schema: ViewSchema,
     defaultView = false,
 ): ListViewRequestModel {
     return {
         name,
         resource,
-        columns: toStorableColumns(toStoredColumns(slice.columns), catalogue),
-        filters: toStorableFilters(slice.filters, catalogue),
+        columns: toStorableColumns(toStoredColumns(slice.columns), schema, []),
+        filters: toStorableFilters(slice.filters, schema.catalogue, []),
         sort: toStoredSort(slice.sort),
         defaultView,
     };
@@ -384,18 +498,18 @@ export function toCreateRequest(
  * The API replaces the whole row, so every field it does not mean to change has to be sent back as it
  * stands. A rename that omitted the columns would empty the view.
  *
- * Which is why the catalogue is required rather than optional: a rename, a pin or a column edit sends
+ * Which is why the schema is required rather than optional: a rename, a pin or a column edit sends
  * the stored filters back untouched, and a view that arrived carrying a secret-valued filter — written
  * by a client that predates this rule, or by one that does not apply it — would have that plaintext
  * rewritten on every one of them. The whole row is filtered on the way out, the patch included, so
  * there is no update path left that can carry such a value. See {@link toStorableFilters}.
  *
- * The columns go through {@link toStorableColumns} for a different reason: a column the catalogue
- * does not publish makes the API reject the whole request.
+ * The columns go through {@link toStorableColumns} for a different reason: a display-only column, or a
+ * field that is gone and that the stored row does not already hold, makes the API reject the whole request.
  */
 export function toUpdateRequest(
     view: ListViewModel,
-    catalogue: readonly SearchFieldDataByGroupDto[],
+    schema: ViewSchema,
     patch: Partial<ListViewUpdateRequestModel> = {},
 ): ListViewUpdateRequestModel {
     const row: ListViewUpdateRequestModel = {
@@ -409,7 +523,7 @@ export function toUpdateRequest(
 
     return {
         ...row,
-        columns: toStorableColumns(row.columns ?? [], catalogue),
-        filters: toStorableFilters(row.filters ?? [], catalogue),
+        columns: toStorableColumns(row.columns ?? [], schema, view.columns),
+        filters: toStorableFilters(row.filters ?? [], schema.catalogue, view.filters ?? []),
     };
 }

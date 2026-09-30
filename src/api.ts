@@ -32,6 +32,7 @@ import {
     ExternalNotificationManagementApi,
     GlobalMetadataApi,
     InfoApi,
+    InspectionApi,
     InternalNotificationApi,
     ListViewApi,
     LocationManagementApi,
@@ -112,6 +113,7 @@ export interface ApiClients {
     login: OAuth2LoginManagementV2Api;
     notificationProfiles: NotificationProfileInventoryApi;
     certificates: CertificateInventoryApi;
+    inspections: InspectionApi;
     acmeAccounts: ACMEAccountManagementApi;
     acmeProfiles: ACMEProfileManagementApi;
     scepProfiles: SCEPProfileManagementApi;
@@ -166,6 +168,7 @@ const factories: Partial<{ [K in ApiClientKey]: () => ApiClients[K] }> = {
     triggers: () => new WorkflowTriggersManagementApi(configuration),
     events: () => new WorkflowEventManagementApi(configuration),
     certificates: () => new CertificateInventoryApi(configuration),
+    inspections: () => new InspectionApi(configuration),
     auditLogs: () => new AuditLogApi(configuration),
     raProfiles: () => new RAProfileManagementApi(configuration),
     credentials: () => new CredentialManagementApi(configuration),

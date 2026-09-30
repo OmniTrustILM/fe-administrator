@@ -30,6 +30,10 @@ type Props = Readonly<{
     /** The ordering the page declares as its own, as the connector and discovery inventories do. */
     defaultSort?: ColumnSort;
     withheldCatalogue?: boolean;
+    /** Preloads a catalogue from an earlier visit with the read that replaces it still in flight. */
+    isRefetchingCatalogue?: boolean;
+    /** Preloads a catalogue from an earlier visit whose read again has since failed. */
+    failedCatalogue?: boolean;
     /** Preloads the view list as still in flight, which is the other half of what the strip waits for. */
     withheldViews?: boolean;
     /** Filters already in the duck when the host mounts, as a deep link leaves them. */
@@ -183,6 +187,8 @@ export default function PagedListColumnsWithStore({
     views = [],
     defaultSort,
     withheldCatalogue = false,
+    isRefetchingCatalogue = false,
+    failedCatalogue = false,
     withheldViews = false,
     initialFilters = [],
     withRefreshControl = false,
@@ -210,8 +216,9 @@ export default function PagedListColumnsWithStore({
                             availableFilters: withheldCatalogue ? [] : catalogue,
                             currentFilters: initialFilters,
                             preservedFilters: [],
-                            isFetchingFilters: withheldCatalogue,
+                            isFetchingFilters: withheldCatalogue || isRefetchingCatalogue,
                             hasLoadedFilters: !withheldCatalogue,
+                            hasFailedFilters: failedCatalogue,
                         },
                     },
                 ],

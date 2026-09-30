@@ -30,6 +30,11 @@ export interface ColumnDefinition {
     sortable?: boolean;
     multiValue?: boolean;
     align?: 'left' | 'center' | 'right';
+    /**
+     * A platform column no `FilterField` resolves, such as a computed duration. It renders, but Core
+     * refuses it in a stored view, so it is never written into one.
+     */
+    displayOnly?: boolean;
 }
 
 /**
