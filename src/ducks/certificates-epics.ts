@@ -1,5 +1,6 @@
 import type { AppEpic } from 'ducks';
 import { EMPTY, merge, of, race, timer } from 'rxjs';
+import { AjaxError } from 'rxjs/ajax';
 import { catchError, endWith, filter, map, mergeMap, switchMap, take, takeUntil, takeWhile, tap, timeout } from 'rxjs/operators';
 import { extractError, withReadableResponse } from 'utils/net';
 import { extractComplianceErrors } from 'utils/raProfileValidation';
@@ -256,6 +257,11 @@ const issueCertificateNew: AppEpic = (action$, state, deps) => {
     );
 };
 
+// A caller that shows its errors inline skips the global fetchError, but a 401 must still reach it: its reducer is
+// what sends an expired session to the login page, and for a 401 it shows no toast that would repeat the error.
+const expiredSession = (err: unknown, message: string) =>
+    err instanceof AjaxError && err.status === 401 ? [appRedirectActions.fetchError({ error: err, message })] : [];
+
 const registerCertificate: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.registerCertificate.match),
@@ -277,6 +283,12 @@ const registerCertificate: AppEpic = (action$, state, deps) => {
                     catchError((err) => {
                         const error = extractError(err, 'Failed to register certificate');
                         const validationErrors = extractComplianceErrors(err);
+                        if (action.payload.inlineErrors) {
+                            return of(
+                                slice.actions.registerCertificateFailure({ error, validationErrors }),
+                                ...expiredSession(err, 'Failed to register certificate'),
+                            );
+                        }
                         if (validationErrors) {
                             return of(slice.actions.registerCertificateFailure({ error, validationErrors }));
                         }
@@ -388,10 +400,12 @@ const renewCertificate: AppEpic = (action$, state, deps) => {
                         ),
                     ),
 
+                    // The renew dialog stays open and shows the error inline: with a registration challenge in play a
+                    // detached toast would hide which attempt failed, and each wrong challenge spends one attempt.
                     catchError((err) =>
                         of(
                             slice.actions.renewCertificateFailure({ error: extractError(err, 'Failed to renew certificate') }),
-                            appRedirectActions.fetchError({ error: err, message: 'Failed to renew certificate' }),
+                            ...expiredSession(err, 'Failed to renew certificate'),
                         ),
                     ),
                 ),
@@ -418,10 +432,11 @@ const rekeyCertificate: AppEpic = (action$, state, deps) => {
                         ),
                     ),
 
+                    // Shown inline by the rekey dialog, which stays open on failure (see renewCertificate).
                     catchError((err) =>
                         of(
                             slice.actions.rekeyCertificateFailure({ error: extractError(err, 'Failed to rekey certificate') }),
-                            appRedirectActions.fetchError({ error: err, message: 'Failed to rekey certificate' }),
+                            ...expiredSession(err, 'Failed to rekey certificate'),
                         ),
                     ),
                 ),

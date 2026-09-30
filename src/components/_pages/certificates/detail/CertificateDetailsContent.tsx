@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router';
 import Select from 'components/Select';
@@ -24,7 +24,7 @@ import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { actions as certificateGroupActions, selectors as groupSelectors } from 'ducks/certificateGroups';
 import { actions as userActions, selectors as userSelectors } from 'ducks/users';
 import type { AttributeRequestModel } from 'types/attributes';
-import type { CertificateDetailResponseModel } from 'types/certificate';
+import type { CertificateDetailResponseModel, CertificateRegistrationRequestModel } from 'types/certificate';
 import {
     CertificateRegistrationState,
     CertificateRequestFormat,
@@ -77,6 +77,12 @@ export default function CertificateDetailsContent({ certificate, validationResul
     const isUpdatingTrustedStatus = useSelector(selectors.isUpdatingTrustedStatus);
     const isUpdatingGroup = useSelector(selectors.isUpdatingGroup);
     const isUpdatingOwner = useSelector(selectors.isUpdatingOwner);
+    const renewErrorMessage = useSelector(selectors.renewErrorMessage);
+    const rekeyErrorMessage = useSelector(selectors.rekeyErrorMessage);
+    const registerErrorMessage = useSelector(selectors.registerErrorMessage);
+    const isRenewing = useSelector(selectors.isRenewing);
+    const isRegistering = useSelector(selectors.isRegistering);
+    const isRekeying = useSelector(selectors.isRekeying);
 
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [renew, setRenew] = useState(false);
@@ -153,24 +159,71 @@ export default function CertificateDetailsContent({ certificate, validationResul
         setConfirmDelete(false);
     }, [certificate, dispatch]);
 
+    // The renew dialog closes itself once the renewal or registration is confirmed; a failure keeps it open.
     const onRenew = useCallback(
-        (data: { fileContent?: string; attributes: AttributeRequestModel[] }) => {
+        (data: { fileContent?: string; authorizationSecret?: string; attributes: AttributeRequestModel[] }) => {
             dispatch(
                 actions.renewCertificate({
                     uuid: certificate?.uuid || '',
                     renewRequest: {
                         format: CertificateRequestFormat.Pkcs10,
                         request: data.fileContent,
+                        authorizationSecret: data.authorizationSecret,
                         attributes: data.attributes,
                     },
                     raProfileUuid: certificate?.raProfile?.uuid || '',
                     authorityUuid: certificate?.raProfile?.authorityInstanceUuid || '',
                 }),
             );
-            setRenew(false);
         },
         [dispatch, certificate],
     );
+
+    const onRegisterSuccessor = useCallback(
+        (registerRequest: CertificateRegistrationRequestModel) => {
+            dispatch(
+                actions.registerCertificate({
+                    authorityUuid: certificate?.raProfile?.authorityInstanceUuid || '',
+                    raProfileUuid: certificate?.raProfile?.uuid || '',
+                    registerRequest,
+                    inlineErrors: true,
+                }),
+            );
+        },
+        [dispatch, certificate],
+    );
+
+    // A failed renew or rekey leaves the dialog open without refetching (a refetch would unmount it), yet a wrong
+    // challenge still spends an attempt and can lock the registration. Remember the failure for the dismiss rather than
+    // reading the error then: switching the Register mode or retrying clears the error, not what Core recorded.
+    const attemptFailed = useRef(false);
+    useEffect(() => {
+        if (renewErrorMessage || registerErrorMessage || rekeyErrorMessage) attemptFailed.current = true;
+    }, [renewErrorMessage, registerErrorMessage, rekeyErrorMessage]);
+
+    const closeOperationDialog = useCallback(
+        (close: () => void) => {
+            close();
+            if (attemptFailed.current) {
+                attemptFailed.current = false;
+                getFreshCertificateDetail();
+            }
+        },
+        [getFreshCertificateDetail],
+    );
+
+    // Neither dialog can be dismissed mid-request: its outcome is shown only in the dialog.
+    const onCloseRenew = useCallback(() => {
+        if (!isRenewing && !isRegistering) closeOperationDialog(() => setRenew(false));
+    }, [isRenewing, isRegistering, closeOperationDialog]);
+
+    const onCloseRekey = useCallback(() => {
+        if (!isRekeying) closeOperationDialog(() => setRekey(false));
+    }, [isRekeying, closeOperationDialog]);
+
+    // A confirmed operation redirects to the new certificate, so the one it left needs no refetch.
+    const onRenewDone = useCallback(() => setRenew(false), []);
+    const onRekeyDone = useCallback(() => setRekey(false), []);
 
     const onCancelGroupUpdate = useCallback(() => {
         setUpdateGroup(false);
@@ -276,13 +329,19 @@ export default function CertificateDetailsContent({ certificate, validationResul
                 icon: 'retweet',
                 disabled: !certificate?.raProfile || certificate?.state !== CertStatus.Issued || isCertificateArchived,
                 tooltip: 'Renew',
-                onClick: () => setRenew(true),
+                onClick: () => {
+                    attemptFailed.current = false;
+                    setRenew(true);
+                },
             },
             {
                 icon: 'rekey',
                 disabled: !certificate?.raProfile || certificate?.state !== CertStatus.Issued || isCertificateArchived,
                 tooltip: 'Rekey',
-                onClick: () => setRekey(true),
+                onClick: () => {
+                    attemptFailed.current = false;
+                    setRekey(true);
+                },
             },
             {
                 icon: 'minus-square',
@@ -649,14 +708,18 @@ export default function CertificateDetailsContent({ certificate, validationResul
                 isOpen={renew}
                 caption={`Renew Certificate`}
                 body={
-                    <CertificateRenewDialog
-                        onCancel={() => setRenew(false)}
-                        onRenew={onRenew}
-                        allowWithoutFile={certificate?.privateKeyAvailability || false}
-                        certificate={certificate}
-                    />
+                    certificate ? (
+                        <CertificateRenewDialog
+                            certificate={certificate}
+                            onCancel={onCloseRenew}
+                            onDone={onRenewDone}
+                            onRenew={onRenew}
+                            onRegister={onRegisterSuccessor}
+                            allowWithoutFile={certificate.privateKeyAvailability || false}
+                        />
+                    ) : null
                 }
-                toggle={() => setRenew(false)}
+                toggle={onCloseRenew}
                 buttons={[]}
                 icon="refresh"
                 size="xl"
@@ -665,8 +728,8 @@ export default function CertificateDetailsContent({ certificate, validationResul
             <Dialog
                 isOpen={rekey}
                 caption={`Rekey Certificate`}
-                body={<CertificateRekeyDialog onCancel={() => setRekey(false)} certificate={certificate} />}
-                toggle={() => setRekey(false)}
+                body={<CertificateRekeyDialog onCancel={onCloseRekey} onDone={onRekeyDone} certificate={certificate} />}
+                toggle={onCloseRekey}
                 buttons={[]}
                 icon="shuffle"
                 size="xl"

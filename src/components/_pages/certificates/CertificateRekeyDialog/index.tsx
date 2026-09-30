@@ -8,7 +8,7 @@ import { actions as connectorActions } from 'ducks/connectors';
 import { actions as keyActions, selectors as keySelectors } from 'ducks/cryptographic-keys';
 import { actions as cryptographyOperationActions, selectors as cryptographyOperationSelectors } from 'ducks/cryptographic-operations';
 import { actions as tokenProfileActions, selectors as tokenProfileSelectors } from 'ducks/token-profiles';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, type FieldValues, FormProvider, useForm, useWatch } from 'react-hook-form';
 
 import { useDispatch, useSelector } from 'react-redux';
@@ -18,7 +18,7 @@ import Button from 'components/Button';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import type { CryptographicKeyPairResponseModel } from 'types/cryptographic-keys';
-import { CertificateRequestFormat, KeyType } from 'types/openapi';
+import { CertificateRegistrationState, CertificateRequestFormat, KeyType } from 'types/openapi';
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { buildValidationRules } from 'utils/validators-helper';
 import { validateRequired } from 'utils/validators';
@@ -36,11 +36,14 @@ import TabLayout from 'components/Layout/TabLayout';
 import Switch from 'components/Switch';
 import { isObjectSame } from 'utils/common-utils';
 import Container from 'components/Container';
+import TextInput from 'components/TextInput';
 import OperationAttributesEditor from '../OperationAttributesEditor';
 import { useOperationAttributes } from '../OperationAttributesEditor/useOperationAttributes';
 
 interface FormValues {
     pkcs10: File | null;
+    // The certificate's registration challenge, verified by Core on rekey.
+    authorizationSecret?: string;
     uploadCsr?: boolean;
     includeAltKey?: boolean;
     tokenProfile?: string;
@@ -51,10 +54,12 @@ interface FormValues {
 
 type props = {
     onCancel: () => void;
+    // Called once Core confirms the rekey; the page then redirects to the new certificate.
+    onDone: () => void;
     certificate?: CertificateDetailResponseModel;
 };
 
-export default function CertificateRekeyDialog({ onCancel, certificate }: Readonly<props>) {
+export default function CertificateRekeyDialog({ onCancel, onDone, certificate }: Readonly<props>) {
     const dispatch = useDispatch();
 
     const isFetchingSignatureAttributes = useSelector(cryptographyOperationSelectors.isFetchingSignatureAttributes);
@@ -69,6 +74,11 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
     const rekeying = useSelector(certificateSelectors.isRekeying);
     // Rekey is a renew at the authority, so it takes the renew schema.
     const renew = useOperationAttributes('renew', certificate?.raProfile?.uuid, certificate?.raProfile?.authorityInstanceUuid);
+    const rekeyErrorMessage = useSelector(certificateSelectors.rekeyErrorMessage);
+
+    // Core verifies the challenge only while the registration is Active; with none, or a Closed one, the rekey
+    // passes without it.
+    const hasChallenge = certificate?.registration?.state === CertificateRegistrationState.Active;
 
     const parsedCertificateRequest = useSelector(utilsCertificateRequestSelectors.parsedCertificateRequest);
 
@@ -85,6 +95,25 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
         dispatch(utilsCertificateRequestActions.reset());
         dispatch(utilsActuatorActions.health());
     }, [dispatch]);
+
+    // Start each session with a clean slate so a stale error from a previous attempt never lingers,
+    // and clear it again on unmount.
+    useEffect(() => {
+        dispatch(certificateActions.clearRekeyErrors());
+        return () => {
+            dispatch(certificateActions.clearRekeyErrors());
+        };
+    }, [dispatch]);
+
+    // Close once a rekey is confirmed: a true→false in-flight transition with no error. A failure keeps the dialog
+    // open so the holder can correct a mistyped challenge, each of which spends one attempt.
+    const wasRekeying = useRef(false);
+    useEffect(() => {
+        if (wasRekeying.current && !rekeying && !rekeyErrorMessage) {
+            onDone();
+        }
+        wasRekeying.current = rekeying;
+    }, [rekeying, rekeyErrorMessage, onDone]);
 
     useEffect(() => {
         setCertificateRequest(
@@ -119,6 +148,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                     rekey: {
                         request: fileContent || undefined,
                         format: CertificateRequestFormat.Pkcs10,
+                        authorizationSecret: hasChallenge ? values.authorizationSecret : undefined,
                         signatureAttributes: collectFormAttributes('signatureAttributes', signatureAttributeDescriptors, allValues),
                         attributes: renew.collect(allValues),
                         keyUuid: values.key?.uuid || '',
@@ -137,9 +167,8 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                     },
                 }),
             );
-            onCancel();
         },
-        [certificate, dispatch, fileContent, signatureAttributeDescriptors, altSignatureAttributeDescriptors, renew, onCancel],
+        [certificate, dispatch, fileContent, hasChallenge, signatureAttributeDescriptors, altSignatureAttributeDescriptors, renew],
     );
 
     const onTokenProfileChange = useCallback(
@@ -247,6 +276,7 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
     const watchedKey = useWatch({ control, name: 'key' });
     const watchedAltKey = useWatch({ control, name: 'altKey' });
     const watchedIncludeAltKey = useWatch({ control, name: 'includeAltKey' });
+    const watchedAuthorizationSecret = useWatch({ control, name: 'authorizationSecret' });
 
     const isRekeyAllowed = useCallback(() => {
         if (watchedUploadCsr) {
@@ -322,6 +352,29 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
         <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)}>
                 <div className="space-y-4">
+                    {rekeyErrorMessage && (
+                        <div className="rounded-lg border border-danger bg-danger-surface p-4" data-testid="rekeyDialogError" role="alert">
+                            <p className="whitespace-pre-line text-sm text-danger">{rekeyErrorMessage}</p>
+                        </div>
+                    )}
+
+                    {hasChallenge && (
+                        <Controller
+                            name="authorizationSecret"
+                            control={control}
+                            render={({ field: { value, onChange } }) => (
+                                <TextInput
+                                    id="rekeyAuthorizationSecret"
+                                    type="password"
+                                    required
+                                    label="Challenge"
+                                    value={value ?? ''}
+                                    onChange={onChange}
+                                />
+                            )}
+                        />
+                    )}
+
                     <Widget noBorder busy={rekeying || isFetchingSignatureAttributes || renew.isFetching}>
                         <Controller
                             name="uploadCsr"
@@ -542,14 +595,19 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                         {attributeTabs.length ? <TabLayout noBorder tabs={attributeTabs} onlyActiveTabContent={false} /> : <></>}
 
                         <Container className="flex-row justify-end modal-footer" gap={4}>
-                            <Button variant="outline" onClick={onCancel} disabled={formState.isSubmitting} type="button">
+                            <Button variant="outline" onClick={onCancel} disabled={formState.isSubmitting || rekeying} type="button">
                                 Cancel
                             </Button>
                             <ProgressButton
                                 title="Rekey"
                                 inProgressTitle="Rekeying..."
                                 inProgress={formState.isSubmitting || rekeying}
-                                disabled={!formState.isValid || !isRekeyAllowed() || renew.isFetching}
+                                disabled={
+                                    !formState.isValid ||
+                                    !isRekeyAllowed() ||
+                                    renew.isFetching ||
+                                    (hasChallenge && !watchedAuthorizationSecret?.trim())
+                                }
                             />
                         </Container>
                     </Widget>

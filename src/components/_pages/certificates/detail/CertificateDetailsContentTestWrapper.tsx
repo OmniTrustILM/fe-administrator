@@ -8,36 +8,39 @@ import { testInitialState, testReducers } from 'ducks/test-reducers';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import { type CertificateRegistrationState, CertificateState } from 'types/openapi';
 
-import CertificateRekeyDialog from './index';
+import CertificateDetailsContent from './CertificateDetailsContent';
 
-export type CertificateRekeyDialogTestWrapperProps = Readonly<{
-    /** Replaces the generated certificate entirely (registrationState is then ignored). */
-    certificate?: CertificateDetailResponseModel;
+export type CertificateDetailsContentTestWrapperProps = Readonly<{
     /** State of the certificate's registration authorization; omitted means the certificate has none. */
     registrationState?: CertificateRegistrationState;
-    preloadedState?: Partial<ReturnType<typeof testReducers>>;
-    onCancel?: () => void;
 }>;
 
 const testCertificate = (registrationState: CertificateRegistrationState | undefined): CertificateDetailResponseModel =>
     ({
-        uuid: 'certificate-uuid',
-        commonName: 'test-certificate',
+        uuid: 'source-uuid',
+        commonName: 'app.example',
+        subjectDn: 'CN=app.example',
         state: CertificateState.Issued,
-        privateKeyAvailability: false,
+        privateKeyAvailability: true,
         raProfile: { uuid: 'ra-profile-uuid', name: 'Test RA Profile', authorityInstanceUuid: 'authority-uuid' },
         registration: registrationState ? { state: registrationState, failedAttempts: 0 } : undefined,
     }) as unknown as CertificateDetailResponseModel;
 
 type CertificatesSlice = ReturnType<typeof testReducers>['certificates'];
 
-// The rekey transitions the dialog reacts to run through the real certificates reducer; everything else stays
-// a no-op on the stubbed slice.
+// The operation transitions the dialogs react to run through the real certificates reducer; everything else
+// stays a no-op on the stubbed slice.
 const dialogActions = [
+    certificateActions.renewCertificate,
+    certificateActions.renewCertificateSuccess,
+    certificateActions.renewCertificateFailure,
+    certificateActions.clearRenewErrors,
     certificateActions.rekeyCertificate,
-    certificateActions.rekeyCertificateSuccess,
     certificateActions.rekeyCertificateFailure,
     certificateActions.clearRekeyErrors,
+    certificateActions.registerCertificate,
+    certificateActions.registerCertificateFailure,
+    certificateActions.clearRegisterErrors,
 ];
 
 function rootReducer(state: ReturnType<typeof testReducers> | undefined, action: UnknownAction) {
@@ -47,15 +50,10 @@ function rootReducer(state: ReturnType<typeof testReducers> | undefined, action:
     return { ...next, certificates };
 }
 
-/** Mirrors the real parent (CertificateDetailsContent): onCancel or onDone closes the dialog and unmounts its body. */
-export function CertificateRekeyDialogTestWrapper({
-    certificate: certificateOverride,
-    registrationState,
-    preloadedState,
-    onCancel,
-}: CertificateRekeyDialogTestWrapperProps) {
-    const certificate = useMemo(() => certificateOverride ?? testCertificate(registrationState), [certificateOverride, registrationState]);
+export function CertificateDetailsContentTestWrapper({ registrationState }: CertificateDetailsContentTestWrapperProps) {
+    const certificate = useMemo(() => testCertificate(registrationState), [registrationState]);
     const [dispatched, setDispatched] = useState<UnknownAction[]>([]);
+    const [refetches, setRefetches] = useState(0);
 
     const store = useMemo(() => {
         const recorder: Middleware = () => (next) => (action) => {
@@ -66,52 +64,46 @@ export function CertificateRekeyDialogTestWrapper({
         return configureStore({
             reducer: rootReducer,
             middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(recorder),
-            preloadedState: { ...testInitialState, ...preloadedState },
+            preloadedState: testInitialState,
         });
-    }, [preloadedState]);
-
-    const [open, setOpen] = useState(true);
+    }, []);
 
     return (
         <Provider store={store}>
             <MemoryRouter>
-                {open ? (
-                    <CertificateRekeyDialog
-                        certificate={certificate}
-                        onCancel={() => {
-                            setOpen(false);
-                            onCancel?.();
-                        }}
-                        onDone={() => setOpen(false)}
-                    />
-                ) : (
-                    <div data-testid="dialog-closed" />
-                )}
-                {/* Stand-ins for the epic's outcomes. */}
+                <CertificateDetailsContent
+                    certificate={certificate}
+                    validationResult={undefined}
+                    isBusy={false}
+                    getFreshCertificateDetail={() => setRefetches((count) => count + 1)}
+                />
+                {/* Stand-ins for the epics' outcomes. */}
+                <button
+                    type="button"
+                    data-testid="simulate-renew-failure"
+                    onClick={() => store.dispatch(certificateActions.renewCertificateFailure({ error: 'challenge is invalid' }))}
+                >
+                    renew failure
+                </button>
+                <button
+                    type="button"
+                    data-testid="simulate-renew-success"
+                    onClick={() => store.dispatch(certificateActions.renewCertificateSuccess({ uuid: 'successor-uuid' }))}
+                >
+                    renew success
+                </button>
                 <button
                     type="button"
                     data-testid="simulate-rekey-failure"
-                    onClick={() =>
-                        store.dispatch(
-                            certificateActions.rekeyCertificateFailure({
-                                error: 'Failed to rekey certificate (422): The certificate registration authorization is locked after too many failed attempts.',
-                            }),
-                        )
-                    }
+                    onClick={() => store.dispatch(certificateActions.rekeyCertificateFailure({ error: 'challenge is invalid' }))}
                 >
                     rekey failure
                 </button>
-                <button
-                    type="button"
-                    data-testid="simulate-rekey-success"
-                    onClick={() => store.dispatch(certificateActions.rekeyCertificateSuccess({ uuid: 'successor-uuid' }))}
-                >
-                    rekey success
-                </button>
+                <div data-testid="refetches">{refetches}</div>
                 <div data-testid="dispatched">{JSON.stringify(dispatched)}</div>
             </MemoryRouter>
         </Provider>
     );
 }
 
-export default CertificateRekeyDialogTestWrapper;
+export default CertificateDetailsContentTestWrapper;

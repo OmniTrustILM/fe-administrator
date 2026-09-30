@@ -68,6 +68,8 @@ const ISSUE_EPIC_INDEX = findEpicIndex('issueCertificate');
 const REGISTER_EPIC_INDEX = findEpicIndex('registerCertificate');
 const COMPLETE_REGISTERED_EPIC_INDEX = findEpicIndex('completeRegisteredCertificate');
 const REVOKE_EPIC_INDEX = findEpicIndex('revokeCertificate');
+const RENEW_EPIC_INDEX = findEpicIndex('renewCertificate');
+const REKEY_EPIC_INDEX = findEpicIndex('rekeyCertificate');
 const MANUALLY_ISSUE_EPIC_INDEX = findEpicIndex('manuallyIssueCertificate');
 const MANUALLY_CONFIRM_REVOKE_EPIC_INDEX = findEpicIndex('manuallyConfirmRevoke');
 const CANCEL_PENDING_EPIC_INDEX = findEpicIndex('cancelPendingCertificateOperation');
@@ -82,9 +84,14 @@ const UPDATE_RA_PROFILE_EPIC_INDEX = findEpicIndex('updateRaProfile');
 const IMPORT_CERTIFICATES_EPIC_INDEX = findEpicIndex('importCertificates');
 const DOWNLOAD_KEYSTORE_EPIC_INDEX = findEpicIndex('downloadKeystore');
 
+// A real AjaxError, so extractError reads Core's response body the way it does at runtime.
+const coreError = (status: number, response: unknown) => new AjaxError('failed', { status, response } as never, {} as never);
+
 type ClientOpsOverrides = {
     issueCertificate?: (args: any) => any;
     revokeCertificate?: (args: any) => any;
+    renewCertificate?: (args: any) => any;
+    rekeyCertificate?: (args: any) => any;
     manuallyIssueCertificate?: (args: any) => any;
     manuallyConfirmRevoke?: (args: any) => any;
     cancelPendingCertificateOperation?: (args: any) => any;
@@ -452,6 +459,89 @@ describe('certificates epics', () => {
         expect(emitted[0].type).toBe(certificatesActions.registerCertificateFailure.type);
         expect((emitted[0] as any).payload.validationErrors).toBeUndefined();
         expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
+    });
+
+    test('registerCertificate with inline errors emits only the Failure, carrying the Core message', async () => {
+        const inlineRegisterAction = certificatesActions.registerCertificate({
+            authorityUuid: 'auth-1',
+            raProfileUuid: 'ra-1',
+            registerRequest: { sourceCertificateUuid: 'source-1' },
+            inlineErrors: true,
+        });
+        const { emitted } = await runRegisterEpic(
+            inlineRegisterAction,
+            () => throwError(() => coreError(403, { message: 'Access denied' })),
+            2,
+        );
+
+        expect(emitted).toHaveLength(1);
+        expect(emitted[0].type).toBe(certificatesActions.registerCertificateFailure.type);
+        expect((emitted[0] as any).payload.error).toContain('Access denied');
+    });
+
+    test('registerCertificate with inline errors still reports an expired session', async () => {
+        const inlineRegisterAction = certificatesActions.registerCertificate({
+            authorityUuid: 'auth-1',
+            raProfileUuid: 'ra-1',
+            registerRequest: { sourceCertificateUuid: 'source-1' },
+            inlineErrors: true,
+        });
+        const { emitted } = await runRegisterEpic(inlineRegisterAction, () => throwError(() => coreError(401, 'Unauthorized')), 2);
+
+        expect(emitted.map((a) => a.type)).toEqual([
+            certificatesActions.registerCertificateFailure.type,
+            appRedirectActions.fetchError.type,
+        ]);
+    });
+
+    const renewAction = certificatesActions.renewCertificate({
+        authorityUuid: 'auth-1',
+        raProfileUuid: 'ra-1',
+        uuid: 'cert-1',
+        renewRequest: { authorizationSecret: 'wrong-secret' },
+    });
+
+    test('renewCertificate success emits Success and redirects to the successor', async () => {
+        const emitted = await runEpic(RENEW_EPIC_INDEX, renewAction, { renewCertificate: () => of({ uuid: 'successor-1' }) });
+
+        expect(emitted.map((a) => a.type)).toEqual([certificatesActions.renewCertificateSuccess.type, appRedirectActions.redirect.type]);
+    });
+
+    test('renewCertificate failure emits only the Failure so the dialog can show the Core message inline', async () => {
+        const emitted = await runEpic(RENEW_EPIC_INDEX, renewAction, {
+            renewCertificate: () => throwError(() => coreError(422, ['The certificate registration challenge is invalid.'])),
+        });
+
+        expect(emitted).toHaveLength(1);
+        expect(emitted[0].type).toBe(certificatesActions.renewCertificateFailure.type);
+        expect((emitted[0] as any).payload.error).toContain('The certificate registration challenge is invalid.');
+    });
+
+    const rekeyAction = certificatesActions.rekeyCertificate({
+        authorityUuid: 'auth-1',
+        raProfileUuid: 'ra-1',
+        uuid: 'cert-1',
+        rekey: { authorizationSecret: 'wrong-secret' },
+    });
+
+    test('rekeyCertificate failure emits only the Failure so the dialog can show the Core message inline', async () => {
+        const emitted = await runEpic(REKEY_EPIC_INDEX, rekeyAction, {
+            rekeyCertificate: () => throwError(() => coreError(422, ['The certificate registration challenge is required.'])),
+        });
+
+        expect(emitted).toHaveLength(1);
+        expect(emitted[0].type).toBe(certificatesActions.rekeyCertificateFailure.type);
+        expect((emitted[0] as any).payload.error).toContain('The certificate registration challenge is required.');
+    });
+
+    test('renewCertificate and rekeyCertificate still report an expired session', async () => {
+        const unauthorized = () => throwError(() => coreError(401, 'Unauthorized'));
+
+        const renewed = await runEpic(RENEW_EPIC_INDEX, renewAction, { renewCertificate: unauthorized });
+        const rekeyed = await runEpic(REKEY_EPIC_INDEX, rekeyAction, { rekeyCertificate: unauthorized });
+
+        expect(renewed.map((a) => a.type)).toEqual([certificatesActions.renewCertificateFailure.type, appRedirectActions.fetchError.type]);
+        expect(rekeyed.map((a) => a.type)).toEqual([certificatesActions.rekeyCertificateFailure.type, appRedirectActions.fetchError.type]);
     });
 
     const completeRegisteredFailureAction = certificatesActions.completeRegisteredCertificate({
