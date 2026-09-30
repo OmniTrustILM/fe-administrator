@@ -117,7 +117,7 @@ const PushCertificateForm = ({
     );
 };
 
-const IssueCertificateForm = ({
+export const IssueCertificateForm = ({
     location,
     issuanceAttributeDescriptors,
     issueGroupAttributesCallbackAttributes,
@@ -163,6 +163,8 @@ const IssueCertificateForm = ({
             'csrAttributes',
             [...(csrAttributeDescriptors ?? []), ...csrGroupAttributesCallbackAttributes],
             allValues,
+            undefined,
+            { omitEmptyContent: true },
         );
         const certificateCustomAttributes = collectFormAttributes('customCertificate', resourceCustomAttributes, allValues);
         dispatch(

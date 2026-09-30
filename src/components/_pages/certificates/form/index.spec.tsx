@@ -3,6 +3,15 @@ import { failFileRead, holdFileReads } from '../../../../../playwright/fileReads
 import { testInitialState } from 'ducks/test-reducers';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import { AttributeContentType, AttributeType } from 'types/openapi';
+import {
+    csrAttributesState,
+    type DispatchedAction,
+    existingKeyState,
+    fillCommonNameAndClearSan,
+    onlyCommonNameSubmitted,
+    selectExistingKey,
+    submittedCsrAttributes,
+} from '../../test-utils/blankRequestAttribute';
 import { CertificateFormTestWrapper } from './CertificateFormTestWrapper';
 
 const csrDataDescriptor: AttributeDescriptorModel = {
@@ -627,6 +636,51 @@ test.describe('CertificateForm', () => {
 
         await createButton.click({ force: true });
         await expect.poll(() => dispatched.filter((a) => a.type === 'certificates/registerCertificate')).toHaveLength(0);
+    });
+
+    test('registerCertificate payload omits a request attribute whose default was cleared', async ({ mount, page }) => {
+        const dispatched: DispatchedAction[] = [];
+        const raprofiles = { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] };
+        await mount(
+            <CertificateFormTestWrapper onAction={(a) => dispatched.push(a)} preloadedState={{ raprofiles, ...csrAttributesState }} />,
+        );
+
+        await fillRegisterBasics(page);
+        await fillCommonNameAndClearSan(page);
+        await page.getByRole('button', { name: 'Create' }).click();
+
+        // An empty SAN would become part of the registered identity, which no CSR can ever match.
+        const submitted = await submittedCsrAttributes(
+            dispatched,
+            'certificates/registerCertificate',
+            (p) => p.registerRequest.csrAttributes,
+        );
+        expect(submitted).toEqual(onlyCommonNameSubmitted);
+    });
+
+    test('issueCertificate payload omits a request attribute whose default was cleared on the existing-key path', async ({
+        mount,
+        page,
+    }) => {
+        const dispatched: DispatchedAction[] = [];
+        const raprofiles = { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] };
+        await mount(
+            <CertificateFormTestWrapper
+                onAction={(a) => dispatched.push(a)}
+                preloadedState={{ raprofiles, ...csrAttributesState, ...existingKeyState }}
+            />,
+        );
+
+        await page.getByTestId('select-raProfile-trigger').click();
+        await page.getByRole('option', { name: 'RA One' }).click();
+        await selectExistingKey(page, 'keySource');
+        await page.getByRole('tab', { name: 'Request Attributes' }).click();
+        await fillCommonNameAndClearSan(page);
+        await page.getByRole('button', { name: 'Create' }).click();
+
+        // Core generates the CSR from these attributes, so an empty value would put an empty SAN into it.
+        const submitted = await submittedCsrAttributes(dispatched, 'certificates/issueCertificate', (p) => p.signRequest.csrAttributes);
+        expect(submitted).toEqual(onlyCommonNameSubmitted);
     });
 
     test('registerCertificate payload omits owner/groups when left empty', async ({ mount, page }) => {

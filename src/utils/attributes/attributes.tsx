@@ -348,8 +348,26 @@ function stripEmptyResourceContent(
     return content;
 }
 
-const isEmptyAttributeContentItem = (item: FormAttributeContentItem): boolean =>
-    item.data === undefined || item.data === null || item.data === '';
+const isBlankValue = (value: unknown): boolean => value === undefined || value === null || value === '';
+
+const withoutBlankItems = (value: unknown): unknown => (Array.isArray(value) ? value.filter((item) => !isBlankValue(item)) : value);
+
+// Secret, Codeblock and File content wrap the entered value in an object, so a blank one is never a blank `data`.
+// Keyed on the content type, because Object content may carry the same property names of its own. A selected
+// zero-byte file still has a name or type, so a file is empty only when all three of its fields are blank.
+const WRAPPED_VALUE_FIELDS: Partial<Record<AttributeContentType, readonly string[]>> = {
+    [AttributeContentType.Secret]: ['secret'],
+    [AttributeContentType.Codeblock]: ['code'],
+    [AttributeContentType.File]: ['content', 'fileName', 'mimeType'],
+};
+
+const isEmptyAttributeContentItem = (item: FormAttributeContentItem, contentType: AttributeContentType): boolean => {
+    if (isBlankValue(item.data)) return true;
+    const fields = WRAPPED_VALUE_FIELDS[contentType];
+    if (!fields || typeof item.data !== 'object') return false;
+    const data = item.data as Record<string, unknown>;
+    return fields.every((field) => isBlankValue(data[field]));
+};
 
 function shouldSkipAttribute(
     attribute: string,
@@ -365,6 +383,37 @@ function shouldSkipAttribute(
     if (attributes[attribute] === undefined || attributes[attribute] === null) return { skip: true };
     if (!isDataAttributeModel(descriptor) && !isCustomAttributeModel(descriptor)) return { skip: true };
     return { skip: false, descriptor, attributeName };
+}
+
+const normalizeAttributeValue = (
+    descriptor: DataAttributeModel | CustomAttributeModel,
+    value: unknown,
+): FormAttributeContentItem | FormAttributeContentItem[] =>
+    Array.isArray(value)
+        ? value.map((item: unknown) => getAttributeFormValue(descriptor.contentType, descriptor.content, item))
+        : getAttributeFormValue(descriptor.contentType, descriptor.content, value);
+
+// Undefined leaves the attribute out of the request.
+function toAttributeContent(descriptor: DataAttributeModel | CustomAttributeModel, value: unknown): FormAttributeContentItem[] | undefined {
+    const normalized = normalizeAttributeValue(descriptor, value);
+    const content = descriptor.contentType === AttributeContentType.Resource ? stripEmptyResourceContent(normalized) : normalized;
+    if (content === undefined || Array.isArray(content)) return content;
+    return content.data === undefined ? undefined : [content];
+}
+
+// Blank values are dropped before normalising as well, because Date and Datetime normalisation throws on a blank value.
+// Resource content needs no separate stripping here: its blank selections already count as empty.
+function toNonEmptyAttributeContent(
+    descriptor: DataAttributeModel | CustomAttributeModel,
+    value: unknown,
+): FormAttributeContentItem[] | undefined {
+    const nonBlankValue = withoutBlankItems(value);
+    if (isBlankValue(nonBlankValue)) return undefined;
+    const normalized = normalizeAttributeValue(descriptor, nonBlankValue);
+    const content = (Array.isArray(normalized) ? normalized : [normalized]).filter(
+        (item) => !isEmptyAttributeContentItem(item, descriptor.contentType),
+    );
+    return content.length > 0 ? content : undefined;
 }
 
 export function collectFormAttributes(
@@ -386,24 +435,11 @@ export function collectFormAttributes(
         if (guard.skip) continue;
         const { descriptor, attributeName } = guard;
 
-        const rawValue = attributes[attribute];
-        let content: FormAttributeContentItem | FormAttributeContentItem[] | undefined = Array.isArray(rawValue)
-            ? rawValue.map((i: unknown) => getAttributeFormValue(descriptor.contentType, descriptor.content, i))
-            : getAttributeFormValue(descriptor.contentType, descriptor.content, rawValue);
+        const contentArray = options?.omitEmptyContent
+            ? toNonEmptyAttributeContent(descriptor, attributes[attribute])
+            : toAttributeContent(descriptor, attributes[attribute]);
+        if (contentArray === undefined) continue;
 
-        if (descriptor.contentType === AttributeContentType.Resource) {
-            content = stripEmptyResourceContent(content);
-        } else if (options?.omitEmptyContent && Array.isArray(content)) {
-            content = content.filter((item) => !isEmptyAttributeContentItem(item));
-        } else if (options?.omitEmptyContent && !Array.isArray(content) && isEmptyAttributeContentItem(content)) {
-            content = undefined;
-        }
-
-        if (content === undefined) continue;
-        if (options?.omitEmptyContent && Array.isArray(content) && content.length === 0) continue;
-        if (!Array.isArray(content) && content.data === undefined) continue;
-
-        const contentArray = Array.isArray(content) ? content : [content];
         const existing = existingAttributes?.find((a) => a.name === attributeName);
         const existingVersion = (existing as { version?: AttributeVersion })?.version;
         const version = resolveFinalAttributeVersion(existingVersion, resolveAttributeVersion(descriptor));

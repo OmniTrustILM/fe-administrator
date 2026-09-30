@@ -469,7 +469,9 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
             };
 
             if (formValues.requestType === 'register') {
-                const csrAttrs = collectFormAttributes('csrAttributes', csrAttributeDescriptors, combinedValues);
+                const csrAttrs = collectFormAttributes('csrAttributes', csrAttributeDescriptors, combinedValues, undefined, {
+                    omitEmptyContent: true,
+                });
                 const customAttrs = collectFormAttributes('customCertificate', resourceCustomAttributes, combinedValues);
                 const registerAttrs = collectFormAttributes(
                     'register_attributes',
@@ -503,7 +505,9 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                 combinedValues,
             );
 
-            const csrAttrs = collectFormAttributes('csrAttributes', csrAttributeDescriptors, combinedValues);
+            const csrAttrs = collectFormAttributes('csrAttributes', csrAttributeDescriptors, combinedValues, undefined, {
+                omitEmptyContent: true,
+            });
             const signatureAttrs = collectFormAttributes('signatureAttributes', signatureAttributeDescriptors, combinedValues);
             const customAttrs = collectFormAttributes('customCertificate', resourceCustomAttributes, combinedValues);
 

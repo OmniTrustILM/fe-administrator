@@ -2,6 +2,15 @@ import { test, expect } from '../../../../../playwright/ct-test';
 import { testInitialState } from 'ducks/test-reducers';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import { AttributeContentType, AttributeType, CertificateRegistrationState } from 'types/openapi';
+import {
+    csrAttributesState,
+    type DispatchedAction,
+    existingKeyState,
+    fillCommonNameAndClearSan,
+    onlyCommonNameSubmitted,
+    selectExistingKey,
+    submittedCsrAttributes,
+} from '../../test-utils/blankRequestAttribute';
 import { CompleteRegisteredDialogTestWrapper } from './CompleteRegisteredDialogTestWrapper';
 
 const csrDataDescriptor: AttributeDescriptorModel = {
@@ -246,5 +255,24 @@ test.describe('CompleteRegisteredDialog', () => {
         await page.getByRole('option', { name: 'Existing Key' }).click();
 
         await expect(page.getByTestId('text-input-__attributes__csrAttributes__.dataField')).toBeVisible({ timeout: 15000 });
+    });
+
+    test('completeRegisteredCertificate payload omits a request attribute whose default was cleared', async ({ mount, page }) => {
+        const dispatched: DispatchedAction[] = [];
+        await mount(
+            <CompleteRegisteredDialogTestWrapper
+                challenged={false}
+                onAction={(a) => dispatched.push(a)}
+                preloadedState={{ ...csrAttributesState, ...existingKeyState }}
+            />,
+        );
+
+        await selectExistingKey(page, 'completeKeySource');
+        await fillCommonNameAndClearSan(page);
+        await page.getByTestId('completeRegisteredSubmit').click();
+
+        // Core builds the CSR from these attributes and must match it to the registered identity.
+        const submitted = await submittedCsrAttributes(dispatched, 'certificates/completeRegisteredCertificate', (p) => p.csrAttributes);
+        expect(submitted).toEqual(onlyCommonNameSubmitted);
     });
 });

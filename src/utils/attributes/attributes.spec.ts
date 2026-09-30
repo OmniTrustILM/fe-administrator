@@ -629,6 +629,65 @@ describe('attributes utils', () => {
             expect(result).toEqual([]);
         });
 
+        const optionalDescriptor = (name: string, contentType: AttributeContentType) =>
+            ({
+                type: AttributeType.Data,
+                name,
+                uuid: `u-${name}`,
+                contentType,
+                content: [],
+                properties: { required: false, label: name, readOnly: false, visible: true, list: false },
+            }) as any;
+
+        const collectOmittingEmpty = (name: string, contentType: AttributeContentType, value: unknown) =>
+            collectFormAttributes('id1', [optionalDescriptor(name, contentType)], { __attributes__id1__: { [name]: value } }, undefined, {
+                omitEmptyContent: true,
+            }).map((attribute) => attribute.content);
+
+        test('omits a blank secret attribute and keeps an entered one', () => {
+            expect(collectOmittingEmpty('pin', AttributeContentType.Secret, '')).toEqual([]);
+            expect(collectOmittingEmpty('pin', AttributeContentType.Secret, '1234')).toEqual([[{ data: { secret: '1234' } }]]);
+        });
+
+        test('omits a blank codeblock attribute and keeps an entered one', () => {
+            const language = ProgrammingLanguageEnum.Javascript;
+
+            expect(collectOmittingEmpty('script', AttributeContentType.Codeblock, { code: '', language })).toEqual([]);
+            expect(collectOmittingEmpty('script', AttributeContentType.Codeblock, { code: 'return 1;', language })).toEqual([
+                [{ data: { code: btoa('return 1;'), language } }],
+            ]);
+        });
+
+        test('omits a file attribute with no file selected and keeps a selected one', () => {
+            const zeroByteFile = { content: '', fileName: 'empty.txt', mimeType: 'text/plain' };
+            const selectedFile = { content: btoa('pem'), fileName: 'ca.pem', mimeType: 'application/x-pem-file' };
+
+            expect(collectOmittingEmpty('bundle', AttributeContentType.File, { content: '', fileName: '', mimeType: '' })).toEqual([]);
+            // The editor registers the three fields without values, so an untouched file field holds undefined ones.
+            expect(
+                collectOmittingEmpty('bundle', AttributeContentType.File, { content: undefined, fileName: undefined, mimeType: undefined }),
+            ).toEqual([]);
+            expect(collectOmittingEmpty('bundle', AttributeContentType.File, zeroByteFile)).toEqual([[{ data: zeroByteFile }]]);
+            expect(collectOmittingEmpty('bundle', AttributeContentType.File, selectedFile)).toEqual([[{ data: selectedFile }]]);
+        });
+
+        test('omits a cleared date or datetime attribute instead of failing to normalise it', () => {
+            expect(collectOmittingEmpty('notBefore', AttributeContentType.Date, '')).toEqual([]);
+            expect(collectOmittingEmpty('notBefore', AttributeContentType.Datetime, '')).toEqual([]);
+            expect(collectOmittingEmpty('notBefore', AttributeContentType.Date, '2026-09-29')).toEqual([[{ data: '2026-09-29' }]]);
+            expect(collectOmittingEmpty('notBefore', AttributeContentType.Date, ['2026-09-29', ''])).toEqual([[{ data: '2026-09-29' }]]);
+        });
+
+        test('keeps object content that carries blank secret, code or file properties of its own', () => {
+            const withBlankCode = { code: '', enabled: true };
+            const withBlankSecret = { secret: '', enabled: true };
+            const fileShaped = { content: '', fileName: '', mimeType: '' };
+
+            expect(collectOmittingEmpty('settings', AttributeContentType.Object, withBlankCode)).toEqual([[{ data: withBlankCode }]]);
+            expect(collectOmittingEmpty('settings', AttributeContentType.Object, withBlankSecret)).toEqual([[{ data: withBlankSecret }]]);
+            expect(collectOmittingEmpty('settings', AttributeContentType.Object, fileShaped)).toEqual([[{ data: fileShaped }]]);
+        });
+
         test('processes Custom attribute descriptors', () => {
             const descriptors = [
                 {
