@@ -1368,6 +1368,7 @@ export type ListViewsTestState = {
             isFetching: boolean;
             hasLoaded: boolean;
             isMutating: boolean;
+            isStale?: boolean;
             createdUuid?: string;
             rollback?: ListViewDto[];
         }
@@ -1403,8 +1404,16 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
 
     // Landing the view list is mirrored so a test can act on the table while it is still in flight,
     // which is the window the strip and the header controls are held back through.
+    // Only a re-read after a set-aside answer is put in flight: the mount read is answered by the preloaded state.
+    if (a.type === 'listViews/listViews' && entry.isStale) {
+        return withEntry({ isStale: false, isFetching: true });
+    }
+
+    // `stale` stands in for the real reducer setting an answer aside because a write overlapped the read.
     if (a.type === 'listViews/listViewsSuccess') {
-        return withEntry({ isFetching: false, hasLoaded: true, views: (a.payload as { views?: ListViewDto[] })?.views ?? entry.views });
+        const { views, stale } = (a.payload ?? {}) as { views?: ListViewDto[]; stale?: boolean };
+        if (stale) return withEntry({ isFetching: false, hasLoaded: true, isStale: true });
+        return withEntry({ isFetching: false, hasLoaded: true, views: views ?? entry.views });
     }
 
     // Only the create and delete round trips are mirrored, and only as far as the strip can observe

@@ -53,8 +53,8 @@ export function buildCbomCellRegistry({
     renderActions,
 }: BuildCbomCellsOpts): CellRegistry<CbomDto> {
     return {
-        // The row actions ride in this cell rather than a column of their own: an uncatalogued column is stripped
-        // from a saved view on write and the picker cannot offer it back, which would leave every view without them.
+        // The row actions ride in this cell rather than a column of their own: no field resolves such a column, so it
+        // would be display-only, stripped from a saved view on write and never offered back, leaving every view without them.
         'property:CBOM_SERIAL_NUMBER': (cbom) => (
             <span className="flex items-center gap-2 whitespace-nowrap">
                 <Link to={`./detail/${cbom.uuid}`}>{cbom.serialNumber}</Link>

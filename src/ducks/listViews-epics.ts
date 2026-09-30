@@ -8,6 +8,7 @@ import { actions as alertActions } from './alerts';
 import { slice } from './listViews';
 
 type Dependencies = Parameters<AppEpic>[2];
+type StateStream = Parameters<AppEpic>[1];
 
 type FailureAction = (payload: { resource: Resource; error: string }) => UnknownAction;
 
@@ -65,27 +66,43 @@ function isMutation(action: UnknownAction): action is MutationAction {
     return slice.actions.createView.match(action) || slice.actions.updateView.match(action) || slice.actions.deleteView.match(action);
 }
 
-function runMutation(action: MutationAction, deps: Dependencies): Observable<UnknownAction> {
+/**
+ * The name the user knows the view by, for a failure message. Read from the snapshot taken before the
+ * write, because a failed rename would otherwise be reported under the name that was refused.
+ */
+function storedName(state$: StateStream, resource: Resource, uuid: string): string | undefined {
+    const entry = state$.value?.listViews?.byResource?.[resource];
+    return (entry?.rollback ?? entry?.views)?.find((view) => view.uuid === uuid)?.name;
+}
+
+function headline(verb: string, name: string | undefined): string {
+    return name ? `Failed to ${verb} the view "${name}"` : `Failed to ${verb} the view`;
+}
+
+function runMutation(action: MutationAction, state$: StateStream, deps: Dependencies): Observable<UnknownAction> {
     const { resource } = action.payload;
 
     if (slice.actions.createView.match(action)) {
+        const failure = headline('create', action.payload.view.name);
         return deps.apiClients.listViews.createView({ listViewRequestDto: action.payload.view }).pipe(
             map((view) => slice.actions.createViewSuccess({ resource, view })),
-            catchError((err) => requestFailed(slice.actions.createViewFailure, resource, err, 'Failed to create the view')),
-        );
-    }
-
-    if (slice.actions.updateView.match(action)) {
-        return deps.apiClients.listViews.editView({ uuid: action.payload.uuid, listViewUpdateRequestDto: action.payload.view }).pipe(
-            map((view) => slice.actions.updateViewSuccess({ resource, view })),
-            catchError((err) => requestFailed(slice.actions.updateViewFailure, resource, err, 'Failed to save the view')),
+            catchError((err) => requestFailed(slice.actions.createViewFailure, resource, err, failure)),
         );
     }
 
     const { uuid } = action.payload;
+    const name = storedName(state$, resource, uuid);
+
+    if (slice.actions.updateView.match(action)) {
+        return deps.apiClients.listViews.editView({ uuid, listViewUpdateRequestDto: action.payload.view }).pipe(
+            map((view) => slice.actions.updateViewSuccess({ resource, view })),
+            catchError((err) => requestFailed(slice.actions.updateViewFailure, resource, err, headline('save', name))),
+        );
+    }
+
     return deps.apiClients.listViews.deleteView({ uuid }).pipe(
         map(() => slice.actions.deleteViewSuccess({ resource, uuid })),
-        catchError((err) => requestFailed(slice.actions.deleteViewFailure, resource, err, 'Failed to delete the view')),
+        catchError((err) => requestFailed(slice.actions.deleteViewFailure, resource, err, headline('delete', name))),
     );
 }
 
@@ -102,7 +119,7 @@ const mutateViews: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(isMutation),
         groupBy((action) => action.payload.resource),
-        mergeMap((perResource) => perResource.pipe(concatMap((action) => runMutation(action, deps)))),
+        mergeMap((perResource) => perResource.pipe(concatMap((action) => runMutation(action, state$, deps)))),
     );
 };
 
