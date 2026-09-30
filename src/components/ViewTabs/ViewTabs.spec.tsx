@@ -11,6 +11,7 @@ import {
     SortDirection,
 } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
+import type { ColumnSort } from 'utils/tableColumns';
 import { expect, test } from '../../../playwright/ct-test';
 import ViewTabsWithStore from './ViewTabsWithStore';
 
@@ -860,6 +861,43 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-tab-view-created')).toHaveAttribute('aria-selected', 'true');
         await expect(page.getByTestId('view-tabs-tab-view-created-dirty')).toHaveCount(0);
         expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+    });
+
+    test('keeps an ordering chosen while a trimmed duplicate is still being created', async ({ mount, page }) => {
+        const sortByName: ColumnSort = { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' };
+        await mount(
+            strip({
+                views: [],
+                standardColumns: [commonName, { ...column('CK_ASSOCIATIONS', 'Associations'), displayOnly: true }],
+                driftSort: sortByName,
+            }),
+        );
+
+        await openTabMenu(page, 'Standard');
+        await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
+
+        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('simulate-create-success').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-created')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).sort).toEqual(sortByName);
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+    });
+
+    test('puts back the columns a trimmed duplicate left out when the create fails', async ({ mount, page }) => {
+        await mount(
+            strip({ views: [], standardColumns: [commonName, { ...column('CK_ASSOCIATIONS', 'Associations'), displayOnly: true }] }),
+        );
+
+        await openTabMenu(page, 'Standard');
+        await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
+
+        await page.getByTestId('simulate-create-failure').click();
+
+        await expect(page.getByTestId('view-tabs-tab-standard')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'CK_ASSOCIATIONS']);
     });
 
     test('stores a platform column the catalogue leaves out, so the new view opens unchanged', async ({ mount, page }) => {

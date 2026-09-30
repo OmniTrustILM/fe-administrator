@@ -6,7 +6,7 @@ import { ChevronDown, Plus } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { SearchFilterModel } from 'types/certificate';
-import type { ListViewModel, ViewSlice } from 'types/listViews';
+import type { ListViewModel, ListViewRequestModel, ViewSlice } from 'types/listViews';
 import type { Resource, SearchFieldDataByGroupDto } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
 import { toCatalogueFields } from 'utils/columnPicker';
@@ -244,14 +244,9 @@ export default function ViewTabs({
     }, [resource, isReady, views, fields, standardColumns, standardSort]);
 
     // The tab the strip was on when a create started, so a create that fails has somewhere to go back
-    // to instead of leaving the strip pointing at a row the rollback has taken away. A new view has
-    // replaced the table's slice with Standard's, so it also holds the slice its failure puts back.
+    // to instead of leaving the strip pointing at a row the rollback has taken away. A create that
+    // replaced the table's slice as it started also holds the slice its failure puts back.
     const tabBeforeCreate = useRef<{ id: string; restore?: ViewSlice }>({ id: STANDARD_VIEW_ID });
-
-    // A create leaves out display-only columns and filters on a field that is gone, and the table has to follow
-    // once the view exists, or it keeps listing under a filter and showing a column the view does not hold, which
-    // reopening the view would not.
-    const sliceAfterCreate = useRef<ViewSlice | undefined>(undefined);
 
     // A created view arrives with the uuid the API gave it, replacing the optimistic row the strip
     // has been showing, and the tab under the cursor has to follow it rather than vanish. A failed
@@ -261,43 +256,44 @@ export default function ViewTabs({
 
         if (createdUuid) {
             setActiveId(createdUuid);
-            if (sliceAfterCreate.current) applyRef.current(sliceAfterCreate.current);
-            sliceAfterCreate.current = undefined;
             return;
         }
 
         if (!views.some((view) => view.uuid === PENDING_VIEW_UUID)) {
-            // A create from the current slice is deliberately not re-applied: the columns, filters and
-            // ordering it was trying to keep are still on the table, and a failure is not a reason to
+            // A create that kept the table as it was is deliberately not re-applied: the columns, filters
+            // and ordering it was trying to keep are still on the table, and a failure is not a reason to
             // drop them.
             const { id, restore } = tabBeforeCreate.current;
-            sliceAfterCreate.current = undefined;
             setActiveId(views.some((view) => view.uuid === id) ? id : STANDARD_VIEW_ID);
             if (restore) applyRef.current(restore);
         }
     }, [activeId, createdUuid, views]);
 
     const create = useCallback(
-        (name: string, slice: ViewSlice, restore?: ViewSlice) => {
-            const view = toCreateRequest(name, resource, slice, schema);
+        (view: ListViewRequestModel, restore?: ViewSlice) => {
             tabBeforeCreate.current = { id: activeId, restore };
             dispatch(listViewActions.createView({ resource, view }));
             setActiveId(PENDING_VIEW_UUID);
-            return view;
         },
-        [dispatch, resource, activeId, schema],
+        [dispatch, resource, activeId],
     );
 
+    // A create leaves out display-only columns and filters on a field that is gone, and the table follows at
+    // once, or it keeps listing under a filter and showing a column the view does not hold, which reopening
+    // the view would not. Following at once rather than on success leaves an edit made while the create is
+    // out in place.
     const createFromCurrent = useCallback(
         (name: string) => {
-            const view = create(name, currentSlice);
+            const view = toCreateRequest(name, resource, currentSlice, schema);
             const storedKeys = new Set(view.columns.map(getColumnKey));
             const keptColumns = columns.filter((column) => storedKeys.has(getColumnKey(column)));
             const keptFilters = withoutMissingFieldFilters(filters, catalogue);
             const isTrimmed = keptFilters.length !== filters.length || keptColumns.length !== columns.length;
-            sliceAfterCreate.current = isTrimmed ? { columns: keptColumns, filters: keptFilters, sort } : undefined;
+
+            create(view, isTrimmed ? { columns, filters, sort } : undefined);
+            if (isTrimmed) applyRef.current({ columns: keptColumns, filters: keptFilters, sort });
         },
-        [create, currentSlice, filters, catalogue, columns, sort],
+        [create, resource, currentSlice, schema, filters, catalogue, columns, sort],
     );
 
     // Unsorted on purpose: Standard's ordering is the page's default, not a choice the new view has made.
@@ -306,11 +302,11 @@ export default function ViewTabs({
     const createFromStandard = useCallback(
         (name: string) => {
             const slice = toStandardSlice(standardColumns);
-            sliceAfterCreate.current = undefined;
-            const view = create(name, slice, { columns, filters, sort });
+            const view = toCreateRequest(name, resource, slice, schema);
+            create(view, { columns, filters, sort });
             applyRef.current({ ...slice, columns: resolveView(view.columns, fields, standardColumns).renderable });
         },
-        [create, standardColumns, fields, columns, filters, sort],
+        [create, resource, schema, standardColumns, fields, columns, filters, sort],
     );
 
     const patchActive = useCallback(
