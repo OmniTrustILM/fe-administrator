@@ -600,6 +600,15 @@ describe('toUpdateRequest', () => {
         expect(toUpdateRequest(stored, schema, { name: 'Expiry' }).filters).toEqual([]);
     });
 
+    it('drops a filter whose field is gone that the patch changes, which Core refuses for this row', () => {
+        const stored = view('a', 'Expiry watch', { filters: [presence(FilterFieldSource.Custom, 'retired')] });
+        const patched = toUpdateRequest(stored, schema, {
+            filters: [{ ...presence(FilterFieldSource.Custom, 'retired'), condition: FilterConditionOperator.Empty }],
+        });
+
+        expect(patched.filters).toEqual([]);
+    });
+
     it('drops a filter whose field is gone that the patch introduces, which Core refuses for this row', () => {
         const stored = view('a', 'Expiry watch', { filters: [presence(FilterFieldSource.Custom, 'retired')] });
         const patched = toUpdateRequest(stored, schema, {
@@ -770,27 +779,35 @@ describe('toStorableFilters', () => {
         expect(toStorableFilters(filters, withoutSecret, [])).toEqual(filters);
     });
 
-    it('keeps a presence filter whose field is gone when the stored row already filters on that field', () => {
+    it('keeps a presence filter whose field is gone when the stored row holds that exact filter', () => {
         const filters = [presence(FilterFieldSource.Custom, 'retired')];
 
-        expect(toStorableFilters(filters, catalogue, [retired])).toEqual(filters);
+        expect(toStorableFilters(filters, catalogue, filters)).toEqual(filters);
+    });
+
+    it('drops a filter whose field is gone once its condition differs from the one stored, which Core refuses', () => {
+        const edited = { ...presence(FilterFieldSource.Custom, 'retired'), condition: FilterConditionOperator.Empty };
+
+        expect(toStorableFilters([edited], catalogue, [presence(FilterFieldSource.Custom, 'retired')])).toEqual([]);
     });
 
     it('drops a valued filter whose field is gone although the stored row holds it, since its content may be a secret', () => {
-        expect(toStorableFilters([filter(FilterFieldSource.Custom, 'retired', 'y')], catalogue, [retired])).toEqual([]);
+        const filters = [filter(FilterFieldSource.Custom, 'retired', 'y')];
+
+        expect(toStorableFilters(filters, catalogue, filters)).toEqual([]);
     });
 
     it('keeps a valued attribute filter while the catalogue has not arrived', () => {
         const filters = [filter(FilterFieldSource.Custom, 'retired', 'y')];
 
-        expect(toStorableFilters(filters, [], [retired])).toEqual(filters);
+        expect(toStorableFilters(filters, [], filters)).toEqual(filters);
     });
 
     it('drops a filter whose field is gone when the stored row does not filter on it', () => {
         const kept = toStorableFilters(
             [presence(FilterFieldSource.Custom, 'retired'), presence(FilterFieldSource.Custom, 'deleted')],
             catalogue,
-            [retired],
+            [presence(FilterFieldSource.Custom, 'retired')],
         );
 
         expect(kept).toEqual([presence(FilterFieldSource.Custom, 'retired')]);

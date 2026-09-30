@@ -30,6 +30,7 @@ import {
     toViewSlice,
     type ViewSchema,
     withoutMissingFieldFilters,
+    getFilterKey,
 } from 'utils/listViews';
 import { type ColumnSort, getColumnKey } from 'utils/tableColumns';
 import NameViewDialog from './NameViewDialog';
@@ -87,10 +88,6 @@ type PendingDialog = 'rename' | 'create' | 'new' | 'delete';
  */
 export function isViewStripReady(hasLoadedViews: boolean, isCatalogueLoaded: boolean): boolean {
     return hasLoadedViews && isCatalogueLoaded;
-}
-
-function filterKey(filter: SearchFilterModel): string {
-    return JSON.stringify([filter.fieldSource, filter.fieldIdentifier, filter.condition, filter.value ?? null]);
 }
 
 /** `live` with each of `dropped` put back at the index it held in `original`, unless `live` already has it. */
@@ -312,7 +309,7 @@ export default function ViewTabs({
             const putBack = (live: ViewSlice): ViewSlice => ({
                 ...live,
                 columns: reinsert(live.columns, droppedColumns, columns, getColumnKey),
-                filters: reinsert(live.filters, droppedFilters, filters, filterKey),
+                filters: reinsert(live.filters, droppedFilters, filters, getFilterKey),
             });
 
             create(view, isTrimmed ? putBack : undefined);

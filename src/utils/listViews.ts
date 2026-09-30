@@ -196,14 +196,14 @@ function secretFieldKeys(catalogue: readonly SearchFieldDataByGroupDto[]): Set<s
  * back. A presence-only condition on the same field survives, because it carries nothing to leak.
  *
  * It also drops the filters {@link withoutMissingFieldFilters} drops, which Core refuses unless the stored
- * row already filters on that field. A held filter on an attribute that has left the catalogue keeps only a
+ * row already holds that exact filter. A held filter on an attribute that has left the catalogue keeps only a
  * presence-only condition: with the field gone nothing says whether its content was a secret, so a value on
  * it is treated as one.
  */
 export function toStorableFilters(
     filters: readonly SearchFilterModel[],
     catalogue: readonly SearchFieldDataByGroupDto[],
-    held: readonly StoredField[],
+    held: readonly SearchFilterModel[],
 ): SearchFilterModel[] {
     const secret = secretFieldKeys(catalogue);
     const published = catalogueKeys(catalogue);
@@ -218,31 +218,35 @@ export function toStorableFilters(
 
 /**
  * The filters minus any on an attribute that has left the catalogue, such as a deleted custom attribute,
- * unless `held` names its field. A property filter is kept: Core checks it against every field the resource
- * defines, which the published catalogue need not list. An empty catalogue is read as "has not arrived", so
- * nothing is dropped.
+ * unless `held`, the stored row's filters, has that exact filter. Core exempts only the filter as stored, so
+ * a changed condition or value on such a field is refused like a new one. A property filter is kept: Core
+ * checks it against every field the resource defines, which the published catalogue need not list. An empty
+ * catalogue is read as "has not arrived", so nothing is dropped.
  */
 export function withoutMissingFieldFilters(
     filters: readonly SearchFilterModel[],
     catalogue: readonly SearchFieldDataByGroupDto[],
-    held: readonly StoredField[] = [],
+    held: readonly SearchFilterModel[] = [],
 ): SearchFilterModel[] {
     const published = catalogueKeys(catalogue);
     if (published.size === 0) return [...filters];
 
-    const carried = new Set(held.map(getColumnKey));
+    const carried = new Set(held.map(getFilterKey));
 
-    return filters.filter((filter) => {
-        const key = getColumnKey(filter);
-        return filter.fieldSource === FilterFieldSource.Property || published.has(key) || carried.has(key);
-    });
+    return filters.filter(
+        (filter) =>
+            filter.fieldSource === FilterFieldSource.Property || published.has(getColumnKey(filter)) || carried.has(getFilterKey(filter)),
+    );
+}
+
+/** A filter reduced to the four fields a view stores, so two can be compared whatever their key order. */
+export function getFilterKey(filter: SearchFilterModel): string {
+    return JSON.stringify([filter.fieldSource, filter.fieldIdentifier, filter.condition, filter.value ?? null]);
 }
 
 /**
- * A field the stored row already holds in the same role. Pass its columns when sieving columns and its filters
- * when sieving filters, since Core exempts each kind only on its own terms. Core lets an update keep such a
- * field after it has left the catalogue, but not introduce one, and a create carries nothing already, so it
- * passes none.
+ * A column the stored row already holds. Core lets an update keep such a column after its field has left the
+ * catalogue, but not introduce one, and a create carries nothing already, so it passes none.
  */
 export type StoredField = Pick<ListViewColumnModel, 'fieldSource' | 'fieldIdentifier'>;
 
@@ -373,9 +377,8 @@ function columnSignature(columns: readonly ColumnDefinition[]): string {
     return JSON.stringify(columns.map((column) => [getColumnKey(column), getColumnHeading(column)]));
 }
 
-/** A filter list reduced to its four stored fields, so key order in the object cannot matter. */
 function filterSignature(filters: readonly SearchFilterModel[]): string {
-    return JSON.stringify(filters.map((filter) => [filter.fieldSource, filter.fieldIdentifier, filter.condition, filter.value ?? null]));
+    return JSON.stringify(filters.map(getFilterKey));
 }
 
 function sortSignature(sort: ColumnSort | undefined): string {
