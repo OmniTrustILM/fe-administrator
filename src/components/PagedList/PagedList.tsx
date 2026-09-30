@@ -149,6 +149,8 @@ function PagedList<TRow extends object>({
     const isFetchingCatalogue = useSelector(filterSelectors.isFetchingFilters(entity));
     // A page opened again still holds the catalogue it read last time, and the strip must not open on that copy.
     const hasSettledCatalogue = hasLoadedCatalogue && !isFetchingCatalogue;
+    // Nor on one a failed read left behind: stored columns would resolve against stale or no fields, and writes send them on.
+    const hasCatalogueForViews = hasSettledCatalogue && !hasCatalogueFailed;
 
     // Taken apart rather than depended on whole: an unmemoised config would rebuild `getFreshData`
     // every render, and the effect watching it would refetch forever.
@@ -694,7 +696,7 @@ function PagedList<TRow extends object>({
                 <ViewTabs
                     resource={columnsResource}
                     catalogue={catalogue}
-                    isCatalogueLoaded={hasSettledCatalogue}
+                    isCatalogueLoaded={hasCatalogueForViews}
                     standardColumns={sortableStandardColumns}
                     standardSort={defaultSort}
                     renderableProperties={renderableProperties}

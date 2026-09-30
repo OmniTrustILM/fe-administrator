@@ -326,6 +326,22 @@ test.describe('PagedList · configurable columns', () => {
         await expect.poll(() => headings(page)).toEqual(['property:COMMON_NAME', 'property:NOT_AFTER']);
     });
 
+    test('withholds the strip when the catalogue could not be read again', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                views={[expiryWatch]}
+                failedCatalogue
+            />,
+        );
+
+        await expect(page.getByTestId('list-requests')).toBeVisible();
+        await expect(page.getByTestId('view-tabs')).toHaveCount(0);
+        await expect.poll(() => headings(page)).toEqual(['property:COMMON_NAME', 'property:NOT_AFTER']);
+    });
+
     test('withholds the strip while a catalogue from an earlier visit is being read again', async ({ mount, page }) => {
         await mount(
             <PagedListColumnsWithStore
