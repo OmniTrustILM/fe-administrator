@@ -1,9 +1,11 @@
 import { actions, selectors } from 'ducks/crypto-assets-dashboard';
 import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
-import { EntityType } from 'ducks/filters';
+import { EntityType, actions as filterActions } from 'ducks/filters';
 import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { PlatformEnum, PqcVerdict } from 'types/openapi';
+import { Link } from 'react-router';
+import { FilterConditionOperator, FilterFieldSource, PlatformEnum, PqcVerdict } from 'types/openapi';
+import { LockTypeEnum } from 'types/user-interface';
 import {
     CRYPTO_ASSET_FILTER_FIELDS,
     buildEmptyFilter,
@@ -60,48 +62,37 @@ function CryptoAssetsDashboard() {
         return <DashboardSkeleton countBadges={4} charts={3} />;
     }
 
+    const sourceCbomCount = statistics.sourceCbomCount;
+    const cbomCountUnavailable = sourceCbomCount == null;
     const typeKeys = Object.keys(statistics.statByType ?? {});
     const verdictKeys = Object.keys(statistics.statByPqcVerdict ?? {});
     const notReadyCount = statistics.statByPqcVerdict?.[PqcVerdict.NotReady];
     const notReadyShare = formatShareOfEstate(notReadyCount, statistics.totalAssets);
+    const unassignedAssetCount = statistics.unassignedAssetCount ?? 0;
+    const unassignedCaption = `${unassignedAssetCount.toLocaleString()} assets carry none`;
 
     return (
         <div>
-            {/* Coverage before any count: every number below is computed over synced documents only. */}
-            <div
-                className="mb-4 md:mb-8 rounded-xl border border-divider bg-surface-raised p-4 md:p-5"
-                data-testid="crypto-assets-dashboard-coverage"
-            >
-                <div className="flex flex-wrap items-baseline justify-between gap-2">
-                    <span className="font-bold text-content">Inventory coverage</span>
-                    {completeness.lastCompletedSyncAt && caption(`Last completed sync ${dateFormatter(completeness.lastCompletedSyncAt)}`)}
-                </div>
-                {completeness.total === 0 ? (
-                    <p className="mt-2 text-sm text-content-muted" data-testid="crypto-assets-dashboard-coverage-empty">
-                        No CBOM document has been synced into the inventory yet, so the counts below are empty rather than complete.
-                    </p>
-                ) : (
-                    <>
-                        <p className="mt-2 text-sm text-content" data-testid="crypto-assets-dashboard-coverage-summary">
-                            {`Synced ${completeness.synced.toLocaleString()} of ${completeness.total.toLocaleString()} CBOM documents`}
-                        </p>
-                        <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1">
-                            {completeness.states.map((state) => (
-                                <span key={state.code} className="text-sm text-content-muted tabular-nums">
-                                    {getEnumLabel(syncStateEnum, state.code)} {state.count.toLocaleString()}
-                                </span>
-                            ))}
-                        </div>
-                        {!completeness.isComplete && (
-                            <p className="mt-2 text-sm text-warning" data-testid="crypto-assets-dashboard-coverage-partial">
-                                The estate is only partly synced. A document still syncing may add assets to these counts later.
-                            </p>
-                        )}
-                    </>
-                )}
-            </div>
-
             <div className="flex flex-row gap-4 md:gap-8 mb-4 md:mb-8 flex-wrap" data-testid="crypto-assets-dashboard-counts">
+                <div className="flex-1 min-w-[180px]">
+                    <CountBadge
+                        data={cbomCountUnavailable ? null : sourceCbomCount}
+                        title="Source CBOMs"
+                        link={cbomCountUnavailable ? undefined : CBOMS_LINK}
+                        lockType={LockTypeEnum.PERMISSION}
+                        lockText="You do not have permission to view the Source CBOM count."
+                        entity={EntityType.CBOM}
+                        onSetFilter={() => [
+                            {
+                                fieldSource: FilterFieldSource.Property,
+                                condition: FilterConditionOperator.Equals,
+                                fieldIdentifier: 'CBOM_HAS_CONTRIBUTED_ASSETS',
+                                value: true,
+                            },
+                        ]}
+                        extraComponent={caption('contributing at least one asset')}
+                    />
+                </div>
                 <div className="flex-1 min-w-[180px]">
                     <CountBadge
                         data={statistics.totalAssets ?? 0}
@@ -109,7 +100,9 @@ function CryptoAssetsDashboard() {
                         link={LINK}
                         entity={EntityType.CRYPTO_ASSET}
                         onSetFilter={() => []}
-                        extraComponent={caption(`deduplicated across ${(statistics.sourceCbomCount ?? 0).toLocaleString()} CBOMs`)}
+                        extraComponent={
+                            cbomCountUnavailable ? undefined : caption(`deduplicated across ${sourceCbomCount.toLocaleString()} CBOMs`)
+                        }
                     />
                 </div>
                 <div className="flex-1 min-w-[180px]">
@@ -126,20 +119,80 @@ function CryptoAssetsDashboard() {
                     <CountBadge
                         data={statistics.distinctAlgorithmFamilyCount ?? 0}
                         title="Algorithm families"
-                        link={LINK}
-                        entity={EntityType.CRYPTO_ASSET}
-                        onSetFilter={() => []}
-                        extraComponent={caption(`${(statistics.unassignedAssetCount ?? 0).toLocaleString()} assets carry none`)}
+                        extraComponent={
+                            unassignedAssetCount > 0 ? (
+                                <Link
+                                    to={LINK}
+                                    className="text-sm text-brand hover:underline"
+                                    onClick={() =>
+                                        dispatch(
+                                            filterActions.setCurrentFilters({
+                                                entity: EntityType.CRYPTO_ASSET,
+                                                currentFilters: buildEmptyFilter(CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily),
+                                            }),
+                                        )
+                                    }
+                                >
+                                    {unassignedCaption}
+                                </Link>
+                            ) : (
+                                caption(unassignedCaption)
+                            )
+                        }
                     />
                 </div>
-                <div className="flex-1 min-w-[180px]">
-                    <CountBadge
-                        data={statistics.sourceCbomCount ?? 0}
-                        title="Source CBOMs"
-                        link={CBOMS_LINK}
-                        extraComponent={caption('contributing at least one asset')}
-                    />
+            </div>
+
+            <div
+                className="mb-4 md:mb-8 rounded-xl border border-divider bg-surface-raised p-4 md:p-5 shadow-2xs"
+                data-testid="crypto-assets-dashboard-coverage"
+            >
+                <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <h5 className="text-base font-bold text-content">Inventory coverage</h5>
+                    {completeness.lastCompletedSyncAt &&
+                        caption(`Latest successful asset sync ${dateFormatter(completeness.lastCompletedSyncAt)}`)}
                 </div>
+                {cbomCountUnavailable ? (
+                    <p className="mt-2 text-sm text-content-muted" data-testid="crypto-assets-dashboard-coverage-unavailable">
+                        CBOM inventory coverage is not available with your permissions.
+                    </p>
+                ) : completeness.total === 0 ? (
+                    <p className="mt-2 text-sm text-content-muted" data-testid="crypto-assets-dashboard-coverage-empty">
+                        The asset counts are empty until a CBOM document has been synced into the inventory.
+                    </p>
+                ) : (
+                    <>
+                        <p className="mt-2 text-sm text-content" data-testid="crypto-assets-dashboard-coverage-summary">
+                            {`Synced ${completeness.synced.toLocaleString()} of ${completeness.total.toLocaleString()} CBOM documents`}
+                        </p>
+                        <div className="mt-2 flex flex-wrap gap-x-6 gap-y-1">
+                            {completeness.states.map((state) => (
+                                <span key={state.code} className="text-sm text-content-muted tabular-nums">
+                                    <Link
+                                        to={CBOMS_LINK}
+                                        className="text-brand hover:underline"
+                                        onClick={() =>
+                                            dispatch(
+                                                filterActions.setCurrentFilters({
+                                                    entity: EntityType.CBOM,
+                                                    currentFilters: buildEqualsFilter('CBOM_ASSET_SYNC_STATE', state.code),
+                                                }),
+                                            )
+                                        }
+                                    >
+                                        {getEnumLabel(syncStateEnum, state.code)}
+                                    </Link>
+                                    : {state.count.toLocaleString()}
+                                </span>
+                            ))}
+                        </div>
+                        {!completeness.isComplete && (
+                            <p className="mt-2 text-sm text-warning" data-testid="crypto-assets-dashboard-coverage-partial">
+                                Coverage is incomplete; asset counts may change as remaining CBOMs sync.
+                            </p>
+                        )}
+                    </>
+                )}
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-8" data-testid="crypto-assets-dashboard-charts">
@@ -176,19 +229,6 @@ function CryptoAssetsDashboard() {
                     />
                 )}
             </div>
-
-            {(statistics.unassignedAssetCount ?? 0) > 0 && (
-                <div className="mt-4 md:mt-8" data-testid="crypto-assets-dashboard-no-family">
-                    <CountBadge
-                        data={statistics.unassignedAssetCount}
-                        title="Assets with no algorithm family"
-                        link={LINK}
-                        entity={EntityType.CRYPTO_ASSET}
-                        onSetFilter={() => buildEmptyFilter(CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily)}
-                        extraComponent={caption('the family concept does not apply to most related crypto material')}
-                    />
-                </div>
-            )}
         </div>
     );
 }
