@@ -6,7 +6,7 @@ import { ChevronDown, Plus } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { SearchFilterModel } from 'types/certificate';
-import type { ListViewModel, ViewSlice } from 'types/listViews';
+import type { ListViewModel, ListViewRequestModel, ViewSlice } from 'types/listViews';
 import type { Resource, SearchFieldDataByGroupDto } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
 import { toCatalogueFields } from 'utils/columnPicker';
@@ -28,9 +28,12 @@ import {
     toTabs,
     toUpdateRequest,
     toViewSlice,
+    type ViewSchema,
+    withoutMissingFieldFilters,
+    getFilterKey,
     type ViewTab as ViewTabModel,
 } from 'utils/listViews';
-import type { ColumnSort } from 'utils/tableColumns';
+import { type ColumnSort, getColumnKey } from 'utils/tableColumns';
 import NameViewDialog from './NameViewDialog';
 import OverflowViewsMenu from './OverflowViewsMenu';
 import UnresolvedColumnsNotice from './UnresolvedColumnsNotice';
@@ -43,7 +46,8 @@ export type ViewTabsProps = Readonly<{
     catalogue: SearchFieldDataByGroupDto[];
     /**
      * Whether the catalogue read has settled. The strip waits for it, because until then every stored
-     * column resolves to nothing.
+     * column resolves to nothing. A page re-reading a catalogue it already holds should report the
+     * re-read as unsettled, or the strip opens on the copy the re-read is about to replace.
      *
      * A page that tracks its own fetch state should say so here. The fallback reads a non-empty
      * catalogue as an arrived one, which cannot tell a read still in flight from a resource that
@@ -88,6 +92,16 @@ export function isViewStripReady(hasLoadedViews: boolean, isCatalogueLoaded: boo
     return hasLoadedViews && isCatalogueLoaded;
 }
 
+/** `live` with each of `dropped` put back at the index it held in `original`, unless `live` already has it. */
+function reinsert<T>(live: readonly T[], dropped: readonly T[], original: readonly T[], keyOf: (item: T) => string): T[] {
+    const result = [...live];
+    for (const item of dropped) {
+        if (result.some((each) => keyOf(each) === keyOf(item))) continue;
+        result.splice(Math.min(original.indexOf(item), result.length), 0, item);
+    }
+    return result;
+}
+
 /**
  * The saved-view tab strip: one tab per view, above the filter widget because filters are part of
  * each view.
@@ -113,14 +127,19 @@ export default function ViewTabs({
 
     const views = useSelector(listViewSelectors.views(resource));
     const hasLoaded = useSelector(listViewSelectors.hasLoaded(resource));
+    const isFetching = useSelector(listViewSelectors.isFetching(resource));
     const isMutating = useSelector(listViewSelectors.isMutating(resource));
+    const isStale = useSelector(listViewSelectors.isStale(resource));
     const createdUuid = useSelector(listViewSelectors.createdUuid(resource));
 
     const [activeId, setActiveId] = useState(STANDARD_VIEW_ID);
     const [dialog, setDialog] = useState<PendingDialog | undefined>(undefined);
+    const [requestedFor, setRequestedFor] = useState<Resource | undefined>(undefined);
+    const [dismissedNotices, setDismissedNotices] = useState<ReadonlySet<string>>(() => new Set());
     const [targetId, setTargetId] = useState<string | undefined>(undefined);
 
     const fields = useMemo(() => toCatalogueFields(catalogue, renderableProperties), [catalogue, renderableProperties]);
+    const schema = useMemo<ViewSchema>(() => ({ catalogue, standardColumns }), [catalogue, standardColumns]);
 
     /**
      * The strip is held back until the view list has settled and the catalogue has arrived, and shows
@@ -135,8 +154,15 @@ export default function ViewTabs({
      * a resource whose catalogue publishes only fields the listing cannot display resolves to no
      * displayable fields at all, and gating on those would hide the strip for good — Standard needs
      * none of them.
+     *
+     * The list half waits for the read this strip sent, not for any settled one. A page opened again
+     * still holds the list from its last visit, and opening on that copy applies a view as it stood
+     * then: the read that replaces it moves the stored side and not the table, which reports the
+     * difference as an unsaved edit nobody made, and Save to view would then write the old copy back.
+     * A read set aside because a write overlapped it leaves that copy in place too, so it is sent again.
      */
-    const isReady = isViewStripReady(hasLoaded, isCatalogueLoaded ?? catalogue.length > 0);
+    const hasFreshViews = requestedFor === resource && hasLoaded && !isFetching && !isStale;
+    const isReady = isViewStripReady(hasFreshViews, isCatalogueLoaded ?? catalogue.length > 0);
 
     const activeView = useMemo(() => views.find((view) => view.uuid === activeId), [views, activeId]);
     const tabs = useMemo(() => toTabs(views), [views]);
@@ -160,21 +186,31 @@ export default function ViewTabs({
         if (!activeView) return toStandardSlice(standardColumns, standardSort);
 
         const slice = toViewSlice(activeView, fields, standardColumns);
-        return { ...slice, filters: toStorableFilters(slice.filters, catalogue) };
+        return { ...slice, filters: toStorableFilters(slice.filters, catalogue, activeView.filters ?? []) };
     }, [activeView, fields, standardColumns, standardSort, catalogue]);
 
     /** The stored columns this table cannot render, which the notice names. */
     const unavailable = useMemo(() => resolved?.columns.filter((column) => !column.available) ?? [], [resolved]);
 
+    // A dismissal holds for the view and the columns it named, so a column that goes missing later is reported again.
+    const noticeKey = useMemo(
+        () => (activeView ? [activeView.uuid, ...unavailable.map(getColumnKey)].join('|') : undefined),
+        [activeView, unavailable],
+    );
+
     /**
      * The live filters minus the ones a view must not carry, which is what a view is compared against
      * and what a save writes back. See {@link toStorableFilters}: a filter value typed against secret
-     * content would otherwise be copied into storage that does not protect it.
+     * content would otherwise be copied into storage that does not protect it, and a filter on a field
+     * that has left the catalogue is refused unless the active view already filters on it.
      */
-    const storableFilters = useMemo(() => toStorableFilters(filters, catalogue), [filters, catalogue]);
+    const storableFilters = useMemo(
+        () => toStorableFilters(filters, catalogue, activeView?.filters ?? []),
+        [filters, catalogue, activeView],
+    );
 
     const currentSlice = useMemo<ViewSlice>(() => ({ columns, filters: storableFilters, sort }), [columns, storableFilters, sort]);
-    const isDirty = isSliceDirty(storedSlice, currentSlice);
+    const isDirty = isSliceDirty(storedSlice, currentSlice, activeView ? 'view' : 'standard');
 
     // `onApply` is typically an inline callback, so holding it in a ref keeps the load effect below
     // from re-running — and re-applying the view — on every render of the page around it.
@@ -198,7 +234,12 @@ export default function ViewTabs({
 
     useEffect(() => {
         dispatch(listViewActions.listViews({ resource }));
+        setRequestedFor(resource);
     }, [dispatch, resource]);
+
+    useEffect(() => {
+        if (requestedFor === resource && isStale && !isMutating) dispatch(listViewActions.listViews({ resource }));
+    }, [dispatch, resource, requestedFor, isStale, isMutating]);
 
     // The pinned view opens on load, and Standard when none is pinned. Once only: a later list read —
     // after a rename, say — must not throw the user back to the tab they started on.
@@ -217,9 +258,12 @@ export default function ViewTabs({
     }, [resource, isReady, views, fields, standardColumns, standardSort]);
 
     // The tab the strip was on when a create started, so a create that fails has somewhere to go back
-    // to instead of leaving the strip pointing at a row the rollback has taken away. A new view has
-    // replaced the table's slice with Standard's, so it also holds the slice its failure puts back.
-    const tabBeforeCreate = useRef<{ id: string; restore?: ViewSlice }>({ id: STANDARD_VIEW_ID });
+    // to instead of leaving the strip pointing at a row the rollback has taken away. A create that
+    // changed the table's slice as it started also holds how its failure turns the live slice back.
+    const tabBeforeCreate = useRef<{ id: string; restore?: (live: ViewSlice) => ViewSlice }>({ id: STANDARD_VIEW_ID });
+
+    const liveSlice = useRef<ViewSlice>({ columns, filters, sort });
+    liveSlice.current = { columns, filters, sort };
 
     // A created view arrives with the uuid the API gave it, replacing the optimistic row the strip
     // has been showing, and the tab under the cursor has to follow it rather than vanish. A failed
@@ -233,45 +277,69 @@ export default function ViewTabs({
         }
 
         if (!views.some((view) => view.uuid === PENDING_VIEW_UUID)) {
-            // A create from the current slice is deliberately not re-applied: the columns, filters and
-            // ordering it was trying to keep are still on the table, and a failure is not a reason to
+            // A create that kept the table as it was is deliberately not re-applied: the columns, filters
+            // and ordering it was trying to keep are still on the table, and a failure is not a reason to
             // drop them.
             const { id, restore } = tabBeforeCreate.current;
             setActiveId(views.some((view) => view.uuid === id) ? id : STANDARD_VIEW_ID);
-            if (restore) applyRef.current(restore);
+            if (restore) applyRef.current(restore(liveSlice.current));
         }
     }, [activeId, createdUuid, views]);
 
     const create = useCallback(
-        (name: string, slice: ViewSlice, restore?: ViewSlice) => {
-            const view = toCreateRequest(name, resource, slice, catalogue);
+        (view: ListViewRequestModel, restore?: (live: ViewSlice) => ViewSlice) => {
             tabBeforeCreate.current = { id: activeId, restore };
             dispatch(listViewActions.createView({ resource, view }));
             setActiveId(PENDING_VIEW_UUID);
-            return view;
         },
-        [dispatch, resource, activeId, catalogue],
+        [dispatch, resource, activeId],
     );
 
-    const createFromCurrent = useCallback((name: string) => create(name, currentSlice), [create, currentSlice]);
+    // A create leaves out display-only columns and filters on a field that is gone, and the table follows at
+    // once, or it keeps listing under a filter and showing a column the view does not hold, which reopening
+    // the view would not. Following at once rather than on success leaves an edit made while the create is
+    // out in place, and a failure puts back only what was left out, so it keeps that edit too.
+    const createFromCurrent = useCallback(
+        (name: string) => {
+            const view = toCreateRequest(name, resource, currentSlice, schema);
+            const storedKeys = new Set(view.columns.map(getColumnKey));
+            const keptColumns = columns.filter((column) => storedKeys.has(getColumnKey(column)));
+            const keptFilters = withoutMissingFieldFilters(filters, catalogue);
+            const isTrimmed = keptFilters.length !== filters.length || keptColumns.length !== columns.length;
+
+            const droppedColumns = columns.filter((column) => !keptColumns.includes(column));
+            const droppedFilters = filters.filter((filter) => !keptFilters.includes(filter));
+            const putBack = (live: ViewSlice): ViewSlice => ({
+                ...live,
+                columns: reinsert(live.columns, droppedColumns, columns, getColumnKey),
+                filters: reinsert(live.filters, droppedFilters, filters, getFilterKey),
+            });
+
+            create(view, isTrimmed ? putBack : undefined);
+            if (isTrimmed) applyRef.current({ columns: keptColumns, filters: keptFilters, sort });
+        },
+        [create, resource, currentSlice, schema, filters, catalogue, columns, sort],
+    );
 
     // Unsorted on purpose: Standard's ordering is the page's default, not a choice the new view has made.
-    // The table takes the columns the request stores, not Standard's: a column the catalogue does not
-    // publish is dropped from the request, and showing it would mark the new view as changed.
+    // The table takes the columns the request stores, not Standard's: a display-only column is dropped
+    // from the request, and the table should show the view it now names.
     const createFromStandard = useCallback(
         (name: string) => {
             const slice = toStandardSlice(standardColumns);
-            const view = create(name, slice, { columns, filters, sort });
+            const view = toCreateRequest(name, resource, slice, schema);
+            // The failure goes back to the tab the create started from, so that tab's slice is what comes back.
+            create(view, () => ({ columns, filters, sort }));
             applyRef.current({ ...slice, columns: resolveView(view.columns, fields, standardColumns).renderable });
         },
-        [create, standardColumns, fields, columns, filters, sort],
+        [create, resource, schema, standardColumns, fields, columns, filters, sort],
     );
 
     const patchView = useCallback(
         (view: ListViewModel, patch: Parameters<typeof toUpdateRequest>[2]) => {
-            dispatch(listViewActions.updateView({ resource, uuid: view.uuid, view: toUpdateRequest(view, catalogue, patch) }));
+            dispatch(listViewActions.updateView({ resource, uuid: view.uuid, view: toUpdateRequest(view, schema, patch) }));
         },
-        [dispatch, resource, catalogue],
+        [dispatch, resource, schema],
     );
 
     const patchActive = useCallback(
@@ -490,7 +558,7 @@ export default function ViewTabs({
                 </div>
             </SimpleBar>
 
-            {resolved && (
+            {resolved && !(noticeKey && dismissedNotices.has(noticeKey)) && (
                 <UnresolvedColumnsNotice
                     unavailable={unavailable}
                     storedCount={resolved.columns.length}
@@ -504,6 +572,9 @@ export default function ViewTabs({
                             ? () => patchActive({ columns: toStoredColumns(resolved.columns.filter((column) => column.available)) })
                             : undefined
                     }
+                    onDismiss={() => {
+                        if (noticeKey) setDismissedNotices((dismissed) => new Set(dismissed).add(noticeKey));
+                    }}
                     isBusy={isMutating}
                     dataTestId={`${dataTestId}-notice`}
                 />

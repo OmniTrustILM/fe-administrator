@@ -20,8 +20,8 @@ export const QUARANTINE_TOOLTIP = 'Sources make contradicting claims about this 
  * The platform default column set for the crypto asset inventory.
  *
  * `CBOM_ASSET_OCCURRENCE_COUNT` is not in the filter-field catalogue, so it is display-only — shown here, absent from
- * the picker, not sortable, and dropped on write by `toStorableColumns`. It keeps a natural identifier so that
- * cataloguing it is the only change needed.
+ * the picker, not sortable, and dropped on write by `toStorableColumns`. It keeps a natural identifier, so cataloguing
+ * it in Core and removing its `displayOnly` flag is all a change needs.
  */
 export const CRYPTO_ASSET_COLUMNS: ColumnDefinition[] = [
     { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CBOM_ASSET_NAME', catalogueLabel: 'Name', type: FilterFieldType.String },
@@ -50,6 +50,7 @@ export const CRYPTO_ASSET_COLUMNS: ColumnDefinition[] = [
         fieldIdentifier: 'CBOM_ASSET_OCCURRENCE_COUNT',
         catalogueLabel: 'Occurrences',
         type: FilterFieldType.Number,
+        displayOnly: true,
     },
 ];
 

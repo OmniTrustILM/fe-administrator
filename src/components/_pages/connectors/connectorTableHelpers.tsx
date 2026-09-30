@@ -64,7 +64,7 @@ export function buildConnectorColumns(isProxiesEnabled: boolean): ColumnDefiniti
             type: FilterFieldType.List,
         },
         ...(isProxiesEnabled
-            ? [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CONNECTOR_PROXY', catalogueLabel: 'Proxy' }]
+            ? [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CONNECTOR_PROXY', catalogueLabel: 'Proxy', displayOnly: true }]
             : []),
         { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CONNECTOR_URL', catalogueLabel: 'URL', type: FilterFieldType.String },
         {

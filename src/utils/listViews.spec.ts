@@ -24,6 +24,7 @@ import {
     toColumnSort,
     toCreateRequest,
     toStandardSlice,
+    storableColumnTest,
     toStorableColumns,
     toStorableFilters,
     toStoredColumns,
@@ -32,6 +33,7 @@ import {
     toTabs,
     toUpdateRequest,
     toViewSlice,
+    withoutMissingFieldFilters,
 } from './listViews';
 
 const view = (uuid: string, name: string, overrides: Partial<ListViewModel> = {}): ListViewModel => ({
@@ -100,11 +102,26 @@ const secretCatalogue = [
     },
 ] as unknown as SearchFieldDataByGroupDto[];
 
+const schemaOf = (catalogue: SearchFieldDataByGroupDto[], standard: ColumnDefinition[] = standardColumns) => ({
+    catalogue,
+    standardColumns: standard,
+});
+
+const displayOnlyStatus: ColumnDefinition[] = [standardColumns[0], { ...standardColumns[1], displayOnly: true }];
+
+const retired = { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired' };
+
 const filter = (source: FilterFieldSource, identifier: string, value?: unknown) => ({
     fieldSource: source,
     fieldIdentifier: identifier,
     condition: FilterConditionOperator.Equals,
     ...(value === undefined ? {} : { value }),
+});
+
+const presence = (source: FilterFieldSource, identifier: string) => ({
+    fieldSource: source,
+    fieldIdentifier: identifier,
+    condition: FilterConditionOperator.NotEmpty,
 });
 
 describe('toTabs', () => {
@@ -402,7 +419,9 @@ describe('toStandardSlice', () => {
     it('reads a page under its declared ordering as clean, so Standard is not born drifted', () => {
         const sort = { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: SortDirection.Asc };
 
-        expect(isSliceDirty(toStandardSlice(standardColumns, sort), { columns: standardColumns, filters: [], sort })).toBe(false);
+        expect(isSliceDirty(toStandardSlice(standardColumns, sort), { columns: standardColumns, filters: [], sort }, 'standard')).toBe(
+            false,
+        );
     });
 });
 
@@ -410,18 +429,20 @@ describe('isSliceDirty', () => {
     const stored = toStandardSlice(standardColumns);
 
     it('reads an untouched slice as clean', () => {
-        expect(isSliceDirty(stored, toStandardSlice(standardColumns))).toBe(false);
+        expect(isSliceDirty(stored, toStandardSlice(standardColumns), 'view')).toBe(false);
     });
 
     it('ignores catalogue detail the view does not store', () => {
         const refreshed = { ...stored, columns: standardColumns.map((column) => ({ ...column, sortable: true, multiValue: false })) };
-        expect(isSliceDirty(stored, refreshed)).toBe(false);
+        expect(isSliceDirty(stored, refreshed, 'view')).toBe(false);
     });
 
     it('sees a column added, removed, reordered or renamed', () => {
-        expect(isSliceDirty(stored, { ...stored, columns: [standardColumns[0]] })).toBe(true);
-        expect(isSliceDirty(stored, { ...stored, columns: [standardColumns[1], standardColumns[0]] })).toBe(true);
-        expect(isSliceDirty(stored, { ...stored, columns: [{ ...standardColumns[0], label: 'Name' }, standardColumns[1]] })).toBe(true);
+        expect(isSliceDirty(stored, { ...stored, columns: [standardColumns[0]] }, 'view')).toBe(true);
+        expect(isSliceDirty(stored, { ...stored, columns: [standardColumns[1], standardColumns[0]] }, 'view')).toBe(true);
+        expect(isSliceDirty(stored, { ...stored, columns: [{ ...standardColumns[0], label: 'Name' }, standardColumns[1]] }, 'view')).toBe(
+            true,
+        );
     });
 
     it('sees a filter change, because a view carries its filters', () => {
@@ -437,23 +458,63 @@ describe('isSliceDirty', () => {
             ],
         };
 
-        expect(isSliceDirty(stored, filtered)).toBe(true);
-        expect(isSliceDirty(filtered, filtered)).toBe(false);
+        expect(isSliceDirty(stored, filtered, 'view')).toBe(true);
+        expect(isSliceDirty(filtered, filtered, 'view')).toBe(false);
+    });
+
+    it('ignores a display-only column against a stored view, which never stores one, but not against Standard', () => {
+        const shown = {
+            ...stored,
+            columns: [
+                ...stored.columns,
+                {
+                    fieldSource: FilterFieldSource.Property,
+                    fieldIdentifier: 'CK_ASSOCIATIONS',
+                    catalogueLabel: 'Associations',
+                    displayOnly: true,
+                },
+            ],
+        };
+
+        expect(isSliceDirty(stored, shown, 'view')).toBe(false);
+        expect(isSliceDirty(stored, shown, 'standard')).toBe(true);
+    });
+
+    it('reads a view that fell back to a platform set with a display-only column as clean', () => {
+        const fallback = {
+            ...stored,
+            columns: [
+                ...stored.columns,
+                {
+                    fieldSource: FilterFieldSource.Property,
+                    fieldIdentifier: 'CK_ASSOCIATIONS',
+                    catalogueLabel: 'Associations',
+                    displayOnly: true,
+                },
+            ],
+        };
+
+        expect(isSliceDirty(fallback, fallback, 'view')).toBe(false);
     });
 
     it('sees the sort move and the sort direction flip', () => {
         const asc = { ...stored, sort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'asc' } };
         const desc = { ...asc, sort: { ...asc.sort, direction: 'desc' } };
 
-        expect(isSliceDirty(stored, asc)).toBe(true);
-        expect(isSliceDirty(asc, desc)).toBe(true);
-        expect(isSliceDirty(asc, asc)).toBe(false);
+        expect(isSliceDirty(stored, asc, 'view')).toBe(true);
+        expect(isSliceDirty(asc, desc, 'view')).toBe(true);
+        expect(isSliceDirty(asc, asc, 'view')).toBe(false);
     });
 });
 
 describe('toCreateRequest', () => {
     it('creates an unpinned view holding the slice', () => {
-        const request = toCreateRequest('Expiry watch', Resource.Certificates, toStandardSlice(standardColumns), standardCatalogue);
+        const request = toCreateRequest(
+            'Expiry watch',
+            Resource.Certificates,
+            toStandardSlice(standardColumns),
+            schemaOf(standardCatalogue),
+        );
 
         expect(request).toEqual({
             name: 'Expiry watch',
@@ -467,14 +528,50 @@ describe('toCreateRequest', () => {
 
     it('can pin the view it creates', () => {
         expect(
-            toCreateRequest('Expiry watch', Resource.Certificates, toStandardSlice(standardColumns), standardCatalogue, true).defaultView,
+            toCreateRequest('Expiry watch', Resource.Certificates, toStandardSlice(standardColumns), schemaOf(standardCatalogue), true)
+                .defaultView,
         ).toBe(true);
     });
 
-    it('drops a display-only column the catalogue cannot validate, so duplicating Standard succeeds', () => {
-        const request = toCreateRequest('Standard (copy)', Resource.Certificates, toStandardSlice(standardColumns), secretCatalogue);
+    it('keeps a platform column the published catalogue leaves out, which Core still accepts', () => {
+        const request = toCreateRequest(
+            'Standard (copy)',
+            Resource.Certificates,
+            toStandardSlice(standardColumns),
+            schemaOf(secretCatalogue),
+        );
+
+        expect(request.columns).toEqual(toStoredColumns(standardColumns));
+    });
+
+    it('drops a display-only platform column, so duplicating Standard succeeds', () => {
+        const request = toCreateRequest(
+            'Standard (copy)',
+            Resource.Certificates,
+            toStandardSlice(displayOnlyStatus),
+            schemaOf(secretCatalogue, displayOnlyStatus),
+        );
 
         expect(request.columns).toEqual([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }]);
+    });
+
+    it('drops a column whose field is gone, because Core holds a new row to the live catalogue', () => {
+        const slice = { columns: [standardColumns[0], { ...retired, catalogueLabel: 'retired' }], filters: [] };
+
+        expect(toCreateRequest('Copy', Resource.Certificates, slice, schemaOf(secretCatalogue)).columns).toEqual([
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' },
+        ]);
+    });
+
+    it('drops an attribute filter whose field is gone and keeps a property filter the catalogue leaves out', () => {
+        const slice = {
+            columns: standardColumns,
+            filters: [filter(FilterFieldSource.Property, 'CERTIFICATE_STATE', 'issued'), filter(FilterFieldSource.Custom, 'retired', 'x')],
+        };
+
+        expect(toCreateRequest('Copy', Resource.Certificates, slice, schemaOf(secretCatalogue)).filters).toEqual([
+            filter(FilterFieldSource.Property, 'CERTIFICATE_STATE', 'issued'),
+        ]);
     });
 
     it('drops a secret-valued filter, which storage would not protect', () => {
@@ -483,18 +580,20 @@ describe('toCreateRequest', () => {
             filters: [filter(FilterFieldSource.Custom, 'vaultToken', 'hunter2')],
         };
 
-        expect(toCreateRequest('Expiry watch', Resource.Certificates, slice, secretCatalogue).filters).toEqual([]);
+        expect(toCreateRequest('Expiry watch', Resource.Certificates, slice, schemaOf(secretCatalogue)).filters).toEqual([]);
     });
 });
 
 describe('toUpdateRequest', () => {
+    const schema = schemaOf(secretCatalogue);
+
     it('sends every field back, because the API replaces the whole row', () => {
         const stored = view('a', 'Expiry watch', {
             defaultView: true,
             sort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: SortDirection.Asc },
         });
 
-        expect(toUpdateRequest(stored, secretCatalogue)).toEqual({
+        expect(toUpdateRequest(stored, schema)).toEqual({
             name: 'Expiry watch',
             columns: stored.columns,
             filters: [],
@@ -505,7 +604,7 @@ describe('toUpdateRequest', () => {
 
     it('applies the patch over the stored row, so a rename keeps the columns', () => {
         const stored = view('a', 'Expiry watch');
-        const renamed = toUpdateRequest(stored, secretCatalogue, { name: 'Expiry' });
+        const renamed = toUpdateRequest(stored, schema, { name: 'Expiry' });
 
         expect(renamed.name).toBe('Expiry');
         expect(renamed.columns).toEqual(stored.columns);
@@ -520,14 +619,12 @@ describe('toUpdateRequest', () => {
             filters: [filter(FilterFieldSource.Property, 'COMMON_NAME', 'acme'), filter(FilterFieldSource.Custom, 'vaultToken', 'hunter2')],
         });
 
-        expect(toUpdateRequest(stored, secretCatalogue, patch).filters).toEqual([
-            filter(FilterFieldSource.Property, 'COMMON_NAME', 'acme'),
-        ]);
+        expect(toUpdateRequest(stored, schema, patch).filters).toEqual([filter(FilterFieldSource.Property, 'COMMON_NAME', 'acme')]);
     });
 
     it('drops a secret-valued filter the patch itself supplies', () => {
         const stored = view('a', 'Expiry watch');
-        const patched = toUpdateRequest(stored, secretCatalogue, { filters: [filter(FilterFieldSource.Custom, 'vaultToken', 'hunter2')] });
+        const patched = toUpdateRequest(stored, schema, { filters: [filter(FilterFieldSource.Custom, 'vaultToken', 'hunter2')] });
 
         expect(patched.filters).toEqual([]);
     });
@@ -535,58 +632,187 @@ describe('toUpdateRequest', () => {
     it('keeps a presence-only condition on the secret field, which carries nothing to leak', () => {
         const stored = view('a', 'Expiry watch', { filters: [filter(FilterFieldSource.Custom, 'vaultToken')] });
 
-        expect(toUpdateRequest(stored, secretCatalogue).filters).toEqual([filter(FilterFieldSource.Custom, 'vaultToken')]);
+        expect(toUpdateRequest(stored, schema).filters).toEqual([filter(FilterFieldSource.Custom, 'vaultToken')]);
     });
 
-    it('drops a column the catalogue cannot validate from a patch', () => {
-        const stored = view('a', 'Expiry watch');
-        const patched = toUpdateRequest(stored, secretCatalogue, { columns: toStoredColumns(standardColumns) });
+    it.each([
+        ['a rename', { name: 'Expiry' }],
+        ['a pin', { defaultView: true }],
+    ])('keeps a stored column whose field is gone on %s, so it returns when the field does', (_, patch) => {
+        const stored = view('a', 'Expiry watch', {
+            columns: [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }, retired],
+        });
+
+        expect(toUpdateRequest(stored, schema, patch).columns).toEqual(stored.columns);
+    });
+
+    it('keeps a stored presence filter whose field is gone, which Core accepts from the row that holds it', () => {
+        const stored = view('a', 'Expiry watch', { filters: [presence(FilterFieldSource.Custom, 'retired')] });
+
+        expect(toUpdateRequest(stored, schema, { name: 'Expiry' }).filters).toEqual([presence(FilterFieldSource.Custom, 'retired')]);
+    });
+
+    it('drops a stored valued filter whose field is gone on a rename, since it may be secret content', () => {
+        const stored = view('a', 'Expiry watch', { filters: [filter(FilterFieldSource.Custom, 'retired', 'x')] });
+
+        expect(toUpdateRequest(stored, schema, { name: 'Expiry' }).filters).toEqual([]);
+    });
+
+    it('drops a filter whose field is gone that the patch changes, which Core refuses for this row', () => {
+        const stored = view('a', 'Expiry watch', { filters: [presence(FilterFieldSource.Custom, 'retired')] });
+        const patched = toUpdateRequest(stored, schema, {
+            filters: [{ ...presence(FilterFieldSource.Custom, 'retired'), condition: FilterConditionOperator.Empty }],
+        });
+
+        expect(patched.filters).toEqual([]);
+    });
+
+    it('drops a filter whose field is gone that the patch introduces, which Core refuses for this row', () => {
+        const stored = view('a', 'Expiry watch', { filters: [presence(FilterFieldSource.Custom, 'retired')] });
+        const patched = toUpdateRequest(stored, schema, {
+            filters: [presence(FilterFieldSource.Custom, 'retired'), presence(FilterFieldSource.Custom, 'deleted')],
+        });
+
+        expect(patched.filters).toEqual([presence(FilterFieldSource.Custom, 'retired')]);
+    });
+
+    it('drops a column whose field is gone that the patch introduces, and keeps the one the row held', () => {
+        const nameColumn = { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' };
+        const stored = view('a', 'Expiry watch', { columns: [nameColumn, retired] });
+        const patched = toUpdateRequest(stored, schema, {
+            columns: [nameColumn, retired, { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'deleted' }],
+        });
+
+        expect(patched.columns).toEqual([nameColumn, retired]);
+    });
+
+    it('keeps a platform column the published catalogue leaves out in a patch', () => {
+        const patched = toUpdateRequest(view('a', 'Expiry watch'), schema, { columns: toStoredColumns(standardColumns) });
+
+        expect(patched.columns).toEqual(toStoredColumns(standardColumns));
+    });
+
+    it('drops a display-only column from a patch', () => {
+        const patched = toUpdateRequest(view('a', 'Expiry watch'), schemaOf(secretCatalogue, displayOnlyStatus), {
+            columns: toStoredColumns(displayOnlyStatus),
+        });
 
         expect(patched.columns).toEqual([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }]);
     });
 });
 
+describe('storableColumnTest', () => {
+    const isStorable = storableColumnTest(schemaOf(secretCatalogue, displayOnlyStatus));
+
+    it('counts a published column and a platform column the catalogue leaves out', () => {
+        expect(isStorable({ fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'cost_centre' })).toBe(true);
+        expect(isStorable(standardColumns[0])).toBe(true);
+    });
+
+    it('does not count a display-only column or one whose field is gone, since a create drops both', () => {
+        expect(isStorable(displayOnlyStatus[1])).toBe(false);
+        expect(isStorable(retired)).toBe(false);
+    });
+
+    it('counts every column while the catalogue has not arrived', () => {
+        expect(storableColumnTest(schemaOf([]))(retired)).toBe(true);
+    });
+});
+
 describe('toStorableColumns', () => {
-    it('keeps a column the catalogue carries', () => {
-        expect(toStorableColumns([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }], secretCatalogue)).toEqual([
+    const schema = schemaOf(secretCatalogue);
+
+    it.each([
+        ['a create', []],
+        ['an update', [retired]],
+    ])('keeps a column the catalogue carries on %s', (_, held) => {
+        expect(toStorableColumns([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }], schema, held)).toEqual([
             { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' },
         ]);
     });
 
     it('keeps a column the catalogue carries but the listing cannot display', () => {
-        expect(toStorableColumns([{ fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'vaultToken' }], secretCatalogue)).toEqual([
+        expect(toStorableColumns([{ fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'vaultToken' }], schema, [])).toEqual([
             { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'vaultToken' },
         ]);
     });
 
-    it('drops a display-only column the catalogue does not carry, which the API would reject', () => {
+    it.each([
+        ['a create', []],
+        ['an update', [retired]],
+    ])('keeps a platform column the published catalogue leaves out on %s', (_, held) => {
+        expect(toStorableColumns([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'STATUS' }], schema, held)).toEqual([
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'STATUS' },
+        ]);
+    });
+
+    it.each([
+        ['a create', []],
+        ['an update', [retired]],
+    ])('drops a display-only platform column on %s, which the API would reject', (_, held) => {
         expect(
             toStorableColumns(
                 [
                     { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' },
-                    { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CK_ASSOCIATIONS' },
+                    { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'STATUS' },
                 ],
-                secretCatalogue,
+                schemaOf(secretCatalogue, displayOnlyStatus),
+                held,
             ),
         ).toEqual([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }]);
     });
 
+    it('keeps a column whose field is gone when the stored row holds it, in its stored position', () => {
+        const columns = [retired, { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }];
+
+        expect(toStorableColumns(columns, schema, [retired])).toEqual(columns);
+    });
+
+    it('drops a column whose field is gone when the stored row does not hold it, as on a create', () => {
+        expect(toStorableColumns([retired], schema, [])).toEqual([]);
+    });
+
+    it('drops a column whose field is gone that an update introduces, and keeps the one the row held', () => {
+        const introduced = { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'deleted' };
+
+        expect(toStorableColumns([retired, introduced], schema, [retired])).toEqual([retired]);
+    });
+
+    it('matches a held column on its source as well as its identifier', () => {
+        expect(toStorableColumns([retired], schema, [{ ...retired, fieldSource: FilterFieldSource.Meta }])).toEqual([]);
+    });
+
     it('separates two sources publishing one identifier', () => {
-        expect(toStorableColumns([{ fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'COMMON_NAME' }], secretCatalogue)).toEqual([]);
+        expect(toStorableColumns([{ fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'COMMON_NAME' }], schema, [])).toEqual([]);
     });
 
     it('keeps the heading override on a column it keeps', () => {
         expect(
-            toStorableColumns(
-                [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', label: 'Name' }],
-                secretCatalogue,
-            ),
+            toStorableColumns([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', label: 'Name' }], schema, []),
         ).toEqual([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', label: 'Name' }]);
     });
 
     it('leaves everything alone when the catalogue has not arrived, rather than emptying the view', () => {
-        const columns = [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }];
-        expect(toStorableColumns(columns, [])).toEqual(columns);
+        const columns = [retired];
+        expect(toStorableColumns(columns, schemaOf([]), [])).toEqual(columns);
+    });
+});
+
+describe('withoutMissingFieldFilters', () => {
+    it('drops an attribute filter on a field the catalogue no longer publishes and keeps the rest', () => {
+        const filters = [
+            filter(FilterFieldSource.Property, 'CERTIFICATE_STATE', 'issued'),
+            filter(FilterFieldSource.Custom, 'cost_centre', '42'),
+            filter(FilterFieldSource.Custom, 'retired', 'x'),
+        ];
+
+        expect(withoutMissingFieldFilters(filters, secretCatalogue)).toEqual(filters.slice(0, 2));
+    });
+
+    it('drops nothing while the catalogue has not arrived', () => {
+        const filters = [filter(FilterFieldSource.Custom, 'retired', 'x')];
+
+        expect(withoutMissingFieldFilters(filters, [])).toEqual(filters);
     });
 });
 
@@ -597,25 +823,26 @@ describe('toStorableFilters', () => {
         const kept = toStorableFilters(
             [filter(FilterFieldSource.Property, 'COMMON_NAME', 'acme'), filter(FilterFieldSource.Custom, 'vaultToken', 'hunter2')],
             catalogue,
+            [],
         );
 
         expect(kept).toEqual([filter(FilterFieldSource.Property, 'COMMON_NAME', 'acme')]);
     });
 
     it('keeps a presence-only condition on the same field, which carries nothing to leak', () => {
-        const kept = toStorableFilters([filter(FilterFieldSource.Custom, 'vaultToken')], catalogue);
+        const kept = toStorableFilters([filter(FilterFieldSource.Custom, 'vaultToken')], catalogue, []);
 
         expect(kept).toEqual([filter(FilterFieldSource.Custom, 'vaultToken')]);
     });
 
     it('treats an empty value as no value', () => {
-        expect(toStorableFilters([filter(FilterFieldSource.Custom, 'vaultToken', '')], catalogue)).toHaveLength(1);
-        expect(toStorableFilters([filter(FilterFieldSource.Custom, 'vaultToken', [])], catalogue)).toHaveLength(1);
-        expect(toStorableFilters([filter(FilterFieldSource.Custom, 'vaultToken', ['hunter2'])], catalogue)).toHaveLength(0);
+        expect(toStorableFilters([filter(FilterFieldSource.Custom, 'vaultToken', '')], catalogue, [])).toHaveLength(1);
+        expect(toStorableFilters([filter(FilterFieldSource.Custom, 'vaultToken', [])], catalogue, [])).toHaveLength(1);
+        expect(toStorableFilters([filter(FilterFieldSource.Custom, 'vaultToken', ['hunter2'])], catalogue, [])).toHaveLength(0);
     });
 
     it('keys on the source as well as the identifier, so a property of the same name is untouched', () => {
-        const kept = toStorableFilters([filter(FilterFieldSource.Property, 'vaultToken', 'not a secret here')], catalogue);
+        const kept = toStorableFilters([filter(FilterFieldSource.Property, 'vaultToken', 'not a secret here')], catalogue, []);
 
         expect(kept).toHaveLength(1);
     });
@@ -623,7 +850,43 @@ describe('toStorableFilters', () => {
     it('leaves a catalogue with no secret field alone', () => {
         const filters = [filter(FilterFieldSource.Custom, 'cost_centre', '42')];
 
-        expect(toStorableFilters(filters, [catalogue[0]])).toEqual(filters);
+        const withoutSecret = [{ ...catalogue[1], searchFieldData: catalogue[1].searchFieldData?.slice(1) }];
+
+        expect(toStorableFilters(filters, withoutSecret, [])).toEqual(filters);
+    });
+
+    it('keeps a presence filter whose field is gone when the stored row holds that exact filter', () => {
+        const filters = [presence(FilterFieldSource.Custom, 'retired')];
+
+        expect(toStorableFilters(filters, catalogue, filters)).toEqual(filters);
+    });
+
+    it('drops a filter whose field is gone once its condition differs from the one stored, which Core refuses', () => {
+        const edited = { ...presence(FilterFieldSource.Custom, 'retired'), condition: FilterConditionOperator.Empty };
+
+        expect(toStorableFilters([edited], catalogue, [presence(FilterFieldSource.Custom, 'retired')])).toEqual([]);
+    });
+
+    it('drops a valued filter whose field is gone although the stored row holds it, since its content may be a secret', () => {
+        const filters = [filter(FilterFieldSource.Custom, 'retired', 'y')];
+
+        expect(toStorableFilters(filters, catalogue, filters)).toEqual([]);
+    });
+
+    it('keeps a valued attribute filter while the catalogue has not arrived', () => {
+        const filters = [filter(FilterFieldSource.Custom, 'retired', 'y')];
+
+        expect(toStorableFilters(filters, [], filters)).toEqual(filters);
+    });
+
+    it('drops a filter whose field is gone when the stored row does not filter on it', () => {
+        const kept = toStorableFilters(
+            [presence(FilterFieldSource.Custom, 'retired'), presence(FilterFieldSource.Custom, 'deleted')],
+            catalogue,
+            [presence(FilterFieldSource.Custom, 'retired')],
+        );
+
+        expect(kept).toEqual([presence(FilterFieldSource.Custom, 'retired')]);
     });
 });
 

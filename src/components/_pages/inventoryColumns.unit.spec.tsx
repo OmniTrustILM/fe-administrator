@@ -9,8 +9,10 @@ import type { ColumnDefinition } from 'types/tableColumns';
 import { durationFormatter } from 'utils/dateUtil';
 import { toCreateRequest, toStandardSlice } from 'utils/listViews';
 import { buildCbomCellRegistry, CBOM_COLUMNS } from './cboms/cbomTableHelpers';
+import { buildCertificateCellRegistry, CERTIFICATE_COLUMNS } from './certificates/certificateTableHelpers';
 import { buildConnectorCellRegistry, buildConnectorColumns } from './connectors/connectorTableHelpers';
 import { buildCryptoAssetCellRegistry, CRYPTO_ASSET_COLUMNS } from './crypto-assets/cryptoAssetTableHelpers';
+import { buildKeyCellRegistry, KEY_COLUMNS } from './cryptographic-keys/keyTableHelpers';
 import { buildDiscoveryCellRegistry, DISCOVERY_COLUMNS } from './discoveries/discoveryTableHelpers';
 import { buildSecretCellRegistry, SECRET_COLUMNS } from './secrets/secretTableHelpers';
 import { buildSigningRecordCellRegistry, SIGNING_RECORD_COLUMNS } from './signing-records/signingRecordTableHelpers';
@@ -25,7 +27,76 @@ const enums = { getEnumLabel: noop, dateFormatter: noop, durationFormatter: noop
  */
 const inventories = [
     {
+        name: 'certificates',
+        module: './certificates/certificateTableHelpers.tsx',
+        resource: Resource.Certificates,
+        columns: CERTIFICATE_COLUMNS,
+        registry: buildCertificateCellRegistry({
+            isLinkDisabled: false,
+            selectCertsOnly: false,
+            currentFilters: [],
+            dispatch: () => undefined,
+            dateFormatter: noop,
+            certificateTypeEnum: undefined,
+            getEnumLabel: noop,
+            onPendingAction: () => undefined,
+        }),
+        catalogued: [
+            'CERTIFICATE_STATE',
+            'CERTIFICATE_VALIDATION_STATUS',
+            'COMPLIANCE_STATUS',
+            'PRIVATE_KEY',
+            'COMMON_NAME',
+            'NOT_BEFORE',
+            'NOT_AFTER',
+            'GROUP_NAME',
+            'RA_PROFILE_NAME',
+            'OWNER',
+            'SERIAL_NUMBER',
+            'SIGNATURE_ALGORITHM',
+            'PUBLIC_KEY_ALGORITHM',
+            'ISSUER_COMMON_NAME',
+            'CERTIFICATE_TYPE',
+            'ARCHIVED',
+            'SUBJECTDN',
+            'ISSUERDN',
+            'ISSUER_SERIAL_NUMBER',
+            'FINGERPRINT',
+            'KEY_SIZE',
+            'ALT_KEY_SIZE',
+            'ALT_SIGNATURE_ALGORITHM',
+            'ALT_PUBLIC_KEY_ALGORITHM',
+            'HYBRID_CERTIFICATE',
+            'TRUSTED_CA',
+        ],
+        displayOnly: [],
+    },
+    {
+        name: 'cryptographic keys',
+        module: './cryptographic-keys/keyTableHelpers.tsx',
+        resource: Resource.Keys,
+        columns: KEY_COLUMNS,
+        registry: buildKeyCellRegistry({ keyTypeEnum: undefined, keyUsageEnum: undefined, getEnumLabel: noop, dateFormatter: noop }),
+        catalogued: [
+            'CKI_ENABLED',
+            'CKI_STATE',
+            'CKI_NAME',
+            'CKI_TYPE',
+            'CKI_USAGE',
+            'CKI_CRYPTOGRAPHIC_ALGORITHM',
+            'CKI_LENGTH',
+            'CKI_FORMAT',
+            'CKI_CREATED',
+            'CK_GROUP',
+            'CK_OWNER',
+            'CK_TOKEN_PROFILE',
+            'CK_TOKEN_INSTANCE',
+        ],
+        displayOnly: ['CK_ASSOCIATIONS'],
+    },
+    {
         name: 'discoveries',
+        module: './discoveries/discoveryTableHelpers.tsx',
         resource: Resource.Discoveries,
         columns: DISCOVERY_COLUMNS,
         registry: buildDiscoveryCellRegistry(enums),
@@ -42,6 +113,7 @@ const inventories = [
     },
     {
         name: 'connectors',
+        module: './connectors/connectorTableHelpers.tsx',
         resource: Resource.Connectors,
         columns: buildConnectorColumns(true),
         registry: buildConnectorCellRegistry({
@@ -66,6 +138,7 @@ const inventories = [
     },
     {
         name: 'secrets',
+        module: './secrets/secretTableHelpers.tsx',
         resource: Resource.Secrets,
         columns: SECRET_COLUMNS,
         registry: buildSecretCellRegistry({
@@ -89,6 +162,7 @@ const inventories = [
     },
     {
         name: 'cboms',
+        module: './cboms/cbomTableHelpers.tsx',
         resource: Resource.Cboms,
         columns: CBOM_COLUMNS,
         registry: buildCbomCellRegistry({
@@ -115,6 +189,7 @@ const inventories = [
     },
     {
         name: 'crypto assets',
+        module: './crypto-assets/cryptoAssetTableHelpers.tsx',
         resource: Resource.CryptoAssets,
         columns: CRYPTO_ASSET_COLUMNS,
         registry: buildCryptoAssetCellRegistry({
@@ -128,6 +203,7 @@ const inventories = [
     },
     {
         name: 'signing records',
+        module: './signing-records/signingRecordTableHelpers.tsx',
         resource: Resource.SigningRecords,
         columns: SIGNING_RECORD_COLUMNS,
         registry: buildSigningRecordCellRegistry({ signingProtocolEnum: undefined, getEnumLabel: noop, dateFormatter: noop }),
@@ -168,8 +244,15 @@ describe.each(inventories)('$name default columns', ({ resource, columns, regist
         expect(identifiersOf(columns).filter((identifier) => !catalogued.includes(identifier))).toEqual(displayOnly);
     });
 
+    it('marks exactly the columns outside the catalogue as display-only', () => {
+        expect(identifiersOf(columns.filter((column) => column.displayOnly))).toEqual(displayOnly);
+    });
+
     it('saves as a view, dropping only the display-only columns', () => {
-        const request = toCreateRequest('Standard (copy)', resource, toStandardSlice(columns), catalogueOf(catalogued));
+        const request = toCreateRequest('Standard (copy)', resource, toStandardSlice(columns), {
+            catalogue: catalogueOf(catalogued),
+            standardColumns: columns,
+        });
 
         expect(request.columns.map((column) => column.fieldIdentifier)).toEqual(
             identifiersOf(columns).filter((identifier) => !displayOnly.includes(identifier)),
@@ -183,6 +266,26 @@ describe.each(inventories)('$name default columns', ({ resource, columns, regist
             .filter((identifier) => !known.includes(identifier));
 
         expect(stray).toEqual([]);
+    });
+});
+
+it('covers every inventory that ships a default column set', () => {
+    const helpers = Object.keys(import.meta.glob('./*/*TableHelpers.tsx'));
+
+    expect(inventories.map((inventory) => inventory.module).sort()).toEqual(helpers.sort());
+});
+
+describe('certificate default columns', () => {
+    it('save in full, although the published catalogue leaves Certificate Type out', () => {
+        const published = CERTIFICATE_COLUMNS.map((column) => column.fieldIdentifier).filter(
+            (identifier) => identifier !== 'CERTIFICATE_TYPE',
+        );
+        const request = toCreateRequest('New view', Resource.Certificates, toStandardSlice(CERTIFICATE_COLUMNS), {
+            catalogue: catalogueOf(published),
+            standardColumns: CERTIFICATE_COLUMNS,
+        });
+
+        expect(request.columns.map((column) => column.fieldIdentifier)).toEqual(identifiersOf(CERTIFICATE_COLUMNS));
     });
 });
 
