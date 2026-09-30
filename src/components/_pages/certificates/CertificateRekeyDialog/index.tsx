@@ -450,13 +450,15 @@ export default function CertificateRekeyDialog({ onCancel, certificate }: Readon
                                         name="includeAltKey"
                                         control={control}
                                         render={({ field }) => (
-                                            <Switch
-                                                id="includeAltKey"
-                                                label="Include Alternative Key"
-                                                checked={field.value || false}
-                                                onChange={field.onChange}
-                                                disabled={!!defaultValues.altKey || !!defaultValues.altTokenProfile}
-                                            />
+                                            <div className="mb-4">
+                                                <Switch
+                                                    id="includeAltKey"
+                                                    label="Include Alternative Key"
+                                                    checked={field.value || false}
+                                                    onChange={field.onChange}
+                                                    disabled={!!defaultValues.altKey || !!defaultValues.altTokenProfile}
+                                                />
+                                            </div>
                                         )}
                                     />
                                 )}

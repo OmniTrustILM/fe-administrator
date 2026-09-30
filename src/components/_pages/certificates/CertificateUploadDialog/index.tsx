@@ -121,7 +121,7 @@ export default function CertificateUploadDialog({
 
                     {certificate && <CertificateAttributes certificate={certificate} />}
 
-                    {attributeTabs.length > 0 && <TabLayout noBorder tabs={attributeTabs} />}
+                    {attributeTabs.length > 0 && <TabLayout noBorder tabs={attributeTabs} onlyActiveTabContent={false} />}
 
                     <Container className="flex-row justify-end modal-footer" gap={4}>
                         <Button variant="outline" onClick={onCancel} disabled={formState.isSubmitting} type="button">
