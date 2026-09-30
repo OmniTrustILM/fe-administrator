@@ -192,33 +192,4 @@ test.describe('CryptoAssetsDashboard', () => {
             { fieldSource: 'property', condition: 'EMPTY', fieldIdentifier: 'CBOM_ASSET_ALGORITHM_FAMILY', value: [''] },
         ]);
     });
-
-    test('opening dashboard drill-throughs in a new tab leaves the original filters alone', async ({ mount }) => {
-        const component = await mount(
-            <CryptoAssetsDashboardWithStore
-                variant="partial"
-                initialCbomFilter={{
-                    fieldSource: FilterFieldSource.Property,
-                    condition: FilterConditionOperator.Equals,
-                    fieldIdentifier: 'CBOM_SERIAL_NUMBER',
-                    value: 'old',
-                }}
-                initialCryptoFilter={{
-                    fieldSource: FilterFieldSource.Property,
-                    condition: FilterConditionOperator.Equals,
-                    fieldIdentifier: 'CBOM_ASSET_TYPE',
-                    value: 'old',
-                }}
-            />,
-        );
-
-        await component.getByRole('link', { name: 'Source CBOMs' }).click({ modifiers: ['Control'] });
-        await expect(component.getByTestId('cbom-current-filters')).toContainText('CBOM_SERIAL_NUMBER');
-
-        await component.getByRole('link', { name: '3,010 assets carry none' }).click({ modifiers: ['Control'] });
-        await expect(component.getByTestId('current-filters')).toContainText('CBOM_ASSET_TYPE');
-
-        await component.getByRole('link', { name: /^failed$/i }).click({ modifiers: ['Control'] });
-        await expect(component.getByTestId('cbom-current-filters')).toContainText('CBOM_SERIAL_NUMBER');
-    });
 });

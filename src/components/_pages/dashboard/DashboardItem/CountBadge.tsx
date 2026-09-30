@@ -4,7 +4,6 @@ import { type EntityType, actions as filterActions } from 'ducks/filters';
 import { useDispatch } from 'react-redux';
 import type { SearchFilterModel } from 'types/certificate';
 import { LockTypeEnum } from 'types/user-interface';
-import { isUnmodifiedPrimaryClick } from 'utils/linkClick';
 
 type Props = Readonly<{
     data?: number | null;
@@ -36,10 +35,7 @@ function CountBadge({
 
     const applyFilter =
         link && entity && onSetFilter
-            ? (event: React.MouseEvent<HTMLAnchorElement>) => {
-                  if (!isUnmodifiedPrimaryClick(event)) return;
-                  dispatch(filterActions.setCurrentFilters({ entity, currentFilters: onSetFilter() }));
-              }
+            ? () => dispatch(filterActions.setCurrentFilters({ entity, currentFilters: onSetFilter() }))
             : undefined;
 
     return (
