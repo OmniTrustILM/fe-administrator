@@ -105,6 +105,23 @@ function rollBack(state: State, resource: Resource, error: string | undefined): 
     state.error = error;
 }
 
+/**
+ * Ends the read in flight and says whether a write started or settled while it was out.
+ *
+ * Checking `isMutating` alone is not enough: a write that started after the read and settled before it
+ * would let the older list land on top of a confirmed change, and the next full-row edit would then send
+ * those stale rows back to Core. A read that overlapped a write the other way round would drop the
+ * optimistic row instead, and leave `rollback` describing a list the read has since replaced.
+ *
+ * No recorded epoch means the request this answers is not one this slice saw — the state was reset under
+ * it, or the views were seeded directly — and there is nothing to date it against.
+ */
+function settleRead(entry: ResourceViews): boolean {
+    const issuedUnder = entry.readEpoch;
+    entry.readEpoch = undefined;
+    return entry.isMutating || (issuedUnder !== undefined && issuedUnder !== entry.mutationEpoch);
+}
+
 export const slice = createSlice({
     name: 'listViews',
 
@@ -128,20 +145,7 @@ export const slice = createSlice({
             entry.isFetching = false;
             entry.hasLoaded = true;
 
-            const issuedUnder = entry.readEpoch;
-            entry.readEpoch = undefined;
-
-            // A read is committed only if no write started or settled while it was in flight. Rejecting
-            // it merely while `isMutating` holds is not enough: a write that started after the read and
-            // settled before it would let the older list land on top of a confirmed change, and the
-            // next full-row edit would then send those stale rows back to Core. A read that overlapped
-            // a write the other way round would drop the optimistic row instead, and leave `rollback`
-            // describing a list the read has since replaced.
-            //
-            // No recorded epoch means the request this answers is not one this slice saw — the state
-            // was reset under it, or the views were seeded directly — and there is nothing to date it
-            // against.
-            if (entry.isMutating || (issuedUnder !== undefined && issuedUnder !== entry.mutationEpoch)) {
+            if (settleRead(entry)) {
                 entry.isStale = true;
                 return;
             }
@@ -155,11 +159,10 @@ export const slice = createSlice({
             // Loaded in the sense the strip needs: the read has settled, so Standard opens rather than
             // the strip waiting forever for a list that is not coming.
             entry.hasLoaded = true;
-            entry.readEpoch = undefined;
             // A list held from an earlier visit is not what Core holds now, and a full-row save built on it would
-            // overwrite any newer change. An optimistic write in flight keeps its rows, and the list is read again
-            // once that write settles.
-            if (entry.isMutating) entry.isStale = true;
+            // overwrite any newer change. Rows a write overlapping the read has put there, whether still in flight
+            // or confirmed since, are kept instead, and the list is read again once that write settles.
+            if (settleRead(entry)) entry.isStale = true;
             else entry.views = [];
             state.error = action.payload.error;
         },

@@ -162,6 +162,25 @@ describe('reading the saved views', () => {
         expect(certificates(failed).isStale).toBe(true);
     });
 
+    test('a read that fails after the write it overlapped has settled keeps the confirmed rows', () => {
+        const failed = reduceAll(
+            [
+                actions.listViews({ resource: Resource.Certificates }),
+                actions.createView({
+                    resource: Resource.Certificates,
+                    view: { name: 'New', resource: Resource.Certificates, columns, defaultView: false },
+                }),
+                actions.createViewSuccess({ resource: Resource.Certificates, view: view('b', 'New') }),
+                actions.listViewsFailure({ resource: Resource.Certificates, error: 'nope' }),
+            ],
+            listed([view('a', 'One')]),
+        );
+
+        expect(certificates(failed).views.map((v) => v.uuid)).toEqual(['a', 'b']);
+        expect(certificates(failed).isStale).toBe(true);
+        expect(certificates(failed).readEpoch).toBeUndefined();
+    });
+
     test('marks the list stale when a write overlapped the read, and clears the mark on the next read', () => {
         const overlapped = reduceAll(
             [
