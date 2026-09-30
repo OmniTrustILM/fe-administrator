@@ -22,6 +22,8 @@ export type State = {
     extensionOidDetails: Record<string, OIDResponseModel>;
     /** The OIDs whose detail has been asked for since the custom extension list was last read. */
     extensionOidDetailsRequested: Record<string, boolean>;
+    /** Why a requested detail could not be read, by OID, until it is asked for again. */
+    extensionOidDetailsFailed: Record<string, string>;
 
     isFetching: boolean;
     isCreating: boolean;
@@ -44,6 +46,7 @@ export const initialState: State = {
     systemOidsError: false,
     extensionOidDetails: {},
     extensionOidDetailsRequested: {},
+    extensionOidDetailsFailed: {},
 
     isFetching: false,
     isCreating: false,
@@ -90,6 +93,7 @@ export const slice = createSlice({
             if (action.payload.category === OidCategory.CertificateExtension) {
                 state.extensionOidDetails = {};
                 state.extensionOidDetailsRequested = {};
+                state.extensionOidDetailsFailed = {};
             }
         },
 
@@ -119,14 +123,18 @@ export const slice = createSlice({
 
         getExtensionOidDetail: (state, action: PayloadAction<{ oid: string }>) => {
             state.extensionOidDetailsRequested[action.payload.oid] = true;
+            delete state.extensionOidDetailsFailed[action.payload.oid];
         },
 
         getExtensionOidDetailSuccess: (state, action: PayloadAction<{ oid: OIDResponseModel }>) => {
             state.extensionOidDetails[action.payload.oid.oid] = action.payload.oid;
         },
 
-        // A failed detail stays requested: it is asked for again when the list is next read, not on every render.
-        getExtensionOidDetailFailure: (state, action: PayloadAction<{ oid: string; error: string }>) => {},
+        // A failed detail stays requested, so it is not asked for again on every render: the field
+        // shows the reason with a Retry, and the next list read asks again.
+        getExtensionOidDetailFailure: (state, action: PayloadAction<{ oid: string; error: string }>) => {
+            state.extensionOidDetailsFailed[action.payload.oid] = action.payload.error;
+        },
 
         getOID: (state, action: PayloadAction<{ oid: string }>) => {
             state.isFetching = true;
@@ -229,6 +237,7 @@ const systemOidsLoaded = createSelector(state, (state) => state.systemOidsLoaded
 const systemOidsError = createSelector(state, (state) => state.systemOidsError);
 const extensionOidDetails = createSelector(state, (state) => state.extensionOidDetails);
 const extensionOidDetailsRequested = createSelector(state, (state) => state.extensionOidDetailsRequested);
+const extensionOidDetailsFailed = createSelector(state, (state) => state.extensionOidDetailsFailed);
 const systemOidsByCategory = createSelector(systemOids, (systemOids) =>
     systemOids.reduce<Partial<Record<OidCategory, OIDResponseModel[]>>>((acc, entry) => {
         const categoryOids = acc[entry.category] ?? [];
@@ -260,6 +269,7 @@ export const selectors = {
     systemOidsByCategory,
     extensionOidDetails,
     extensionOidDetailsRequested,
+    extensionOidDetailsFailed,
 
     isFetching,
     isCreating,

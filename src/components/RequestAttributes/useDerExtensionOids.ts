@@ -42,6 +42,8 @@ export interface DerExtensionOids {
     all: Set<string>;
     /** Those an ASN.1 module describes, registered or shipped with Core; only these also take a JER value. */
     withModule: Set<string>;
+    /** Custom extensions whose registry entry could not be read, with the reason; their encoding is unknown. */
+    failed: Record<string, string>;
 }
 
 /**
@@ -55,6 +57,7 @@ export interface DerExtensionOids {
 export function useDerExtensionOids(): DerExtensionOids {
     const systemOidsByCategory = useSelector(oidSelectors.systemOidsByCategory);
     const extensionOidDetails = useSelector(oidSelectors.extensionOidDetails);
+    const failed = useSelector(oidSelectors.extensionOidDetailsFailed);
 
     return useMemo(() => {
         const entries = new Map<string, OIDResponseModel>();
@@ -70,6 +73,6 @@ export function useDerExtensionOids(): DerExtensionOids {
                 if (props.valueSchema) withModule.add(entry.oid);
             }
         }
-        return { all, withModule };
-    }, [systemOidsByCategory, extensionOidDetails]);
+        return { all, withModule, failed };
+    }, [systemOidsByCategory, extensionOidDetails, failed]);
 }

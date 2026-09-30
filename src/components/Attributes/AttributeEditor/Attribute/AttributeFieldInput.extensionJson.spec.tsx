@@ -28,7 +28,12 @@ const oidsState = {
     oids: {
         oids: [],
         // The custom list carries no additionalProperties; only the detail says how an extension is encoded.
-        oidsByCategory: { certificateExtension: [{ oid: '1.3.6.1.4.1.99999.1', displayName: 'Custom', category: 'certificateExtension' }] },
+        oidsByCategory: {
+            certificateExtension: [
+                { oid: '1.3.6.1.4.1.99999.1', displayName: 'Custom', category: 'certificateExtension' },
+                { oid: '1.3.6.1.4.1.99999.2', displayName: 'Custom, unread', category: 'certificateExtension' },
+            ],
+        },
         oidsByCategoryError: {},
         oidsByCategoryLoaded: {},
         systemOids: [
@@ -52,7 +57,8 @@ const oidsState = {
             },
         ],
         systemOidsLoaded: true,
-        extensionOidDetailsRequested: { '1.3.6.1.4.1.99999.1': true },
+        extensionOidDetailsRequested: { '1.3.6.1.4.1.99999.1': true, '1.3.6.1.4.1.99999.2': true },
+        extensionOidDetailsFailed: { '1.3.6.1.4.1.99999.2': 'Failed to load OID entry (503): Service Unavailable.' },
         extensionOidDetails: {
             '1.3.6.1.4.1.99999.1': {
                 oid: '1.3.6.1.4.1.99999.1',
@@ -86,6 +92,7 @@ async function mountField(mount: MountFn, page: Page, extensionOid: string, cont
         input: page.locator(`[id="${FIELD}"]`),
         hint: page.getByTestId(`${FIELD}-der-value-hint`),
         jerError: page.getByTestId(`${FIELD}-jer-error`),
+        detailError: page.getByTestId(`${FIELD}-extension-detail-error`),
     };
 }
 
@@ -136,6 +143,18 @@ test.describe('extension value input', () => {
         await expect(jerError).toContainText('no ASN.1 module, so its value must be base64-encoded DER');
 
         await input.fill('MAMBAf8=');
+        await expect(jerError).toHaveCount(0);
+    });
+
+    test('a custom extension whose entry could not be read says so, offers a retry and checks nothing', async ({ mount, page }) => {
+        const { input, hint, jerError, detailError } = await mountField(mount, page, '1.3.6.1.4.1.99999.2');
+
+        await expect(detailError).toContainText('Failed to load OID entry (503)');
+        await expect(detailError).toContainText('1.3.6.1.4.1.99999.2 is not checked here');
+        await expect(detailError.getByRole('button', { name: 'Retry' })).toBeVisible();
+        await expect(hint).toHaveCount(0);
+
+        await input.fill('{not json at all');
         await expect(jerError).toHaveCount(0);
     });
 

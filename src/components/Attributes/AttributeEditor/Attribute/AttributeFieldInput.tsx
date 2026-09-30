@@ -1,5 +1,8 @@
 import type React from 'react';
 import { Controller, type ControllerRenderProps, useFormContext, useFormState } from 'react-hook-form';
+import { useDispatch } from 'react-redux';
+import { actions as oidActions } from 'ducks/oids';
+import RetryCallout from 'components/RetryCallout';
 import Label from 'components/Label';
 import TextInput, { inputBaseClassName } from 'components/TextInput';
 import DatePicker from 'components/DatePicker';
@@ -149,6 +152,7 @@ function StandardInputControl({
 const NO_MODULE_JER_ERROR = 'This extension has no ASN.1 module, so its value must be base64-encoded DER.';
 
 export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Readonly<AttributeFieldInputProps>): React.ReactNode {
+    const dispatch = useDispatch();
     const { setValue, control, watch } = useFormContext();
     const { submitCount } = useFormState({ control });
     const formValues = watch();
@@ -162,6 +166,9 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
     const mappedDerOids = mappedExtensionOids.filter((oid) => derExtensionOids.all.has(oid));
     const isDerTarget = mappedDerOids.length > 0;
     const acceptsJer = isDerTarget && mappedDerOids.every((oid) => derExtensionOids.withModule.has(oid));
+    // A mapped extension whose registry entry could not be read has an unknown encoding, so the value
+    // gets no hint or check here; the field says so and offers to read the entry again.
+    const unreadExtensionOids = mappedExtensionOids.filter((oid) => derExtensionOids.failed[oid] !== undefined);
 
     // Attribute should not be rendered in form but its value should be sent to BE
     if (descriptor.properties.visible === false) {
@@ -266,6 +273,14 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
                                         {descriptor.description}
                                     </p>
                                 )}
+                                {unreadExtensionOids.map((oid) => (
+                                    <div key={oid} className="mt-1" data-testid={`${name}-extension-detail-error`}>
+                                        <RetryCallout
+                                            message={`${derExtensionOids.failed[oid]} The value of extension ${oid} is not checked here until its entry is read.`}
+                                            onRetry={() => dispatch(oidActions.getExtensionOidDetail({ oid }))}
+                                        />
+                                    </div>
+                                ))}
                                 {isDerTarget && (
                                     <p className="mt-1 text-xs text-content-muted" data-testid={`${name}-der-value-hint`}>
                                         {acceptsJer

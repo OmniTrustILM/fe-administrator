@@ -107,7 +107,7 @@ describe('oids slice', () => {
         expect(selectors.extensionOidDetails({ oids: next } as any)).toEqual({ '1.2.3': detail });
     });
 
-    test('getExtensionOidDetail marks the OID as requested, and a failure leaves it so', () => {
+    test('a failed extension detail keeps the OID requested and records the reason until it is asked for again', () => {
         let next = reducer(initialState, actions.getExtensionOidDetail({ oid: '1.2.3' }));
         expect(next.extensionOidDetailsRequested).toEqual({ '1.2.3': true });
         expect(selectors.extensionOidDetailsRequested({ oids: next } as any)).toEqual({ '1.2.3': true });
@@ -115,20 +115,27 @@ describe('oids slice', () => {
         next = reducer(next, actions.getExtensionOidDetailFailure({ oid: '1.2.3', error: 'err' }));
         expect(next.extensionOidDetailsRequested).toEqual({ '1.2.3': true });
         expect(next.extensionOidDetails).toEqual({});
+        expect(selectors.extensionOidDetailsFailed({ oids: next } as any)).toEqual({ '1.2.3': 'err' });
+
+        next = reducer(next, actions.getExtensionOidDetail({ oid: '1.2.3' }));
+        expect(next.extensionOidDetailsFailed).toEqual({});
     });
 
     test('a reloaded custom extension list drops the cached details and the requested set', () => {
         const detail = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER', valueSchema: 'M' } } as any;
         let next = reducer(initialState, actions.getExtensionOidDetail({ oid: '1.2.3' }));
         next = reducer(next, actions.getExtensionOidDetailSuccess({ oid: detail }));
+        next = reducer(next, actions.getExtensionOidDetailFailure({ oid: '4.5.6', error: 'err' }));
 
         next = reducer(next, actions.listOidsByCategorySuccess({ category: OidCategory.RdnAttributeType, oids: [] }));
         expect(next.extensionOidDetails).toEqual({ '1.2.3': detail });
         expect(next.extensionOidDetailsRequested).toEqual({ '1.2.3': true });
+        expect(next.extensionOidDetailsFailed).toEqual({ '4.5.6': 'err' });
 
         next = reducer(next, actions.listOidsByCategorySuccess({ category: OidCategory.CertificateExtension, oids: [] }));
         expect(next.extensionOidDetails).toEqual({});
         expect(next.extensionOidDetailsRequested).toEqual({});
+        expect(next.extensionOidDetailsFailed).toEqual({});
     });
 
     test('updateOID / success / failure', () => {

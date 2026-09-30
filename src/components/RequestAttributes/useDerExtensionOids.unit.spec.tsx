@@ -38,6 +38,7 @@ describe('useFetchExtensionOidRegistry', () => {
                 },
                 extensionOidDetails: {},
                 extensionOidDetailsRequested: { '1.2.3.2': true },
+                extensionOidDetailsFailed: {},
                 systemOids: [],
             },
         };
