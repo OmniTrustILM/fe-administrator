@@ -181,7 +181,12 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
                 {/* The overlay keeps the form as submitted while its request runs: an edit meanwhile
                     would let the reply land on a value, or a field, no longer on screen. */}
-                <Widget noBorder busy={isBusy} enableBusyOverlay>
+<Widget
+                    noBorder
+                    busy={isBusy}
+                    enableBusyOverlay
+                    innerContainerProps={isBusy ? { inert: true } : undefined}
+                >
                     <div className="space-y-4">
                         <Controller
                             name="oid"
