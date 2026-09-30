@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
 import { slice } from 'ducks/oids';
-import { catchError, defer, exhaustMap, filter, groupBy, mergeMap, of, switchMap } from 'rxjs';
+import { catchError, defer, filter, groupBy, mergeMap, of, switchMap } from 'rxjs';
 import { store } from '../App';
 import { actions as pagingActions } from './paging';
 import { EntityType } from './filters';
@@ -100,11 +100,12 @@ const listSystemOids: AppEpic = (action$, state$, deps) => {
 const getExtensionOidDetail: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.getExtensionOidDetail.match),
-        // One request per OID, and a repeated request for the same OID waits for the one in flight.
+        // One request per OID. A repeated request for the same OID cancels the one in flight, so a
+        // response from before the details were invalidated cannot land in the refreshed cache.
         groupBy((action) => action.payload.oid),
         mergeMap((group$) =>
             group$.pipe(
-                exhaustMap((action) =>
+                switchMap((action) =>
                     deps.apiClients.oids.getCustomOidEntry({ oid: action.payload.oid }).pipe(
                         mergeMap((oid) => of(slice.actions.getExtensionOidDetailSuccess({ oid }))),
                         catchError((error) =>

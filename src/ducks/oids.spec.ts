@@ -484,6 +484,29 @@ describe('oid-epics', () => {
         expect(out).toEqual([actions.getExtensionOidDetailSuccess({ oid: detail as any })]);
     });
 
+    test('getExtensionOidDetail epic lets a repeated request for the same OID cancel the one in flight', async () => {
+        const stale = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER', valueSchema: 'before edit' } };
+        const fresh = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER', valueSchema: 'after edit' } };
+        // The first response is the slower one: the request that started before the details were
+        // invalidated must not outlive the request the refresh dispatched.
+        const getCustomOidEntry = vi
+            .fn()
+            .mockReturnValueOnce(of(stale).pipe(delay(20)))
+            .mockReturnValueOnce(of(fresh).pipe(delay(1)));
+        const action$ = of(actions.getExtensionOidDetail({ oid: '1.2.3' }), actions.getExtensionOidDetail({ oid: '1.2.3' }));
+        const epic = epics.find((e) => e.name === 'getExtensionOidDetail')!;
+        const out: any[] = [];
+        await new Promise<void>((resolve) => {
+            epic(action$ as any, {} as any, { apiClients: { oids: { getCustomOidEntry } } } as any).subscribe({
+                next: (a) => out.push(a),
+                complete: () => resolve(),
+            });
+        });
+
+        expect(getCustomOidEntry).toHaveBeenCalledTimes(2);
+        expect(out).toEqual([actions.getExtensionOidDetailSuccess({ oid: fresh as any })]);
+    });
+
     test('getExtensionOidDetail epic maps a failure without an alert', async () => {
         const getCustomOidEntry = vi.fn().mockReturnValue(throwError(() => new Error('boom')));
         const out = await runEpic('getExtensionOidDetail', actions.getExtensionOidDetail({ oid: '1.2.3' }), { getCustomOidEntry });
