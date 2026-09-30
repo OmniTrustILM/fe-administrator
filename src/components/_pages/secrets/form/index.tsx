@@ -45,8 +45,8 @@ type SecretFormProps = Readonly<{
     onCancel?: () => void;
     onSuccess?: () => void;
     initialSecret?: SecretDetailDto;
-    // A new Secret Key secret whose content was decided elsewhere: both are shown, neither can be edited.
-    preset?: Readonly<{ type: SecretType.SecretKey; content: string }>;
+    // A new Generic secret whose content was decided elsewhere: both are shown, neither can be edited.
+    preset?: Readonly<{ type: SecretType.Generic; content: string }>;
     // Takes over creating, so the content goes out with the request only and never through the store.
     onCreate?: (request: CreateSecretRequest) => void;
     createInProgress?: boolean;
@@ -556,27 +556,24 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
                                                     onChange={field.onChange}
                                                     onBlur={field.onBlur}
                                                     error={getFieldErrorMessage(fieldState)}
-                                                    disabled={!!preset}
                                                     required
                                                 />
                                             )}
                                         />
-                                        {preset ? null : (
-                                            <div>
-                                                <Label
-                                                    htmlFor="secret-secretkey-file__fileUpload__file"
-                                                    className="mb-1 block text-sm font-medium"
-                                                >
-                                                    Or upload file
-                                                </Label>
-                                                <FileUpload
-                                                    id="secret-secretkey-file"
-                                                    onFileContentLoaded={(base64) =>
-                                                        setValue('content', base64, { shouldDirty: true, shouldValidate: true })
-                                                    }
-                                                />
-                                            </div>
-                                        )}
+                                        <div>
+                                            <Label
+                                                htmlFor="secret-secretkey-file__fileUpload__file"
+                                                className="mb-1 block text-sm font-medium"
+                                            >
+                                                Or upload file
+                                            </Label>
+                                            <FileUpload
+                                                id="secret-secretkey-file"
+                                                onFileContentLoaded={(base64) =>
+                                                    setValue('content', base64, { shouldDirty: true, shouldValidate: true })
+                                                }
+                                            />
+                                        </div>
                                     </>
                                 )}
                                 {watchedType === SecretType.PrivateKey && (
@@ -752,6 +749,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
                                                 onChange={field.onChange}
                                                 onBlur={field.onBlur}
                                                 error={getFieldErrorMessage(fieldState)}
+                                                disabled={!!preset}
                                                 required={!initialSecret}
                                             />
                                         )}

@@ -74,7 +74,7 @@ describe('eabRequestFields', () => {
 
 describe('newEabSecretProblem', () => {
     const created = (overrides: { state?: SecretState; enabled?: boolean } = {}) => ({
-        type: SecretType.SecretKey,
+        type: SecretType.Generic,
         state: SecretState.Inactive,
         enabled: true,
         ...overrides,

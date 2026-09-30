@@ -92,7 +92,7 @@ export default function GenerateEabKeyDialog({ isOpen, onClose, onSelect, api = 
 
     useEffect(() => () => creation.current?.unsubscribe(), []);
 
-    const preset = useMemo(() => (key ? { type: SecretType.SecretKey as const, content: key } : undefined), [key]);
+    const preset = useMemo(() => (key ? { type: SecretType.Generic as const, content: key } : undefined), [key]);
 
     const createSecret = (request: CreateSecretRequest) => {
         const calls = apiRef.current;

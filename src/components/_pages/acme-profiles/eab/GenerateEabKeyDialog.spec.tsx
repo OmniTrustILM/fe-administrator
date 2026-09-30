@@ -6,7 +6,7 @@ import { createButton, fillEabSecretForm } from './eabKeyDialogSteps';
 import GenerateEabKeyDialogHarness from './GenerateEabKeyDialogHarness';
 
 test.describe('GenerateEabKeyDialog', () => {
-    test('generates on open and offers a Secret Key secret holding the key', async ({ mount, page }) => {
+    test('generates on open and offers a Generic secret holding the key', async ({ mount, page }) => {
         await mount(<GenerateEabKeyDialogHarness generatedKey="abc" />);
 
         await page.getByTestId('open').click();
@@ -14,11 +14,10 @@ test.describe('GenerateEabKeyDialog', () => {
         await expect(page.getByTestId('eab-key')).toContainText('abc-');
         await expect(page.getByRole('button', { name: 'Copy key' })).toBeVisible();
         await expect(page.getByTestId('eab-key-notice')).toHaveText(EAB_KEY_NOTICE);
-        await expect(page.getByTestId('text-input-secret-type')).toHaveValue('Secret Key');
+        await expect(page.getByTestId('text-input-secret-type')).toHaveValue('Generic');
         await expect(page.getByTestId('text-input-secret-type')).toBeDisabled();
-        await expect(page.locator('#secret-secretkey-content')).toHaveValue('abc-1');
-        await expect(page.locator('#secret-secretkey-content')).toBeDisabled();
-        await expect(page.locator('#secret-secretkey-file__fileUpload__file')).toHaveCount(0);
+        await expect(page.locator('#secret-generic-content')).toHaveValue('abc-1');
+        await expect(page.locator('#secret-generic-content')).toBeDisabled();
         await expect(createButton(page)).toBeDisabled();
     });
 
@@ -74,7 +73,7 @@ test.describe('GenerateEabKeyDialog', () => {
         expect(request).toMatchObject({
             vaultUuid: 'vault-1',
             vaultProfileUuid: 'vp-1',
-            secretRequestDto: { name: 'acme-eab', secret: { type: 'secretKey', content: 'abc-1' } },
+            secretRequestDto: { name: 'acme-eab', secret: { type: 'generic', content: 'abc-1' } },
         });
         await expect(page.getByTestId('selected')).toHaveText(JSON.stringify([{ uuid: CREATED_SECRET_UUID, enabled: true }]));
         await expect(page.getByTestId('eab-key-id')).toContainText(CREATED_SECRET_UUID);

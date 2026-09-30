@@ -40,7 +40,7 @@ export function createEabSecretStore({ vaultAttributes = [], attributesLoading =
             secretCreationAttributeDescriptors: vaultAttributes,
             isFetchingSecretCreationAttributes: attributesLoading,
         },
-        enums: { platformEnums: { SecretType: { [SecretType.SecretKey]: { label: 'Secret Key' } } } },
+        enums: { platformEnums: { SecretType: { [SecretType.Generic]: { label: 'Generic' } } } },
     });
     if (onAction) {
         const dispatch = store.dispatch;
