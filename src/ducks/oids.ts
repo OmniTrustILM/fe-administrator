@@ -144,6 +144,7 @@ export const slice = createSlice({
         // A failed detail stays requested, so it is not asked for again on every render: the field
         // shows the reason with a Retry, and the next list read asks again.
         getExtensionOidDetailFailure: (state, action: PayloadAction<{ oid: string; error: string }>) => {
+            delete state.extensionOidDetails[action.payload.oid];
             state.extensionOidDetailsFailed[action.payload.oid] = action.payload.error;
         },
 
