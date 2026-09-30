@@ -69,8 +69,10 @@ export interface DerExtensionOids {
  * encodings a value starting with `{` is literal text, so offering JSON validation there would reject
  * valid values.
  *
- * Empty while a registry list could not be loaded: what is held may predate an edit, and the editor
- * already says the values are not checked, so the fields must not check them from stale entries.
+ * Entries stay in use while a list is being read again: the list is read on every editor mount, and
+ * an entry is at worst one edit behind until the fresh one replaces it, which beats a field that
+ * flips its hint and shape on every mount. They are withheld only while a list could not be loaded,
+ * since nothing then says when they will be refreshed, and the editor says the values are not checked.
  *
  * Selection only; the fetches are `useFetchExtensionOidRegistry`.
  */

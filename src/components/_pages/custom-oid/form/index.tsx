@@ -179,7 +179,9 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
     return (
         <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <Widget noBorder busy={isBusy}>
+                {/* The overlay keeps the form as submitted while its request runs: an edit meanwhile
+                    would let the reply land on a value, or a field, no longer on screen. */}
+                <Widget noBorder busy={isBusy} enableBusyOverlay>
                     <div className="space-y-4">
                         <Controller
                             name="oid"
@@ -409,7 +411,7 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
                             <ProgressButton
                                 title={submitTitle}
                                 inProgressTitle={inProgressTitle}
-                                inProgress={isSubmitting}
+                                inProgress={isCreating || isUpdating}
                                 disabled={(editMode ? !isDirty : false) || !isValid}
                                 type="submit"
                             />

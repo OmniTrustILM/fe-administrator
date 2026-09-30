@@ -43,7 +43,13 @@ vi.mock('components/Input/MultipleValueTextInput', () => ({
     default: ({ id }: any) => <div data-testid={`multi-${id}`} />,
 }));
 vi.mock('components/Label', () => ({ default: ({ children }: any) => <span>{children}</span> }));
-vi.mock('components/Widget', () => ({ default: ({ children }: any) => <div>{children}</div> }));
+vi.mock('components/Widget', () => ({
+    default: ({ children, busy, enableBusyOverlay }: any) => (
+        <div data-testid="widget" data-busy={String(!!busy)} data-overlay={String(!!enableBusyOverlay)}>
+            {children}
+        </div>
+    ),
+}));
 vi.mock('components/Container', () => ({ default: ({ children }: any) => <div>{children}</div> }));
 vi.mock('components/Button', () => ({
     default: ({ children, onClick, type }: any) => (
@@ -53,8 +59,8 @@ vi.mock('components/Button', () => ({
     ),
 }));
 vi.mock('components/ProgressButton', () => ({
-    default: ({ title, type, disabled }: any) => (
-        <button type={type ?? 'button'} disabled={disabled}>
+    default: ({ title, type, disabled, inProgress }: any) => (
+        <button type={type ?? 'button'} disabled={disabled} data-in-progress={String(!!inProgress)}>
             {title}
         </button>
     ),
@@ -332,6 +338,21 @@ describe('CustomOIDForm — Certificate Extension branch', () => {
 
         expect(container.querySelector('[data-testid="error-valueSchema"]')).toBeNull();
         expect(container.querySelector('[data-testid="valueSchema-hint"]')).not.toBeNull();
+    });
+
+    it('locks the form behind the busy overlay while its request is running', async () => {
+        const state = buildState();
+        state.oids = { ...state.oids, isCreating: true };
+        useSelectorMock.mockImplementation((selector: any) => selector(state));
+        await act(async () => {
+            root.render(<CustomOIDForm onCancel={() => {}} />);
+        });
+
+        const widget = container.querySelector<HTMLDivElement>('[data-testid="widget"]');
+        expect(widget?.dataset.busy).toBe('true');
+        expect(widget?.dataset.overlay).toBe('true');
+        const create = [...container.querySelectorAll('button')].find((b) => b.textContent === 'Create');
+        expect(create?.dataset.inProgress).toBe('true');
     });
 
     it('pre-populates the Value Schema in edit mode', async () => {
