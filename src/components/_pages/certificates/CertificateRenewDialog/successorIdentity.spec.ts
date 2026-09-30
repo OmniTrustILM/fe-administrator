@@ -80,6 +80,20 @@ describe('replaySourceIdentity', () => {
         expect(identity.request.subjectAltName).toBe('otherName:1.3.6.1.4.1.311.20.2.3;UTF8:user@corp');
     });
 
+    test('does not replay a SAN value that Core would split at a comma', () => {
+        const identity = replaySourceIdentity(
+            source({
+                subjectAlternativeNames: {
+                    dNSName: ['app.example'],
+                    uniformResourceIdentifier: ['https://app.example/?next=1,dns:other.example', 'https://app.example/a,urn:x'],
+                },
+            }),
+        );
+
+        expect(identity.request.subjectAltName).toBe('DNS:app.example');
+        expect(identity.kind === 'flat' && identity.omittedSanTypes).toEqual(['uniformResourceIdentifier']);
+    });
+
     test('does not replay an otherName whose value is not plain text', () => {
         const identity = replaySourceIdentity(
             source({

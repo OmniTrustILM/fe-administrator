@@ -155,10 +155,14 @@ export default function CertificateRenewDialog({ certificate, onCancel, onDone, 
     };
 
     const identityPresent = Object.keys(identity.request).length > 0;
+    // A successor registered without some of the source's SANs would never match a holder enrolling with the source's
+    // identity: Core's CMP registration matching compares SAN sets exactly.
+    const identityReplayable = identity.kind !== 'flat' || identity.omittedSanTypes.length === 0;
     const successorChallengeValid = !validateRegistrationChallenge()(successorAuthorizationSecret);
     const successorWindowValid = !successorExpiresAt || new Date(successorExpiresAt) > new Date();
     const canRegister =
         identityPresent &&
+        identityReplayable &&
         successorChallengeValid &&
         successorWindowValid &&
         // A blank challenge on a successor of a challenge-protected certificate would silently drop that protection
@@ -238,9 +242,10 @@ export default function CertificateRenewDialog({ certificate, onCancel, onDone, 
                                         <CustomTable headers={detailHeaders} data={flatIdentityRows} />
                                     )}
                                 </div>
-                                {identity.kind === 'flat' && identity.omittedSanTypes.length > 0 && (
-                                    <p className="mt-2 text-sm text-content-subtle">
-                                        Not carried over (no textual form): {identity.omittedSanTypes.join(', ')}
+                                {identity.kind === 'flat' && !identityReplayable && (
+                                    <p className="mt-2 text-sm text-danger" data-testid="successorIdentityNotReplayable">
+                                        This identity cannot be registered as it is: {identity.omittedSanTypes.join(', ')} cannot be carried
+                                        over, so the successor would not match this certificate.
                                     </p>
                                 )}
                                 {!identityPresent && (

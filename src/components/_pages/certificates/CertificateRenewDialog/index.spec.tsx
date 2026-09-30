@@ -264,6 +264,27 @@ test.describe('CertificateRenewDialog — Register switch', () => {
         expect(registrations[0].csrAttributes).toBeUndefined();
     });
 
+    test('Register stays disabled when part of the source identity cannot be replayed', async ({ mount, page }) => {
+        await mount(
+            <CertificateRenewDialogTestWrapper
+                certificate={
+                    {
+                        uuid: 'source-uuid',
+                        subjectDn: 'CN=app.example',
+                        subjectAlternativeNames: { dNSName: ['app.example'], x400Address: ['x400-address'] },
+                        state: 'issued',
+                        privateKeyAvailability: true,
+                        raProfile: { uuid: 'ra-profile-uuid', name: 'Test RA Profile', authorityInstanceUuid: 'authority-uuid' },
+                    } as never
+                }
+            />,
+        );
+        await switchToRegister(page);
+
+        await expect(page.getByTestId('successorIdentityNotReplayable')).toContainText('x400Address');
+        await expect(page.getByTestId('renewSubmit')).toBeDisabled();
+    });
+
     test('an Active source requires a challenge for the successor', async ({ mount, page }) => {
         await mount(<CertificateRenewDialogTestWrapper registrationState={CertificateRegistrationState.Active} />);
         await switchToRegister(page);

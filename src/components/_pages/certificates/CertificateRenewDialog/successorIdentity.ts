@@ -24,15 +24,29 @@ const sanPrefixes: Record<string, string> = {
     otherName: 'otherName',
 };
 
+// Core splits the flat form at commas and reads a segment that starts with "<word>:" as a new entry; any other segment
+// continues the previous value. A value with such a segment inside would come back split or be refused.
+const newEntrySegment = /^\s*[A-Za-z0-9]+:/;
+
 // The detail renders an otherName as "<oid>=<value>"; the flat form wants "<oid>;UTF8:<value>". Only a plain-text
 // value can make that trip: the detail shows a structured or binary value as "[...]" or "#<hex>", which would come
 // back as a UTF8String holding that text.
-function formatSan(type: string, value: string) {
+function renderSan(type: string, value: string) {
     if (type !== 'otherName') return `${sanPrefixes[type]}:${value}`;
     const separator = value.indexOf('=');
     const text = value.slice(separator + 1);
     if (separator <= 0 || text.startsWith('[') || text.startsWith('#')) return undefined;
     return `otherName:${value.slice(0, separator)};UTF8:${text}`;
+}
+
+function formatSan(type: string, value: string) {
+    const san = renderSan(type, value);
+    return san
+        ?.split(',')
+        .slice(1)
+        .some((segment) => newEntrySegment.test(segment))
+        ? undefined
+        : san;
 }
 
 export function toRequestAttributes(attributes: AttributeResponseModel[] | undefined): AttributeRequestModel[] {
