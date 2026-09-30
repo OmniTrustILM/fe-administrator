@@ -89,7 +89,7 @@ export function fieldMappingSummary(fieldMapping: FieldMapping | undefined, rdnC
 /**
  * The OIDs of every generic extension this mapping targets. Key Usage / Extended Key Usage are
  * deliberately not reported: they go through their typed targets and never accept a raw extension
- * value, JSON tree included.
+ * value, JER included.
  */
 export function getMappedExtensionOids(fieldMapping: FieldMapping | undefined): string[] {
     return (fieldMapping?.fields ?? [])

@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { delay, of, throwError } from 'rxjs';
+import { delay, of, Subject, throwError } from 'rxjs';
 
 // Break the oid-epics → ../App → ../store → ducks/index → oid-epics cycle by
 // stubbing the App module. Epic logic doesn't need the real store in unit tests.
@@ -14,6 +14,7 @@ vi.mock('./transform/certificates', () => ({
 
 import reducer, { actions, initialState, selectors } from './oids';
 import epics from './oid-epics';
+import { actions as appRedirectActions } from './app-redirect';
 import { FilterConditionOperator, FilterFieldSource, OidCategory } from 'types/openapi';
 
 const reducerKey = () => 'oids';
@@ -66,7 +67,7 @@ describe('oids slice', () => {
     });
 
     test('createOID / success / failure', () => {
-        let next = reducer(initialState, actions.createOID({ oid: { oid: '1.2.3', description: 'New' } as any }));
+        let next = reducer(initialState, actions.createOID({ oid: { oid: '1.2.3', description: 'New' } as any, requestId: 'r1' }));
         expect(next.isCreating).toBe(true);
         expect(next.createOidSucceeded).toBe(false);
 
@@ -81,8 +82,63 @@ describe('oids slice', () => {
         expect(next.createOidSucceeded).toBe(false);
     });
 
+    test('a refused module is stored with its request from the failure and cleared by the next submission', () => {
+        const refusal = { requestId: 'r1', message: "The extension's ASN.1 module is empty" };
+        let next = reducer(initialState, actions.createOIDFailure({ error: 'err', valueSchemaError: refusal }));
+        expect(selectors.valueSchemaError({ oids: next } as any)).toEqual(refusal);
+        next = reducer(next, actions.createOID({ oid: { oid: '1.2.3' } as any, requestId: 'r2' }));
+        expect(next.valueSchemaError).toBeUndefined();
+
+        next = reducer(next, actions.updateOIDFailure({ error: 'err', valueSchemaError: refusal }));
+        expect(next.valueSchemaError).toEqual(refusal);
+        next = reducer(next, actions.updateOID({ oid: '1.2.3', data: {} as any, requestId: 'r3' }));
+        expect(next.valueSchemaError).toBeUndefined();
+    });
+
+    test('getExtensionOidDetailSuccess keeps each custom extension detail by OID', () => {
+        const detail = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER', valueSchema: 'M' } } as any;
+        const next = reducer(initialState, actions.getExtensionOidDetailSuccess({ oid: detail }));
+        expect(next.extensionOidDetails).toEqual({ '1.2.3': detail });
+        expect(selectors.extensionOidDetails({ oids: next } as any)).toEqual({ '1.2.3': detail });
+    });
+
+    test('a failed extension detail keeps the OID requested and records the reason until it is asked for again', () => {
+        let next = reducer(initialState, actions.getExtensionOidDetail({ oid: '1.2.3' }));
+        expect(next.extensionOidDetailsRequested).toEqual({ '1.2.3': true });
+        expect(selectors.extensionOidDetailsRequested({ oids: next } as any)).toEqual({ '1.2.3': true });
+
+        next = reducer(next, actions.getExtensionOidDetailFailure({ oid: '1.2.3', error: 'err' }));
+        expect(next.extensionOidDetailsRequested).toEqual({ '1.2.3': true });
+        expect(next.extensionOidDetails).toEqual({});
+        expect(selectors.extensionOidDetailsFailed({ oids: next } as any)).toEqual({ '1.2.3': 'err' });
+
+        next = reducer(next, actions.getExtensionOidDetail({ oid: '1.2.3' }));
+        expect(next.extensionOidDetailsFailed).toEqual({});
+    });
+
+    test('a reloaded custom extension list keeps the details still listed, drops the rest and asks for all again', () => {
+        const detail = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER', valueSchema: 'M' } } as any;
+        let next = reducer(initialState, actions.getExtensionOidDetail({ oid: '1.2.3' }));
+        next = reducer(next, actions.getExtensionOidDetailSuccess({ oid: detail }));
+        next = reducer(next, actions.getExtensionOidDetailFailure({ oid: '4.5.6', error: 'err' }));
+
+        next = reducer(next, actions.listOidsByCategorySuccess({ category: OidCategory.RdnAttributeType, oids: [] }));
+        expect(next.extensionOidDetails).toEqual({ '1.2.3': detail });
+        expect(next.extensionOidDetailsRequested).toEqual({ '1.2.3': true });
+        expect(next.extensionOidDetailsFailed).toEqual({ '4.5.6': 'err' });
+
+        const stillListed = { oid: '1.2.3', displayName: 'Still there', category: OidCategory.CertificateExtension } as any;
+        next = reducer(next, actions.listOidsByCategorySuccess({ category: OidCategory.CertificateExtension, oids: [stillListed] }));
+        expect(next.extensionOidDetails).toEqual({ '1.2.3': detail });
+        expect(next.extensionOidDetailsRequested).toEqual({});
+        expect(next.extensionOidDetailsFailed).toEqual({});
+
+        next = reducer(next, actions.listOidsByCategorySuccess({ category: OidCategory.CertificateExtension, oids: [] }));
+        expect(next.extensionOidDetails).toEqual({});
+    });
+
     test('updateOID / success / failure', () => {
-        let next = reducer(initialState, actions.updateOID({ oid: '1.2.3', data: { description: 'Updated' } as any }));
+        let next = reducer(initialState, actions.updateOID({ oid: '1.2.3', data: { description: 'Updated' } as any, requestId: 'r1' }));
         expect(next.isUpdating).toBe(true);
         expect(next.updateOidSucceeded).toBe(false);
 
@@ -394,6 +450,141 @@ describe('oid-epics', () => {
 
         expect(errored).toBe(false);
         expect(out.some((a) => a.type === actions.listSystemOidsFailure.type)).toBe(true);
+    });
+
+    const runEpic = async (name: string, action: unknown, apiClient: Record<string, unknown>) => {
+        const epic = epics.find((e) => e.name === name)!;
+        const out: any[] = [];
+        await new Promise<void>((resolve) => {
+            epic(of(action) as any, {} as any, { apiClients: { oids: apiClient } } as any).subscribe({
+                next: (a) => out.push(a),
+                complete: () => resolve(),
+            });
+        });
+        return out;
+    };
+    const moduleRefusal = {
+        status: 422,
+        response: ["The extension's ASN.1 module uses AUTOMATIC TAGS, which this platform does not support"],
+    };
+
+    test('createOID epic hands a refused module to the form instead of the error alert', async () => {
+        const createCustomOidEntry = vi.fn().mockReturnValue(throwError(() => moduleRefusal));
+        const out = await runEpic('createOID', actions.createOID({ oid: { oid: '1.2.3' } as any, requestId: 'r1' }), {
+            createCustomOidEntry,
+        });
+
+        expect(out).toHaveLength(1);
+        expect(out[0].type).toBe(actions.createOIDFailure.type);
+        expect(out[0].payload.valueSchemaError).toEqual({ requestId: 'r1', message: moduleRefusal.response[0] });
+    });
+
+    test('createOID epic keeps the error alert for any other failure', async () => {
+        const createCustomOidEntry = vi.fn().mockReturnValue(throwError(() => ({ status: 422, response: ['OID already exists'] })));
+        const out = await runEpic('createOID', actions.createOID({ oid: { oid: '1.2.3' } as any, requestId: 'r1' }), {
+            createCustomOidEntry,
+        });
+
+        expect(out.map((a) => a.type)).toEqual([actions.createOIDFailure.type, appRedirectActions.fetchError.type]);
+        expect(out[0].payload.valueSchemaError).toBeUndefined();
+    });
+
+    test('updateOID epic hands a refused module to the form instead of the error alert', async () => {
+        const editCustomOidEntry = vi.fn().mockReturnValue(throwError(() => moduleRefusal));
+        const out = await runEpic('updateOID', actions.updateOID({ oid: '1.2.3', data: {} as any, requestId: 'r1' }), {
+            editCustomOidEntry,
+        });
+
+        expect(out).toHaveLength(1);
+        expect(out[0].type).toBe(actions.updateOIDFailure.type);
+        expect(out[0].payload.valueSchemaError).toEqual({ requestId: 'r1', message: moduleRefusal.response[0] });
+    });
+
+    test('getExtensionOidDetail epic reads the custom entry detail', async () => {
+        const detail = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER' } };
+        const getCustomOidEntry = vi.fn().mockReturnValue(of(detail));
+        const out = await runEpic('getExtensionOidDetail', actions.getExtensionOidDetail({ oid: '1.2.3' }), { getCustomOidEntry });
+
+        expect(getCustomOidEntry).toHaveBeenCalledWith({ oid: '1.2.3' });
+        expect(out).toEqual([actions.getExtensionOidDetailSuccess({ oid: detail as any })]);
+    });
+
+    const detailRequest = actions.getExtensionOidDetail({ oid: '1.2.3' });
+    const extensionListReloaded = actions.listOidsByCategorySuccess({ category: OidCategory.CertificateExtension, oids: [] });
+
+    /** Runs the detail epic on a live action stream: a first request, then `later`, which can reach it in flight. */
+    const runDetailEpicWith = async (later: unknown[], getCustomOidEntry: ReturnType<typeof vi.fn>) => {
+        const action$ = new Subject<unknown>();
+        const epic = epics.find((e) => e.name === 'getExtensionOidDetail')!;
+        const out: any[] = [];
+        const done = new Promise<void>((resolve) => {
+            epic(action$ as any, {} as any, { apiClients: { oids: { getCustomOidEntry } } } as any).subscribe({
+                next: (a) => out.push(a),
+                complete: () => resolve(),
+            });
+        });
+        action$.next(detailRequest);
+        for (const action of later) action$.next(action);
+        await new Promise((resolve) => setTimeout(resolve, 20));
+        action$.complete();
+        await done;
+        return out;
+    };
+
+    test('getExtensionOidDetail epic drops a request in flight when the custom extension list is reloaded', async () => {
+        const stale = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER', valueSchema: 'before edit' } };
+        const out = await runDetailEpicWith([extensionListReloaded], vi.fn().mockReturnValue(of(stale).pipe(delay(5))));
+
+        expect(out).toEqual([]);
+    });
+
+    test('getExtensionOidDetail epic keeps a request in flight when another category is reloaded', async () => {
+        const detail = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER' } };
+        const rdnListReloaded = actions.listOidsByCategorySuccess({ category: OidCategory.RdnAttributeType, oids: [] });
+        const out = await runDetailEpicWith([rdnListReloaded], vi.fn().mockReturnValue(of(detail).pipe(delay(5))));
+
+        expect(out).toEqual([actions.getExtensionOidDetailSuccess({ oid: detail as any })]);
+    });
+
+    test('getExtensionOidDetail epic serves one request per OID at a time, dropping a duplicate in flight', async () => {
+        const detail = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER' } };
+        const getCustomOidEntry = vi.fn().mockReturnValue(of(detail).pipe(delay(5)));
+        const out = await runDetailEpicWith([detailRequest], getCustomOidEntry);
+
+        expect(getCustomOidEntry).toHaveBeenCalledTimes(1);
+        expect(out).toEqual([actions.getExtensionOidDetailSuccess({ oid: detail as any })]);
+    });
+
+    test('getExtensionOidDetail epic serves the request that follows a reload, since the reload ended the one in flight', async () => {
+        const stale = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER', valueSchema: 'before edit' } };
+        const fresh = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER', valueSchema: 'after edit' } };
+        const getCustomOidEntry = vi
+            .fn()
+            .mockReturnValueOnce(of(stale).pipe(delay(5)))
+            .mockReturnValueOnce(of(fresh).pipe(delay(5)));
+        const out = await runDetailEpicWith([extensionListReloaded, detailRequest], getCustomOidEntry);
+
+        expect(getCustomOidEntry).toHaveBeenCalledTimes(2);
+        expect(out).toEqual([actions.getExtensionOidDetailSuccess({ oid: fresh as any })]);
+    });
+
+    test('getExtensionOidDetail epic serves a retry once the failed request has settled', async () => {
+        const detail = { oid: '1.2.3', additionalProperties: { valueEncoding: 'DER' } };
+        const getCustomOidEntry = vi
+            .fn()
+            .mockReturnValueOnce(throwError(() => new Error('boom')))
+            .mockReturnValueOnce(of(detail));
+        const out = await runDetailEpicWith([detailRequest], getCustomOidEntry);
+
+        expect(getCustomOidEntry).toHaveBeenCalledTimes(2);
+        expect(out.map((a) => a.type)).toEqual([actions.getExtensionOidDetailFailure.type, actions.getExtensionOidDetailSuccess.type]);
+    });
+
+    test('getExtensionOidDetail epic maps a failure without an alert', async () => {
+        const getCustomOidEntry = vi.fn().mockReturnValue(throwError(() => new Error('boom')));
+        const out = await runEpic('getExtensionOidDetail', actions.getExtensionOidDetail({ oid: '1.2.3' }), { getCustomOidEntry });
+
+        expect(out.map((a) => a.type)).toEqual([actions.getExtensionOidDetailFailure.type]);
     });
 
     test('listSystemOids epic maps a failure to listSystemOidsFailure', async () => {

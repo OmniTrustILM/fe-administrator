@@ -238,11 +238,22 @@ export function parseStrictJson(text: string): StrictJsonResult {
 }
 
 /**
- * Well-formedness error for a structural ASN.1 JSON tree entered as an extension value (a value
- * starting with `{` after trimming). Schema conformance is Core's job; this only catches what would
- * otherwise be rejected at submit with no field-level feedback.
+ * The characters that always mark a value as JER, since base64 never contains them. Core's `JerCodec`
+ * also reads `true`, `false`, `null` and a number that is not complete DER as JER; those are left to Core.
  */
-export function getExtensionJsonTreeError(text: string): string | undefined {
+const JER_VALUE_STARTS = new Set(['{', '[', '"', '-']);
+
+/** Whether an extension value is written in JER (X.697) rather than handed over as base64 DER. */
+export function isJerValue(text: string): boolean {
+    return JER_VALUE_STARTS.has(text.trim().charAt(0));
+}
+
+/**
+ * Well-formedness error for an extension value written in JER. Conformance to the extension's
+ * ASN.1 module is Core's job; this only catches what would otherwise be rejected at submit with no
+ * field-level feedback.
+ */
+export function getJerValueError(text: string): string | undefined {
     const { error } = parseStrictJson(text.trim());
     return error;
 }

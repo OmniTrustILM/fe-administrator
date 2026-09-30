@@ -1134,12 +1134,16 @@ export type OidsTestState = {
     systemOids: any[];
     systemOidsLoaded: boolean;
     systemOidsError: boolean;
+    extensionOidDetails: Record<string, any>;
+    extensionOidDetailsRequested: Record<string, boolean>;
+    extensionOidDetailsFailed: Record<string, string>;
     isFetching: boolean;
     isCreating: boolean;
     createOidSucceeded: boolean;
     isUpdating: boolean;
     updateOidSucceeded: boolean;
     isDeleting: boolean;
+    valueSchemaError?: { requestId: string; message: string };
 };
 
 const oidsTestInitialState: OidsTestState = {
@@ -1150,6 +1154,9 @@ const oidsTestInitialState: OidsTestState = {
     systemOids: [],
     systemOidsLoaded: false,
     systemOidsError: false,
+    extensionOidDetails: {},
+    extensionOidDetailsRequested: {},
+    extensionOidDetailsFailed: {},
     isFetching: false,
     isCreating: false,
     createOidSucceeded: false,

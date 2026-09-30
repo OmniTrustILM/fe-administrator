@@ -1,14 +1,14 @@
 import type { AppEpic } from 'ducks';
 import { slice } from 'ducks/oids';
-import { catchError, defer, filter, groupBy, mergeMap, of, switchMap } from 'rxjs';
+import { catchError, defer, exhaustMap, filter, groupBy, mergeMap, of, switchMap, takeUntil } from 'rxjs';
 import { store } from '../App';
 import { actions as pagingActions } from './paging';
 import { EntityType } from './filters';
 import { transformSearchRequestModelToDto } from 'ducks/transform/certificates';
 import { actions as appRedirectActions } from './app-redirect';
 import { extractError } from 'utils/net';
-import type { OidCategory } from 'types/openapi';
-import { FilterConditionOperator, FilterFieldSource } from 'types/openapi';
+import { extractValueSchemaError } from 'utils/oid';
+import { FilterConditionOperator, FilterFieldSource, OidCategory } from 'types/openapi';
 import type { SearchRequestModel } from 'types/certificate';
 
 const listOIDs: AppEpic = (action$, state, deps) => {
@@ -96,6 +96,41 @@ const listSystemOids: AppEpic = (action$, state$, deps) => {
     );
 };
 
+const getExtensionOidDetail: AppEpic = (action$, state, deps) => {
+    // A reloaded custom extension list drops the cached details, so a request started before it
+    // is cancelled the moment the list arrives: its response could otherwise land in the refreshed
+    // cache and pass for current.
+    const extensionListReloaded$ = action$.pipe(
+        filter(slice.actions.listOidsByCategorySuccess.match),
+        filter((action) => action.payload.category === OidCategory.CertificateExtension),
+    );
+    return action$.pipe(
+        filter(slice.actions.getExtensionOidDetail.match),
+        // One request per OID at a time: editors mounted together ask for the same OID before either
+        // sees the other's request in the store, and the second ask is dropped here. The reload above
+        // ends the request in flight, so the ask that follows a reload is served.
+        groupBy((action) => action.payload.oid),
+        mergeMap((group$) =>
+            group$.pipe(
+                exhaustMap((action) =>
+                    deps.apiClients.oids.getCustomOidEntry({ oid: action.payload.oid }).pipe(
+                        mergeMap((oid) => of(slice.actions.getExtensionOidDetailSuccess({ oid }))),
+                        catchError((error) =>
+                            of(
+                                slice.actions.getExtensionOidDetailFailure({
+                                    oid: action.payload.oid,
+                                    error: extractError(error, 'Failed to load OID entry'),
+                                }),
+                            ),
+                        ),
+                        takeUntil(extensionListReloaded$),
+                    ),
+                ),
+            ),
+        ),
+    );
+};
+
 const getOID: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.getOID.match),
@@ -119,12 +154,18 @@ const createOID: AppEpic = (action$, state, deps) => {
                         appRedirectActions.redirect({ url: `../custom-oids/detail/${oid.oid}` }),
                     ),
                 ),
-                catchError((error) =>
-                    of(
-                        slice.actions.createOIDFailure({ error: extractError(error, 'Failed to add Custom OID') }),
-                        appRedirectActions.fetchError({ error, message: 'Failed to add Custom OID' }),
-                    ),
-                ),
+                catchError((error) => {
+                    const refusal = extractValueSchemaError(error);
+                    const valueSchemaError = refusal === undefined ? undefined : { requestId: action.payload.requestId, message: refusal };
+                    const failure = slice.actions.createOIDFailure({
+                        error: extractError(error, 'Failed to add Custom OID'),
+                        valueSchemaError,
+                    });
+                    // The form shows a refused module on its field, so an alert would only repeat it.
+                    return valueSchemaError
+                        ? of(failure)
+                        : of(failure, appRedirectActions.fetchError({ error, message: 'Failed to add Custom OID' }));
+                }),
             ),
         ),
     );
@@ -143,12 +184,18 @@ const updateOID: AppEpic = (action$, state, deps) => {
                             appRedirectActions.redirect({ url: `../custom-oids/detail/${oid.oid}` }),
                         ),
                     ),
-                    catchError((error) =>
-                        of(
-                            slice.actions.updateOIDFailure({ error: extractError(error, 'Failed to update Custom OID') }),
-                            appRedirectActions.fetchError({ error, message: 'Failed to update Custom OID' }),
-                        ),
-                    ),
+                    catchError((error) => {
+                        const refusal = extractValueSchemaError(error);
+                        const valueSchemaError =
+                            refusal === undefined ? undefined : { requestId: action.payload.requestId, message: refusal };
+                        const failure = slice.actions.updateOIDFailure({
+                            error: extractError(error, 'Failed to update Custom OID'),
+                            valueSchemaError,
+                        });
+                        return valueSchemaError
+                            ? of(failure)
+                            : of(failure, appRedirectActions.fetchError({ error, message: 'Failed to update Custom OID' }));
+                    }),
                 );
         }),
     );
@@ -188,6 +235,16 @@ const bulkDeleteOIDs: AppEpic = (action$, state, deps) => {
     );
 };
 
-const epics = [listOIDs, listOidsByCategory, listSystemOids, createOID, updateOID, deleteOID, getOID, bulkDeleteOIDs];
+const epics = [
+    listOIDs,
+    listOidsByCategory,
+    listSystemOids,
+    getExtensionOidDetail,
+    createOID,
+    updateOID,
+    deleteOID,
+    getOID,
+    bulkDeleteOIDs,
+];
 
 export default epics;

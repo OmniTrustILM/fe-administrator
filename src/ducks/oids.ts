@@ -1,9 +1,15 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { SearchRequestModel } from 'types/certificate';
-import type { OidCategory } from 'types/openapi';
+import { OidCategory } from 'types/openapi';
 import type { OIDRequestModel, OIDResponseModel, OIDUpdateRequestModel } from 'types/oids';
 import { resetSliceState } from 'ducks/reducerUtils';
 import type { AppState } from 'ducks';
+
+/** Core's refusal of an ASN.1 module, tied to the submission that sent it so no other form shows it. */
+export interface ValueSchemaError {
+    requestId: string;
+    message: string;
+}
 
 export type State = {
     oid?: OIDResponseModel;
@@ -15,6 +21,15 @@ export type State = {
     systemOids: OIDResponseModel[];
     systemOidsLoaded: boolean;
     systemOidsError: boolean;
+    /**
+     * Custom extension OIDs read one by one: the custom list carries no `additionalProperties`, so
+     * an extension's encoding and module are known only from its detail.
+     */
+    extensionOidDetails: Record<string, OIDResponseModel>;
+    /** The OIDs whose detail has been asked for since the custom extension list was last read. */
+    extensionOidDetailsRequested: Record<string, boolean>;
+    /** Why a requested detail could not be read, by OID, until it is asked for again. */
+    extensionOidDetailsFailed: Record<string, string>;
 
     isFetching: boolean;
     isCreating: boolean;
@@ -22,6 +37,8 @@ export type State = {
     isUpdating: boolean;
     updateOidSucceeded: boolean;
     isDeleting: boolean;
+    /** Core's refusal of the ASN.1 module the last create or update sent, shown on the form's field. */
+    valueSchemaError?: ValueSchemaError;
 };
 
 export const initialState: State = {
@@ -33,6 +50,9 @@ export const initialState: State = {
     systemOids: [],
     systemOidsLoaded: false,
     systemOidsError: false,
+    extensionOidDetails: {},
+    extensionOidDetailsRequested: {},
+    extensionOidDetailsFailed: {},
 
     isFetching: false,
     isCreating: false,
@@ -74,6 +94,18 @@ export const slice = createSlice({
             state.oidsByCategory[action.payload.category] = action.payload.oids;
             state.oidsByCategoryError[action.payload.category] = false;
             state.oidsByCategoryLoaded[action.payload.category] = true;
+            // A fresh custom extension list may follow edits or deletions made since the details
+            // were read, so they are read again for the OIDs still mapped. A detail whose OID is
+            // still listed stays until the fresh one replaces it, so a field keeps its hint and
+            // check meanwhile; a delisted OID's detail goes now.
+            if (action.payload.category === OidCategory.CertificateExtension) {
+                const listed = new Set(action.payload.oids.map((entry) => entry.oid));
+                for (const oid of Object.keys(state.extensionOidDetails)) {
+                    if (!listed.has(oid)) delete state.extensionOidDetails[oid];
+                }
+                state.extensionOidDetailsRequested = {};
+                state.extensionOidDetailsFailed = {};
+            }
         },
 
         listOidsByCategoryFailure: (state, action: PayloadAction<{ category: OidCategory; error: string }>) => {
@@ -100,6 +132,22 @@ export const slice = createSlice({
             state.systemOidsError = true;
         },
 
+        getExtensionOidDetail: (state, action: PayloadAction<{ oid: string }>) => {
+            state.extensionOidDetailsRequested[action.payload.oid] = true;
+            delete state.extensionOidDetailsFailed[action.payload.oid];
+        },
+
+        getExtensionOidDetailSuccess: (state, action: PayloadAction<{ oid: OIDResponseModel }>) => {
+            state.extensionOidDetails[action.payload.oid.oid] = action.payload.oid;
+        },
+
+        // A failed detail stays requested, so it is not asked for again on every render: the field
+        // shows the reason with a Retry, and the next list read asks again.
+        getExtensionOidDetailFailure: (state, action: PayloadAction<{ oid: string; error: string }>) => {
+            delete state.extensionOidDetails[action.payload.oid];
+            state.extensionOidDetailsFailed[action.payload.oid] = action.payload.error;
+        },
+
         getOID: (state, action: PayloadAction<{ oid: string }>) => {
             state.isFetching = true;
         },
@@ -113,9 +161,10 @@ export const slice = createSlice({
             state.isFetching = false;
         },
 
-        createOID: (state, action: PayloadAction<{ oid: OIDRequestModel }>) => {
+        createOID: (state, action: PayloadAction<{ oid: OIDRequestModel; requestId: string }>) => {
             state.isCreating = true;
             state.createOidSucceeded = false;
+            state.valueSchemaError = undefined;
         },
 
         createOIDSuccess: (state, action: PayloadAction<{ oid: OIDResponseModel }>) => {
@@ -124,14 +173,16 @@ export const slice = createSlice({
             state.oid = action.payload.oid;
         },
 
-        createOIDFailure: (state, action: PayloadAction<{ error: string }>) => {
+        createOIDFailure: (state, action: PayloadAction<{ error: string; valueSchemaError?: ValueSchemaError }>) => {
             state.isCreating = false;
             state.createOidSucceeded = false;
+            state.valueSchemaError = action.payload.valueSchemaError;
         },
 
-        updateOID: (state, action: PayloadAction<{ oid: string; data: OIDUpdateRequestModel }>) => {
+        updateOID: (state, action: PayloadAction<{ oid: string; data: OIDUpdateRequestModel; requestId: string }>) => {
             state.isUpdating = true;
             state.updateOidSucceeded = false;
+            state.valueSchemaError = undefined;
         },
 
         updateOIDSuccess: (state, action: PayloadAction<{ oid: OIDResponseModel }>) => {
@@ -140,9 +191,10 @@ export const slice = createSlice({
             state.oid = action.payload.oid;
         },
 
-        updateOIDFailure: (state, action: PayloadAction<{ error: string }>) => {
+        updateOIDFailure: (state, action: PayloadAction<{ error: string; valueSchemaError?: ValueSchemaError }>) => {
             state.isUpdating = false;
             state.updateOidSucceeded = false;
+            state.valueSchemaError = action.payload.valueSchemaError;
         },
 
         deleteOID: (state, action: PayloadAction<{ oid: string }>) => {
@@ -191,6 +243,9 @@ const oid = createSelector(state, (state) => state.oid);
 const systemOids = createSelector(state, (state) => state.systemOids);
 const systemOidsLoaded = createSelector(state, (state) => state.systemOidsLoaded);
 const systemOidsError = createSelector(state, (state) => state.systemOidsError);
+const extensionOidDetails = createSelector(state, (state) => state.extensionOidDetails);
+const extensionOidDetailsRequested = createSelector(state, (state) => state.extensionOidDetailsRequested);
+const extensionOidDetailsFailed = createSelector(state, (state) => state.extensionOidDetailsFailed);
 const systemOidsByCategory = createSelector(systemOids, (systemOids) =>
     systemOids.reduce<Partial<Record<OidCategory, OIDResponseModel[]>>>((acc, entry) => {
         const categoryOids = acc[entry.category] ?? [];
@@ -206,6 +261,7 @@ const createOidSucceeded = createSelector(state, (state) => state.createOidSucce
 const isUpdating = createSelector(state, (state) => state.isUpdating);
 const updateOidSucceeded = createSelector(state, (state) => state.updateOidSucceeded);
 const isDeleting = createSelector(state, (state) => state.isDeleting);
+const valueSchemaError = createSelector(state, (state) => state.valueSchemaError);
 
 export const selectors = {
     state,
@@ -219,6 +275,9 @@ export const selectors = {
     systemOidsLoaded,
     systemOidsError,
     systemOidsByCategory,
+    extensionOidDetails,
+    extensionOidDetailsRequested,
+    extensionOidDetailsFailed,
 
     isFetching,
     isCreating,
@@ -226,6 +285,7 @@ export const selectors = {
     isUpdating,
     updateOidSucceeded,
     isDeleting,
+    valueSchemaError,
 };
 
 export const actions = slice.actions;

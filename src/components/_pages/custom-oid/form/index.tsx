@@ -1,6 +1,6 @@
 import Widget from 'components/Widget';
 import { actions, selectors } from 'ducks/oids';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { type CustomOidEntryRequestDto, ExtensionValueEncoding, type OidCategory, PlatformEnum } from 'types/openapi';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
@@ -24,7 +24,12 @@ import {
     getExtensionValueEncodingOptions,
     buildOidAdditionalProperties,
 } from 'utils/oid';
-import { getJsonSchemaDocumentError } from 'utils/strictJson';
+
+const VALUE_SCHEMA_EXAMPLE = `Demo DEFINITIONS IMPLICIT TAGS ::= BEGIN
+ServiceEntitlement ::= SEQUENCE {
+    serviceId  UTF8String (SIZE (5..32)),
+    tier       INTEGER (1..3) }
+END`;
 
 type CustomOIDFormProps = Readonly<{
     oidId?: string;
@@ -53,6 +58,7 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
     const isFetching = useSelector(selectors.isFetching);
     const isCreating = useSelector(selectors.isCreating);
     const isUpdating = useSelector(selectors.isUpdating);
+    const valueSchemaError = useSelector(selectors.valueSchemaError);
 
     const [oid, setOid] = useState<CustomOidEntryRequestDto>();
 
@@ -120,8 +126,18 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
         handleSubmit,
         control,
         reset,
+        setError,
         formState: { isDirty, isSubmitting, isValid },
     } = methods;
+
+    // Core is the only reader of the ASN.1 module, so its refusal is the field's validation error.
+    // Only the refusal of this form's own latest submission: a request still running when a form
+    // closed can fail after another form has opened and submitted, and that form must not show it.
+    const requestIdRef = useRef<string | undefined>(undefined);
+    useEffect(() => {
+        const isOwn = requestIdRef.current !== undefined && valueSchemaError?.requestId === requestIdRef.current;
+        if (isOwn) setError('valueSchema', { type: 'server', message: valueSchemaError.message }, { shouldFocus: true });
+    }, [valueSchemaError, setError]);
 
     useEffect(() => {
         if (editMode && oid) {
@@ -141,6 +157,8 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
 
     const onSubmit = useCallback(
         (values: FormValues) => {
+            const requestId = crypto.randomUUID();
+            requestIdRef.current = requestId;
             const additionalProperties = buildOidAdditionalProperties(values.category, values);
             const newOID = {
                 oid: values.oid,
@@ -150,13 +168,9 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
                 ...(additionalProperties && { additionalProperties }),
             };
             if (editMode) {
-                dispatch(actions.updateOID({ oid: oidId!, data: newOID }));
+                dispatch(actions.updateOID({ oid: oidId!, data: newOID, requestId }));
             } else {
-                dispatch(
-                    actions.createOID({
-                        oid: newOID,
-                    }),
-                );
+                dispatch(actions.createOID({ oid: newOID, requestId }));
             }
         },
         [dispatch, editMode, oidId],
@@ -165,7 +179,9 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
     return (
         <FormProvider {...methods}>
             <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-                <Widget noBorder busy={isBusy}>
+                {/* The overlay keeps the form as submitted while its request runs: an edit meanwhile
+                    would let the reply land on a value, or a field, no longer on screen. */}
+                <Widget noBorder busy={isBusy} enableBusyOverlay innerContainerProps={isBusy ? { inert: true } : undefined}>
                     <div className="space-y-4">
                         <Controller
                             name="oid"
@@ -360,22 +376,25 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
                                     <Controller
                                         name="valueSchema"
                                         control={control}
-                                        rules={{ validate: (value) => getJsonSchemaDocumentError(value ?? '') ?? true }}
                                         render={({ field, fieldState }) => (
                                             <>
                                                 <TextArea
                                                     {...field}
                                                     id="valueSchema"
-                                                    label="Value Schema (JSON Schema)"
-                                                    rows={5}
-                                                    placeholder="Enter an inline JSON Schema (draft 2020-12) describing the extension's JSON value"
+                                                    label="Value Schema (ASN.1 Module)"
+                                                    rows={6}
+                                                    placeholder={VALUE_SCHEMA_EXAMPLE}
                                                     invalid={!!fieldState.error}
-                                                    error={getFieldErrorMessage(fieldState)}
+                                                    error={fieldState.error?.message}
                                                 />
                                                 {!fieldState.error && (
-                                                    <p className="mt-1 text-xs text-content-subtle">
-                                                        Optional. Describes the shape of the extension's structural ASN.1 JSON value. Remote
-                                                        $ref is not supported.
+                                                    <p className="mt-1 text-xs text-content-subtle" data-testid="valueSchema-hint">
+                                                        Optional. An ASN.1 module whose first type is the extension's value; with one, a
+                                                        value can be written in JER (X.697) instead of base64-encoded DER. Supported:
+                                                        SEQUENCE, SET, SEQUENCE OF, SET OF, CHOICE, tagged types, BOOLEAN, INTEGER, NULL,
+                                                        OCTET STRING, BIT STRING, OBJECT IDENTIFIER, UTF8String, IA5String, PrintableString
+                                                        and GeneralizedTime, with SIZE and value-range constraints. AUTOMATIC TAGS, IMPORTS
+                                                        and extension markers are not supported.
                                                     </p>
                                                 )}
                                             </>
@@ -392,7 +411,7 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
                             <ProgressButton
                                 title={submitTitle}
                                 inProgressTitle={inProgressTitle}
-                                inProgress={isSubmitting}
+                                inProgress={isCreating || isUpdating}
                                 disabled={(editMode ? !isDirty : false) || !isValid}
                                 type="submit"
                             />

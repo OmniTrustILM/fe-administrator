@@ -13,7 +13,10 @@ import {
     toMergedOidSelectOptions,
     rdnCodeClarification,
     buildRdnCodeByOid,
+    extractValueSchemaError,
 } from './oid';
+
+const MODULE = 'Demo DEFINITIONS IMPLICIT TAGS ::= BEGIN\nServiceEntitlement ::= SEQUENCE { tier INTEGER (1..3) }\nEND\n';
 
 describe('oid utils', () => {
     describe('isCertificateExtensionCategory', () => {
@@ -86,18 +89,18 @@ describe('oid utils', () => {
         test('Certificate Extension with a non-enum valueEncoding → undefined', () => {
             expect(buildOidAdditionalProperties(OidCategory.CertificateExtension, { valueEncoding: 'not-an-encoding' })).toBeUndefined();
         });
-        test('Certificate Extension carries a trimmed valueSchema when the encoding is DER', () => {
+        test('Certificate Extension carries the ASN.1 module as entered when the encoding is DER', () => {
             expect(
                 buildOidAdditionalProperties(OidCategory.CertificateExtension, {
                     valueEncoding: ExtensionValueEncoding.Der,
-                    valueSchema: ' {"type":"object"} ',
+                    valueSchema: MODULE,
                 }),
-            ).toEqual({ defaultCritical: false, valueEncoding: ExtensionValueEncoding.Der, valueSchema: '{"type":"object"}' });
+            ).toEqual({ defaultCritical: false, valueEncoding: ExtensionValueEncoding.Der, valueSchema: MODULE });
         });
         test('Certificate Extension drops the valueSchema for a non-DER encoding (contract @AssertTrue)', () => {
             const props = buildOidAdditionalProperties(OidCategory.CertificateExtension, {
                 valueEncoding: ExtensionValueEncoding.OctetString,
-                valueSchema: '{"type":"object"}',
+                valueSchema: MODULE,
             });
             expect(props).toEqual({ defaultCritical: false, valueEncoding: ExtensionValueEncoding.OctetString });
             expect((props as { valueSchema?: string }).valueSchema).toBeUndefined();
@@ -112,6 +115,25 @@ describe('oid utils', () => {
         test('unknown category → undefined', () => {
             expect(buildOidAdditionalProperties('somethingElse', { code: 'CN' })).toBeUndefined();
             expect(buildOidAdditionalProperties('', {})).toBeUndefined();
+        });
+    });
+
+    describe('extractValueSchemaError', () => {
+        const moduleError = "The extension's ASN.1 module uses AUTOMATIC TAGS, which this platform does not support";
+
+        test("a 422 refusing the module yields Core's message", () => {
+            expect(extractValueSchemaError({ status: 422, response: [moduleError] })).toBe(moduleError);
+        });
+        test('a 422 about anything else is left to the generic alert', () => {
+            expect(extractValueSchemaError({ status: 422, response: ['Custom OID entry already exists'] })).toBeUndefined();
+            expect(extractValueSchemaError({ status: 422, response: [moduleError, 'Something else'] })).toBeUndefined();
+            expect(extractValueSchemaError({ status: 422, response: [] })).toBeUndefined();
+            expect(extractValueSchemaError({ status: 422, response: { message: moduleError } })).toBeUndefined();
+        });
+        test('a non-422 failure is left to the generic alert', () => {
+            expect(extractValueSchemaError({ status: 400, response: [moduleError] })).toBeUndefined();
+            expect(extractValueSchemaError(new Error('boom'))).toBeUndefined();
+            expect(extractValueSchemaError(undefined)).toBeUndefined();
         });
     });
 

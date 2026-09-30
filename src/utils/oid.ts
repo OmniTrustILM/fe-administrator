@@ -40,7 +40,9 @@ export const buildOidAdditionalProperties = (
         if (!isExtensionValueEncoding(values.valueEncoding)) {
             return undefined;
         }
-        const valueSchema = values.valueEncoding === ExtensionValueEncoding.Der ? values.valueSchema?.trim() || undefined : undefined;
+        // The ASN.1 module is sent as entered: Core is its only reader, and a blank one means none.
+        const valueSchema =
+            values.valueEncoding === ExtensionValueEncoding.Der && values.valueSchema?.trim() ? values.valueSchema : undefined;
         return {
             defaultCritical: values.defaultCritical ?? false,
             valueEncoding: values.valueEncoding,
@@ -48,6 +50,20 @@ export const buildOidAdditionalProperties = (
         };
     }
     return undefined;
+};
+
+/** How Core begins every refusal of an extension's ASN.1 module. */
+const VALUE_SCHEMA_ERROR_PREFIX = "The extension's ASN.1 module";
+
+/**
+ * The message of a 422 in which Core refused the ASN.1 module sent as `valueSchema`, so the form can
+ * show it on that field; undefined for any other failure, which keeps the generic error alert.
+ */
+export const extractValueSchemaError = (err: unknown): string | undefined => {
+    const { status, response } = (err ?? {}) as { status?: unknown; response?: unknown };
+    if (status !== 422 || !Array.isArray(response) || response.length === 0) return undefined;
+    const isModuleError = (message: unknown) => typeof message === 'string' && message.startsWith(VALUE_SCHEMA_ERROR_PREFIX);
+    return response.every(isModuleError) ? response.join(' ') : undefined;
 };
 
 export const isCertificateExtensionProperties = (
