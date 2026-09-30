@@ -18,14 +18,27 @@ import type {
     CryptographicKeyPairResponseModel,
     CryptographicKeyResponseModel,
 } from 'types/cryptographic-keys';
-import { type KeyRequestType, KeyState, type KeyUsage } from 'types/openapi';
+import { type BaseAttributeDto, type KeyExportRequestDto, type KeyRequestType, KeyState, type KeyUsage } from 'types/openapi';
 import type { SearchRequestModel } from '../types/certificate';
+
+export type ImportKeyAttributesRequest = { tokenInstanceUuid: string; tokenProfileUuid: string; type: KeyRequestType };
+export type ExportKeyAttributesRequest = { uuid: string; keyItemUuid: string };
+
+/** An attribute schema listing, for the request it was made for, so that a form can tell its own schema from another. */
+export type AttributeSchema<Request> = {
+    request: Request;
+    status: 'loading' | 'loaded' | 'failed';
+    descriptors: BaseAttributeDto[];
+    error?: string;
+};
 
 export type State = {
     deleteErrorMessage: string;
     bulkDeleteErrorMessages: BulkActionModel[];
 
     keyAttributeDescriptors?: AttributeDescriptorModel[];
+    importKeyAttributes?: AttributeSchema<ImportKeyAttributesRequest>;
+    exportKeyAttributes?: AttributeSchema<ExportKeyAttributesRequest>;
     supportedKeyRequestTypes: KeyRequestType[];
     isFetchingSupportedKeyRequestTypes: boolean;
 
@@ -55,6 +68,9 @@ export type State = {
     isDestroying: boolean;
     isBulkDestroying: boolean;
     isSyncing: boolean;
+    isExportingKey: boolean;
+    exportKeySucceeded: boolean;
+    exportKeyError?: string;
 
     isFetchingAttributes: boolean;
 
@@ -95,6 +111,8 @@ export const initialState: State = {
     isDestroying: false,
     isBulkDestroying: false,
     isSyncing: false,
+    isExportingKey: false,
+    exportKeySucceeded: false,
 
     isFetchingAttributes: false,
 
@@ -247,6 +265,50 @@ export const slice = createSlice({
 
         listAttributeDescriptorsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isFetchingAttributes = false;
+        },
+
+        listImportKeyAttributeDescriptors: (state, action: PayloadAction<ImportKeyAttributesRequest>) => {
+            state.importKeyAttributes = { request: action.payload, status: 'loading', descriptors: [] };
+        },
+
+        listImportKeyAttributeDescriptorsSuccess: (
+            state,
+            action: PayloadAction<{ request: ImportKeyAttributesRequest; attributeDescriptors: BaseAttributeDto[] }>,
+        ) => {
+            state.importKeyAttributes = {
+                request: action.payload.request,
+                status: 'loaded',
+                descriptors: action.payload.attributeDescriptors,
+            };
+        },
+
+        listImportKeyAttributeDescriptorsFailure: (
+            state,
+            action: PayloadAction<{ request: ImportKeyAttributesRequest; error: string | undefined }>,
+        ) => {
+            state.importKeyAttributes = { request: action.payload.request, status: 'failed', descriptors: [], error: action.payload.error };
+        },
+
+        listExportKeyAttributeDescriptors: (state, action: PayloadAction<ExportKeyAttributesRequest>) => {
+            state.exportKeyAttributes = { request: action.payload, status: 'loading', descriptors: [] };
+        },
+
+        listExportKeyAttributeDescriptorsSuccess: (
+            state,
+            action: PayloadAction<{ request: ExportKeyAttributesRequest; attributeDescriptors: BaseAttributeDto[] }>,
+        ) => {
+            state.exportKeyAttributes = {
+                request: action.payload.request,
+                status: 'loaded',
+                descriptors: action.payload.attributeDescriptors,
+            };
+        },
+
+        listExportKeyAttributeDescriptorsFailure: (
+            state,
+            action: PayloadAction<{ request: ExportKeyAttributesRequest; error: string | undefined }>,
+        ) => {
+            state.exportKeyAttributes = { request: action.payload.request, status: 'failed', descriptors: [], error: action.payload.error };
         },
 
         createCryptographicKeySuccess: (state, action: PayloadAction<{ uuid: string; tokenInstanceUuid: string }>) => {
@@ -405,6 +467,25 @@ export const slice = createSlice({
 
         deleteCryptographicKeyFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isDeleting = false;
+        },
+
+        exportKey: (
+            state,
+            action: PayloadAction<{ uuid: string; keyItemUuid: string; keyExportRequestDto: KeyExportRequestDto; fallbackName: string }>,
+        ) => {
+            state.isExportingKey = true;
+            state.exportKeySucceeded = false;
+            state.exportKeyError = undefined;
+        },
+
+        exportKeySuccess: (state, action: PayloadAction<void>) => {
+            state.isExportingKey = false;
+            state.exportKeySucceeded = true;
+        },
+
+        exportKeyFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isExportingKey = false;
+            state.exportKeyError = action.payload.error;
         },
 
         compromiseCryptographicKey: (state, action: PayloadAction<{ uuid: string; request: CryptographicKeyCompromiseRequestModel }>) => {
@@ -790,6 +871,9 @@ const isBulkCompromising = createSelector(state, (state: State) => state.isBulkC
 const isDestroying = createSelector(state, (state: State) => state.isDestroying);
 const isBulkDestroying = createSelector(state, (state: State) => state.isBulkDestroying);
 const isSyncing = createSelector(state, (state: State) => state.isSyncing);
+const isExportingKey = createSelector(state, (state: State) => state.isExportingKey);
+const exportKeySucceeded = createSelector(state, (state: State) => state.exportKeySucceeded);
+const exportKeyError = createSelector(state, (state: State) => state.exportKeyError);
 
 const isUpdatingKeyUsage = createSelector(state, (state: State) => state.isUpdatingKeyUsage);
 const isUpdatingKeyItem = createSelector(state, (state: State) => state.isUpdatingKeyItem);
@@ -797,6 +881,8 @@ const isBulkUpdatingKeyUsage = createSelector(state, (state: State) => state.isB
 
 const isFetchingAttributes = createSelector(state, (state: State) => state.isFetchingAttributes);
 const keyAttributeDescriptors = createSelector(state, (state: State) => state.keyAttributeDescriptors);
+const importKeyAttributes = createSelector(state, (state: State) => state.importKeyAttributes);
+const exportKeyAttributes = createSelector(state, (state: State) => state.exportKeyAttributes);
 
 const isFetchingHistory = createSelector(state, (state: State) => state.isFetchingHistory);
 const keyHistory = createSelector(state, (state: State) => state.keyHistory);
@@ -828,6 +914,9 @@ export const selectors = {
     isDestroying,
     isBulkDestroying,
     isSyncing,
+    isExportingKey,
+    exportKeySucceeded,
+    exportKeyError,
 
     isUpdatingKeyUsage,
     isUpdatingKeyItem,
@@ -835,6 +924,8 @@ export const selectors = {
 
     isFetchingAttributes,
     keyAttributeDescriptors,
+    importKeyAttributes,
+    exportKeyAttributes,
 
     isFetchingHistory,
     keyHistory,

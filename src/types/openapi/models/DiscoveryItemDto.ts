@@ -54,7 +54,7 @@ export interface DiscoveryItemDto {
      */
     resource: Resource;
     /**
-     * Resource-specific data the Discovery Provider reported, discriminated by resource. Absent when the stored payload could no longer be decoded; the item is still listed, so the run\'s counts hold
+     * Resource-specific data the Discovery Provider reported, discriminated by resource, which is always the item\'s own resource. Absent when the stored payload could no longer be decoded; the item is still listed, so the run\'s counts hold
      * @type {DiscoveredItemPayload}
      * @memberof DiscoveryItemDto
      */

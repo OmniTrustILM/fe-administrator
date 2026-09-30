@@ -431,7 +431,7 @@ export class SigningProfileManagementApi extends BaseAPI {
     }
 
     /**
-     * Returns the signing operation attribute descriptors (e.g. signature scheme, digest algorithm) derived from the key algorithm of the given certificate. Intended for use during Signing Profile creation to populate the signingOperationAttributes field.
+     * Returns the signing operation attribute descriptors (e.g. signature scheme, digest algorithm) for the key of the given certificate. Intended for use during Signing Profile creation to populate the signingOperationAttributes field.
      * Get signing operation attribute descriptors for a certificate
      */
     listSignatureAttributesForCertificate({

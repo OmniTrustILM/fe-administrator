@@ -1,4 +1,5 @@
-import { test, expect } from '../../../../../playwright/ct-test';
+import { test, expect, type Page } from '../../../../../playwright/ct-test';
+import { failFileRead, holdFileReads } from '../../../../../playwright/fileReads';
 import { testInitialState } from 'ducks/test-reducers';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import { AttributeContentType, AttributeType } from 'types/openapi';
@@ -646,6 +647,54 @@ test.describe('CertificateForm', () => {
         // Empty selections must be omitted (undefined) so issuance won't overwrite existing owner/groups.
         expect(action?.payload.registerRequest.ownerUuid).toBeUndefined();
         expect(action?.payload.registerRequest.groupUuids).toBeUndefined();
+    });
+
+    test.describe('an external CSR', () => {
+        const csr =
+            '-----BEGIN CERTIFICATE REQUEST-----\nMIIBWjCCAQACAQAwFjEUMBIGA1UEAwwLZXhhbXBsZS5jb20=\n-----END CERTIFICATE REQUEST-----';
+        // Each change of the content, with the request then submitted.
+        const contentChanges: [string, (page: Page) => Promise<void>, string][] = [
+            ['sends no earlier CSR once the text is cleared', (page) => page.getByLabel('File content').fill(''), ''],
+            [
+                'submits the CSR still shown once a file chosen in its place cannot be read',
+                async (page) => {
+                    await holdFileReads(page);
+                    const fileChooser = page.waitForEvent('filechooser');
+                    await page.getByRole('button', { name: 'Select file...' }).click();
+                    await (await fileChooser).setFiles({
+                        name: 'unreadable.csr',
+                        mimeType: 'application/pkcs10',
+                        buffer: Buffer.from('unreadable'),
+                    });
+                    await failFileRead(page, 0);
+                },
+                btoa(csr),
+            ],
+        ];
+
+        for (const [name, changeContent, request] of contentChanges) {
+            test(name, async ({ mount, page }) => {
+                const dispatched: { type: string; payload?: any }[] = [];
+                await mount(
+                    <CertificateFormTestWrapper
+                        onAction={(a) => dispatched.push(a)}
+                        preloadedState={{ raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] } }}
+                    />,
+                );
+                await page.getByTestId('select-raProfile-trigger').click();
+                await page.getByRole('option', { name: 'RA One' }).click();
+                await page.getByTestId('keySource-trigger').click();
+                await page.getByRole('option', { name: 'External', exact: true }).click();
+                await page.getByLabel('File content').fill(csr);
+
+                await changeContent(page);
+                await page.getByRole('button', { name: 'Create' }).click();
+
+                await expect.poll(() => dispatched.find((a) => a.type === 'certificates/issueCertificate')).toBeTruthy();
+                const action = dispatched.find((a) => a.type === 'certificates/issueCertificate');
+                expect(action?.payload.signRequest.request).toBe(request);
+            });
+        }
     });
 
     test.describe('issuance outcome', () => {

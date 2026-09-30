@@ -1,4 +1,6 @@
+import { from, type Observable, of } from 'rxjs';
 import { AjaxError } from 'rxjs/ajax';
+import { catchError, map } from 'rxjs/operators';
 import { ErrorCodeDetailMap, ErrorCodeTexteMap, LockTypeEnum, type WidgetLockErrorModel } from 'types/user-interface';
 
 export function extractErrorReason(err: unknown): string | undefined {
@@ -17,6 +19,27 @@ function extractResponseMessage(response: unknown): string | undefined {
         return response.message;
     }
     return undefined;
+}
+
+function readableBody(text: string): unknown {
+    try {
+        return extractResponseMessage(JSON.parse(text)) ?? text;
+    } catch {
+        return text;
+    }
+}
+
+/**
+ * A request for a file receives Core's refusal as a Blob, which `extractError` cannot read. The error is passed on with
+ * the Blob read as text in its place: the message of a JSON string array or `{ message }`, or else the text itself.
+ */
+export function withReadableResponse<T>(error: T): Observable<T> {
+    if (!(error instanceof AjaxError) || !(error.response instanceof Blob)) return of(error);
+    return from(error.response.text()).pipe(
+        // An error's message need not be enumerable, which Object.assign would skip, so it is copied by name.
+        map((text) => Object.assign(Object.create(AjaxError.prototype), error, { message: error.message, response: readableBody(text) })),
+        catchError(() => of(error)),
+    );
 }
 
 export function extractError(err: Error, headline: string): string {

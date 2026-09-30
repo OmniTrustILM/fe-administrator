@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest';
+import { firstValueFrom } from 'rxjs';
 import { AjaxError } from 'rxjs/ajax';
-import { extractError, extractErrorReason, getLockWidgetObject } from './net';
+import { extractError, extractErrorReason, getLockWidgetObject, withReadableResponse } from './net';
 import { LockTypeEnum } from 'types/user-interface';
 
 function createMockAjaxError(overrides: { status?: number; response?: any; message?: string } = {}): AjaxError {
@@ -173,6 +174,50 @@ describe('net utils', () => {
             const result = getLockWidgetObject(err);
             expect(result.lockTitle).toBe('Access Denied');
             expect(result.lockDetails).toBe('Please contact your admin to get access');
+        });
+    });
+
+    describe('withReadableResponse', () => {
+        const refusal = (body: string) => createMockAjaxError({ status: 422, response: new Blob([body]), message: 'ajax error 422' });
+
+        test.each([
+            ['a string array', '["The profile does not export RSA keys."]'],
+            ['a message', '{"message":"The profile does not export RSA keys."}'],
+            ['plain text', 'The profile does not export RSA keys.'],
+        ])('reads a blob body holding %s into the message extractError reports', async (_name, body) => {
+            const readable = await firstValueFrom(withReadableResponse(refusal(body)));
+
+            expect(readable).toBeInstanceOf(AjaxError);
+            expect(extractError(readable as AjaxError, 'Failed')).toBe('Failed (422): The profile does not export RSA keys.');
+        });
+
+        test('keeps the error message when the blob body is empty', async () => {
+            const readable = await firstValueFrom(withReadableResponse(refusal('')));
+
+            expect(extractError(readable as AjaxError, 'Failed')).toBe('Failed (422): ajax error 422');
+        });
+
+        test('keeps the raw text of a JSON body that holds no message', async () => {
+            const readable = await firstValueFrom(withReadableResponse(refusal('{"code":"X"}')));
+
+            expect(extractError(readable as AjaxError, 'Failed')).toBe('Failed (422): {"code":"X"}');
+        });
+
+        test('passes on the error as it is when its blob body cannot be read', async () => {
+            class UnreadableBlob extends Blob {
+                override text(): Promise<string> {
+                    return Promise.reject(new Error('unreadable'));
+                }
+            }
+            const error = createMockAjaxError({ status: 422, response: new UnreadableBlob(['x']) });
+
+            expect(await firstValueFrom(withReadableResponse(error))).toBe(error);
+        });
+
+        test('passes on an error without a blob body as it is', async () => {
+            const error = createMockAjaxError({ status: 500, response: { message: 'Server error' } });
+
+            expect(await firstValueFrom(withReadableResponse(error))).toBe(error);
         });
     });
 });

@@ -25,6 +25,9 @@ import type {
 import type { LocationResponseModel } from 'types/locations';
 import type {
     ApprovalDto,
+    CertificateImportRequestDto,
+    CertificateImportResultDto,
+    CertificateKeystoreRequestDto,
     CertificateRelationsDto,
     CertificateRequestFormat,
     DownloadCertificateChainRequest,
@@ -103,6 +106,12 @@ export type State = {
     certificateChainDownloadContent?: DownloadCertificateChainResponseModel;
     certificateDownloadContent?: DownloadCertificateResponseModel;
 
+    importResults?: CertificateImportResultDto[];
+    isImporting: boolean;
+    isDownloadingKeystore: boolean;
+    downloadKeystoreSucceeded: boolean;
+    downloadKeystoreError?: string;
+
     isFetchingValidationResult: boolean;
 
     isFetchingDetail: boolean;
@@ -176,6 +185,10 @@ export const initialState: State = {
     registerAttributes: {},
     revocationAttributes: [],
     approvals: [],
+
+    isImporting: false,
+    isDownloadingKeystore: false,
+    downloadKeystoreSucceeded: false,
 
     isFetchingValidationResult: false,
 
@@ -1086,6 +1099,41 @@ export const slice = createSlice({
             state.certificateDownloadContent = undefined;
             state.isFetchingCertificateDownloadContent = false;
         },
+
+        importCertificates: (state, action: PayloadAction<{ certificateImportRequestDto: CertificateImportRequestDto }>) => {
+            state.importResults = undefined;
+            state.isImporting = true;
+        },
+
+        importCertificatesSuccess: (state, action: PayloadAction<{ results: CertificateImportResultDto[] }>) => {
+            state.isImporting = false;
+            state.importResults = action.payload.results;
+            state.listRefreshToken += 1;
+        },
+
+        importCertificatesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isImporting = false;
+        },
+
+        downloadKeystore: (
+            state,
+            action: PayloadAction<{ uuid: string; certificateKeystoreRequestDto: CertificateKeystoreRequestDto; fallbackName: string }>,
+        ) => {
+            state.isDownloadingKeystore = true;
+            state.downloadKeystoreSucceeded = false;
+            state.downloadKeystoreError = undefined;
+        },
+
+        downloadKeystoreSuccess: (state, action: PayloadAction<void>) => {
+            state.isDownloadingKeystore = false;
+            state.downloadKeystoreSucceeded = true;
+        },
+
+        downloadKeystoreFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isDownloadingKeystore = false;
+            state.downloadKeystoreError = action.payload.error;
+        },
+
         archiveCertificate: (state, action: PayloadAction<{ uuid: string }>) => {
             state.isArchiving = true;
         },
@@ -1172,6 +1220,12 @@ const registerAttributes = createSelector(state, (state) => state.registerAttrib
 const revocationAttributes = createSelector(state, (state) => state.revocationAttributes);
 const approvals = createSelector(state, (state) => state.approvals);
 
+const importResults = createSelector(state, (state) => state.importResults);
+const isImporting = createSelector(state, (state) => state.isImporting);
+const isDownloadingKeystore = createSelector(state, (state) => state.isDownloadingKeystore);
+const downloadKeystoreSucceeded = createSelector(state, (state) => state.downloadKeystoreSucceeded);
+const downloadKeystoreError = createSelector(state, (state) => state.downloadKeystoreError);
+
 const isFetchingApprovals = createSelector(state, (state) => state.isFetchingApprovals);
 const isFetchingDetail = createSelector(state, (state) => state.isFetchingDetail);
 const isFetchingHistory = createSelector(state, (state) => state.isFetchingHistory);
@@ -1243,6 +1297,11 @@ export const selectors = {
     isFetchingCertificateDownloadContent,
     isFetchingCertificateChainDownloadContent,
     certificateDownloadContent,
+    importResults,
+    isImporting,
+    isDownloadingKeystore,
+    downloadKeystoreSucceeded,
+    downloadKeystoreError,
     certificateHistory,
     certificateLocations,
     issuanceAttributes,

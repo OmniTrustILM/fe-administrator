@@ -14,6 +14,9 @@ export interface BuildCryptoAssetCellsOpts {
     getEnumDescription: (enumMap: PlatformEnumMap, key: string | undefined) => string | undefined;
 }
 
+/** What an asset reads as its type when its sources could not tell one. */
+export const UNTYPED_ASSET_LABEL = 'Untyped';
+
 export const QUARANTINE_TOOLTIP = 'Sources make contradicting claims about this asset; the record is quarantined pending reconciliation';
 
 /**
@@ -82,7 +85,9 @@ export function buildCryptoAssetCellRegistry({
                 )}
             </span>
         ),
-        'property:CBOM_ASSET_TYPE': (asset) => <Badge color="secondary">{getEnumLabel(typeEnum, asset.type)}</Badge>,
+        'property:CBOM_ASSET_TYPE': (asset) => (
+            <Badge color="secondary">{asset.type ? getEnumLabel(typeEnum, asset.type) : UNTYPED_ASSET_LABEL}</Badge>
+        ),
         'property:CBOM_ASSET_PQC_VERDICT': (asset) => (
             <PqcVerdictBadge
                 verdict={asset.pqcVerdict}

@@ -26,6 +26,7 @@ describe('certificates slice', () => {
         ['bulkDeleteGroupSuccess', () => actions.bulkDeleteGroupSuccess({ uuids: ['c1'] })],
         ['uploadCertificateSuccess', () => actions.uploadCertificateSuccess()],
         ['bulkUpdateRaProfileSuccess', () => actions.bulkUpdateRaProfileSuccess({ uuids: ['c1'] })],
+        ['importCertificatesSuccess', () => actions.importCertificatesSuccess({ results: [] })],
         ['bulkDeleteSuccess', () => actions.bulkDeleteSuccess({ response: {} as any })],
     ])('%s bumps listRefreshToken so the page refetches through the host', (_name, action) => {
         const next = reducer(initialState, action());
@@ -756,6 +757,47 @@ describe('certificates slice', () => {
         expect(next.certificateDownloadContent).toBeUndefined();
     });
 
+    test('importCertificates / success / failure update isImporting and importResults', () => {
+        const staleResults = [{ entryReference: 'a'.repeat(64), kind: 'certificate', imported: true }] as any;
+        let next = reducer(
+            { ...initialState, importResults: staleResults },
+            actions.importCertificates({ certificateImportRequestDto: { file: 'ZmlsZQ==', entries: [] } as any }),
+        );
+        expect(next.isImporting).toBe(true);
+        expect(next.importResults).toBeUndefined();
+
+        const results = [{ entryReference: 'a'.repeat(64), kind: 'certificate', imported: true, certificateUuid: 'cert-1' }] as any;
+        next = reducer(next, actions.importCertificatesSuccess({ results }));
+        expect(next.isImporting).toBe(false);
+        expect(next.importResults).toEqual(results);
+
+        next = reducer({ ...next, isImporting: true }, actions.importCertificatesFailure({ error: 'err' }));
+        expect(next.isImporting).toBe(false);
+        expect(next.importResults).toEqual(results);
+    });
+
+    test('downloadKeystore / success / failure update isDownloadingKeystore, the success flag and the error', () => {
+        const downloadKeystore = actions.downloadKeystore({
+            uuid: 'cert-1',
+            certificateKeystoreRequestDto: { passphrase: 'a-very-long-passphrase' } as any,
+            fallbackName: 'fallback.p12',
+        });
+
+        let next = reducer({ ...initialState, downloadKeystoreSucceeded: true, downloadKeystoreError: 'earlier' }, downloadKeystore);
+        expect(next.isDownloadingKeystore).toBe(true);
+        expect(next.downloadKeystoreSucceeded).toBe(false);
+        expect(next.downloadKeystoreError).toBeUndefined();
+
+        next = reducer(next, actions.downloadKeystoreSuccess());
+        expect(next.isDownloadingKeystore).toBe(false);
+        expect(next.downloadKeystoreSucceeded).toBe(true);
+
+        next = reducer(reducer(next, downloadKeystore), actions.downloadKeystoreFailure({ error: 'err' }));
+        expect(next.isDownloadingKeystore).toBe(false);
+        expect(next.downloadKeystoreSucceeded).toBe(false);
+        expect(next.downloadKeystoreError).toBe('err');
+    });
+
     test('archiveCertificate / success / failure update archive flags and archived field', () => {
         let next = reducer(initialState, actions.archiveCertificate({ uuid: 'cert-1' }));
         expect(next.isArchiving).toBe(true);
@@ -949,6 +991,7 @@ describe('certificates selectors', () => {
         certificateChain: { certificates: [] } as any,
         certificateChainDownloadContent: { content: 'chain' } as any,
         certificateDownloadContent: { content: 'cert' } as any,
+        importResults: [{ entryReference: 'a'.repeat(64) }] as any,
         issuanceAttributes: { 'ra-1': [{ uuid: 'attr-1' }] } as any,
         revocationAttributes: [{ uuid: 'attr-2' }] as any,
         approvals: [{ uuid: 'appr-1' }] as any,
@@ -964,6 +1007,10 @@ describe('certificates selectors', () => {
         isFetchingCertificateChain: true,
         isFetchingCertificateDownloadContent: true,
         isFetchingCertificateChainDownloadContent: true,
+        isImporting: true,
+        isDownloadingKeystore: true,
+        downloadKeystoreSucceeded: true,
+        downloadKeystoreError: 'refused',
         isFetchingValidationResult: true,
         isIssuing: true,
         isRevoking: true,
@@ -1000,6 +1047,7 @@ describe('certificates selectors', () => {
         expect(selectors.certificateChain(state)).toEqual({ certificates: [] });
         expect(selectors.certificateChainDownloadContent(state)).toEqual({ content: 'chain' });
         expect(selectors.certificateDownloadContent(state)).toEqual({ content: 'cert' });
+        expect(selectors.importResults(state)).toEqual([{ entryReference: 'a'.repeat(64) }]);
         expect(selectors.issuanceAttributes(state)).toEqual({ 'ra-1': [{ uuid: 'attr-1' }] });
         expect(selectors.revocationAttributes(state)).toEqual([{ uuid: 'attr-2' }]);
         expect(selectors.approvals(state)).toEqual([{ uuid: 'appr-1' }]);
@@ -1018,6 +1066,10 @@ describe('certificates selectors', () => {
         expect(selectors.isFetchingCertificateChain(state)).toBe(true);
         expect(selectors.isFetchingCertificateDownloadContent(state)).toBe(true);
         expect(selectors.isFetchingCertificateChainDownloadContent(state)).toBe(true);
+        expect(selectors.isImporting(state)).toBe(true);
+        expect(selectors.isDownloadingKeystore(state)).toBe(true);
+        expect(selectors.downloadKeystoreSucceeded(state)).toBe(true);
+        expect(selectors.downloadKeystoreError(state)).toBe('refused');
         expect(selectors.isFetchingValidationResult(state)).toBe(true);
         expect(selectors.isIssuing(state)).toBe(true);
         expect(selectors.isRevoking(state)).toBe(true);

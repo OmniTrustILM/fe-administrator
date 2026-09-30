@@ -285,6 +285,12 @@ export interface CertificateDetailDto {
      */
     key?: KeyDto;
     /**
+     * Whether the certificate can be downloaded with its private key as PKCS#12
+     * @type {boolean}
+     * @memberof CertificateDetailDto
+     */
+    keystoreAvailable: boolean;
+    /**
      * Alternative Key Pair of the certificate
      * @type {KeyDto}
      * @memberof CertificateDetailDto

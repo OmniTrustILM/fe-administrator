@@ -2,9 +2,10 @@ import { Buffer } from 'buffer';
 import { actions as userInterfaceActions } from '../../../../ducks/user-interface';
 
 import { actions as alertActions } from 'ducks/alerts';
+import { selectors as authSelectors } from 'ducks/auth';
 import { actions, selectors } from 'ducks/certificates';
 
-import { CertificateFormat, CertificateFormatEncoding } from '../../../../types/openapi';
+import { CertificateFormat, CertificateFormatEncoding, KeyType } from '../../../../types/openapi';
 
 import { selectors as enumSelectors } from 'ducks/enums';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -12,10 +13,15 @@ import { useDispatch, useSelector } from 'react-redux';
 
 import { downloadFile } from 'utils/certificate';
 
-import { PlatformEnum } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { hasResourceAction } from 'utils/permissions';
 
+import Button from 'components/Button';
+import Container from 'components/Container';
 import DropDownListForm from 'components/DropDownForm';
+import Select from 'components/Select';
 import Switch from 'components/Switch';
+import KeystoreDownloadDialog, { KEYSTORE_FORMAT_OPTION } from '../KeystoreDownloadDialog';
 
 interface ChainDownloadSwitchState {
     isDownloadTriggered: boolean;
@@ -27,16 +33,20 @@ interface ChainDownloadSwitchState {
 const CertificateDownloadForm = () => {
     const dispatch = useDispatch();
     const certificate = useSelector(selectors.certificateDetail);
+    const profile = useSelector(authSelectors.profile);
     const certificateChainDownloadContent = useSelector(selectors.certificateChainDownloadContent);
     const certificateDownloadContent = useSelector(selectors.certificateDownloadContent);
     const certificateRequestFormatEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateFormat));
     const certificateFormatEncodingEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateFormatEncoding));
     const isFetchingCertificateChainDownloadContent = useSelector(selectors.isFetchingCertificateChainDownloadContent);
     const isFetchingCertificateDownloadContent = useSelector(selectors.isFetchingCertificateDownloadContent);
+    // A PKCS#12 download in flight keeps its format, so that its dialog is not unmounted under it.
+    const isDownloadingKeystore = useSelector(selectors.isDownloadingKeystore);
 
     const [chainDownloadSwitch, setChainDownloadSwitch] = useState<ChainDownloadSwitchState>({ isDownloadTriggered: false });
     const [certificateDownloadSwitch, setCertificateDownloadSwitch] = useState<ChainDownloadSwitchState>({ isDownloadTriggered: false });
     const [isDownloadFormCertificateChain, setIsDownloadFormCertificateChain] = useState<boolean>(false);
+    const [certificateFormatValue, setCertificateFormatValue] = useState<string>('');
 
     const fileNameToDownload = certificate?.commonName + '_' + certificate?.serialNumber;
 
@@ -81,6 +91,19 @@ const CertificateDownloadForm = () => {
             description: item.description,
         };
     });
+
+    const privateKeyItem = certificate?.key?.items.find((item) => item.type === KeyType.Private);
+    // The certificate comes with its private key, so the download asks for the key export permission.
+    const keystoreOfferable =
+        !!certificate?.keystoreAvailable && !!privateKeyItem && hasResourceAction(profile, Resource.Keys, ResourceAction.ExportKey);
+
+    const certificateFormatOptionsWithKeystore = keystoreOfferable
+        ? [...certificateFormatOptions, { label: KEYSTORE_FORMAT_OPTION.label, value: KEYSTORE_FORMAT_OPTION.value }]
+        : certificateFormatOptions;
+
+    const isPkcs12Chosen = !isDownloadFormCertificateChain && certificateFormatValue === KEYSTORE_FORMAT_OPTION.value;
+
+    const closeDialog = useCallback(() => dispatch(userInterfaceActions.hideGlobalModal()), [dispatch]);
 
     const downloadCertificateChainContent = useCallback(
         (certificateFormat: CertificateFormat, certificateEncoding: CertificateFormatEncoding) => {
@@ -174,54 +197,119 @@ const CertificateDownloadForm = () => {
 
     return (
         <>
-            <Switch
-                id="certificateChainSwitch"
-                label="Certificate Chain"
-                checked={isDownloadFormCertificateChain ?? false}
-                onChange={() => setIsDownloadFormCertificateChain(!isDownloadFormCertificateChain)}
-            />
+            {/* A PKCS12 container always carries the chain, so the switch is only for the other formats. */}
+            {!isPkcs12Chosen && (
+                <Switch
+                    id="certificateChainSwitch"
+                    label="Certificate Chain"
+                    className="mb-4"
+                    checked={isDownloadFormCertificateChain ?? false}
+                    onChange={() => {
+                        setIsDownloadFormCertificateChain(!isDownloadFormCertificateChain);
+                        setCertificateFormatValue('');
+                    }}
+                />
+            )}
 
-            <DropDownListForm
-                isBusy={isFetchingCertificateDownloadContent || isFetchingCertificateChainDownloadContent}
-                onClose={() => {
-                    dispatch(userInterfaceActions.hideGlobalModal());
-                }}
-                onSubmit={(values) => {
-                    if (!isDownloadFormCertificateChain) {
-                        if (values.certificateFormat && values.certificateEncoding && certificate?.uuid) {
-                            downloadCertificateContent(
-                                values.certificateFormat as CertificateFormat,
-                                values.certificateEncoding as CertificateFormatEncoding,
-                            );
-                        }
-                    }
-                    if (isDownloadFormCertificateChain) {
+            {!isDownloadFormCertificateChain && (
+                <Select
+                    id="certificateFormat"
+                    label="Certificate Format"
+                    placeholder="Select Certificate Format"
+                    options={certificateFormatOptionsWithKeystore}
+                    value={certificateFormatValue}
+                    isDisabled={isDownloadingKeystore}
+                    onChange={(value) => setCertificateFormatValue(value as string)}
+                    showOptionDescriptionInDropdown
+                    showSelectedDescriptionAsHelp
+                />
+            )}
+
+            {isDownloadFormCertificateChain && (
+                <DropDownListForm
+                    isBusy={isFetchingCertificateDownloadContent || isFetchingCertificateChainDownloadContent}
+                    onClose={() => {
+                        dispatch(userInterfaceActions.hideGlobalModal());
+                    }}
+                    onSubmit={(values) => {
                         if (values.certificateFormat && values.certificateEncoding && certificate?.uuid) {
                             downloadCertificateChainContent(
                                 values.certificateFormat as CertificateFormat,
                                 values.certificateEncoding as CertificateFormatEncoding,
                             );
                         }
-                    }
-                }}
-                dropDownOptionsList={[
-                    {
-                        formLabel: isDownloadFormCertificateChain ? 'Certificate Chain Format' : 'Certificate Format',
-                        formValue: 'certificateFormat',
-                        options: certificateFormatOptions,
-                        showOptionDescriptionInDropdown: true,
-                        showSelectedDescriptionAsHelp: true,
-                    },
-                    {
-                        formLabel: isDownloadFormCertificateChain ? 'Certificate Chain Encoding' : 'Certificate Encoding',
-                        formValue: 'certificateEncoding',
-                        options: certificateEncodingOptions,
-                        placement: 'top',
-                        showOptionDescriptionInDropdown: true,
-                        showSelectedDescriptionAsHelp: true,
-                    },
-                ]}
-            />
+                    }}
+                    dropDownOptionsList={[
+                        {
+                            formLabel: 'Certificate Chain Format',
+                            formValue: 'certificateFormat',
+                            options: certificateFormatOptions,
+                            showOptionDescriptionInDropdown: true,
+                            showSelectedDescriptionAsHelp: true,
+                        },
+                        {
+                            formLabel: 'Certificate Chain Encoding',
+                            formValue: 'certificateEncoding',
+                            options: certificateEncodingOptions,
+                            placement: 'top',
+                            showOptionDescriptionInDropdown: true,
+                            showSelectedDescriptionAsHelp: true,
+                        },
+                    ]}
+                />
+            )}
+
+            {!isDownloadFormCertificateChain && !certificateFormatValue && (
+                <Container className="flex-row justify-end modal-footer mt-4" gap={4}>
+                    <Button variant="outline" onClick={closeDialog}>
+                        Cancel
+                    </Button>
+                </Container>
+            )}
+
+            {/* Format and Encoding are validated together: nothing else shows until a format is chosen, so a
+                download can never be submitted without one. */}
+            {!isDownloadFormCertificateChain &&
+                !!certificateFormatValue &&
+                (isPkcs12Chosen ? (
+                    certificate?.key &&
+                    privateKeyItem && (
+                        <div className="mt-4">
+                            <KeystoreDownloadDialog
+                                certificateUuid={certificate.uuid}
+                                certificateName={certificate.commonName}
+                                keyUuid={certificate.key.uuid}
+                                privateKeyItemUuid={privateKeyItem.uuid}
+                                onClose={() => dispatch(userInterfaceActions.hideGlobalModal())}
+                            />
+                        </div>
+                    )
+                ) : (
+                    <DropDownListForm
+                        isBusy={isFetchingCertificateDownloadContent || isFetchingCertificateChainDownloadContent}
+                        onClose={() => {
+                            dispatch(userInterfaceActions.hideGlobalModal());
+                        }}
+                        onSubmit={(values) => {
+                            if (certificateFormatValue && values.certificateEncoding && certificate?.uuid) {
+                                downloadCertificateContent(
+                                    certificateFormatValue as CertificateFormat,
+                                    values.certificateEncoding as CertificateFormatEncoding,
+                                );
+                            }
+                        }}
+                        dropDownOptionsList={[
+                            {
+                                formLabel: 'Certificate Encoding',
+                                formValue: 'certificateEncoding',
+                                options: certificateEncodingOptions,
+                                placement: 'top',
+                                showOptionDescriptionInDropdown: true,
+                                showSelectedDescriptionAsHelp: true,
+                            },
+                        ]}
+                    />
+                ))}
         </>
     );
 };

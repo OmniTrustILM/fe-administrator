@@ -121,6 +121,12 @@ describe('buildCryptoAssetCellRegistry', () => {
         expect(row.columns).toHaveLength(CRYPTO_ASSET_COLUMNS.length);
     });
 
+    test('an asset without a type reads Untyped in its type column', async () => {
+        await renderRow([asset({ type: undefined })]);
+
+        expect(cell('CBOM_ASSET_TYPE').textContent).toBe('Untyped');
+    });
+
     test('the name links to the asset detail page', async () => {
         await renderRow([asset()]);
 
