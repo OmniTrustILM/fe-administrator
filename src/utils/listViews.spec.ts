@@ -11,6 +11,7 @@ import {
 } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
 import {
+    MAX_VIEW_NAME_LENGTH,
     MAX_VISIBLE_TABS,
     STANDARD_VIEW_ID,
     STANDARD_VIEW_NAME,
@@ -179,6 +180,62 @@ describe('duplicateName', () => {
     it('numbers the copy rather than stacking suffixes, because names are unique per resource', () => {
         expect(duplicateName('Expiry watch', ['Expiry watch (copy)'])).toBe('Expiry watch (copy) 2');
         expect(duplicateName('Expiry watch', ['Expiry watch (copy)', 'Expiry watch (copy) 2'])).toBe('Expiry watch (copy) 3');
+    });
+
+    it('numbers a duplicate of a duplicate into the same series', () => {
+        const taken = ['test', 'test (copy)'];
+        expect(duplicateName('test (copy)', taken)).toBe('test (copy) 2');
+        expect(duplicateName('test (copy) 2', [...taken, 'test (copy) 2'])).toBe('test (copy) 3');
+    });
+
+    it('folds a name already stacked with copies back into the series', () => {
+        expect(duplicateName('test (copy) (copy) 3 (copy)', ['test (copy)'])).toBe('test (copy) 2');
+    });
+
+    it('keeps a number that is not a copy counter', () => {
+        expect(duplicateName('Batch 2', [])).toBe('Batch 2 (copy)');
+    });
+
+    it('numbers past a taken copy of the reserved Standard name', () => {
+        expect(duplicateName('Standard (copy)', [STANDARD_VIEW_NAME, 'Standard (copy)'])).toBe('Standard (copy) 2');
+    });
+
+    it('shortens the stem so the name fits what Core stores', () => {
+        const long = 'x'.repeat(MAX_VIEW_NAME_LENGTH);
+        const first = duplicateName(long, []);
+        expect(first).toHaveLength(MAX_VIEW_NAME_LENGTH);
+        expect(first.endsWith(' (copy)')).toBe(true);
+
+        const second = duplicateName(first, [first]);
+        expect(second).toHaveLength(MAX_VIEW_NAME_LENGTH);
+        expect(second.endsWith(' (copy) 2')).toBe(true);
+
+        const third = duplicateName(second, [first, second]);
+        expect(third).toBe(`${'x'.repeat(MAX_VIEW_NAME_LENGTH - ' (copy) 3'.length)} (copy) 3`);
+    });
+
+    it('restarts the series when the source number is too large to count past', () => {
+        const huge = 'Report (copy) 100000000000000000000';
+        expect(duplicateName(huge, [huge])).toBe('Report (copy)');
+    });
+
+    it('restarts the series instead of counting past the largest safe number', () => {
+        const taken = [Number.MAX_SAFE_INTEGER - 1, Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER + 1].map(
+            (suffix) => `Report (copy) ${suffix}`,
+        );
+        expect(duplicateName(taken[0], taken)).toBe('Report (copy)');
+    });
+
+    it('keeps advancing the series when the cut exposes a copy suffix inside the stem', () => {
+        const stem = 'x'.repeat(MAX_VIEW_NAME_LENGTH - ' (copy)tail'.length - 3);
+        const first = duplicateName(`${stem} (copy)tail`, []);
+        expect(first).toBe(`${stem} (copy)`);
+        expect(duplicateName(first, [first])).toBe(`${stem} (copy) 2`);
+    });
+
+    it('does not split a character that straddles the cut', () => {
+        const name = duplicateName(`${'x'.repeat(MAX_VIEW_NAME_LENGTH - 8)}\u{1F600}`, []);
+        expect(name).toBe(`${'x'.repeat(MAX_VIEW_NAME_LENGTH - 8)} (copy)`);
     });
 });
 
