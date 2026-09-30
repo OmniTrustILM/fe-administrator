@@ -68,6 +68,8 @@ function CryptoAssetsDashboard() {
     const verdictKeys = Object.keys(statistics.statByPqcVerdict ?? {});
     const notReadyCount = statistics.statByPqcVerdict?.[PqcVerdict.NotReady];
     const notReadyShare = formatShareOfEstate(notReadyCount, statistics.totalAssets);
+    const unassignedAssetCount = statistics.unassignedAssetCount ?? 0;
+    const unassignedCaption = `${unassignedAssetCount.toLocaleString()} assets carry none`;
 
     return (
         <div>
@@ -118,20 +120,24 @@ function CryptoAssetsDashboard() {
                         data={statistics.distinctAlgorithmFamilyCount ?? 0}
                         title="Algorithm families"
                         extraComponent={
-                            <Link
-                                to={LINK}
-                                className="text-sm text-brand hover:underline"
-                                onClick={() =>
-                                    dispatch(
-                                        filterActions.setCurrentFilters({
-                                            entity: EntityType.CRYPTO_ASSET,
-                                            currentFilters: buildEmptyFilter(CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily),
-                                        }),
-                                    )
-                                }
-                            >
-                                {(statistics.unassignedAssetCount ?? 0).toLocaleString()} assets carry none
-                            </Link>
+                            unassignedAssetCount > 0 ? (
+                                <Link
+                                    to={LINK}
+                                    className="text-sm text-brand hover:underline"
+                                    onClick={() =>
+                                        dispatch(
+                                            filterActions.setCurrentFilters({
+                                                entity: EntityType.CRYPTO_ASSET,
+                                                currentFilters: buildEmptyFilter(CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily),
+                                            }),
+                                        )
+                                    }
+                                >
+                                    {unassignedCaption}
+                                </Link>
+                            ) : (
+                                caption(unassignedCaption)
+                            )
                         }
                     />
                 </div>

@@ -44,7 +44,6 @@ function CountBadge({
             onTitleLinkClick={applyFilter}
             title={title}
             className="h-full"
-            titleColor={link ? 'var(--brand)' : 'var(--content)'}
             titleBoldness="semi-bold"
             titleSize="large"
         >

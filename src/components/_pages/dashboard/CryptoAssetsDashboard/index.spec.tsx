@@ -83,7 +83,6 @@ test.describe('CryptoAssetsDashboard', () => {
         await expect(component.getByTestId('crypto-assets-dashboard-coverage-empty')).toBeVisible();
         await expect(component.getByTestId('crypto-assets-dashboard-coverage').getByTestId('donut-chart-container')).toHaveCount(0);
         await expect(component.getByTestId('crypto-assets-dashboard-charts')).toBeEmpty();
-        // Core omits a count it has nothing for, and a tile left without a number reads as a heading over a gap.
         await expect(component.getByTestId('crypto-assets-dashboard-counts').locator('.text-3xl')).toHaveText(['0', '0', '0', '0']);
     });
 
@@ -117,7 +116,16 @@ test.describe('CryptoAssetsDashboard', () => {
         await expect(heading).toBeVisible();
         await expect(heading.locator('xpath=ancestor::section').getByText('42', { exact: true })).toBeVisible();
         await expect(component.getByText('3,010 assets carry none')).toBeVisible();
+        await expect(component.getByRole('link', { name: '3,010 assets carry none' })).toBeVisible();
         await expect(component.getByRole('link', { name: 'Algorithm families' })).toHaveCount(0);
+    });
+
+    test('algorithm-family caption is plain text when no assets lack a family', async ({ mount }) => {
+        const component = await mount(<CryptoAssetsDashboardWithStore variant="empty" />);
+        const card = component.getByRole('heading', { name: 'Algorithm families' }).locator('xpath=ancestor::section');
+
+        await expect(card.getByText('0 assets carry none')).toBeVisible();
+        await expect(card.getByRole('link', { name: '0 assets carry none' })).toHaveCount(0);
     });
 
     test('source CBOMs replaces a prior CBOM filter and opens the contributing inventory', async ({ mount }) => {
