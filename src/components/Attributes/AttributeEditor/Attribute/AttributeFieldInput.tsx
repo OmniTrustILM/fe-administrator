@@ -164,7 +164,10 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
     const mappedExtensionOids = getMappedExtensionOids(getFieldMapping(descriptor));
     const derExtensionOids = useDerExtensionOids();
     const mappedDerOids = mappedExtensionOids.filter((oid) => derExtensionOids.all.has(oid));
-    const isDerTarget = mappedDerOids.length > 0;
+    // Nothing is said about the value until every mapped extension is known: with one still loading
+    // or unread, a JER hint drawn from the others could be wrong for it.
+    const isResolved = mappedExtensionOids.every((oid) => derExtensionOids.known.has(oid));
+    const isDerTarget = isResolved && mappedDerOids.length > 0;
     // The field's shape must not follow the registry: a detail arriving while the user types would
     // swap the input for a textarea and drop the focus, so every extension-mapped attribute gets one.
     const isExtensionTarget = mappedExtensionOids.length > 0;

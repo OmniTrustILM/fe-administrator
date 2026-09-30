@@ -67,7 +67,7 @@ describe('oids slice', () => {
     });
 
     test('createOID / success / failure', () => {
-        let next = reducer(initialState, actions.createOID({ oid: { oid: '1.2.3', description: 'New' } as any }));
+        let next = reducer(initialState, actions.createOID({ oid: { oid: '1.2.3', description: 'New' } as any, requestId: 'r1' }));
         expect(next.isCreating).toBe(true);
         expect(next.createOidSucceeded).toBe(false);
 
@@ -82,22 +82,17 @@ describe('oids slice', () => {
         expect(next.createOidSucceeded).toBe(false);
     });
 
-    test('a refused module is stored from the failure and cleared by the next submission or on request', () => {
-        const refusal = "The extension's ASN.1 module is empty";
+    test('a refused module is stored with its request from the failure and cleared by the next submission', () => {
+        const refusal = { requestId: 'r1', message: "The extension's ASN.1 module is empty" };
         let next = reducer(initialState, actions.createOIDFailure({ error: 'err', valueSchemaError: refusal }));
-        expect(next.valueSchemaError).toBe(refusal);
-        next = reducer(next, actions.createOID({ oid: { oid: '1.2.3' } as any }));
+        expect(selectors.valueSchemaError({ oids: next } as any)).toEqual(refusal);
+        next = reducer(next, actions.createOID({ oid: { oid: '1.2.3' } as any, requestId: 'r2' }));
         expect(next.valueSchemaError).toBeUndefined();
 
         next = reducer(next, actions.updateOIDFailure({ error: 'err', valueSchemaError: refusal }));
-        expect(next.valueSchemaError).toBe(refusal);
-        next = reducer(next, actions.updateOID({ oid: '1.2.3', data: {} as any }));
+        expect(next.valueSchemaError).toEqual(refusal);
+        next = reducer(next, actions.updateOID({ oid: '1.2.3', data: {} as any, requestId: 'r3' }));
         expect(next.valueSchemaError).toBeUndefined();
-
-        next = reducer(next, actions.createOIDFailure({ error: 'err', valueSchemaError: refusal }));
-        next = reducer(next, actions.clearValueSchemaError());
-        expect(next.valueSchemaError).toBeUndefined();
-        expect(selectors.valueSchemaError({ oids: next } as any)).toBeUndefined();
     });
 
     test('getExtensionOidDetailSuccess keeps each custom extension detail by OID', () => {
@@ -143,7 +138,7 @@ describe('oids slice', () => {
     });
 
     test('updateOID / success / failure', () => {
-        let next = reducer(initialState, actions.updateOID({ oid: '1.2.3', data: { description: 'Updated' } as any }));
+        let next = reducer(initialState, actions.updateOID({ oid: '1.2.3', data: { description: 'Updated' } as any, requestId: 'r1' }));
         expect(next.isUpdating).toBe(true);
         expect(next.updateOidSucceeded).toBe(false);
 
@@ -475,16 +470,20 @@ describe('oid-epics', () => {
 
     test('createOID epic hands a refused module to the form instead of the error alert', async () => {
         const createCustomOidEntry = vi.fn().mockReturnValue(throwError(() => moduleRefusal));
-        const out = await runEpic('createOID', actions.createOID({ oid: { oid: '1.2.3' } as any }), { createCustomOidEntry });
+        const out = await runEpic('createOID', actions.createOID({ oid: { oid: '1.2.3' } as any, requestId: 'r1' }), {
+            createCustomOidEntry,
+        });
 
         expect(out).toHaveLength(1);
         expect(out[0].type).toBe(actions.createOIDFailure.type);
-        expect(out[0].payload.valueSchemaError).toBe(moduleRefusal.response[0]);
+        expect(out[0].payload.valueSchemaError).toEqual({ requestId: 'r1', message: moduleRefusal.response[0] });
     });
 
     test('createOID epic keeps the error alert for any other failure', async () => {
         const createCustomOidEntry = vi.fn().mockReturnValue(throwError(() => ({ status: 422, response: ['OID already exists'] })));
-        const out = await runEpic('createOID', actions.createOID({ oid: { oid: '1.2.3' } as any }), { createCustomOidEntry });
+        const out = await runEpic('createOID', actions.createOID({ oid: { oid: '1.2.3' } as any, requestId: 'r1' }), {
+            createCustomOidEntry,
+        });
 
         expect(out.map((a) => a.type)).toEqual([actions.createOIDFailure.type, appRedirectActions.fetchError.type]);
         expect(out[0].payload.valueSchemaError).toBeUndefined();
@@ -492,11 +491,13 @@ describe('oid-epics', () => {
 
     test('updateOID epic hands a refused module to the form instead of the error alert', async () => {
         const editCustomOidEntry = vi.fn().mockReturnValue(throwError(() => moduleRefusal));
-        const out = await runEpic('updateOID', actions.updateOID({ oid: '1.2.3', data: {} as any }), { editCustomOidEntry });
+        const out = await runEpic('updateOID', actions.updateOID({ oid: '1.2.3', data: {} as any, requestId: 'r1' }), {
+            editCustomOidEntry,
+        });
 
         expect(out).toHaveLength(1);
         expect(out[0].type).toBe(actions.updateOIDFailure.type);
-        expect(out[0].payload.valueSchemaError).toBe(moduleRefusal.response[0]);
+        expect(out[0].payload.valueSchemaError).toEqual({ requestId: 'r1', message: moduleRefusal.response[0] });
     });
 
     test('getExtensionOidDetail epic reads the custom entry detail', async () => {

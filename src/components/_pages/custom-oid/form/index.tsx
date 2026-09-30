@@ -131,22 +131,13 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
     } = methods;
 
     // Core is the only reader of the ASN.1 module, so its refusal is the field's validation error.
-    // Only a refusal of this form's own submission: a request still running when the dialog closed
-    // stores its refusal after the cleanup below, and the next form must not show it.
-    const submittedRef = useRef(false);
+    // Only the refusal of this form's own latest submission: a request still running when a form
+    // closed can fail after another form has opened and submitted, and that form must not show it.
+    const requestIdRef = useRef<string | undefined>(undefined);
     useEffect(() => {
-        if (valueSchemaError && submittedRef.current) {
-            setError('valueSchema', { type: 'server', message: valueSchemaError }, { shouldFocus: true });
-        }
+        const isOwn = requestIdRef.current !== undefined && valueSchemaError?.requestId === requestIdRef.current;
+        if (isOwn) setError('valueSchema', { type: 'server', message: valueSchemaError.message }, { shouldFocus: true });
     }, [valueSchemaError, setError]);
-
-    // A refusal belongs to the submission that caused it, not to the next time the form opens.
-    useEffect(
-        () => () => {
-            dispatch(actions.clearValueSchemaError());
-        },
-        [dispatch],
-    );
 
     useEffect(() => {
         if (editMode && oid) {
@@ -166,7 +157,8 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
 
     const onSubmit = useCallback(
         (values: FormValues) => {
-            submittedRef.current = true;
+            const requestId = crypto.randomUUID();
+            requestIdRef.current = requestId;
             const additionalProperties = buildOidAdditionalProperties(values.category, values);
             const newOID = {
                 oid: values.oid,
@@ -176,13 +168,9 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
                 ...(additionalProperties && { additionalProperties }),
             };
             if (editMode) {
-                dispatch(actions.updateOID({ oid: oidId!, data: newOID }));
+                dispatch(actions.updateOID({ oid: oidId!, data: newOID, requestId }));
             } else {
-                dispatch(
-                    actions.createOID({
-                        oid: newOID,
-                    }),
-                );
+                dispatch(actions.createOID({ oid: newOID, requestId }));
             }
         },
         [dispatch, editMode, oidId],

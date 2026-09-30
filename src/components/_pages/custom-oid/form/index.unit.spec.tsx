@@ -3,6 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 
 import CustomOIDForm from './index';
+import { actions as oidActions } from 'ducks/oids';
 import { OidCategory, ExtensionValueEncoding, PlatformEnum } from 'types/openapi';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
 import { useDispatchMock, useSelectorMock } from '../../test-utils/reactReduxMockModule';
@@ -191,6 +192,7 @@ describe('CustomOIDForm — Certificate Extension branch', () => {
             expect.objectContaining({
                 type: expect.stringContaining('createOID'),
                 payload: {
+                    requestId: expect.any(String),
                     oid: expect.objectContaining({
                         category: OidCategory.CertificateExtension,
                         additionalProperties: { defaultCritical: true, valueEncoding: ExtensionValueEncoding.Der },
@@ -257,6 +259,7 @@ describe('CustomOIDForm — Certificate Extension branch', () => {
             expect.objectContaining({
                 type: expect.stringContaining('createOID'),
                 payload: {
+                    requestId: expect.any(String),
                     oid: expect.objectContaining({
                         additionalProperties: expect.objectContaining({ valueSchema: MODULE }),
                     }),
@@ -276,6 +279,7 @@ describe('CustomOIDForm — Certificate Extension branch', () => {
             expect.objectContaining({
                 type: expect.stringContaining('createOID'),
                 payload: {
+                    requestId: expect.any(String),
                     oid: expect.objectContaining({
                         additionalProperties: expect.objectContaining({ valueSchema: 'this is not a module' }),
                     }),
@@ -292,8 +296,12 @@ describe('CustomOIDForm — Certificate Extension branch', () => {
         expect(container.querySelector('[data-testid="valueSchema-hint"]')).not.toBeNull();
 
         const refusal = "The extension's ASN.1 module uses AUTOMATIC TAGS, which this platform does not support";
+        const submission = dispatchFn.mock.calls.map(([action]) => action).find(oidActions.createOID.match);
         const refused = buildState();
-        const refusedState = { ...refused, oids: { ...refused.oids, valueSchemaError: refusal } };
+        const refusedState = {
+            ...refused,
+            oids: { ...refused.oids, valueSchemaError: { requestId: submission?.payload.requestId, message: refusal } },
+        };
         useSelectorMock.mockImplementation((selector: any) => selector(refusedState));
         await act(async () => {
             root.render(<CustomOIDForm onCancel={() => {}} />);
@@ -306,27 +314,24 @@ describe('CustomOIDForm — Certificate Extension branch', () => {
         expect(container.querySelector('[data-testid="error-valueSchema"]')).toBeNull();
     });
 
-    it("ignores a refusal stored by an earlier form's late response", async () => {
+    it("ignores the refusal of another form's request, even after submitting its own", async () => {
+        await render();
+        await fillDerExtension();
+        await act(async () => setValueSchema(MODULE));
+        await act(async () => submit());
+
         const refused = buildState();
         const refusedState = {
             ...refused,
-            oids: { ...refused.oids, valueSchemaError: "The extension's ASN.1 module is empty" },
+            oids: { ...refused.oids, valueSchemaError: { requestId: 'another-form', message: "The extension's ASN.1 module is empty" } },
         };
         useSelectorMock.mockImplementation((selector: any) => selector(refusedState));
         await act(async () => {
             root.render(<CustomOIDForm onCancel={() => {}} />);
         });
-        await fillDerExtension();
 
         expect(container.querySelector('[data-testid="error-valueSchema"]')).toBeNull();
         expect(container.querySelector('[data-testid="valueSchema-hint"]')).not.toBeNull();
-    });
-
-    it('clears a stored module refusal when the form closes', async () => {
-        await render();
-        act(() => root.unmount());
-        expect(dispatchFn).toHaveBeenCalledWith(expect.objectContaining({ type: expect.stringContaining('clearValueSchemaError') }));
-        root = createRoot(container);
     });
 
     it('pre-populates the Value Schema in edit mode', async () => {

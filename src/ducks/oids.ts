@@ -5,6 +5,12 @@ import type { OIDRequestModel, OIDResponseModel, OIDUpdateRequestModel } from 't
 import { resetSliceState } from 'ducks/reducerUtils';
 import type { AppState } from 'ducks';
 
+/** Core's refusal of an ASN.1 module, tied to the submission that sent it so no other form shows it. */
+export interface ValueSchemaError {
+    requestId: string;
+    message: string;
+}
+
 export type State = {
     oid?: OIDResponseModel;
     oids: OIDResponseModel[];
@@ -32,7 +38,7 @@ export type State = {
     updateOidSucceeded: boolean;
     isDeleting: boolean;
     /** Core's refusal of the ASN.1 module the last create or update sent, shown on the form's field. */
-    valueSchemaError?: string;
+    valueSchemaError?: ValueSchemaError;
 };
 
 export const initialState: State = {
@@ -154,7 +160,7 @@ export const slice = createSlice({
             state.isFetching = false;
         },
 
-        createOID: (state, action: PayloadAction<{ oid: OIDRequestModel }>) => {
+        createOID: (state, action: PayloadAction<{ oid: OIDRequestModel; requestId: string }>) => {
             state.isCreating = true;
             state.createOidSucceeded = false;
             state.valueSchemaError = undefined;
@@ -166,13 +172,13 @@ export const slice = createSlice({
             state.oid = action.payload.oid;
         },
 
-        createOIDFailure: (state, action: PayloadAction<{ error: string; valueSchemaError?: string }>) => {
+        createOIDFailure: (state, action: PayloadAction<{ error: string; valueSchemaError?: ValueSchemaError }>) => {
             state.isCreating = false;
             state.createOidSucceeded = false;
             state.valueSchemaError = action.payload.valueSchemaError;
         },
 
-        updateOID: (state, action: PayloadAction<{ oid: string; data: OIDUpdateRequestModel }>) => {
+        updateOID: (state, action: PayloadAction<{ oid: string; data: OIDUpdateRequestModel; requestId: string }>) => {
             state.isUpdating = true;
             state.updateOidSucceeded = false;
             state.valueSchemaError = undefined;
@@ -184,14 +190,10 @@ export const slice = createSlice({
             state.oid = action.payload.oid;
         },
 
-        updateOIDFailure: (state, action: PayloadAction<{ error: string; valueSchemaError?: string }>) => {
+        updateOIDFailure: (state, action: PayloadAction<{ error: string; valueSchemaError?: ValueSchemaError }>) => {
             state.isUpdating = false;
             state.updateOidSucceeded = false;
             state.valueSchemaError = action.payload.valueSchemaError;
-        },
-
-        clearValueSchemaError: (state) => {
-            state.valueSchemaError = undefined;
         },
 
         deleteOID: (state, action: PayloadAction<{ oid: string }>) => {

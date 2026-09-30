@@ -155,7 +155,8 @@ const createOID: AppEpic = (action$, state, deps) => {
                     ),
                 ),
                 catchError((error) => {
-                    const valueSchemaError = extractValueSchemaError(error);
+                    const refusal = extractValueSchemaError(error);
+                    const valueSchemaError = refusal === undefined ? undefined : { requestId: action.payload.requestId, message: refusal };
                     const failure = slice.actions.createOIDFailure({
                         error: extractError(error, 'Failed to add Custom OID'),
                         valueSchemaError,
@@ -184,7 +185,9 @@ const updateOID: AppEpic = (action$, state, deps) => {
                         ),
                     ),
                     catchError((error) => {
-                        const valueSchemaError = extractValueSchemaError(error);
+                        const refusal = extractValueSchemaError(error);
+                        const valueSchemaError =
+                            refusal === undefined ? undefined : { requestId: action.payload.requestId, message: refusal };
                         const failure = slice.actions.updateOIDFailure({
                             error: extractError(error, 'Failed to update Custom OID'),
                             valueSchemaError,

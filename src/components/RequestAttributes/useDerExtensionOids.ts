@@ -58,6 +58,8 @@ export interface DerExtensionOids {
     withModule: Set<string>;
     /** Custom extensions whose registry entry could not be read, with the reason; their encoding is unknown. */
     failed: Record<string, string>;
+    /** Every extension the registry describes, whatever its encoding; a mapped OID outside it is unresolved. */
+    known: Set<string>;
 }
 
 /**
@@ -67,24 +69,33 @@ export interface DerExtensionOids {
  * encodings a value starting with `{` is literal text, so offering JSON validation there would reject
  * valid values.
  *
+ * Empty while a registry list could not be loaded: what is held may predate an edit, and the editor
+ * already says the values are not checked, so the fields must not check them from stale entries.
+ *
  * Selection only; the fetches are `useFetchExtensionOidRegistry`.
  */
 export function useDerExtensionOids(): DerExtensionOids {
     const systemOidsByCategory = useSelector(oidSelectors.systemOidsByCategory);
+    const systemOidsError = useSelector(oidSelectors.systemOidsError);
+    const customListError = useSelector(oidSelectors.oidsByCategoryError)[OidCategory.CertificateExtension];
     const extensionOidDetails = useSelector(oidSelectors.extensionOidDetails);
     const failed = useSelector(oidSelectors.extensionOidDetailsFailed);
 
     return useMemo(() => {
-        const entries = [...(systemOidsByCategory[OidCategory.CertificateExtension] ?? []), ...Object.values(extensionOidDetails)];
+        const known = new Set<string>();
         const all = new Set<string>();
         const withModule = new Set<string>();
+        if (systemOidsError || customListError) return { known, all, withModule, failed: {} };
+
+        const entries = [...(systemOidsByCategory[OidCategory.CertificateExtension] ?? []), ...Object.values(extensionOidDetails)];
         for (const entry of entries) {
+            known.add(entry.oid);
             const props = entry.additionalProperties;
             if (isCertificateExtensionProperties(props) && props.valueEncoding === ExtensionValueEncoding.Der) {
                 all.add(entry.oid);
                 if (props.valueSchema) withModule.add(entry.oid);
             }
         }
-        return { all, withModule, failed };
-    }, [systemOidsByCategory, extensionOidDetails, failed]);
+        return { known, all, withModule, failed };
+    }, [systemOidsByCategory, systemOidsError, customListError, extensionOidDetails, failed]);
 }

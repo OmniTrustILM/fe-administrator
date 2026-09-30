@@ -6,7 +6,7 @@ import { AttributeEditorTestWrapper } from '../AttributeEditorTestWrapper';
 const EDITOR_ID = 'extjson';
 const FIELD = `__attributes__${EDITOR_ID}__.extValue`;
 
-const extensionDescriptor = (extensionOid: string, contentType = 'text'): AttributeDescriptorModel =>
+const extensionDescriptor = (extensionOid: string | string[], contentType = 'text'): AttributeDescriptorModel =>
     ({
         uuid: 'a1',
         name: 'extValue',
@@ -14,7 +14,10 @@ const extensionDescriptor = (extensionOid: string, contentType = 'text'): Attrib
         contentType,
         content: [],
         properties: { label: 'Extension value', visible: true, required: false, readOnly: false, list: false, multiSelect: false },
-        fieldMapping: { objectType: 'x509Certificate', fields: [{ fieldType: 'extension', extensionOid }] },
+        fieldMapping: {
+            objectType: 'x509Certificate',
+            fields: [extensionOid].flat().map((oid) => ({ fieldType: 'extension', extensionOid: oid })),
+        },
     }) as unknown as AttributeDescriptorModel;
 
 const BASIC_CONSTRAINTS_MODULE = `BasicConstraints DEFINITIONS IMPLICIT TAGS ::= BEGIN
@@ -80,7 +83,7 @@ const oidsState = {
 type MountFn = (jsx: any) => Promise<any>;
 
 /** Mounts one attribute mapped onto `extensionOid` and returns the locators every test reads. */
-async function mountField(mount: MountFn, page: Page, extensionOid: string, contentType?: string, state = oidsState) {
+async function mountField(mount: MountFn, page: Page, extensionOid: string | string[], contentType?: string, state = oidsState) {
     await mount(
         <AttributeEditorTestWrapper
             id={EDITOR_ID}
@@ -158,6 +161,16 @@ test.describe('extension value input', () => {
         await expect(jerError).toHaveCount(0);
     });
 
+    test('a mapping with an unread extension beside a known one says nothing about the value yet', async ({ mount, page }) => {
+        const { input, hint, jerError, detailError } = await mountField(mount, page, ['2.5.29.19', '1.3.6.1.4.1.99999.2']);
+
+        await expect(detailError).toBeVisible();
+        await expect(hint).toHaveCount(0);
+
+        await input.fill('{"cA":true,"cA":false}');
+        await expect(jerError).toHaveCount(0);
+    });
+
     test('a custom DER extension takes JER when its detail carries a module', async ({ mount, page }) => {
         const { input, hint, jerError } = await mountField(mount, page, '1.3.6.1.4.1.99999.1');
 
@@ -166,21 +179,12 @@ test.describe('extension value input', () => {
         await expect(jerError).toContainText('Duplicate key');
     });
 
-    test('a registry that could not be loaded is said once per editor, with a retry, and the field checks nothing', async ({
+    test('a registry that could not be loaded is said once per editor, with a retry, and the field checks nothing from stale entries', async ({
         mount,
         page,
     }) => {
-        const registryFailed = {
-            oids: {
-                ...oidsState.oids,
-                systemOids: [],
-                systemOidsError: true,
-                oidsByCategory: {},
-                extensionOidDetails: {},
-                extensionOidDetailsRequested: {},
-                extensionOidDetailsFailed: {},
-            },
-        };
+        // The entries held from before the failed reload stay in the store; the field must not use them.
+        const registryFailed = { oids: { ...oidsState.oids, systemOidsError: true } };
         const { input, hint, jerError } = await mountField(mount, page, '2.5.29.19', undefined, registryFailed);
         const registryError = page.getByTestId(`${EDITOR_ID}-extension-registry-error`);
 
