@@ -38,6 +38,7 @@ import {
 import { deepEqual } from 'utils/deep-equal';
 import { contentItemLabel } from 'utils/displayValue';
 import Button from 'components/Button';
+import RetryCallout from 'components/RetryCallout';
 import { Trash } from 'lucide-react';
 import {
     getAttributeEditorAttributeKey,
@@ -120,7 +121,7 @@ function AttributeEditorInner({
         () => [...new Set(attributeDescriptors.flatMap((d) => getMappedExtensionOids(getFieldMapping(d))))],
         [attributeDescriptors],
     );
-    useFetchExtensionOidRegistry(mappedExtensionOids);
+    const extensionRegistry = useFetchExtensionOidRegistry(mappedExtensionOids);
 
     const isRunningCallback = useSelector(connectorSelectors.isRunningCallback);
     const initiateAttributeCallback = useSelector(userInterfaceSelectors.selectInitiateAttributeCallback);
@@ -1222,7 +1223,19 @@ function AttributeEditorInner({
     ]);
     /* c8 ignore stop */
 
-    return <>{attrs}</>;
+    return (
+        <>
+            {extensionRegistry.failed && (
+                <div className="mb-4" data-testid={`${id}-extension-registry-error`}>
+                    <RetryCallout
+                        message="The certificate extension registry could not be loaded, so the values of extension-mapped attributes are not checked here."
+                        onRetry={extensionRegistry.reload}
+                    />
+                </div>
+            )}
+            {attrs}
+        </>
+    );
 }
 
 function AttributeEditorFormBridge({ children }: Readonly<{ children: React.ReactNode }>) {

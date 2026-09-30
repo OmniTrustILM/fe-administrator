@@ -89,9 +89,14 @@ export const slice = createSlice({
             state.oidsByCategoryError[action.payload.category] = false;
             state.oidsByCategoryLoaded[action.payload.category] = true;
             // A fresh custom extension list may follow edits or deletions made since the details
-            // were read, so they are read again for the OIDs still mapped.
+            // were read, so they are read again for the OIDs still mapped. A detail whose OID is
+            // still listed stays until the fresh one replaces it, so a field keeps its hint and
+            // check meanwhile; a delisted OID's detail goes now.
             if (action.payload.category === OidCategory.CertificateExtension) {
-                state.extensionOidDetails = {};
+                const listed = new Set(action.payload.oids.map((entry) => entry.oid));
+                for (const oid of Object.keys(state.extensionOidDetails)) {
+                    if (!listed.has(oid)) delete state.extensionOidDetails[oid];
+                }
                 state.extensionOidDetailsRequested = {};
                 state.extensionOidDetailsFailed = {};
             }

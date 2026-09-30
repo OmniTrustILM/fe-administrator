@@ -165,6 +165,9 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
     const derExtensionOids = useDerExtensionOids();
     const mappedDerOids = mappedExtensionOids.filter((oid) => derExtensionOids.all.has(oid));
     const isDerTarget = mappedDerOids.length > 0;
+    // The field's shape must not follow the registry: a detail arriving while the user types would
+    // swap the input for a textarea and drop the focus, so every extension-mapped attribute gets one.
+    const isExtensionTarget = mappedExtensionOids.length > 0;
     const acceptsJer = isDerTarget && mappedDerOids.every((oid) => derExtensionOids.withModule.has(oid));
     // A mapped extension whose registry entry could not be read has an unknown encoding, so the value
     // gets no hint or check here; the field says so and offers to read the entry again.
@@ -258,7 +261,7 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
                                 field={field}
                                 fieldState={fieldState}
                                 submitCount={submitCount}
-                                multiline={isDerTarget}
+                                multiline={isExtensionTarget}
                             />
                         </div>
                         {showDescriptionAndError && (

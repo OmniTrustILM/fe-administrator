@@ -13,8 +13,8 @@ vi.mock('react-redux', async () => await import('../_pages/test-utils/reactRedux
 const MAPPED = ['1.2.3.1', '1.2.3.2', '2.5.29.19'];
 
 function Probe({ mappedOids }: Readonly<{ mappedOids: string[] }>) {
-    useFetchExtensionOidRegistry(mappedOids);
-    return null;
+    const { failed, reload } = useFetchExtensionOidRegistry(mappedOids);
+    return <button type="button" data-testid="reload" data-failed={String(failed)} onClick={reload} />;
 }
 
 describe('useFetchExtensionOidRegistry', () => {
@@ -36,6 +36,8 @@ describe('useFetchExtensionOidRegistry', () => {
                         { oid: '1.2.3.3', displayName: 'Not mapped', category: 'certificateExtension' },
                     ],
                 },
+                oidsByCategoryError: {},
+                systemOidsError: false,
                 extensionOidDetails: {},
                 extensionOidDetailsRequested: { '1.2.3.2': true },
                 extensionOidDetailsFailed: {},
@@ -75,6 +77,31 @@ describe('useFetchExtensionOidRegistry', () => {
         await act(async () => root.render(<Probe mappedOids={MAPPED} />));
 
         expect(detailRequests()).toHaveLength(1);
+    });
+
+    it('reports a registry list that could not be loaded and loads both lists again on request', async () => {
+        const failedState = {
+            oids: {
+                oidsByCategory: {},
+                oidsByCategoryError: { certificateExtension: true },
+                systemOidsError: false,
+                extensionOidDetails: {},
+                extensionOidDetailsRequested: {},
+                extensionOidDetailsFailed: {},
+                systemOids: [],
+            },
+        };
+        useSelectorMock.mockImplementation((selector: any) => selector(failedState));
+        await act(async () => root.render(<Probe mappedOids={MAPPED} />));
+        const reload = container.querySelector<HTMLButtonElement>('[data-testid="reload"]');
+        expect(reload?.dataset.failed).toBe('true');
+
+        dispatchFn.mockClear();
+        await act(async () => reload?.click());
+        expect(dispatchFn.mock.calls.map(([action]) => action.type)).toEqual([
+            actions.listSystemOids.type,
+            actions.listOidsByCategory.type,
+        ]);
     });
 
     it('fetches nothing when no attribute maps to an extension', async () => {

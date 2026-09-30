@@ -1,29 +1,41 @@
 import { actions as oidActions, selectors as oidSelectors } from 'ducks/oids';
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { ExtensionValueEncoding, OidCategory } from 'types/openapi';
-import type { OIDResponseModel } from 'types/oids';
 import { isCertificateExtensionProperties } from 'utils/oid';
+
+export interface ExtensionOidRegistry {
+    /** Whether the system or the custom extension list could not be loaded; the fields then check nothing. */
+    failed: boolean;
+    /** Loads both lists again. */
+    reload: () => void;
+}
 
 /**
  * Fetches the certificate-extension OID registry (system + custom) and the detail of every custom
  * extension in `mappedOids`: the custom list carries no encoding or module, only the detail does.
  * Call once per form, e.g. from the attribute editor, not per field: every rendered field
  * dispatching its own fetch would fire a burst of parallel requests the epics then have to cancel.
+ * Says when a list could not be loaded, with a reload for the editor's Retry.
  */
-export function useFetchExtensionOidRegistry(mappedOids: readonly string[]): void {
+export function useFetchExtensionOidRegistry(mappedOids: readonly string[]): ExtensionOidRegistry {
     const dispatch = useDispatch();
     const customOids = useSelector(oidSelectors.oidsByCategory)[OidCategory.CertificateExtension];
+    const customListError = useSelector(oidSelectors.oidsByCategoryError)[OidCategory.CertificateExtension];
+    const systemOidsError = useSelector(oidSelectors.systemOidsError);
     const requested = useSelector(oidSelectors.extensionOidDetailsRequested);
     const enabled = mappedOids.length > 0;
 
-    useEffect(() => {
-        if (!enabled) return;
-        // Both fetches are cheap on remount: the system list is cached by the epic, and repeated
-        // dispatches of the same custom category collapse via switchMap.
+    // Both fetches are cheap on remount: the system list is cached by the epic, and repeated
+    // dispatches of the same custom category collapse via switchMap.
+    const reload = useCallback(() => {
         dispatch(oidActions.listSystemOids());
         dispatch(oidActions.listOidsByCategory({ category: OidCategory.CertificateExtension }));
-    }, [dispatch, enabled]);
+    }, [dispatch]);
+
+    useEffect(() => {
+        if (enabled) reload();
+    }, [enabled, reload]);
 
     // Each detail is asked for once per list read: a detail arriving for one OID must not restart
     // the requests still running for the others.
@@ -35,6 +47,8 @@ export function useFetchExtensionOidRegistry(mappedOids: readonly string[]): voi
             }
         }
     }, [dispatch, mappedOids, customOids, requested]);
+
+    return { failed: enabled && (systemOidsError || !!customListError), reload };
 }
 
 export interface DerExtensionOids {
@@ -47,10 +61,11 @@ export interface DerExtensionOids {
 }
 
 /**
- * The registered certificate extensions whose value encoding is DER: the system list, overridden by
- * the detail of a custom entry for the same OID, as Core resolves it. Only a DER extension takes a
- * JER value, and only when a module describes it: for the string encodings a value starting with
- * `{` is literal text, so offering JSON validation there would reject valid values.
+ * The registered certificate extensions whose value encoding is DER: the system list plus the details
+ * read for custom entries, two disjoint sets since Core refuses a custom OID that shadows a system
+ * one. Only a DER extension takes a JER value, and only when a module describes it: for the string
+ * encodings a value starting with `{` is literal text, so offering JSON validation there would reject
+ * valid values.
  *
  * Selection only; the fetches are `useFetchExtensionOidRegistry`.
  */
@@ -60,13 +75,10 @@ export function useDerExtensionOids(): DerExtensionOids {
     const failed = useSelector(oidSelectors.extensionOidDetailsFailed);
 
     return useMemo(() => {
-        const entries = new Map<string, OIDResponseModel>();
-        for (const entry of systemOidsByCategory[OidCategory.CertificateExtension] ?? []) entries.set(entry.oid, entry);
-        for (const entry of Object.values(extensionOidDetails)) entries.set(entry.oid, entry);
-
+        const entries = [...(systemOidsByCategory[OidCategory.CertificateExtension] ?? []), ...Object.values(extensionOidDetails)];
         const all = new Set<string>();
         const withModule = new Set<string>();
-        for (const entry of entries.values()) {
+        for (const entry of entries) {
             const props = entry.additionalProperties;
             if (isCertificateExtensionProperties(props) && props.valueEncoding === ExtensionValueEncoding.Der) {
                 all.add(entry.oid);

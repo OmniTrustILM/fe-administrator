@@ -1,6 +1,6 @@
 import Widget from 'components/Widget';
 import { actions, selectors } from 'ducks/oids';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { type CustomOidEntryRequestDto, ExtensionValueEncoding, type OidCategory, PlatformEnum } from 'types/openapi';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
@@ -131,8 +131,13 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
     } = methods;
 
     // Core is the only reader of the ASN.1 module, so its refusal is the field's validation error.
+    // Only a refusal of this form's own submission: a request still running when the dialog closed
+    // stores its refusal after the cleanup below, and the next form must not show it.
+    const submittedRef = useRef(false);
     useEffect(() => {
-        if (valueSchemaError) setError('valueSchema', { type: 'server', message: valueSchemaError }, { shouldFocus: true });
+        if (valueSchemaError && submittedRef.current) {
+            setError('valueSchema', { type: 'server', message: valueSchemaError }, { shouldFocus: true });
+        }
     }, [valueSchemaError, setError]);
 
     // A refusal belongs to the submission that caused it, not to the next time the form opens.
@@ -161,6 +166,7 @@ export default function CustomOIDForm({ oidId, onCancel, onSuccess }: CustomOIDF
 
     const onSubmit = useCallback(
         (values: FormValues) => {
+            submittedRef.current = true;
             const additionalProperties = buildOidAdditionalProperties(values.category, values);
             const newOID = {
                 oid: values.oid,

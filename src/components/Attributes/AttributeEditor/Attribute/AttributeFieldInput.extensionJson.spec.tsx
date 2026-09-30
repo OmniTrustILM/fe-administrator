@@ -80,12 +80,12 @@ const oidsState = {
 type MountFn = (jsx: any) => Promise<any>;
 
 /** Mounts one attribute mapped onto `extensionOid` and returns the locators every test reads. */
-async function mountField(mount: MountFn, page: Page, extensionOid: string, contentType?: string) {
+async function mountField(mount: MountFn, page: Page, extensionOid: string, contentType?: string, state = oidsState) {
     await mount(
         <AttributeEditorTestWrapper
             id={EDITOR_ID}
             attributeDescriptors={[extensionDescriptor(extensionOid, contentType)]}
-            preloadedState={oidsState}
+            preloadedState={state}
         />,
     );
     return {
@@ -166,10 +166,37 @@ test.describe('extension value input', () => {
         await expect(jerError).toContainText('Duplicate key');
     });
 
+    test('a registry that could not be loaded is said once per editor, with a retry, and the field checks nothing', async ({
+        mount,
+        page,
+    }) => {
+        const registryFailed = {
+            oids: {
+                ...oidsState.oids,
+                systemOids: [],
+                systemOidsError: true,
+                oidsByCategory: {},
+                extensionOidDetails: {},
+                extensionOidDetailsRequested: {},
+                extensionOidDetailsFailed: {},
+            },
+        };
+        const { input, hint, jerError } = await mountField(mount, page, '2.5.29.19', undefined, registryFailed);
+        const registryError = page.getByTestId(`${EDITOR_ID}-extension-registry-error`);
+
+        await expect(registryError).toContainText('registry could not be loaded');
+        await expect(registryError.getByRole('button', { name: 'Retry' })).toBeVisible();
+        await expect(hint).toHaveCount(0);
+
+        await input.fill('{not json at all');
+        await expect(jerError).toHaveCount(0);
+    });
+
     test('an extension with a string encoding gets no DER treatment, since { is literal text there', async ({ mount, page }) => {
         const { input, hint, jerError } = await mountField(mount, page, '2.5.29.100');
 
-        await expect(input).toBeVisible();
+        // The shape follows the mapping, not the registry, so the field never swaps under the user.
+        await expect(page.locator(`textarea[id="${FIELD}"]`)).toBeVisible();
         await expect(hint).toHaveCount(0);
 
         await input.fill('{not json at all');

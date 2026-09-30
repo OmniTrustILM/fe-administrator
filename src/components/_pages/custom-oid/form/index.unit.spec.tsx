@@ -306,6 +306,22 @@ describe('CustomOIDForm — Certificate Extension branch', () => {
         expect(container.querySelector('[data-testid="error-valueSchema"]')).toBeNull();
     });
 
+    it("ignores a refusal stored by an earlier form's late response", async () => {
+        const refused = buildState();
+        const refusedState = {
+            ...refused,
+            oids: { ...refused.oids, valueSchemaError: "The extension's ASN.1 module is empty" },
+        };
+        useSelectorMock.mockImplementation((selector: any) => selector(refusedState));
+        await act(async () => {
+            root.render(<CustomOIDForm onCancel={() => {}} />);
+        });
+        await fillDerExtension();
+
+        expect(container.querySelector('[data-testid="error-valueSchema"]')).toBeNull();
+        expect(container.querySelector('[data-testid="valueSchema-hint"]')).not.toBeNull();
+    });
+
     it('clears a stored module refusal when the form closes', async () => {
         await render();
         act(() => root.unmount());
