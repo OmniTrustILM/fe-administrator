@@ -1,8 +1,9 @@
 import type { AppEpic } from 'ducks';
 import { defer, iif, of } from 'rxjs';
-import { catchError, concatMap, filter, map, mergeMap, switchMap, takeUntil } from 'rxjs/operators';
+import { catchError, concatMap, filter, map, mergeMap, switchMap, takeUntil, tap } from 'rxjs/operators';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { extractError } from 'utils/net';
+import { extractError, withReadableResponse } from 'utils/net';
+import { fileNameFromContentDisposition, triggerBlobDownload } from 'utils/download';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { slice } from './cryptographic-keys';
@@ -132,6 +133,60 @@ const getAttributesDescriptors: AppEpic = (action$, state, deps) => {
                                 error: extractError(err, 'Failed to get Attribute to create key'),
                             }),
                             appRedirectActions.fetchError({ error: err, message: 'Failed to get Attributes to create key' }),
+                        ),
+                    ),
+                ),
+        ),
+    );
+};
+
+const listImportKeyAttributeDescriptors: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.listImportKeyAttributeDescriptors.match),
+        switchMap((action) =>
+            deps.apiClients.cryptographicKeys
+                .listImportKeyAttributes({
+                    tokenInstanceUuid: action.payload.tokenInstanceUuid,
+                    tokenProfileUuid: action.payload.tokenProfileUuid,
+                    type: action.payload.type,
+                })
+                .pipe(
+                    map((attributeDescriptors) =>
+                        slice.actions.listImportKeyAttributeDescriptorsSuccess({ request: action.payload, attributeDescriptors }),
+                    ),
+
+                    catchError((err) =>
+                        of(
+                            slice.actions.listImportKeyAttributeDescriptorsFailure({
+                                request: action.payload,
+                                error: extractError(err, 'Failed to get Attributes to import a key'),
+                            }),
+                            appRedirectActions.fetchError({ error: err, message: 'Failed to get Attributes to import a key' }),
+                        ),
+                    ),
+                ),
+        ),
+    );
+};
+
+const listExportKeyAttributeDescriptors: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.listExportKeyAttributeDescriptors.match),
+        switchMap((action) =>
+            deps.apiClients.cryptographicKeys
+                .listExportKeyAttributes({ uuid: action.payload.uuid, keyItemUuid: action.payload.keyItemUuid })
+                .pipe(
+                    map((attributeDescriptors) =>
+                        slice.actions.listExportKeyAttributeDescriptorsSuccess({ request: action.payload, attributeDescriptors }),
+                    ),
+
+                    catchError((err) =>
+                        of(
+                            slice.actions.listExportKeyAttributeDescriptorsFailure({
+                                request: action.payload,
+                                error: extractError(err, 'Failed to get Attributes to export a key'),
+                            }),
+                            appRedirectActions.fetchError({ error: err, message: 'Failed to get Attributes to export a key' }),
                         ),
                     ),
                 ),
@@ -395,6 +450,41 @@ const deleteCryptographicKey: AppEpic = (action$, state$, deps) => {
         ),
     );
 };
+
+const exportKey: AppEpic = (action$, _state$, deps) =>
+    action$.pipe(
+        filter(slice.actions.exportKey.match),
+        switchMap((action) =>
+            deps.apiClients.cryptographicKeys
+                .exportKey(
+                    {
+                        uuid: action.payload.uuid,
+                        keyItemUuid: action.payload.keyItemUuid,
+                        keyExportRequestDto: action.payload.keyExportRequestDto,
+                    },
+                    { responseOpts: { response: 'raw' } },
+                )
+                .pipe(
+                    tap((response) =>
+                        triggerBlobDownload(
+                            response.response,
+                            fileNameFromContentDisposition(response.responseHeaders['content-disposition'], action.payload.fallbackName),
+                        ),
+                    ),
+                    mergeMap(() => of(slice.actions.exportKeySuccess(), alertActions.success('Key exported.'))),
+                    catchError((err) =>
+                        withReadableResponse(err).pipe(
+                            mergeMap((readable) =>
+                                of(
+                                    slice.actions.exportKeyFailure({ error: extractError(readable, 'Failed to export the key') }),
+                                    appRedirectActions.fetchError({ error: readable, message: 'Failed to export the key' }),
+                                ),
+                            ),
+                        ),
+                    ),
+                ),
+        ),
+    );
 
 const bulkEnableCryptographicKeys: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
@@ -821,12 +911,15 @@ const epics = [
     listCryptographicKeyPairs,
     getCryptographicKeyDetail,
     getAttributesDescriptors,
+    listImportKeyAttributeDescriptors,
+    listExportKeyAttributeDescriptors,
     createCryptographicKey,
     updateCryptographicKey,
     updateCryptographicKeyItem,
     enableCryptographicKey,
     disableCryptographicKey,
     deleteCryptographicKey,
+    exportKey,
     syncCryptographicKeys,
     bulkEnableCryptographicKeys,
     bulkDisableCryptographicKeys,

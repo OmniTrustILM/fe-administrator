@@ -9,12 +9,14 @@ type Props = {
     label?: string;
     disabled?: boolean;
     dataTestId?: string;
+    /** Id of an element describing the checkbox, such as why it is disabled — announced by screen readers. */
+    ariaDescribedBy?: string;
 };
 
 /** The input's own look, for a caller that needs the checkbox without this component's label. */
 export const CHECKBOX_INPUT_CLASS = 'border-outline rounded-sm not-checked:bg-surface-raised text-brand-solid focus:ring-brand';
 
-function Checkbox({ checked, onChange, id, label, disabled = false, dataTestId }: Readonly<Props>) {
+function Checkbox({ checked, onChange, id, label, disabled = false, dataTestId, ariaDescribedBy }: Readonly<Props>) {
     return (
         <div className="flex items-center h-5" data-testid={dataTestId ? `${dataTestId}-wrapper` : undefined}>
             <input
@@ -25,6 +27,7 @@ function Checkbox({ checked, onChange, id, label, disabled = false, dataTestId }
                 data-testid={dataTestId ?? 'checkbox'}
                 className={CHECKBOX_INPUT_CLASS}
                 disabled={disabled}
+                aria-describedby={ariaDescribedBy}
             />
             <Label htmlFor={id} className={cn('ml-2 !mb-0', { 'sr-only': !label, 'cursor-pointer': !disabled, 'opacity-60': disabled })}>
                 {label || 'Checkbox'}

@@ -94,10 +94,20 @@ export default function CryptographicKeyDetail() {
         getFreshCryptographicKeyDetails();
     }, [getFreshCryptographicKeyDetails, id]);
 
-    useEffect(() => {
+    const loadProfileDetail = useCallback(() => {
         if (!tokenInstanceUuid || !tokenProfileUuid) return;
         dispatch(tokenProfileActions.getTokenProfileDetail({ tokenInstanceUuid, uuid: tokenProfileUuid, skipWidgetLock: true }));
     }, [dispatch, tokenInstanceUuid, tokenProfileUuid]);
+
+    useEffect(() => {
+        loadProfileDetail();
+    }, [loadProfileDetail]);
+
+    // The profile's detail says which items can be exported, so refreshing the key asks for it again too.
+    const refreshKeyDetails = useCallback(() => {
+        getFreshCryptographicKeyDetails();
+        loadProfileDetail();
+    }, [getFreshCryptographicKeyDetails, loadProfileDetail]);
 
     const onEditClick = useCallback(() => {
         if (!cryptographicKey) return;
@@ -432,7 +442,7 @@ export default function CryptographicKeyDetail() {
                                             busy={isBusy}
                                             widgetButtons={buttons}
                                             titleSize="large"
-                                            refreshAction={getFreshCryptographicKeyDetails}
+                                            refreshAction={refreshKeyDetails}
                                             lockSize="large"
                                             className="w-full md:w-1/2"
                                         >

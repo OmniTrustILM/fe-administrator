@@ -4,6 +4,7 @@ import { Provider } from 'react-redux';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import ThemeProvider from 'components/ThemeProvider';
 import CryptographicKeyDetail from 'components/_pages/cryptographic-keys/detail';
+import { answerExport, type ExportAnswer, keyExportFailure, keyPermissionsAuth } from 'components/_pages/test-utils/exportDialogTestStore';
 import { actions as keyActions, slice as keySlice, type State as KeyState } from 'ducks/cryptographic-keys';
 import {
     actions as cryptographicOperationActions,
@@ -35,6 +36,10 @@ function reducer(state: State | undefined, action: UnknownAction): State {
 type Props = Readonly<{
     cryptographicKey: CryptographicKeyDetailResponseModel;
     tokenProfile?: TokenProfileDetailResponseModel;
+    /** Leaves a key export in flight when absent. */
+    exportAnswer?: ExportAnswer;
+    /** Whether the signed-in user holds the key export permission. */
+    canExportKeys?: boolean;
     signatureDescriptors?: AttributeDescriptorModel[];
     failSignatureDescriptors?: boolean;
     onAction?: (action: UnknownAction) => void;
@@ -43,6 +48,8 @@ type Props = Readonly<{
 export default function CryptographicKeyDetailWithStore({
     cryptographicKey,
     tokenProfile,
+    exportAnswer,
+    canExportKeys = true,
     signatureDescriptors,
     failSignatureDescriptors,
     onAction,
@@ -59,6 +66,10 @@ export default function CryptographicKeyDetailWithStore({
             } else if (profileActions.getTokenProfileDetail.match(action) && tokenProfile && !hasResolvedProfileRequest) {
                 hasResolvedProfileRequest = true;
                 api.dispatch(profileActions.getTokenProfileDetailSuccess({ tokenProfile }));
+            } else if (keyActions.listExportKeyAttributeDescriptors.match(action)) {
+                api.dispatch(keyActions.listExportKeyAttributeDescriptorsSuccess({ request: action.payload, attributeDescriptors: [] }));
+            } else if (keyActions.exportKey.match(action)) {
+                answerExport(api, exportAnswer, keyActions.exportKeySuccess(), keyExportFailure);
             } else if (cryptographicOperationActions.listSignatureAttributeDescriptors.match(action) && signatureDescriptors) {
                 api.dispatch(
                     cryptographicOperationActions.listSignatureAttributeDescriptorsSuccess({
@@ -75,8 +86,9 @@ export default function CryptographicKeyDetailWithStore({
         return configureStore({
             reducer,
             middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(apiResponses),
+            preloadedState: { ...reducer(undefined, { type: 'init' }), auth: keyPermissionsAuth({ exportKey: canExportKeys }) },
         });
-    }, [cryptographicKey, tokenProfile, signatureDescriptors, failSignatureDescriptors, onAction]);
+    }, [cryptographicKey, tokenProfile, exportAnswer, canExportKeys, signatureDescriptors, failSignatureDescriptors, onAction]);
 
     return (
         <Provider store={store}>

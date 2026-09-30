@@ -2,7 +2,7 @@ import { Buffer } from 'buffer';
 
 import type { CertificateContentResponseModel, CertificateDetailResponseModel } from 'types/certificate';
 
-function triggerBlobDownload(blob: Blob, fileName: string) {
+export function triggerBlobDownload(blob: Blob, fileName: string) {
     const url = URL.createObjectURL(blob);
     const element = document.createElement('a');
     element.href = url;
@@ -10,7 +10,22 @@ function triggerBlobDownload(blob: Blob, fileName: string) {
     document.body.appendChild(element);
     element.click();
     element.remove();
-    URL.revokeObjectURL(url);
+    // The browser starts the download from the click; revoking the URL in the same task can cancel it.
+    setTimeout(() => URL.revokeObjectURL(url), 0);
+}
+
+export function fileNameFromContentDisposition(header: string | undefined, fallback: string): string {
+    if (!header) return fallback;
+    const extended = /filename\*=(?:UTF-8'')?([^;]+)/i.exec(header);
+    if (extended) {
+        try {
+            return decodeURIComponent(extended[1].trim().replace(/^"|"$/g, ''));
+        } catch {
+            // A malformed percent-escape falls through to a plain filename, then the fallback.
+        }
+    }
+    const plain = /filename="?([^";]+)"?/i.exec(header);
+    return plain ? plain[1].trim() : fallback;
 }
 
 export function downloadFile(content: string, fileName: string, type?: string) {

@@ -26,9 +26,9 @@ export const DISCOVERY_DEFAULT_SORT: ColumnSort = {
  *
  * `DISCOVERY_DURATION` is not in the filter-field catalogue: it is computed from the start and end times rather than
  * stored, so no `FilterField` resolves it. It is display-only — shown here, absent from the picker, not sortable, and
- * dropped on write by `toStorableColumns`. It keeps a natural identifier so that cataloguing it is the only change
- * needed. `DISCOVERY_CONNECTOR_INTERFACE` is display-only for the same reason: it is what tells an operator at a glance
- * which generation a run used, and the list is where runs are compared.
+ * dropped on write by `toStorableColumns`. It keeps a natural identifier, so cataloguing it in Core and removing its
+ * `displayOnly` flag is all a change needs. `DISCOVERY_CONNECTOR_INTERFACE` is display-only for the same reason: it
+ * is what tells an operator at a glance which generation a run used, and the list is where runs are compared.
  */
 export const DISCOVERY_COLUMNS: ColumnDefinition[] = [
     { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'DISCOVERY_NAME', catalogueLabel: 'Name', type: FilterFieldType.String },
@@ -53,6 +53,7 @@ export const DISCOVERY_COLUMNS: ColumnDefinition[] = [
         fieldIdentifier: 'DISCOVERY_CONNECTOR_INTERFACE',
         catalogueLabel: 'Interface',
         align: 'center',
+        displayOnly: true,
     },
     {
         fieldSource: FilterFieldSource.Property,
@@ -61,7 +62,13 @@ export const DISCOVERY_COLUMNS: ColumnDefinition[] = [
         type: FilterFieldType.Date,
         align: 'center',
     },
-    { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'DISCOVERY_DURATION', catalogueLabel: 'Duration', align: 'center' },
+    {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'DISCOVERY_DURATION',
+        catalogueLabel: 'Duration',
+        align: 'center',
+        displayOnly: true,
+    },
     {
         fieldSource: FilterFieldSource.Property,
         fieldIdentifier: 'DISCOVERY_STATUS',

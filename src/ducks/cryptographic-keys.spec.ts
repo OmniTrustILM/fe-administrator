@@ -184,6 +184,56 @@ describe('cryptographic-keys slice', () => {
         expect(next.isFetchingAttributes).toBe(false);
     });
 
+    test('listImportKeyAttributeDescriptors / success / failure track the schema for the request that listed it', () => {
+        const request = { tokenInstanceUuid: 'token-1', tokenProfileUuid: 'profile-1', type: KeyRequestType.KeyPair };
+        const descriptors = [{ uuid: 'attr-1' }] as any;
+        const loaded = { ...initialState, importKeyAttributes: { request, status: 'loaded' as const, descriptors } };
+
+        let next = reducer(loaded, actions.listImportKeyAttributeDescriptors({ ...request, type: KeyRequestType.Secret }));
+        expect(next.importKeyAttributes).toEqual({
+            request: { ...request, type: KeyRequestType.Secret },
+            status: 'loading',
+            descriptors: [],
+        });
+
+        next = reducer(next, actions.listImportKeyAttributeDescriptorsSuccess({ request, attributeDescriptors: descriptors }));
+        expect(next.importKeyAttributes).toEqual({ request, status: 'loaded', descriptors });
+
+        next = reducer(next, actions.listImportKeyAttributeDescriptorsFailure({ request, error: 'err' }));
+        expect(next.importKeyAttributes).toEqual({ request, status: 'failed', descriptors: [], error: 'err' });
+    });
+
+    test('listExportKeyAttributeDescriptors / success / failure track the schema for the request that listed it', () => {
+        const request = { uuid: 'key-1', keyItemUuid: 'item-1' };
+        const descriptors = [{ uuid: 'attr-1' }] as any;
+        const loaded = { ...initialState, exportKeyAttributes: { request, status: 'loaded' as const, descriptors } };
+
+        let next = reducer(loaded, actions.listExportKeyAttributeDescriptors({ ...request, keyItemUuid: 'item-2' }));
+        expect(next.exportKeyAttributes).toEqual({ request: { ...request, keyItemUuid: 'item-2' }, status: 'loading', descriptors: [] });
+
+        next = reducer(next, actions.listExportKeyAttributeDescriptorsSuccess({ request, attributeDescriptors: descriptors }));
+        expect(next.exportKeyAttributes).toEqual({ request, status: 'loaded', descriptors });
+
+        next = reducer(next, actions.listExportKeyAttributeDescriptorsFailure({ request, error: 'err' }));
+        expect(next.exportKeyAttributes).toEqual({ request, status: 'failed', descriptors: [], error: 'err' });
+    });
+
+    test('exportKey / success / failure update isExportingKey, the success flag and the error', () => {
+        let next = reducer({ ...initialState, exportKeySucceeded: true, exportKeyError: 'earlier' }, actions.exportKey({} as any));
+        expect(next.isExportingKey).toBe(true);
+        expect(next.exportKeySucceeded).toBe(false);
+        expect(next.exportKeyError).toBeUndefined();
+
+        next = reducer(next, actions.exportKeySuccess());
+        expect(next.isExportingKey).toBe(false);
+        expect(next.exportKeySucceeded).toBe(true);
+
+        next = reducer(reducer(next, actions.exportKey({} as any)), actions.exportKeyFailure({ error: 'err' }));
+        expect(next.isExportingKey).toBe(false);
+        expect(next.exportKeySucceeded).toBe(false);
+        expect(next.exportKeyError).toBe('err');
+    });
+
     test('updateCryptographicKey / success / failure', () => {
         let next = reducer(initialState, actions.updateCryptographicKey({} as any));
         expect(next.isUpdating).toBe(true);
@@ -770,11 +820,16 @@ describe('cryptographic-keys selectors', () => {
             isDestroying: true,
             isBulkDestroying: true,
             isSyncing: true,
+            isExportingKey: true,
+            exportKeySucceeded: true,
+            exportKeyError: 'refused',
             isUpdatingKeyUsage: true,
             isUpdatingKeyItem: true,
             isBulkUpdatingKeyUsage: true,
             isFetchingAttributes: true,
             keyAttributeDescriptors: [{ uuid: 'attr-1' }],
+            importKeyAttributes: { request: { tokenProfileUuid: 'profile-1' }, status: 'loaded', descriptors: [{ uuid: 'import-attr-1' }] },
+            exportKeyAttributes: { request: { uuid: 'key-1' }, status: 'failed', descriptors: [], error: 'err' },
             isFetchingHistory: true,
             keyHistory: [{ uuid: 'item-1', history: [] }],
         };
@@ -803,6 +858,9 @@ describe('cryptographic-keys selectors', () => {
         expect(selectors.isDestroying(rootState)).toBe(true);
         expect(selectors.isBulkDestroying(rootState)).toBe(true);
         expect(selectors.isSyncing(rootState)).toBe(true);
+        expect(selectors.isExportingKey(rootState)).toBe(true);
+        expect(selectors.exportKeySucceeded(rootState)).toBe(true);
+        expect(selectors.exportKeyError(rootState)).toBe('refused');
 
         expect(selectors.isUpdatingKeyUsage(rootState)).toBe(true);
         expect(selectors.isUpdatingKeyItem(rootState)).toBe(true);
@@ -810,6 +868,8 @@ describe('cryptographic-keys selectors', () => {
 
         expect(selectors.isFetchingAttributes(rootState)).toBe(true);
         expect(selectors.keyAttributeDescriptors(rootState)).toHaveLength(1);
+        expect(selectors.importKeyAttributes(rootState)?.descriptors).toHaveLength(1);
+        expect(selectors.exportKeyAttributes(rootState)?.status).toBe('failed');
 
         expect(selectors.isFetchingHistory(rootState)).toBe(true);
         expect(selectors.keyHistory(rootState)).toHaveLength(1);

@@ -43,6 +43,8 @@ export interface ResourceViews {
      * are superseded rather than queued — the epic runs them under `switchMap` — so one is enough.
      */
     readEpoch?: number;
+    /** Whether the last read was answered but set aside because a write overlapped it, so `views` is not its answer. */
+    isStale?: boolean;
 }
 
 export type State = {
@@ -103,6 +105,23 @@ function rollBack(state: State, resource: Resource, error: string | undefined): 
     state.error = error;
 }
 
+/**
+ * Ends the read in flight and says whether a write started or settled while it was out.
+ *
+ * Checking `isMutating` alone is not enough: a write that started after the read and settled before it
+ * would let the older list land on top of a confirmed change, and the next full-row edit would then send
+ * those stale rows back to Core. A read that overlapped a write the other way round would drop the
+ * optimistic row instead, and leave `rollback` describing a list the read has since replaced.
+ *
+ * No recorded epoch means the request this answers is not one this slice saw — the state was reset under
+ * it, or the views were seeded directly — and there is nothing to date it against.
+ */
+function settleRead(entry: ResourceViews): boolean {
+    const issuedUnder = entry.readEpoch;
+    entry.readEpoch = undefined;
+    return entry.isMutating || (issuedUnder !== undefined && issuedUnder !== entry.mutationEpoch);
+}
+
 export const slice = createSlice({
     name: 'listViews',
 
@@ -116,6 +135,7 @@ export const slice = createSlice({
         listViews: (state, action: PayloadAction<{ resource: Resource }>) => {
             const entry = forResource(state, action.payload.resource);
             entry.isFetching = true;
+            entry.isStale = false;
             entry.readEpoch = entry.mutationEpoch;
             state.error = undefined;
         },
@@ -125,20 +145,10 @@ export const slice = createSlice({
             entry.isFetching = false;
             entry.hasLoaded = true;
 
-            const issuedUnder = entry.readEpoch;
-            entry.readEpoch = undefined;
-
-            // A read is committed only if no write started or settled while it was in flight. Rejecting
-            // it merely while `isMutating` holds is not enough: a write that started after the read and
-            // settled before it would let the older list land on top of a confirmed change, and the
-            // next full-row edit would then send those stale rows back to Core. A read that overlapped
-            // a write the other way round would drop the optimistic row instead, and leave `rollback`
-            // describing a list the read has since replaced.
-            //
-            // No recorded epoch means the request this answers is not one this slice saw — the state
-            // was reset under it, or the views were seeded directly — and there is nothing to date it
-            // against.
-            if (entry.isMutating || (issuedUnder !== undefined && issuedUnder !== entry.mutationEpoch)) return;
+            if (settleRead(entry)) {
+                entry.isStale = true;
+                return;
+            }
 
             entry.views = action.payload.views;
         },
@@ -149,6 +159,11 @@ export const slice = createSlice({
             // Loaded in the sense the strip needs: the read has settled, so Standard opens rather than
             // the strip waiting forever for a list that is not coming.
             entry.hasLoaded = true;
+            // A list held from an earlier visit is not what Core holds now, and a full-row save built on it would
+            // overwrite any newer change. Rows a write overlapping the read has put there, whether still in flight
+            // or confirmed since, are kept instead, and the list is read again once that write settles.
+            if (settleRead(entry)) entry.isStale = true;
+            else entry.views = [];
             state.error = action.payload.error;
         },
 
@@ -234,6 +249,7 @@ const views = (resource: Resource) => createSelector(resourceViews(resource), (e
 const isFetching = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.isFetching);
 const hasLoaded = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.hasLoaded);
 const isMutating = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.isMutating);
+const isStale = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.isStale ?? false);
 const createdUuid = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.createdUuid);
 const error = createSelector(state, (state) => state?.error);
 
@@ -244,6 +260,7 @@ export const selectors = {
     isFetching,
     hasLoaded,
     isMutating,
+    isStale,
     createdUuid,
     error,
 };

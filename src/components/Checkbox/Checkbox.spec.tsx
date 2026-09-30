@@ -95,6 +95,17 @@ test.describe('Checkbox', () => {
         await expect(label).toHaveAttribute('for', 'test-checkbox');
     });
 
+    test('should be described by the element it is given', async ({ mount }) => {
+        const component = await mount(
+            <div>
+                <Checkbox checked={false} onChange={() => {}} id="described" label="Described" ariaDescribedBy="described-reason" />
+                <p id="described-reason">Why it cannot be chosen</p>
+            </div>,
+        );
+
+        await expect(component.getByRole('checkbox', { name: 'Described' })).toHaveAccessibleDescription('Why it cannot be chosen');
+    });
+
     // @tailwindcss/forms paints the checked box with `background-color: currentColor` from the
     // base layer, and any unconditional bg-* utility outranks it because utilities is the later
     // cascade layer. The checkmark is a white SVG, so clobbering that fill with a light surface

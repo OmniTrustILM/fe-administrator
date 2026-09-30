@@ -90,6 +90,7 @@ export enum CertificateEventHistoryDtoEventEnum {
     UpdateLocation = 'Update Location',
     ArchiveCertificate = 'Archive certificate',
     UnarchiveCertificate = 'Unarchive certificate',
+    DownloadKeystore = 'Download Keystore',
 }
 /**
  * @export

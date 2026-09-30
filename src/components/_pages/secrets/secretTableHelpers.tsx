@@ -21,7 +21,8 @@ export interface BuildSecretCellsOpts {
  * The platform default column set for the secrets inventory.
  *
  * `SECRET_VERSION` is not in the filter-field catalogue, so it is display-only — shown here, not sortable, and dropped
- * on write by `toStorableColumns`. It keeps a natural identifier so that cataloguing it is the only change needed.
+ * on write by `toStorableColumns`. It keeps a natural identifier, so cataloguing it in Core and removing its
+ * `displayOnly` flag is all a change needs.
  */
 export const SECRET_COLUMNS: ColumnDefinition[] = [
     { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'SECRET_NAME', catalogueLabel: 'Name', type: FilterFieldType.String },
@@ -48,7 +49,13 @@ export const SECRET_COLUMNS: ColumnDefinition[] = [
         label: 'Vault Profile',
         type: FilterFieldType.List,
     },
-    { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'SECRET_VERSION', catalogueLabel: 'Version', align: 'center' },
+    {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'SECRET_VERSION',
+        catalogueLabel: 'Version',
+        align: 'center',
+        displayOnly: true,
+    },
     { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'SECRET_OWNER', catalogueLabel: 'Owner', type: FilterFieldType.List },
     { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'SECRET_GROUP_NAME', catalogueLabel: 'Groups', type: FilterFieldType.List },
     {

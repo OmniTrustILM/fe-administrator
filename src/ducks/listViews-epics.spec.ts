@@ -51,10 +51,15 @@ const [LIST, MUTATE] = [0, 1];
 
 type EpicUnderTest = (action$: unknown, state$: unknown, deps: unknown) => Observable<{ type: string; payload?: never }>;
 
-async function run(index: number, action: unknown, deps: unknown, expected: number) {
+async function run(index: number, action: unknown, deps: unknown, expected: number, state: unknown = {}) {
     const epic = epics[index] as unknown as EpicUnderTest;
-    return firstValueFrom(epic(of(action), of({}), deps).pipe(take(expected), toArray()));
+    return firstValueFrom(epic(of(action), Object.assign(of(state), { value: state }), deps).pipe(take(expected), toArray()));
 }
+
+/** The store as a write sees it: the optimistic row applied, the row it replaced kept for the rollback. */
+const duringWrite = (views: ListViewModel[], rollback: ListViewModel[]) => ({
+    listViews: { byResource: { [Resource.Certificates]: { views, rollback } } },
+});
 
 /** Both reads dispatched back to back, which is what a page mounting two strips at once does. */
 async function readBoth(actionsToDispatch: unknown[], deps: unknown, expected = 2) {
@@ -142,7 +147,7 @@ describe('createView', () => {
 
         expect(failure.type).toBe(actions.createViewFailure.type);
         expect(alert.type).toBe(alertActions.error.type);
-        expect(alert.payload).toContain('Failed to create the view');
+        expect(alert.payload).toContain('Failed to create the view "Expiry watch"');
         expect(alert.payload).toContain('Name already used');
     });
 });
@@ -177,6 +182,19 @@ describe('updateView', () => {
         expect(failure.type).toBe(actions.updateViewFailure.type);
         expect(alert.payload).toContain('Failed to save the view');
     });
+
+    test('a failed rename names the view by the name it still has', async () => {
+        const deps = createDeps({ editView: () => throwError(() => ajaxError(422, 'Resource certificates has no field retired.')) });
+        const [, alert] = await run(
+            MUTATE,
+            actions.updateView({ resource: Resource.Certificates, uuid: 'a', view: update }),
+            deps,
+            2,
+            duringWrite([{ ...stored, name: 'Renamed' }], [stored]),
+        );
+
+        expect(alert.payload).toBe('Failed to save the view "Expiry watch" (422): Resource certificates has no field retired.');
+    });
 });
 
 describe('deleteView', () => {
@@ -201,6 +219,19 @@ describe('deleteView', () => {
 
         expect(failure.type).toBe(actions.deleteViewFailure.type);
         expect(alert.payload).toContain('Failed to delete the view');
+    });
+
+    test('a failure names the view it could not delete', async () => {
+        const deps = createDeps({ deleteView: () => throwError(() => ajaxError(404, 'Gone')) });
+        const [, alert] = await run(
+            MUTATE,
+            actions.deleteView({ resource: Resource.Certificates, uuid: 'a' }),
+            deps,
+            2,
+            duringWrite([], [stored]),
+        );
+
+        expect(alert.payload).toContain('Failed to delete the view "Expiry watch"');
     });
 });
 

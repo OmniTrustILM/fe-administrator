@@ -99,6 +99,7 @@ export const KEY_COLUMNS: ColumnDefinition[] = [
         catalogueLabel: 'Associations',
         type: FilterFieldType.Number,
         align: 'center',
+        displayOnly: true,
     },
 ];
 

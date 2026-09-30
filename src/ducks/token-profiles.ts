@@ -2,7 +2,7 @@ import { resetSliceState } from 'ducks/reducerUtils';
 import type { AppState } from 'ducks';
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { BulkActionModel } from 'types/connectors';
-import { KeyUsage } from 'types/openapi';
+import { KeyUsage, type TokenProfileDto } from 'types/openapi';
 import type {
     TokenProfileAddRequestModel,
     TokenProfileDetailResponseModel,
@@ -20,12 +20,20 @@ export type State = {
 
     tokenProfile?: TokenProfileDetailResponseModel;
     tokenProfiles: TokenProfileResponseModel[];
+    importableTokenProfiles: TokenProfileDto[];
+    /** Whether the last listing of importable profiles succeeded, which tells an empty answer from a failed request. */
+    importableTokenProfilesListed: boolean;
+    /** Why the last listing of importable profiles failed, until the next one. */
+    importableTokenProfilesError?: string;
     supportedTokenProfileKeyUsages: KeyUsage[];
     supportedTokenProfileKeyUsagesTokenInstanceUuid?: string;
 
     isFetchingList: boolean;
+    isFetchingImportable: boolean;
     isFetchingDetail: boolean;
     detailFetchSucceeded: boolean;
+    /** Why the last detail request failed, until the next one. */
+    detailError?: string;
     isFetchingAttributes: boolean;
     isFetchingSupportedTokenProfileKeyUsages: boolean;
     isUpdatingKeyUsage: boolean;
@@ -50,9 +58,12 @@ export const initialState: State = {
     bulkDeleteErrorMessages: [],
 
     tokenProfiles: [],
+    importableTokenProfiles: [],
+    importableTokenProfilesListed: false,
     supportedTokenProfileKeyUsages: [],
 
     isFetchingList: false,
+    isFetchingImportable: false,
     isFetchingDetail: false,
     detailFetchSucceeded: false,
     isFetchingAttributes: false,
@@ -104,12 +115,33 @@ export const slice = createSlice({
             state.isFetchingList = false;
         },
 
+        listImportableTokenProfiles: (state, action: PayloadAction<{ importable: string[] }>) => {
+            state.importableTokenProfiles = [];
+            state.importableTokenProfilesListed = false;
+            state.importableTokenProfilesError = undefined;
+            state.isFetchingImportable = true;
+        },
+
+        listImportableTokenProfilesSuccess: (state, action: PayloadAction<{ tokenProfiles: TokenProfileDto[] }>) => {
+            state.importableTokenProfiles = action.payload.tokenProfiles;
+            state.importableTokenProfilesListed = true;
+            state.importableTokenProfilesError = undefined;
+            state.isFetchingImportable = false;
+        },
+
+        listImportableTokenProfilesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.importableTokenProfilesListed = false;
+            state.importableTokenProfilesError = action.payload.error;
+            state.isFetchingImportable = false;
+        },
+
         getTokenProfileDetail: (state, action: PayloadAction<{ tokenInstanceUuid: string; uuid: string; skipWidgetLock?: boolean }>) => {
             if (state.tokenProfile?.uuid !== action.payload.uuid) {
                 state.tokenProfile = undefined;
             }
             state.isFetchingDetail = true;
             state.detailFetchSucceeded = false;
+            state.detailError = undefined;
         },
 
         getTokenProfileDetailSuccess: (state, action: PayloadAction<{ tokenProfile: TokenProfileDetailResponseModel }>) => {
@@ -121,6 +153,7 @@ export const slice = createSlice({
         getTokenProfileDetailFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isFetchingDetail = false;
             state.detailFetchSucceeded = false;
+            state.detailError = action.payload.error;
         },
 
         clearSupportedTokenProfileKeyUsages: (state, action: PayloadAction<void>) => {
@@ -344,7 +377,16 @@ const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 const checkedRows = createSelector(state, (state: State) => state.checkedRows);
 
 const tokenProfile = createSelector(state, (state: State) => state.tokenProfile);
+/** The token profile detail, only while it is the named profile's, fetched successfully and not being fetched again. */
+const loadedTokenProfile = (uuid: string | undefined) =>
+    createSelector(state, (state: State) =>
+        uuid && state.tokenProfile?.uuid === uuid && !state.isFetchingDetail && state.detailFetchSucceeded ? state.tokenProfile : undefined,
+    );
 const tokenProfiles = createSelector(state, (state: State) => state.tokenProfiles);
+const importableTokenProfiles = createSelector(state, (state: State) => state.importableTokenProfiles);
+const isFetchingImportable = createSelector(state, (state: State) => state.isFetchingImportable);
+const isImportableTokenProfilesListed = createSelector(state, (state: State) => state.importableTokenProfilesListed);
+const importableTokenProfilesError = createSelector(state, (state: State) => state.importableTokenProfilesError);
 const supportedTokenProfileKeyUsages = createSelector(state, (state: State) => state.supportedTokenProfileKeyUsages);
 const supportedTokenProfileKeyUsagesTokenInstanceUuid = createSelector(
     state,
@@ -354,6 +396,7 @@ const supportedTokenProfileKeyUsagesTokenInstanceUuid = createSelector(
 const isFetchingList = createSelector(state, (state: State) => state.isFetchingList);
 const isFetchingDetail = createSelector(state, (state: State) => state.isFetchingDetail);
 const detailFetchSucceeded = createSelector(state, (state: State) => state.detailFetchSucceeded);
+const detailError = createSelector(state, (state: State) => state.detailError);
 const isFetchingAttributes = createSelector(state, (state: State) => state.isFetchingAttributes);
 const isFetchingSupportedTokenProfileKeyUsages = createSelector(state, (state: State) => state.isFetchingSupportedTokenProfileKeyUsages);
 const isCreating = createSelector(state, (state: State) => state.isCreating);
@@ -375,13 +418,19 @@ export const selectors = {
     checkedRows,
 
     tokenProfile,
+    loadedTokenProfile,
     tokenProfiles,
+    importableTokenProfiles,
+    isFetchingImportable,
+    isImportableTokenProfilesListed,
+    importableTokenProfilesError,
     supportedTokenProfileKeyUsages,
     supportedTokenProfileKeyUsagesTokenInstanceUuid,
 
     isFetchingList,
     isFetchingDetail,
     detailFetchSucceeded,
+    detailError,
     isFetchingAttributes,
     isFetchingSupportedTokenProfileKeyUsages,
     isCreating,

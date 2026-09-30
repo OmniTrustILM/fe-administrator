@@ -48,6 +48,8 @@ export enum Operation {
     Rekey = 'rekey',
     Revoke = 'revoke',
     Export = 'export',
+    Import = 'import',
+    Inspect = 'inspect',
     GetStatus = 'getStatus',
     GetContent = 'getContent',
     GetChain = 'getChain',

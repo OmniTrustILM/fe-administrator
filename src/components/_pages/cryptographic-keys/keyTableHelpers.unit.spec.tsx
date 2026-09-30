@@ -40,7 +40,10 @@ describe('KEY_COLUMNS saved as a view', () => {
     });
 
     it('drops that column on write, so saving the platform default set is accepted', () => {
-        const request = toCreateRequest('Standard (copy)', Resource.Keys, toStandardSlice(KEY_COLUMNS), keysCatalogue);
+        const request = toCreateRequest('Standard (copy)', Resource.Keys, toStandardSlice(KEY_COLUMNS), {
+            catalogue: keysCatalogue,
+            standardColumns: KEY_COLUMNS,
+        });
 
         expect(request.columns.map((column) => column.fieldIdentifier)).toEqual([
             'CKI_ENABLED',

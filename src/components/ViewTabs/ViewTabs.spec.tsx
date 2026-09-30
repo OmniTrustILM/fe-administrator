@@ -11,6 +11,7 @@ import {
     SortDirection,
 } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
+import type { ColumnSort } from 'utils/tableColumns';
 import { expect, test } from '../../../playwright/ct-test';
 import ViewTabsWithStore from './ViewTabsWithStore';
 
@@ -110,6 +111,8 @@ type MountOptions = {
     standardColumns?: ColumnDefinition[];
     isMutating?: boolean;
     hasLoaded?: boolean;
+    isRefreshing?: boolean;
+    refreshedViews?: ListViewModel[];
     withheldCatalogue?: boolean;
     isCatalogueLoaded?: boolean;
     renderableProperties?: string[];
@@ -124,6 +127,8 @@ const strip = ({
     standardColumns: standard = standardColumns,
     isMutating,
     hasLoaded,
+    isRefreshing,
+    refreshedViews,
     withheldCatalogue,
     isCatalogueLoaded,
     renderableProperties,
@@ -138,6 +143,8 @@ const strip = ({
         standardColumns={standard}
         isMutating={isMutating}
         hasLoaded={hasLoaded}
+        isRefreshing={isRefreshing}
+        refreshedViews={refreshedViews}
         withheldCatalogue={withheldCatalogue}
         isCatalogueLoaded={isCatalogueLoaded}
         renderableProperties={renderableProperties}
@@ -162,6 +169,17 @@ const appliedSlice = async (page: Page): Promise<ViewSlice> =>
 
 const openTabMenu = async (page: Page, name: string) => {
     await page.getByRole('button', { name: `Actions for ${name}` }).click();
+};
+
+/** Expiry watch, then enough views to push the last two past the strip's cap. */
+const overflowing = (overrides: Record<string, Partial<ListViewModel>> = {}): ListViewModel[] => [
+    expiryWatch(overrides['view-1']),
+    ...[2, 3, 4, 5, 6].map((index) => audit({ uuid: `view-${index}`, name: `View ${index}`, ...overrides[`view-${index}`] })),
+];
+
+const openOverflowActions = async (page: Page, name: string) => {
+    await page.getByRole('button', { name: 'More saved views' }).click();
+    await page.getByRole('menuitem', { name: `Actions for ${name}` }).click();
 };
 
 test.describe('ViewTabs', () => {
@@ -317,12 +335,111 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-strip').getByRole('tab')).toHaveText(['Standard', 'View 1', 'View 2', 'View 3', 'View 4']);
 
         await page.getByRole('button', { name: 'More saved views' }).click();
-        await page.getByRole('menuitem', { name: 'View 6' }).click();
+        await page.getByRole('menuitem', { name: 'View 6', exact: true }).click();
 
         // The selected tab is pulled onto the strip, displacing the last visible one — a tab picked
         // from the overflow has to be the one the strip shows as active.
         await expect(page.getByTestId('view-tabs-tab-view-6')).toHaveAttribute('aria-selected', 'true');
         await expect(page.getByTestId('view-tabs-tab-view-4')).toHaveCount(0);
+    });
+
+    test('counts every saved view in the overflow menu', async ({ mount, page }) => {
+        await mount(strip({ views: overflowing() }));
+
+        await page.getByRole('button', { name: 'More saved views' }).click();
+
+        await expect(page.getByTestId('view-tabs-overflow-count')).toHaveText('6 saved views');
+    });
+
+    test('deletes a view from the overflow without applying it', async ({ mount, page }) => {
+        await mount(strip({ views: overflowing() }));
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await openOverflowActions(page, 'View 6');
+        await page.getByRole('menuitem', { name: 'Delete view' }).click();
+        await expect(page.getByTestId('view-tabs-delete')).toContainText('"View 6"');
+        await page.getByTestId('view-tabs-delete').getByRole('button', { name: 'Delete' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/deleteView');
+        expect((await lastDispatched(page, 'listViews/deleteView'))?.payload).toMatchObject({ uuid: 'view-6' });
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).filters).toEqual([stateFilter]);
+    });
+
+    test('renames a view from the overflow without applying it', async ({ mount, page }) => {
+        await mount(strip({ views: overflowing() }));
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await openOverflowActions(page, 'View 6');
+        await page.getByRole('menuitem', { name: 'Rename…' }).click();
+        await expect(page.getByTestId('view-tabs-rename-input')).toHaveValue('View 6');
+        await page.getByTestId('view-tabs-rename-input').click();
+        await page.getByTestId('view-tabs-rename-input').fill('Retired');
+        await page.getByTestId('view-tabs-rename').getByRole('button', { name: 'Rename' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        expect((await lastDispatched(page, 'listViews/updateView'))?.payload).toMatchObject({
+            uuid: 'view-6',
+            view: { name: 'Retired', columns: [stored('environment', FilterFieldSource.Custom)] },
+        });
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).filters).toEqual([stateFilter]);
+    });
+
+    test('pins a view from the overflow', async ({ mount, page }) => {
+        await mount(strip({ views: overflowing() }));
+
+        await openOverflowActions(page, 'View 6');
+        await page.getByRole('menuitem', { name: 'Open this view by default' }).click();
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        expect((await lastDispatched(page, 'listViews/updateView'))?.payload).toMatchObject({
+            uuid: 'view-6',
+            view: { defaultView: true },
+        });
+    });
+
+    test('offers to unpin a pinned view held in the overflow', async ({ mount, page }) => {
+        await mount(strip({ views: overflowing({ 'view-6': { defaultView: true } }) }));
+        await page.getByTestId('view-tabs-tab-standard').click();
+
+        await openOverflowActions(page, 'View 6');
+        await page.getByRole('menuitem', { name: 'Stop opening this view by default' }).click();
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        expect((await lastDispatched(page, 'listViews/updateView'))?.payload).toMatchObject({
+            uuid: 'view-6',
+            view: { defaultView: false },
+        });
+    });
+
+    test('keeps the active view and its unsaved changes while the overflow actions are walked with the arrow keys', async ({
+        mount,
+        page,
+    }) => {
+        const driftSort = { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' as const };
+        await mount(strip({ views: overflowing(), driftSort }));
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await page.getByTestId('drift-sort').click();
+
+        await page.getByRole('button', { name: 'More saved views' }).click();
+        const actions = page.getByRole('menuitem', { name: 'Actions for View 6' });
+        await actions.focus();
+        await page.keyboard.press('ArrowRight');
+        await expect(page.getByRole('menuitem', { name: 'Rename…' })).toBeFocused();
+        await page.keyboard.press('ArrowLeft');
+        await expect(actions).toBeFocused();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
+        expect((await appliedSlice(page)).sort).toEqual(driftSort);
+    });
+
+    test('holds the overflow actions while a mutation is in flight, but not the views themselves', async ({ mount, page }) => {
+        await mount(strip({ views: overflowing(), isMutating: true }));
+
+        await page.getByRole('button', { name: 'More saved views' }).click();
+
+        await expect(page.getByRole('menuitem', { name: 'Actions for View 6' })).toHaveAttribute('aria-disabled', 'true');
+        await expect(page.getByRole('menuitem', { name: 'View 6', exact: true })).not.toHaveAttribute('aria-disabled', 'true');
     });
 
     test('marks the tab and offers to save once the ordering drifts from the view', async ({ mount, page }) => {
@@ -835,7 +952,9 @@ test.describe('ViewTabs', () => {
     });
 
     test('drops a display-only column the catalogue does not publish when duplicating', async ({ mount, page }) => {
-        await mount(strip({ views: [], standardColumns: [commonName, column('CK_ASSOCIATIONS', 'Associations')] }));
+        await mount(
+            strip({ views: [], standardColumns: [commonName, { ...column('CK_ASSOCIATIONS', 'Associations'), displayOnly: true }] }),
+        );
 
         await openTabMenu(page, 'Standard');
         await page.getByRole('menuitem', { name: 'Duplicate' }).click();
@@ -846,10 +965,337 @@ test.describe('ViewTabs', () => {
             view: { columns: [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }] },
         });
         expect(JSON.stringify(action)).not.toContain('CK_ASSOCIATIONS');
+
+        await page.getByTestId('simulate-create-success').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-created')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-tab-view-created-dirty')).toHaveCount(0);
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+    });
+
+    for (const { outcome, settle, tab, columns } of [
+        { outcome: 'is created', settle: 'simulate-create-success', tab: 'view-tabs-tab-view-created', columns: ['COMMON_NAME'] },
+        { outcome: 'fails', settle: 'simulate-create-failure', tab: 'view-tabs-tab-standard', columns: ['COMMON_NAME', 'CK_ASSOCIATIONS'] },
+    ]) {
+        test(`keeps an ordering chosen while a trimmed duplicate is out when it ${outcome}`, async ({ mount, page }) => {
+            const sortByName: ColumnSort = { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' };
+            await mount(
+                strip({
+                    views: [],
+                    standardColumns: [commonName, { ...column('CK_ASSOCIATIONS', 'Associations'), displayOnly: true }],
+                    driftSort: sortByName,
+                }),
+            );
+
+            await openTabMenu(page, 'Standard');
+            await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+            await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
+
+            await page.getByTestId('drift-sort').click();
+            await page.getByTestId(settle).click();
+
+            await expect(page.getByTestId(tab)).toHaveAttribute('aria-selected', 'true');
+            expect((await appliedSlice(page)).sort).toEqual(sortByName);
+            expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(columns);
+        });
+    }
+
+    test('puts back the columns a trimmed duplicate left out when the create fails', async ({ mount, page }) => {
+        await mount(
+            strip({ views: [], standardColumns: [commonName, { ...column('CK_ASSOCIATIONS', 'Associations'), displayOnly: true }] }),
+        );
+
+        await openTabMenu(page, 'Standard');
+        await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
+
+        await page.getByTestId('simulate-create-failure').click();
+
+        await expect(page.getByTestId('view-tabs-tab-standard')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'CK_ASSOCIATIONS']);
+    });
+
+    test('puts a left-out filter back beside one set while a trimmed duplicate is out when the create fails', async ({ mount, page }) => {
+        const deadFilter: SearchFilterModel = {
+            fieldSource: FilterFieldSource.Custom,
+            fieldIdentifier: 'retired',
+            condition: FilterConditionOperator.Equals,
+            value: 'x',
+        };
+        const nameFilter: SearchFilterModel = {
+            fieldSource: FilterFieldSource.Property,
+            fieldIdentifier: 'COMMON_NAME',
+            condition: FilterConditionOperator.Contains,
+            value: 'example',
+        };
+        await mount(strip({ views: [expiryWatch({ defaultView: true, filters: [stateFilter, deadFilter] })], driftFilter: nameFilter }));
+
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
+        expect((await appliedSlice(page)).filters).toEqual([stateFilter]);
+
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('simulate-create-failure').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).filters).toEqual([nameFilter, deadFilter]);
+    });
+
+    test('stores a platform column the catalogue leaves out, so the new view opens unchanged', async ({ mount, page }) => {
+        const certificateType = column('CERTIFICATE_TYPE', 'Certificate Type');
+        await mount(strip({ views: [], standardColumns: [commonName, certificateType] }));
+
+        await page.getByTestId('view-tabs-new').click();
+        await page.getByTestId('view-tabs-create').getByRole('button', { name: 'Create view' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
+        const action = await lastDispatched(page, 'listViews/createView');
+        expect(action?.payload).toMatchObject({ view: { columns: [stored('COMMON_NAME'), stored('CERTIFICATE_TYPE')] } });
+
+        await page.getByTestId('simulate-create-success').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-created')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-tab-view-created-dirty')).toHaveCount(0);
+    });
+
+    test('saves a platform column the catalogue leaves out into the view', async ({ mount, page }) => {
+        const certificateType = column('CERTIFICATE_TYPE', 'Certificate Type');
+        await mount(
+            strip({
+                views: [expiryWatch({ defaultView: true, columns: [stored('CERTIFICATE_TYPE')] })],
+                standardColumns: [commonName, certificateType],
+                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
+            }),
+        );
+
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect(action?.payload).toMatchObject({ view: { columns: [stored('CERTIFICATE_TYPE')] } });
+    });
+
+    test('keeps a column whose field is gone, in place, when the view is saved', async ({ mount, page }) => {
+        const dormant = expiryWatch({
+            defaultView: true,
+            columns: [stored('retired', FilterFieldSource.Custom), stored('COMMON_NAME')],
+        });
+        await mount(
+            strip({
+                views: [dormant],
+                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
+            }),
+        );
+
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect((action?.payload?.view as { columns: unknown } | undefined)?.columns).toEqual([
+            stored('retired', FilterFieldSource.Custom),
+            stored('COMMON_NAME'),
+        ]);
+    });
+
+    test('carries a column whose field is gone through a rename', async ({ mount, page }) => {
+        const dormant = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)] });
+        await mount(strip({ views: [dormant] }));
+
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Rename…' }).click();
+        await page.getByTestId('view-tabs-rename-input').click();
+        await page.getByTestId('view-tabs-rename-input').fill('Expiring soon');
+        await page.getByTestId('view-tabs-rename').getByRole('button', { name: 'Rename' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect((action?.payload?.view as { columns: unknown } | undefined)?.columns).toEqual([
+            stored('COMMON_NAME'),
+            stored('retired', FilterFieldSource.Custom),
+        ]);
+    });
+
+    test('opens a view that fell back to a platform set with a display-only column unchanged', async ({ mount, page }) => {
+        const dormant = expiryWatch({ defaultView: true, columns: [stored('retired', FilterFieldSource.Custom)] });
+        await mount(
+            strip({ views: [dormant], standardColumns: [commonName, { ...column('CK_ASSOCIATIONS', 'Associations'), displayOnly: true }] }),
+        );
+
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('showing the standard columns');
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+    });
+
+    test('offers Revert on Standard once a display-only column it ships is taken off', async ({ mount, page }) => {
+        await mount(
+            strip({ views: [], standardColumns: [commonName, { ...column('CK_ASSOCIATIONS', 'Associations'), displayOnly: true }] }),
+        );
+
+        await expect(page.getByTestId('view-tabs-tab-standard-dirty')).toHaveCount(0);
+        await page.getByTestId('drift-drop-last-column').click();
+
+        await expect(page.getByTestId('view-tabs-tab-standard-dirty')).toBeVisible();
+    });
+
+    test('leaves a filter whose field is gone out of a duplicate', async ({ mount, page }) => {
+        const deadFilter: SearchFilterModel = {
+            fieldSource: FilterFieldSource.Custom,
+            fieldIdentifier: 'retired',
+            condition: FilterConditionOperator.Equals,
+            value: 'x',
+        };
+        await mount(strip({ views: [expiryWatch({ defaultView: true, filters: [stateFilter, deadFilter] })] }));
+
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
+        const action = await lastDispatched(page, 'listViews/createView');
+        expect(JSON.stringify(action)).not.toContain('retired');
+        expect(action?.payload).toMatchObject({ view: { filters: [stateFilter] } });
+
+        await page.getByTestId('simulate-create-success').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-created')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-tab-view-created-dirty')).toHaveCount(0);
+        expect((await appliedSlice(page)).filters).toEqual([stateFilter]);
+    });
+
+    test('hides the notice about an unavailable column when it is dismissed', async ({ mount, page }) => {
+        const dormant = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)] });
+        await mount(strip({ views: [dormant] }));
+
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('retired cannot be shown');
+
+        await page.getByTestId('view-tabs-notice-dismiss').click();
+
+        await expect(page.getByTestId('view-tabs-notice')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+    });
+
+    test('keeps a notice dismissed on one view while the notice of another is dismissed too', async ({ mount, page }) => {
+        const first = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)] });
+        const second = audit({ columns: [stored('COMMON_NAME'), stored('withdrawn', FilterFieldSource.Custom)] });
+        await mount(strip({ views: [first, second] }));
+
+        await page.getByTestId('view-tabs-notice-dismiss').click();
+        await page.getByTestId('view-tabs-tab-view-2').click();
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('withdrawn cannot be shown');
+        await page.getByTestId('view-tabs-notice-dismiss').click();
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-notice')).toHaveCount(0);
+    });
+
+    test('leaves a filter whose field is gone out of a save when the view did not already hold it', async ({ mount, page }) => {
+        const deadFilter: SearchFilterModel = {
+            fieldSource: FilterFieldSource.Custom,
+            fieldIdentifier: 'retired',
+            condition: FilterConditionOperator.Equals,
+            value: 'x',
+        };
+        await mount(strip({ views: [expiryWatch({ defaultView: true })], driftFilter: deadFilter }));
+
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect((action?.payload?.view as { filters: unknown } | undefined)?.filters).toEqual([]);
+    });
+
+    for (const { title, deadFilter, saved } of [
+        {
+            title: 'keeps a presence filter whose field is gone through a save when the view already held it',
+            deadFilter: { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', condition: FilterConditionOperator.NotEmpty },
+            saved: 'both',
+        },
+        {
+            title: 'leaves the value of a filter whose field is gone out of a save, since it may be secret content',
+            deadFilter: {
+                fieldSource: FilterFieldSource.Custom,
+                fieldIdentifier: 'retired',
+                condition: FilterConditionOperator.Equals,
+                value: 'x',
+            },
+            saved: 'state only',
+        },
+    ] satisfies { title: string; deadFilter: SearchFilterModel; saved: 'both' | 'state only' }[]) {
+        test(title, async ({ mount, page }) => {
+            await mount(
+                strip({
+                    views: [expiryWatch({ defaultView: true, filters: [stateFilter, deadFilter] })],
+                    driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
+                }),
+            );
+
+            await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+            await page.getByTestId('drift-sort').click();
+            await page.getByTestId('view-tabs-summary-save').click();
+
+            await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+            const action = await lastDispatched(page, 'listViews/updateView');
+            expect((action?.payload?.view as { filters: unknown } | undefined)?.filters).toEqual(
+                saved === 'both' ? [stateFilter, deadFilter] : [stateFilter],
+            );
+        });
+    }
+
+    test('opens on the list its own read returns, not on the one an earlier visit left', async ({ mount, page }) => {
+        const earlier = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME')] });
+        const current = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME'), stored('SERIAL_NUMBER')] });
+        await mount(strip({ views: [earlier], isRefreshing: true, refreshedViews: [current] }));
+
+        await expect(page.getByTestId('view-tabs')).toHaveCount(0);
+
+        await page.getByTestId('simulate-list-success').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'SERIAL_NUMBER']);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+    });
+
+    test('reads the list again when its answer is set aside, and opens on the one that lands', async ({ mount, page }) => {
+        const earlier = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME')] });
+        const current = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME'), stored('SERIAL_NUMBER')] });
+        await mount(strip({ views: [earlier], isRefreshing: true, refreshedViews: [current] }));
+
+        await page.getByTestId('simulate-list-set-aside').click();
+
+        await expect(page.getByTestId('view-tabs')).toHaveCount(0);
+        await expect.poll(async () => (await dispatchedTypes(page)).filter((type) => type === 'listViews/listViews').length).toBe(2);
+
+        await page.getByTestId('simulate-list-success').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'SERIAL_NUMBER']);
+    });
+
+    test('drops a column whose field is gone from the table once a duplicate that leaves it out exists', async ({ mount, page }) => {
+        await mount(strip({ views: [], driftColumn: column('deleted', 'deleted', FilterFieldSource.Custom) }));
+
+        await page.getByTestId('drift-columns').click();
+        await openTabMenu(page, 'Standard');
+        await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/createView');
+        expect(JSON.stringify(await lastDispatched(page, 'listViews/createView'))).not.toContain('deleted');
+
+        await page.getByTestId('simulate-create-success').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-created')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-tab-view-created-dirty')).toHaveCount(0);
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'SERIAL_NUMBER']);
     });
 
     test('shows a new view only the Standard columns it can store', async ({ mount, page }) => {
-        await mount(strip({ standardColumns: [commonName, column('CK_ASSOCIATIONS', 'Associations')] }));
+        await mount(strip({ standardColumns: [commonName, { ...column('CK_ASSOCIATIONS', 'Associations'), displayOnly: true }] }));
 
         await page.getByTestId('view-tabs-tab-view-1').click();
         await page.getByTestId('view-tabs-new').click();

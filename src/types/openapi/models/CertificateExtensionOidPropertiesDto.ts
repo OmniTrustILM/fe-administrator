@@ -14,6 +14,7 @@
 import type { ExtensionValueEncoding } from './';
 
 /**
+ * How a certificate extension\'s value is carried. The valueSchema field is named for the job rather than the notation: a value\'s shape is described by an ASN.1 module, which is what X.697 calls a schema when it uses ASN.1 as one for JSON.
  * @export
  * @interface CertificateExtensionOidPropertiesDto
  */
@@ -31,7 +32,7 @@ export interface CertificateExtensionOidPropertiesDto {
      */
     valueEncoding: ExtensionValueEncoding;
     /**
-     * Inline JSON Schema (draft 2020-12) describing the shape of the extension\'s JSON value; only applicable when valueEncoding is DER, where the value is authored as a structural ASN.1 JSON tree
+     * ASN.1 module defining the extension\'s value type, in the subset of X.680 the platform supports; only applicable when valueEncoding is DER. Base64-encoded DER is accepted as the value whether or not a module is registered; a module additionally admits values written as JSON naming the type\'s members, in the JSON Encoding Rules of X.697.
      * @type {string}
      * @memberof CertificateExtensionOidPropertiesDto
      */

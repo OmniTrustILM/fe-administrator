@@ -31,11 +31,11 @@ export interface CryptographicAssetDto {
      */
     name?: string;
     /**
-     * Type of the asset
+     * Type of the asset, as the producer declared it in CycloneDX cryptoProperties.assetType. Absent when the producer declared none of the CycloneDX asset types
      * @type {CryptographicAssetType}
      * @memberof CryptographicAssetDto
      */
-    type: CryptographicAssetType;
+    type?: CryptographicAssetType;
     /**
      * Post-quantum readiness verdict computed by the platform rule set
      * @type {PqcVerdict}

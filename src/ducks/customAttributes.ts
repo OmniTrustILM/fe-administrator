@@ -31,6 +31,9 @@ export type State = {
     isFetchingResources: boolean;
     isFetchingResourceCustomAttributes: boolean;
     isFetchingResourceSecondaryCustomAttributes: boolean;
+    /** Why the last listing of each failed, until the next one. */
+    resourceCustomAttributesError?: string;
+    secondaryResourceCustomAttributesError?: string;
     isCreating: boolean;
     createCustomAttributeSucceeded: boolean;
     isDeleting: boolean;
@@ -112,6 +115,7 @@ export const slice = createSlice({
         listResourceCustomAttributes: (state, action: PayloadAction<Resource>) => {
             state.resourceCustomAttributes = [];
             state.isFetchingResourceCustomAttributes = true;
+            state.resourceCustomAttributesError = undefined;
         },
 
         listResourceCustomAttributesSuccess: (state, action: PayloadAction<CustomAttributeModel[]>) => {
@@ -121,11 +125,13 @@ export const slice = createSlice({
 
         listResourceCustomAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isFetchingResourceCustomAttributes = false;
+            state.resourceCustomAttributesError = action.payload.error;
         },
 
         listSecondaryResourceCustomAttributes: (state, action: PayloadAction<Resource>) => {
             state.secondaryResourceCustomAttributes = [];
             state.isFetchingResourceSecondaryCustomAttributes = true;
+            state.secondaryResourceCustomAttributesError = undefined;
         },
 
         listSecondaryResourceCustomAttributesSuccess: (state, action: PayloadAction<CustomAttributeModel[]>) => {
@@ -135,6 +141,7 @@ export const slice = createSlice({
 
         listSecondaryResourceCustomAttributesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isFetchingResourceSecondaryCustomAttributes = false;
+            state.secondaryResourceCustomAttributesError = action.payload.error;
         },
 
         createCustomAttribute: (state, action: PayloadAction<CustomAttributeCreateRequestModel>) => {
@@ -446,6 +453,8 @@ const isFetchingList = createSelector(state, (state: State) => state.isFetchingL
 const isFetchingDetail = createSelector(state, (state: State) => state.isFetchingDetail);
 const isFetchingResources = createSelector(state, (state: State) => state.isFetchingResources);
 const isFetchingResourceCustomAttributes = createSelector(state, (state: State) => state.isFetchingResourceCustomAttributes);
+const resourceCustomAttributesError = createSelector(state, (state: State) => state.resourceCustomAttributesError);
+const secondaryResourceCustomAttributesError = createSelector(state, (state: State) => state.secondaryResourceCustomAttributesError);
 const isFetchingResourceSecondaryCustomAttributes = createSelector(
     state,
     (state: State) => state.isFetchingResourceSecondaryCustomAttributes,
@@ -481,6 +490,8 @@ export const selectors = {
     isFetchingResources,
     isFetchingResourceCustomAttributes,
     isFetchingResourceSecondaryCustomAttributes,
+    resourceCustomAttributesError,
+    secondaryResourceCustomAttributesError,
     isDeleting,
     isBulkDeleting,
     isBulkEnabling,

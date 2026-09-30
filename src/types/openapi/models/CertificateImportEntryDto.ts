@@ -20,17 +20,11 @@ import type { CertificateEntryKeyDestinationDto } from './';
  */
 export interface CertificateImportEntryDto {
     /**
-     * Reference of the entry to import, derived from the entry\'s own content. Read the file first to learn it, or compute it from content already held.
+     * Reference of the entry to import. Read the file first to learn it, or compute it from content already held.  The lowercase hex SHA-256 of the entry\'s DER: of the certificate for a certificate, of the `SubjectPublicKeyInfo` for a key pair or private key, of the key as the file holds it for a secret key or a key of an algorithm the platform does not support, and of the request for a certificate request.
      * @type {string}
      * @memberof CertificateImportEntryDto
      */
     entryReference: string;
-    /**
-     * Identifier of this entry\'s import, so a retry cannot import the same entry twice.  A replay is the same import only when this entry\'s reference and destination match the first submission, and the file carries the same content for it. A replay returns what that entry produced the first time; reuse with anything else changed is refused.  The identifier is per entry rather than per request because entries succeed and fail on their own. Repeating a request whose entries partly failed returns what already succeeded and retries only what did not, without the caller having to work out which is which.
-     * @type {string}
-     * @memberof CertificateImportEntryDto
-     */
-    importId: string;
     /**
      * Where this entry\'s key material is stored. Required when the entry carries key material, and refused for an entry that carries only a certificate.
      * @type {CertificateEntryKeyDestinationDto}
