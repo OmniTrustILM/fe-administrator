@@ -39,7 +39,7 @@ function createStore() {
     });
 }
 
-describe('CmpProfileForm (edit mode) challenge source', () => {
+describe('CmpProfileForm challenge source', () => {
     let root: Root;
     let container: HTMLDivElement;
 
@@ -151,7 +151,11 @@ describe('CmpProfileForm (edit mode) challenge source', () => {
         await act(async () => {
             option.click();
         });
-        await act(async () => {});
+        // Radix returns focus to the closed popover's trigger on a zero-delay timer; opening the next
+        // Select before it fires lets that focus land outside the new popover and dismiss it.
+        await act(async () => {
+            await new Promise((resolve) => setTimeout(resolve, 0));
+        });
     }
 
     it('requires a new shared secret when switching a certificateRegistration profile back to protocolDefault', async () => {
@@ -211,6 +215,91 @@ describe('CmpProfileForm (edit mode) challenge source', () => {
         expect(update).toBeTruthy();
         expect(update.payload.updateCmpRequest.variant).toBe('v3');
         expect(update.payload.updateCmpRequest.requestProtectionMethod).toBe(ProtectionMethod.Signature);
+    });
+
+    async function renderCreateForm(store: ReturnType<typeof createStore>) {
+        await act(async () => {
+            root.render(
+                <Provider store={store}>
+                    <MemoryRouter initialEntries={['/']}>
+                        <CmpProfileForm />
+                    </MemoryRouter>
+                </Provider>,
+            );
+        });
+        await act(async () => {
+            store.dispatch(
+                customAttrActions.receiveMultipleResourceCustomAttributes([
+                    { resource: Resource.CmpProfiles, customAttributes: [] },
+                    { resource: Resource.Certificates, customAttributes: [] },
+                ]),
+            );
+        });
+        await act(async () => {});
+    }
+
+    async function typeName(name: string) {
+        const nameInput = container.querySelector('#name') as HTMLInputElement;
+        const setValue = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')!.set!;
+        await act(async () => {
+            setValue.call(nameInput, name);
+            nameInput.dispatchEvent(new Event('input', { bubbles: true }));
+        });
+        await act(async () => {});
+    }
+
+    const createButton = () => container.querySelector('button[type="submit"]') as HTMLButtonElement;
+
+    it('enables Create for a new certificateRegistration profile and submits the forced protection method and variant', async () => {
+        const { store, dispatched } = trackedStore();
+        await renderCreateForm(store);
+
+        await typeName('cmp2');
+        await pickSelectOption('select-challengeSource-trigger', 'certificateRegistration');
+        await pickSelectOption('select-selectedResponseProtectionMethodSelect-trigger', 'sharedSecret');
+
+        expect(createButton().disabled).toBe(false);
+        await act(async () => {
+            createButton().click();
+        });
+        await act(async () => {});
+
+        const create = dispatched.find((a: any) => a.type === cmpActions.createCmpProfile.type) as any;
+        expect(create).toBeTruthy();
+        expect(create.payload.challengeSource).toBe('certificateRegistration');
+        expect(create.payload.requestProtectionMethod).toBe(ProtectionMethod.SharedSecret);
+        expect(create.payload.variant).toBe('v2');
+        expect(create.payload.sharedSecret).toBeUndefined();
+    });
+
+    it('enables Create when registration mode hides a shared-secret field that was still empty', async () => {
+        await renderCreateForm(createStore());
+
+        await typeName('cmp2');
+        await pickSelectOption('select-selectedResponseProtectionMethodSelect-trigger', 'sharedSecret');
+        await pickSelectOption('select-selectedRequestProtectionMethodSelect-trigger', 'sharedSecret');
+        expect(container.querySelector('#sharedSecret')).toBeTruthy();
+        expect(createButton().disabled).toBe(true);
+
+        // The per-registration challenge replaces the profile secret, so the hidden field must stop blocking submission.
+        await pickSelectOption('select-challengeSource-trigger', 'certificateRegistration');
+        expect(container.querySelector('#sharedSecret')).toBeNull();
+        expect(createButton().disabled).toBe(false);
+    });
+
+    it('enables Create when certificateRegistration is picked last and disables it again on the way back', async () => {
+        await renderCreateForm(createStore());
+
+        await typeName('cmp2');
+        await pickSelectOption('select-selectedResponseProtectionMethodSelect-trigger', 'sharedSecret');
+        expect(createButton().disabled).toBe(true);
+
+        await pickSelectOption('select-challengeSource-trigger', 'certificateRegistration');
+        expect(createButton().disabled).toBe(false);
+
+        // Outside registration mode the variant and request protection method are the user's to fill again.
+        await pickSelectOption('select-challengeSource-trigger', 'protocolDefault');
+        expect(createButton().disabled).toBe(true);
     });
 
     it('requires a fresh secret when a signature-protected profile switches to shared-secret protection', async () => {
