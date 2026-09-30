@@ -125,11 +125,14 @@ export default function CertificateRenewDialog({ certificate, onCancel, onDone, 
     // Core treats a blank secret as none (String.isBlank).
     const hasSuccessorChallenge = !!successorAuthorizationSecret?.trim();
 
-    useEffect(() => {
-        if (registerSuccessor && raProfileUuid && authorityUuid) {
-            dispatch(certificateActions.getRegisterAttributes({ raProfileUuid, authorityUuid }));
-        }
-    }, [dispatch, registerSuccessor, raProfileUuid, authorityUuid]);
+    // Requested together with the switch, not from an effect, so the not-loaded state below never shows before the
+    // request has gone out.
+    const loadRegisterSchema = () => {
+        if (raProfileUuid && authorityUuid) dispatch(certificateActions.getRegisterAttributes({ raProfileUuid, authorityUuid }));
+    };
+    // A failed load removes the profile's entry, while an authority without register support answers with an empty
+    // list; only a present entry means Core's register schema is known.
+    const registerSchemaLoaded = !raProfileUuid || raProfileUuid in registerAttributeDescriptors;
 
     useEffect(() => {
         // An issuance window without a challenge is rejected by Core, so a date entered and then abandoned must not
@@ -143,6 +146,7 @@ export default function CertificateRenewDialog({ certificate, onCancel, onDone, 
     const onRegisterSuccessorChange = (checked: boolean) => {
         // The two modes send different requests; values and errors of the one left behind must not carry over.
         setRegisterSuccessor(checked);
+        if (checked) loadRegisterSchema();
         setUploadCsr(false);
         setFileContent(undefined);
         dispatch(utilsCertificateRequestActions.reset());
@@ -168,7 +172,10 @@ export default function CertificateRenewDialog({ certificate, onCancel, onDone, 
         // A blank challenge on a successor of a challenge-protected certificate would silently drop that protection
         // for the new branch.
         (!hasChallenge || hasSuccessorChallenge) &&
-        !isFetchingRegisterAttributes;
+        !isFetchingRegisterAttributes &&
+        // Registering without a loaded schema skips required connector attributes; on a connector-backed authority Core
+        // then fails the placeholder it has already created.
+        registerSchemaLoaded;
     const canRenew = (!hasChallenge || !!authorizationSecret?.trim()) && !renew.isFetching;
     const canSubmit = !isSubmitting && (registerSuccessor ? canRegister : canRenew);
 
@@ -309,8 +316,17 @@ export default function CertificateRenewDialog({ certificate, onCancel, onDone, 
                                         groupAttributesCallbackAttributes={registerCallbackAttributes}
                                         setGroupAttributesCallbackAttributes={setRegisterCallbackAttributes}
                                     />
-                                ) : (
+                                ) : registerSchemaLoaded || isFetchingRegisterAttributes ? (
                                     <span className="text-content-subtle">This RA Profile has no connector attributes.</span>
+                                ) : (
+                                    <Container className="flex-row items-center" gap={4}>
+                                        <span className="text-sm text-danger" data-testid="registerAttributesNotLoaded">
+                                            Connector attributes could not be loaded.
+                                        </span>
+                                        <Button variant="outline" type="button" onClick={loadRegisterSchema}>
+                                            Retry
+                                        </Button>
+                                    </Container>
                                 )}
                             </Widget>
                         </>

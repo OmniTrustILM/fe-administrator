@@ -3,6 +3,7 @@ import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 
 import certificatesReducer, { actions as certificateActions } from 'ducks/certificates';
+import { testInitialState } from 'ducks/test-reducers';
 
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import { type CertificateRegistrationState, CertificateState } from 'types/openapi';
@@ -41,13 +42,16 @@ const dialogActions = [
     certificateActions.clearRegisterErrors,
 ];
 
+// Register waits for the RA profile's register schema; stand in a loaded, empty one unless a test brings its own.
+const loadedRegisterSchema = { certificates: { ...testInitialState.certificates, registerAttributes: { 'ra-profile-uuid': [] } } };
+
 const rootReducer = overlaySliceReducer('certificates', certificatesReducer, dialogActions);
 
 export function CertificateDetailsContentTestWrapper({ registrationState }: CertificateDetailsContentTestWrapperProps) {
     const certificate = useMemo(() => testCertificate(registrationState), [registrationState]);
     const [refetches, setRefetches] = useState(0);
 
-    const { store, dispatched } = useRecordingStore(undefined, 'certificates/', rootReducer);
+    const { store, dispatched } = useRecordingStore(loadedRegisterSchema, 'certificates/', rootReducer);
 
     return (
         <Provider store={store}>

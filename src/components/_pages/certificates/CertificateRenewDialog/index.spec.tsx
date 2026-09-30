@@ -264,6 +264,23 @@ test.describe('CertificateRenewDialog — Register switch', () => {
         expect(registrations[0].csrAttributes).toBeUndefined();
     });
 
+    test('Register waits for the connector attributes and offers a retry when they could not be loaded', async ({ mount, page }) => {
+        await mount(
+            <CertificateRenewDialogTestWrapper
+                preloadedState={{ certificates: { ...testInitialState.certificates, registerAttributes: {} } }}
+            />,
+        );
+        await switchToRegister(page);
+
+        await expect(page.getByTestId('registerAttributesNotLoaded')).toBeVisible();
+        await expect(page.getByTestId('renewSubmit')).toBeDisabled();
+
+        await page.getByRole('button', { name: 'Retry' }).click();
+        await expect
+            .poll(async () => (await dispatchedTypes(page)).filter((type) => type === 'certificates/getRegisterAttributes'))
+            .toHaveLength(2);
+    });
+
     test('Register stays disabled when part of the source identity cannot be replayed', async ({ mount, page }) => {
         await mount(
             <CertificateRenewDialogTestWrapper

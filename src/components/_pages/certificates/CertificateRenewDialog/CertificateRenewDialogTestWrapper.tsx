@@ -3,7 +3,7 @@ import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 
 import certificatesReducer, { actions as certificateActions } from 'ducks/certificates';
-import type { testReducers } from 'ducks/test-reducers';
+import { testInitialState, type testReducers } from 'ducks/test-reducers';
 import type { CertificateDetailResponseModel, CertificateRegistrationRequestModel } from 'types/certificate';
 import { AttributeContentType, AttributeType, AttributeVersion, type CertificateRegistrationState, CertificateState } from 'types/openapi';
 import { overlaySliceReducer, useRecordingStore } from 'utils/test-helpers';
@@ -81,6 +81,9 @@ const dialogActions = [
     certificateActions.clearRegisterErrors,
 ];
 
+// Register waits for the RA profile's register schema; stand in a loaded, empty one unless a test brings its own.
+const loadedRegisterSchema = { certificates: { ...testInitialState.certificates, registerAttributes: { 'ra-profile-uuid': [] } } };
+
 const rootReducer = overlaySliceReducer('certificates', certificatesReducer, dialogActions);
 
 /** Mirrors the real parent (CertificateDetailsContent): renew/register dispatch, and onCancel or onDone unmounts the dialog. */
@@ -100,7 +103,7 @@ export function CertificateRenewDialogTestWrapper({
     );
     const [renewPayload, setRenewPayload] = useState<RenewData>();
 
-    const { store, dispatched } = useRecordingStore(preloadedState, 'certificates/', rootReducer);
+    const { store, dispatched } = useRecordingStore(preloadedState ?? loadedRegisterSchema, 'certificates/', rootReducer);
 
     const [open, setOpen] = useState(true);
 
