@@ -319,6 +319,16 @@ test.describe('AddColumnMenu', () => {
         await expect(page.getByRole('checkbox', { name: /Common Name.*A view must keep at least one column/ })).toBeDisabled();
     });
 
+    test('still takes off a column whose field is gone beside the last column a view can store', async ({ mount, page }) => {
+        const gone = column(FilterFieldSource.Custom, 'costCentre|STRING', 'Cost centre');
+        await mount(<AddColumnMenuHarness fields={fields} columns={[commonName, gone]} goneKeys={['custom:costCentre|STRING']} />);
+
+        await page.getByTestId('add-column-menu-trigger').click();
+        await page.getByTestId('add-column-menu-field-custom:costCentre|STRING').click();
+
+        await expect.poll(() => appliedColumns(page)).toEqual(['property:COMMON_NAME']);
+    });
+
     test('shows the reason the last checkbox is locked where a sighted keyboard user can read it', async ({ mount, page }) => {
         await mount(<AddColumnMenuHarness fields={fields} columns={[commonName]} />);
 

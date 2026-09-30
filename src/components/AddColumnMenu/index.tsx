@@ -6,7 +6,7 @@ import SourceBadge, { DEFAULT_SOURCE_LABELS, SOURCE_COLORS } from 'components/So
 import { Plus, RotateCcw, Search } from 'lucide-react';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
-import { countStorableColumns, getColumnKey } from 'utils/tableColumns';
+import { countStorableColumns, getColumnKey, isNotDisplayOnly } from 'utils/tableColumns';
 import { type MenuSourceColumn, toMenuContents } from './sourceColumns';
 
 const LOCKED_AT_LAST_COLUMN = 'A view must keep at least one column';
@@ -96,7 +96,7 @@ export default function AddColumnMenu({
     columns,
     onToggle,
     onReset,
-    isStorable,
+    isStorable = isNotDisplayOnly,
     dataTestId = 'add-column-menu',
 }: Props) {
     const [isOpen, setIsOpen] = useState(false);
@@ -134,7 +134,7 @@ export default function AddColumnMenu({
 
     const isLocked = onToggle === undefined;
     const isAtLastColumn = countStorableColumns(columns, isStorable) === 1;
-    const displayOnlyKeys = useMemo(() => new Set(columns.filter((column) => column.displayOnly).map(getColumnKey)), [columns]);
+    const unstorableKeys = useMemo(() => new Set(columns.filter((column) => !isStorable(column)).map(getColumnKey)), [columns, isStorable]);
 
     // The rule in force, named once where it can be read: a disabled checkbox is out of the tab
     // order, so a keyboard user never reaches whatever the control itself might say.
@@ -218,7 +218,7 @@ export default function AddColumnMenu({
                                             isSelected
                                             sourceLabel={DEFAULT_SOURCE_LABELS[field.fieldSource]}
                                             lockReason={
-                                                isLocked || (isAtLastColumn && !displayOnlyKeys.has(getColumnKey(field)))
+                                                isLocked || (isAtLastColumn && !unstorableKeys.has(getColumnKey(field)))
                                                     ? lockNotice
                                                     : undefined
                                             }
