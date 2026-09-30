@@ -163,4 +163,24 @@ test.describe('Sidebar', () => {
         await expect(component.getByRole('button', { name: 'Settings' })).toBeVisible();
         await expect(component.getByRole('link', { name: 'Trusted Certificates' })).toBeVisible();
     });
+
+    test('highlights the active headerLink item in the brand colour', async ({ mount }) => {
+        const store = createMockStore();
+        const component = await mount(
+            withProviders(
+                <div>
+                    <span data-testid="brand-reference" className="text-brand" />
+                    <span data-testid="content-reference" className="text-content" />
+                    <Sidebar allowedResources={[Resource.Certificates, Resource.Keys]} />
+                </div>,
+                { store, initialRoute: '/certificates' },
+            ),
+        );
+
+        const brandColor = await component.getByTestId('brand-reference').evaluate((el) => getComputedStyle(el).color);
+        const contentColor = await component.getByTestId('content-reference').evaluate((el) => getComputedStyle(el).color);
+        await expect(component.getByTestId('sidebar-certificates')).toHaveAttribute('aria-current', 'page');
+        await expect(component.getByTestId('sidebar-certificates')).toHaveCSS('color', brandColor);
+        await expect(component.getByTestId('sidebar-keys')).toHaveCSS('color', contentColor);
+    });
 });
