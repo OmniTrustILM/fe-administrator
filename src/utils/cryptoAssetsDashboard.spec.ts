@@ -4,13 +4,36 @@ import {
     buildEmptyFilter,
     buildEqualsFilter,
     CRYPTO_ASSET_FILTER_FIELDS,
+    dashboardFilterLink,
     formatShareOfEstate,
     getPqcVerdictChartColors,
+    parseAssetDashboardFilter,
+    parseCbomDashboardFilter,
     PQC_VERDICT_CHART_COLORS,
     summarizeSyncCompleteness,
 } from './cryptoAssetsDashboard';
 
 describe('crypto asset dashboard filters', () => {
+    test('dashboard URLs carry the inventory selection into a new tab', () => {
+        expect(dashboardFilterLink('../cboms', 'sync:failed')).toBe('../cboms?dashboardFilter=sync%3Afailed');
+        expect(parseCbomDashboardFilter('?dashboardFilter=contributed')).toEqual([
+            { fieldSource: 'property', condition: 'EQUALS', fieldIdentifier: 'CBOM_HAS_CONTRIBUTED_ASSETS', value: true },
+        ]);
+        expect(parseCbomDashboardFilter('?dashboardFilter=sync%3Afailed')).toEqual([
+            { fieldSource: 'property', condition: 'EQUALS', fieldIdentifier: 'CBOM_ASSET_SYNC_STATE', value: ['failed'] },
+        ]);
+        expect(parseAssetDashboardFilter('?dashboardFilter=no-family')).toEqual([
+            { fieldSource: 'property', condition: 'EMPTY', fieldIdentifier: 'CBOM_ASSET_ALGORITHM_FAMILY', value: [''] },
+        ]);
+        expect(parseAssetDashboardFilter('?dashboardFilter=not-ready')).toEqual([
+            { fieldSource: 'property', condition: 'EQUALS', fieldIdentifier: 'CBOM_ASSET_PQC_VERDICT', value: ['notReady'] },
+        ]);
+        expect(parseAssetDashboardFilter('?dashboardFilter=all')).toEqual([]);
+        expect(parseCbomDashboardFilter('?dashboardFilter=sync%3AnewState')).toEqual([
+            { fieldSource: 'property', condition: 'EQUALS', fieldIdentifier: 'CBOM_ASSET_SYNC_STATE', value: ['newState'] },
+        ]);
+        expect(parseCbomDashboardFilter('?dashboardFilter=unsupported')).toBeUndefined();
+    });
     test('an equals drill-through carries the server field for the picked value', () => {
         expect(buildEqualsFilter(CRYPTO_ASSET_FILTER_FIELDS.pqcVerdict, PqcVerdict.NotReady)).toEqual([
             {

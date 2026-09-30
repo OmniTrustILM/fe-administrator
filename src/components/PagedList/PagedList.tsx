@@ -1,5 +1,5 @@
 import { type EntityType, actions as filterActions, selectors as filterSelectors } from 'ducks/filters';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router';
 import { actions as listScopeActions } from 'ducks/list-scopes';
@@ -90,6 +90,8 @@ type Props<TRow extends object> = {
      * omit the applied columns and ordering, blanking every attribute column and ignoring the sort.
      */
     refreshToken?: number;
+    /** A filter encoded in the destination URL, applied before the first list request. */
+    urlFilters?: SearchFilterModel[];
     /** Like `refreshToken`, but for a refresh the user did not ask for, so the checked rows are kept. */
     backgroundRefreshToken?: number;
 };
@@ -124,12 +126,22 @@ function PagedList<TRow extends object>({
     columnForDetail,
     extraFilterComponent,
     refreshToken,
+    urlFilters,
     backgroundRefreshToken,
 }: Readonly<Props<TRow>>) {
     const dispatch = useDispatch();
     const store = useStore<AppState>();
     const navigate = useNavigate();
     const location = useLocation();
+    const urlFilterKey = `${location.key}:${location.search}`;
+    const [appliedUrlFilterKey, setAppliedUrlFilterKey] = useState<string>();
+    const isUrlFilterPending = urlFilters !== undefined && appliedUrlFilterKey !== urlFilterKey;
+
+    useLayoutEffect(() => {
+        if (!isUrlFilterPending || urlFilters === undefined) return;
+        dispatch(filterActions.setCurrentFilters({ entity, currentFilters: urlFilters }));
+        setAppliedUrlFilterKey(urlFilterKey);
+    }, [dispatch, entity, isUrlFilterPending, urlFilterKey, urlFilters]);
 
     useEffect(() => {
         const segment = location.pathname.split('/')[1] ?? '';
@@ -387,14 +399,14 @@ function PagedList<TRow extends object>({
             setColumnSelection(slice.columns);
             setSortSelection(toDisplayableSort(slice.sort, slice.columns));
 
-            if (!isInitialApplication || currentFilters.length === 0) {
+            if (!isInitialApplication || (currentFilters.length === 0 && urlFilters === undefined)) {
                 dispatch(filterActions.setCurrentFilters({ entity, currentFilters: slice.filters }));
             }
 
             dispatch(actions.setPagination({ entity, pageSize, pageNumber: 1 }));
             onCheckedRowsChanged([]);
         },
-        [dispatch, entity, pageSize, onCheckedRowsChanged, currentFilters.length],
+        [dispatch, entity, pageSize, onCheckedRowsChanged, currentFilters.length, urlFilters],
     );
 
     const onSortChanged = useCallback(
@@ -569,6 +581,7 @@ function PagedList<TRow extends object>({
      * that only shrinks the projection sends nothing at all.
      */
     useEffect(() => {
+        if (isUrlFilterPending) return;
         const wanted = wantedProjection === '' ? [] : wantedProjection.split(PROJECTION_SEPARATOR);
         const needsProjection = wanted.some((key) => !projectedKeys.current.includes(key));
         const sent = lastSent.current;
@@ -589,7 +602,16 @@ function PagedList<TRow extends object>({
             getFreshData();
         }
         setHasSentFirstRequest(true);
-    }, [getFreshData, requestList, wantedProjection, listRequestSnapshot, refreshToken, backgroundRefreshToken, onListCallback]);
+    }, [
+        getFreshData,
+        requestList,
+        wantedProjection,
+        listRequestSnapshot,
+        refreshToken,
+        backgroundRefreshToken,
+        onListCallback,
+        isUrlFilterPending,
+    ]);
 
     const buttons: WidgetButtonProps[] = useMemo(() => {
         const result = [];

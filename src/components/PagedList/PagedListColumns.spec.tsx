@@ -389,6 +389,30 @@ test.describe('PagedList · configurable columns', () => {
         await expect.poll(async () => (await lastRequest(page))?.filters).toEqual(incoming);
     });
 
+    test('a URL drill-through filters the first request in a fresh tab', async ({ mount, page }) => {
+        const incoming = [
+            {
+                fieldSource: FilterFieldSource.Property,
+                fieldIdentifier: 'NOT_AFTER',
+                condition: FilterConditionOperator.Equals,
+                value: ['2027-01-01'],
+            },
+        ];
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                views={[expiryWatch]}
+                urlFilters={incoming}
+            />,
+        );
+
+        await expect.poll(async () => (await listRequests(page)).length).toBeGreaterThan(0);
+        expect((await listRequests(page))[0].filters).toEqual(incoming);
+        await expect(page.getByTestId('current-filters')).toContainText('NOT_AFTER');
+    });
+
     test('replaces those filters on the next tab switch', async ({ mount, page }) => {
         const incoming = [
             {

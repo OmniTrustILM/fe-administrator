@@ -14,6 +14,35 @@ export const CRYPTO_ASSET_FILTER_FIELDS = {
     algorithmFamily: 'CBOM_ASSET_ALGORITHM_FAMILY',
 } as const;
 
+export function dashboardFilterLink(path: string, selection: string): string {
+    return `${path}?${new URLSearchParams({ dashboardFilter: selection })}`;
+}
+
+export function parseCbomDashboardFilter(search: string): SearchFilterModel[] | undefined {
+    const selection = new URLSearchParams(search).get('dashboardFilter');
+    if (selection === 'contributed') {
+        return [
+            {
+                fieldSource: FilterFieldSource.Property,
+                condition: FilterConditionOperator.Equals,
+                fieldIdentifier: 'CBOM_HAS_CONTRIBUTED_ASSETS',
+                value: true,
+            },
+        ];
+    }
+
+    const syncState = selection?.startsWith('sync:') ? selection.slice('sync:'.length) : undefined;
+    return syncState ? buildEqualsFilter('CBOM_ASSET_SYNC_STATE', syncState) : undefined;
+}
+
+export function parseAssetDashboardFilter(search: string): SearchFilterModel[] | undefined {
+    const selection = new URLSearchParams(search).get('dashboardFilter');
+    if (selection === 'no-family') return buildEmptyFilter(CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily);
+    if (selection === 'not-ready') return buildEqualsFilter(CRYPTO_ASSET_FILTER_FIELDS.pqcVerdict, PqcVerdict.NotReady);
+    if (selection === 'all') return [];
+    return undefined;
+}
+
 // Verdict series wear the status hexes the certificate charts already use, so a segment matches its badge and
 // stays legible on both chart surfaces.
 export const PQC_VERDICT_CHART_COLORS: Record<string, string> = {

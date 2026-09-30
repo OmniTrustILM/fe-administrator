@@ -10,6 +10,7 @@ import {
     CRYPTO_ASSET_FILTER_FIELDS,
     buildEmptyFilter,
     buildEqualsFilter,
+    dashboardFilterLink,
     formatShareOfEstate,
     getPqcVerdictChartColors,
     summarizeSyncCompleteness,
@@ -78,7 +79,7 @@ function CryptoAssetsDashboard() {
                     <CountBadge
                         data={cbomCountUnavailable ? null : sourceCbomCount}
                         title="Source CBOMs"
-                        link={cbomCountUnavailable ? undefined : CBOMS_LINK}
+                        link={cbomCountUnavailable ? undefined : dashboardFilterLink(CBOMS_LINK, 'contributed')}
                         lockType={LockTypeEnum.PERMISSION}
                         lockText="You do not have permission to view the Source CBOM count."
                         entity={EntityType.CBOM}
@@ -97,7 +98,7 @@ function CryptoAssetsDashboard() {
                     <CountBadge
                         data={statistics.totalAssets ?? 0}
                         title="Crypto Assets"
-                        link={LINK}
+                        link={dashboardFilterLink(LINK, 'all')}
                         entity={EntityType.CRYPTO_ASSET}
                         onSetFilter={() => []}
                         extraComponent={
@@ -109,7 +110,7 @@ function CryptoAssetsDashboard() {
                     <CountBadge
                         data={notReadyCount ?? 0}
                         title="Not PQC ready"
-                        link={LINK}
+                        link={dashboardFilterLink(LINK, 'not-ready')}
                         entity={EntityType.CRYPTO_ASSET}
                         onSetFilter={() => buildEqualsFilter(CRYPTO_ASSET_FILTER_FIELDS.pqcVerdict, PqcVerdict.NotReady)}
                         extraComponent={notReadyShare ? caption(notReadyShare) : undefined}
@@ -122,7 +123,7 @@ function CryptoAssetsDashboard() {
                         extraComponent={
                             unassignedAssetCount > 0 ? (
                                 <Link
-                                    to={LINK}
+                                    to={dashboardFilterLink(LINK, 'no-family')}
                                     className="text-sm text-brand hover:underline"
                                     onClick={() =>
                                         dispatch(
@@ -169,7 +170,7 @@ function CryptoAssetsDashboard() {
                             {completeness.states.map((state) => (
                                 <span key={state.code} className="text-sm text-content-muted tabular-nums">
                                     <Link
-                                        to={CBOMS_LINK}
+                                        to={dashboardFilterLink(CBOMS_LINK, `sync:${state.code}`)}
                                         className="text-brand hover:underline"
                                         onClick={() =>
                                             dispatch(

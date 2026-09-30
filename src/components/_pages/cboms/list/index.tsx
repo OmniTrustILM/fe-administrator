@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { useNavigate } from 'react-router';
+import { useLocation, useNavigate } from 'react-router';
 import { firstValueFrom } from 'rxjs';
 import WidgetButtons, { type WidgetButtonProps } from 'components/WidgetButtons';
 import Dialog from 'components/Dialog';
@@ -18,10 +18,13 @@ import type { SearchRequestModel } from 'types/certificate';
 import { type ApiClients, backendClient } from 'src/api';
 import { EntityType, actions as filterActions } from 'ducks/filters';
 import { actions as pagingActions } from 'ducks/paging';
+import { parseCbomDashboardFilter } from 'utils/cryptoAssetsDashboard';
 
 function CbomsList() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const { search } = useLocation();
+    const urlFilters = useMemo(() => parseCbomDashboardFilter(search), [search]);
 
     const cboms = useSelector(selectors.selectCbomList);
     const assetSyncStateEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CbomAssetSyncState));
@@ -194,6 +197,7 @@ function CbomsList() {
         <>
             <PagedList
                 entity={EntityType.CBOM}
+                urlFilters={urlFilters}
                 onListCallback={onList}
                 onDeleteCallback={(uuids) => {
                     if (uuids.length === 1) {

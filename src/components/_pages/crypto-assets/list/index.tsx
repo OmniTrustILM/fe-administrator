@@ -5,13 +5,17 @@ import { getEnumDescription, getEnumLabel, selectors as enumSelectors } from 'du
 import { EntityType } from 'ducks/filters';
 import { useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import { useLocation } from 'react-router';
 import type { ApiClients } from 'src/api';
 import type { SearchRequestModel } from 'types/certificate';
 import { type CryptographicAssetDto, PlatformEnum, Resource } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { parseAssetDashboardFilter } from 'utils/cryptoAssetsDashboard';
 
 function CryptoAssetsList() {
     const dispatch = useDispatch();
+    const { search } = useLocation();
+    const urlFilters = useMemo(() => parseAssetDashboardFilter(search), [search]);
 
     const assets = useSelector(selectors.selectCryptoAssetList);
     const isFetching = useSelector(selectors.selectIsFetchingList);
@@ -45,6 +49,7 @@ function CryptoAssetsList() {
     return (
         <PagedList
             entity={EntityType.CRYPTO_ASSET}
+            urlFilters={urlFilters}
             onListCallback={onList}
             getAvailableFiltersApi={getAvailableFiltersApi}
             configurableColumns={configurableColumns}
