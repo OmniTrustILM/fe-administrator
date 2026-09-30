@@ -274,6 +274,26 @@ describe('certificates slice', () => {
         expect(next.isRekeying).toBe(false);
     });
 
+    test('renewCertificateFailure keeps the error for the dialog; a new attempt and clearRenewErrors drop it', () => {
+        const renewAction = actions.renewCertificate({ authorityUuid: 'a', raProfileUuid: 'r', uuid: 'cert-1', renewRequest: {} as any });
+
+        const failed = reducer(initialState, actions.renewCertificateFailure({ error: 'challenge is invalid' }));
+        expect(selectors.renewErrorMessage({ certificates: failed } as any)).toBe('challenge is invalid');
+
+        expect(reducer(failed, renewAction).renewErrorMessage).toBeUndefined();
+        expect(reducer(failed, actions.clearRenewErrors()).renewErrorMessage).toBeUndefined();
+    });
+
+    test('rekeyCertificateFailure keeps the error for the dialog; a new attempt and clearRekeyErrors drop it', () => {
+        const rekeyAction = actions.rekeyCertificate({ authorityUuid: 'a', raProfileUuid: 'r', uuid: 'cert-1', rekey: {} as any });
+
+        const failed = reducer(initialState, actions.rekeyCertificateFailure({ error: 'challenge is required' }));
+        expect(selectors.rekeyErrorMessage({ certificates: failed } as any)).toBe('challenge is required');
+
+        expect(reducer(failed, rekeyAction).rekeyErrorMessage).toBeUndefined();
+        expect(reducer(failed, actions.clearRekeyErrors()).rekeyErrorMessage).toBeUndefined();
+    });
+
     test('getCertificateHistory / success / failure update history flags and data', () => {
         const stateWithHistory = { ...initialState, certificateHistory: [{ uuid: 'h-1' }] as any };
         let next = reducer(stateWithHistory, actions.getCertificateHistory({ uuid: 'cert-1' }));
@@ -1013,6 +1033,16 @@ describe('certificates slice', () => {
         next = reducer({ ...next, isRegistering: true }, actions.registerCertificateFailure({ error: 'err', validationErrors: ['e1'] }));
         expect(next.isRegistering).toBe(false);
         expect(next.issueValidationErrors).toEqual(['e1']);
+    });
+
+    test('registerCertificateFailure keeps the error message; a new attempt and clearRegisterErrors drop it', () => {
+        const registerAction = actions.registerCertificate({ authorityUuid: 'a', raProfileUuid: 'r', registerRequest: {} });
+
+        const failed = reducer(initialState, actions.registerCertificateFailure({ error: 'source is archived' }));
+        expect(selectors.registerErrorMessage({ certificates: failed } as any)).toBe('source is archived');
+
+        expect(reducer(failed, registerAction).registerErrorMessage).toBeUndefined();
+        expect(reducer(failed, actions.clearRegisterErrors()).registerErrorMessage).toBeUndefined();
     });
 
     test('completeRegisteredCertificate sets isIssuing, clears stale validation errors, and reuses issueCertificateSuccess/Failure', () => {

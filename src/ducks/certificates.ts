@@ -133,9 +133,12 @@ export type State = {
     issueErrorMessage?: string;
     issueWarnings?: IssueWarnings;
     isRegistering: boolean;
+    registerErrorMessage?: string;
     isRevoking: boolean;
     isRenewing: boolean;
+    renewErrorMessage?: string;
     isRekeying: boolean;
+    rekeyErrorMessage?: string;
 
     finalizingIssueCertificateUuids: string[];
     confirmingRevokeCertificateUuids: string[];
@@ -429,10 +432,13 @@ export const slice = createSlice({
                 authorityUuid: string;
                 raProfileUuid: string;
                 registerRequest: CertificateRegistrationRequestModel;
+                // Set by a caller that renders registerErrorMessage itself, so no global toast repeats it.
+                inlineErrors?: boolean;
             }>,
         ) => {
             state.isRegistering = true;
             state.issueValidationErrors = undefined;
+            state.registerErrorMessage = undefined;
         },
 
         registerCertificateSuccess: (state, action: PayloadAction<{ uuid: string }>) => {
@@ -442,6 +448,12 @@ export const slice = createSlice({
         registerCertificateFailure: (state, action: PayloadAction<{ error: string | undefined; validationErrors?: string[] }>) => {
             state.isRegistering = false;
             state.issueValidationErrors = action.payload.validationErrors;
+            state.registerErrorMessage = action.payload.error;
+        },
+
+        clearRegisterErrors: (state) => {
+            state.registerErrorMessage = undefined;
+            state.issueValidationErrors = undefined;
         },
 
         completeRegisteredCertificate: (
@@ -572,6 +584,7 @@ export const slice = createSlice({
             }>,
         ) => {
             state.isRenewing = true;
+            state.renewErrorMessage = undefined;
         },
 
         renewCertificateSuccess: (
@@ -585,6 +598,11 @@ export const slice = createSlice({
 
         renewCertificateFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isRenewing = false;
+            state.renewErrorMessage = action.payload.error;
+        },
+
+        clearRenewErrors: (state) => {
+            state.renewErrorMessage = undefined;
         },
 
         rekeyCertificate: (
@@ -597,6 +615,7 @@ export const slice = createSlice({
             }>,
         ) => {
             state.isRekeying = true;
+            state.rekeyErrorMessage = undefined;
         },
 
         rekeyCertificateSuccess: (
@@ -610,6 +629,11 @@ export const slice = createSlice({
 
         rekeyCertificateFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isRekeying = false;
+            state.rekeyErrorMessage = action.payload.error;
+        },
+
+        clearRekeyErrors: (state) => {
+            state.rekeyErrorMessage = undefined;
         },
 
         getCertificateHistory: (state, action: PayloadAction<{ uuid: string }>) => {
@@ -1287,9 +1311,12 @@ const issueValidationErrors = createSelector(state, (state) => state.issueValida
 const issueErrorMessage = createSelector(state, (state) => state.issueErrorMessage);
 const issueWarnings = createSelector(state, (state) => state.issueWarnings);
 const isRegistering = createSelector(state, (state) => state.isRegistering);
+const registerErrorMessage = createSelector(state, (state) => state.registerErrorMessage);
 const isRevoking = createSelector(state, (state) => state.isRevoking);
 const isRenewing = createSelector(state, (state) => state.isRenewing);
+const renewErrorMessage = createSelector(state, (state) => state.renewErrorMessage);
 const isRekeying = createSelector(state, (state) => state.isRekeying);
+const rekeyErrorMessage = createSelector(state, (state) => state.rekeyErrorMessage);
 
 const isDeleting = createSelector(state, (state) => state.isDeleting);
 const isBulkDeleting = createSelector(state, (state) => state.isBulkDeleting);
@@ -1372,9 +1399,12 @@ export const selectors = {
     issueErrorMessage,
     issueWarnings,
     isRegistering,
+    registerErrorMessage,
     isRevoking,
     isRenewing,
+    renewErrorMessage,
     isRekeying,
+    rekeyErrorMessage,
     isDeleting,
     isBulkDeleting,
     isUpdatingTrustedStatus,

@@ -732,6 +732,11 @@ export type CertificatesTestState = {
     isFetchingCsrAttributes: boolean;
     isIssuing: boolean;
     isRegistering: boolean;
+    registerErrorMessage?: string;
+    isRenewing?: boolean;
+    renewErrorMessage?: string;
+    isRekeying?: boolean;
+    rekeyErrorMessage?: string;
     issueValidationErrors?: string[];
     issueErrorMessage?: string;
     issueWarnings?: { certificateUuid: string; messages: string[] };

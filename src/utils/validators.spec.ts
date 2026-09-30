@@ -24,6 +24,7 @@ import {
     validateIso8601Duration,
     validateNtpServer,
     validateNtpServers,
+    validateRegistrationChallenge,
 } from './validators';
 
 const REQUIRED_FIELD_MSG = 'Required Field';
@@ -710,6 +711,27 @@ describe('validators', () => {
             expect(validateNtpServers()('pool.ntp.org, invalid space')).toBe(
                 'Value must be a comma-separated list of valid NTP server addresses (IP or hostname)',
             );
+        });
+    });
+
+    describe('validateRegistrationChallenge', () => {
+        const message = 'Challenge must be 12–255 printable ASCII characters';
+
+        test('accepts an empty or blank value, which Core treats as no challenge', () => {
+            expect(validateRegistrationChallenge()(undefined)).toBeUndefined();
+            expect(validateRegistrationChallenge()('')).toBeUndefined();
+            expect(validateRegistrationChallenge()('   ')).toBeUndefined();
+        });
+
+        test('accepts 12 to 255 printable ASCII characters', () => {
+            expect(validateRegistrationChallenge()('a'.repeat(12))).toBeUndefined();
+            expect(validateRegistrationChallenge()('a'.repeat(255))).toBeUndefined();
+        });
+
+        test('rejects a value outside the length bounds or with non-printable characters', () => {
+            expect(validateRegistrationChallenge()('a'.repeat(11))).toBe(message);
+            expect(validateRegistrationChallenge()('a'.repeat(256))).toBe(message);
+            expect(validateRegistrationChallenge()('challenge-é-123')).toBe(message);
         });
     });
 });

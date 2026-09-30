@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import { testInitialState } from 'ducks/test-reducers';
 import type { AttributeDescriptorModel } from 'types/attributes';
-import { AttributeContentType, AttributeType } from 'types/openapi';
+import { AttributeContentType, AttributeType, CertificateRegistrationState } from 'types/openapi';
 import { expect, test } from '../../../../../playwright/ct-test';
 import { CertificateRekeyDialogTestWrapper } from './CertificateRekeyDialogTestWrapper';
 
@@ -109,5 +109,90 @@ test.describe('CertificateRekeyDialog', () => {
         await expect.poll(async () => (await dispatched(page)).some((a) => a.type === 'certificates/rekeyCertificate')).toBe(true);
         const rekey = (await dispatched(page)).find((a) => a.type === 'certificates/rekeyCertificate');
         expect(rekey?.payload).toMatchObject({ rekey: { attributes: [] } });
+    });
+});
+
+const rekeyRequest = async (page: Page) =>
+    (await dispatched(page)).find((a) => a.type === 'certificates/rekeyCertificate') as
+        | { type: string; payload?: { rekey?: { authorizationSecret?: string } } }
+        | undefined;
+
+test.describe('CertificateRekeyDialog — challenge', () => {
+    test('a certificate without a registration rekeys with no challenge input', async ({ mount, page }) => {
+        await mount(<CertificateRekeyDialogTestWrapper />);
+
+        await expect(page.locator('#rekeyAuthorizationSecret')).toHaveCount(0);
+        await chooseExternalCsr(page);
+        await page.getByTestId('progress-button').click();
+
+        await expect.poll(() => rekeyRequest(page)).toBeTruthy();
+        expect((await rekeyRequest(page))?.payload?.rekey?.authorizationSecret).toBeUndefined();
+    });
+
+    test('a Locked registration asks for no challenge and leaves Core to refuse', async ({ mount, page }) => {
+        await mount(<CertificateRekeyDialogTestWrapper registrationState={CertificateRegistrationState.Locked} />);
+
+        await expect(page.locator('#rekeyAuthorizationSecret')).toHaveCount(0);
+        await chooseExternalCsr(page);
+        await expect(page.getByTestId('progress-button')).toBeEnabled();
+    });
+
+    test('an Active registration requires the challenge and sends it as authorizationSecret', async ({ mount, page }) => {
+        await mount(<CertificateRekeyDialogTestWrapper registrationState={CertificateRegistrationState.Active} />);
+
+        await expect(page.locator('#rekeyAuthorizationSecret')).toHaveAttribute('type', 'password');
+        await chooseExternalCsr(page);
+        await expect(page.getByTestId('progress-button')).toBeDisabled();
+
+        await page.locator('#rekeyAuthorizationSecret').fill('holder-challenge');
+        await page.getByTestId('progress-button').click();
+
+        await expect.poll(() => rekeyRequest(page)).toBeTruthy();
+        expect((await rekeyRequest(page))?.payload?.rekey?.authorizationSecret).toBe('holder-challenge');
+    });
+
+    test('a failed rekey keeps the dialog open with the Core message inline', async ({ mount, page }) => {
+        await mount(<CertificateRekeyDialogTestWrapper registrationState={CertificateRegistrationState.Active} />);
+
+        await chooseExternalCsr(page);
+        await page.locator('#rekeyAuthorizationSecret').fill('wrong-challenge');
+        await page.getByTestId('progress-button').click();
+        await expect.poll(() => rekeyRequest(page)).toBeTruthy();
+        await page.getByTestId('simulate-rekey-failure').click();
+
+        await expect(page.getByTestId('rekeyDialogError')).toContainText('locked after too many failed attempts');
+        await expect(page.getByTestId('rekeyDialogError').locator('p')).toHaveCSS('white-space', 'pre-line');
+        await expect(page.getByTestId('dialog-closed')).toHaveCount(0);
+    });
+
+    test('cannot be cancelled while a rekey is in flight', async ({ mount, page }) => {
+        await mount(<CertificateRekeyDialogTestWrapper />);
+
+        await chooseExternalCsr(page);
+        await page.getByTestId('progress-button').click();
+        await expect.poll(() => rekeyRequest(page)).toBeTruthy();
+
+        await expect(page.getByRole('button', { name: 'Cancel' })).toBeDisabled();
+    });
+
+    test('a confirmed rekey closes the dialog', async ({ mount, page }) => {
+        await mount(<CertificateRekeyDialogTestWrapper />);
+
+        await chooseExternalCsr(page);
+        await page.getByTestId('progress-button').click();
+        await expect.poll(() => rekeyRequest(page)).toBeTruthy();
+        await page.getByTestId('simulate-rekey-success').click();
+
+        await expect(page.getByTestId('dialog-closed')).toBeAttached();
+    });
+
+    test('clears a stale error when it opens', async ({ mount, page }) => {
+        await mount(
+            <CertificateRekeyDialogTestWrapper
+                preloadedState={{ certificates: { ...testInitialState.certificates, rekeyErrorMessage: 'stale' } }}
+            />,
+        );
+
+        await expect(page.getByTestId('rekeyDialogError')).toHaveCount(0);
     });
 });

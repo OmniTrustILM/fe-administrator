@@ -101,6 +101,14 @@ export const validateLength = (min: number, max: number) => (value: unknown) => 
     return length >= min && length <= max ? undefined : `Value must be between ${min} and ${max} characters long`;
 };
 
+// Core's register-side rule for a pre-registration challenge (@Size(12, 255), printable ASCII). A blank value is
+// no challenge at all — Core tests it with String.isBlank() — so it passes here. The verify path (issue, renew,
+// rekey) has no format rule and must not use this.
+export const validateRegistrationChallenge = () => (value: string | undefined) =>
+    !value?.trim() || (value.length >= 12 && value.length <= 255 && /^[\x20-\x7E]+$/.test(value))
+        ? undefined
+        : 'Challenge must be 12–255 printable ASCII characters';
+
 export const validateDuration =
     (denominations: ('d' | 'h' | 'm' | 's')[] = ['d', 'h', 'm', 's']) =>
     (value: string) => {

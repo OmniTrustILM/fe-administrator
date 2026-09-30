@@ -1,4 +1,4 @@
-import { configureStore, type Middleware } from '@reduxjs/toolkit';
+import { configureStore, type Middleware, type UnknownAction } from '@reduxjs/toolkit';
 import { useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
@@ -64,23 +64,47 @@ function recordingMiddleware(onAction: (action: RecordedAction) => void): Middle
     };
 }
 
-export function createRecordingStore(preloadedState: TestState | undefined, onAction: (action: RecordedAction) => void) {
+/**
+ * Runs one slice's real reducer for the given actions on top of the stubbed test reducers, so a harness can drive the
+ * transitions a component reacts to (in-flight flags, errors) while every other action leaves preloaded state alone.
+ */
+export function overlaySliceReducer(
+    slice: keyof ReturnType<typeof testReducers>,
+    reducer: (state: never, action: UnknownAction) => unknown,
+    actions: ReadonlyArray<{ match: (action: UnknownAction) => boolean }>,
+): typeof testReducers {
+    return ((state: ReturnType<typeof testReducers> | undefined, action: UnknownAction) => {
+        const next = testReducers(state, action);
+        if (!actions.some((creator) => creator.match(action))) return next;
+        return { ...next, [slice]: reducer(next[slice] as never, action) };
+    }) as typeof testReducers;
+}
+
+export function createRecordingStore(
+    preloadedState: TestState | undefined,
+    onAction: (action: RecordedAction) => void,
+    reducer: typeof testReducers = testReducers,
+) {
     return configureStore({
-        reducer: testReducers,
+        reducer,
         middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(recordingMiddleware(onAction)),
         preloadedState: { ...testInitialState, ...preloadedState },
     });
 }
 
 /** Keeps the dispatched actions whose type starts with `prefix`. Call it inside the mounted tree: a store made in a CT spec does not reach the browser. */
-export function useRecordingStore(preloadedState: TestState | undefined, prefix: string) {
+export function useRecordingStore(preloadedState: TestState | undefined, prefix: string, reducer?: typeof testReducers) {
     const [dispatched, setDispatched] = useState<RecordedAction[]>([]);
     const store = useMemo(
         () =>
-            createRecordingStore(preloadedState, ({ type, payload }) => {
-                if (type.startsWith(prefix)) setDispatched((seen) => [...seen, { type, payload }]);
-            }),
-        [preloadedState, prefix],
+            createRecordingStore(
+                preloadedState,
+                ({ type, payload }) => {
+                    if (type.startsWith(prefix)) setDispatched((seen) => [...seen, { type, payload }]);
+                },
+                reducer,
+            ),
+        [preloadedState, prefix, reducer],
     );
     return { store, dispatched };
 }

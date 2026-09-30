@@ -24,6 +24,8 @@ import { splitAttributeValidationErrors } from 'utils/raProfileValidation';
 import type { CertificateDetailResponseModel } from '../../../../types/certificate';
 import { CertificateRequestFormat, Resource } from '../../../../types/openapi';
 import { collectFormAttributes } from 'utils/attributes/attributes';
+import { validateRegistrationChallenge } from 'utils/validators';
+import { buildValidationRules } from 'utils/validators-helper';
 
 import { actions as utilsActuatorActions, selectors as utilsActuatorSelectors } from 'ducks/utilsActuator';
 import { ParseRequestRequestDtoParseTypeEnum } from 'types/openapi/utils';
@@ -760,16 +762,9 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                     <Controller
                                         control={control}
                                         name="authorizationSecret"
-                                        rules={{
-                                            // Optional: Core creates the authorization row only when a secret is
-                                            // supplied, so an empty value is a valid unchallenged pre-registration.
-                                            // Core tests it with String.isBlank(), hence the trim — an all-space
-                                            // value passes the ASCII pattern but would create no row.
-                                            validate: (value) =>
-                                                !value?.trim() ||
-                                                (value.length >= 12 && value.length <= 255 && /^[\x20-\x7E]+$/.test(value)) ||
-                                                'Challenge must be 12–255 printable ASCII characters',
-                                        }}
+                                        // Optional: Core creates the authorization row only when a secret is
+                                        // supplied, so an empty value is a valid unchallenged pre-registration.
+                                        rules={buildValidationRules([validateRegistrationChallenge()])}
                                         render={({ field: { value, onChange }, fieldState }) => (
                                             <TextInput
                                                 id="authorizationSecret"
