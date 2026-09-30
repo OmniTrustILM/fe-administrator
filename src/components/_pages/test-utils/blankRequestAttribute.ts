@@ -54,9 +54,7 @@ export async function fillCommonNameAndClearSan(page: Page) {
     await commonNameInput.click();
     await commonNameInput.fill('cmp-device-07');
     const sanInput = page.getByTestId('text-input-__attributes__csrAttributes__.SAN_DNS');
-    // Polled rather than toHaveValue: this module is typechecked, and the lockfile pins @playwright/test to a
-    // different Playwright than the CT expect, so a locator matcher does not resolve against its Page type.
-    await expect.poll(() => sanInput.inputValue()).toBe('default.example.com');
+    await expect(sanInput).toHaveValue('default.example.com');
     await sanInput.click();
     await sanInput.fill('');
 }
