@@ -450,7 +450,7 @@ test.describe('PagedList · configurable columns', () => {
             await mount(<PagedListColumnsWithStore {...drillDown} />);
             await expect(page.getByTestId('view-tabs-summary-drill-down')).toBeVisible();
 
-            await expect(page.getByTestId('drill-down-pending')).toHaveText('false');
+            await expect(page.getByTestId('handed-in')).toHaveText('none');
         });
 
         test('opens the pinned view with its own filters when the page is opened again', async ({ mount, page }) => {
@@ -487,6 +487,90 @@ test.describe('PagedList · configurable columns', () => {
             await expect(page.getByTestId('current-filters')).toContainText('acme');
             await expect(page.getByTestId('current-filters')).not.toContainText('from-the-dashboard');
             await expect(page.getByTestId('view-tabs-summary-drill-down')).toHaveCount(0);
+        });
+    });
+
+    test.describe('coming back from a certificate', () => {
+        const owners: ListViewModel = {
+            uuid: 'view-2',
+            name: 'Owners',
+            resource: Resource.Certificates,
+            columns: [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }],
+            filters: [],
+            defaultView: false,
+        };
+        const narrowed = [
+            {
+                fieldSource: FilterFieldSource.Property,
+                fieldIdentifier: 'COMMON_NAME',
+                condition: FilterConditionOperator.Contains,
+                value: 'kept-for-the-return',
+            },
+        ];
+        const roundTrip = {
+            rows,
+            standardColumns,
+            catalogue,
+            views: [expiryWatch, owners],
+            typedFilters: narrowed,
+            withRemountControl: true,
+        };
+
+        const leaveAndComeBack = async (page: Page) => {
+            await page.getByTestId('open-certificate').click();
+            await expect(page.getByRole('tablist')).toHaveCount(0);
+            await page.getByTestId('back-to-list').click();
+        };
+
+        test('keeps the filters the list was left with, on the tab it was on', async ({ mount, page }) => {
+            await mount(<PagedListColumnsWithStore {...roundTrip} />);
+            await page.getByRole('tab', { name: 'Owners' }).click();
+            await page.getByTestId('type-filters').click();
+            await expect(page.getByTestId('current-filters')).toContainText('kept-for-the-return');
+
+            await leaveAndComeBack(page);
+
+            await expect(page.getByRole('tab', { name: 'Owners' })).toHaveAttribute('aria-selected', 'true');
+            await expect(page.getByTestId('current-filters')).toContainText('kept-for-the-return');
+            await expect.poll(async () => (await lastRequest(page))?.filters).toEqual(narrowed);
+            await expect(page.getByTestId('view-tabs-summary-unsaved')).toContainText('Unsaved changes to this view');
+        });
+
+        test('reopens a drill-down it left, still claiming no view', async ({ mount, page }) => {
+            await mount(
+                <PagedListColumnsWithStore
+                    {...roundTrip}
+                    drillDownFilters={[
+                        {
+                            fieldSource: FilterFieldSource.Property,
+                            fieldIdentifier: 'COMMON_NAME',
+                            condition: FilterConditionOperator.Contains,
+                            value: 'from-the-dashboard',
+                        },
+                    ]}
+                />,
+            );
+            await expect(page.getByTestId('view-tabs-summary-drill-down')).toBeVisible();
+
+            await leaveAndComeBack(page);
+
+            await expect(page.getByTestId('view-tabs-summary-drill-down')).toBeVisible();
+            await expect(page.getByRole('tab', { selected: true })).toHaveCount(0);
+            await expect(page.getByTestId('current-filters')).toContainText('from-the-dashboard');
+        });
+
+        test('is taken by the return, so a later visit opens on the pinned view own filters', async ({ mount, page }) => {
+            await mount(<PagedListColumnsWithStore {...roundTrip} />);
+            await page.getByTestId('type-filters').click();
+            await leaveAndComeBack(page);
+            await expect(page.getByTestId('handed-in')).toHaveText('none');
+
+            await page.getByTestId('remount-list').click();
+            await page.getByTestId('remount-list').click();
+
+            await expect(page.getByRole('tab', { name: 'Expiry watch' })).toHaveAttribute('aria-selected', 'true');
+            await expect(page.getByTestId('current-filters')).toContainText('acme');
+            await expect(page.getByTestId('current-filters')).not.toContainText('kept-for-the-return');
         });
     });
 

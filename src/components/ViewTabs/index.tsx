@@ -1,6 +1,7 @@
 import Dialog from 'components/Dialog';
 import Dropdown, { type DropdownItem } from 'components/Dropdown';
 import SimpleBar from 'components/SimpleBar';
+import type { HandedInFilters, ViewPosition } from 'ducks/filters';
 import { actions as listViewActions, PENDING_VIEW_UUID, selectors as listViewSelectors } from 'ducks/listViews';
 import { ChevronDown, Plus } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
@@ -71,11 +72,14 @@ export type ViewTabsProps = Readonly<{
     /** The ordering the table is listing under. */
     sort?: ColumnSort;
     /**
-     * Whether the page arrived through a Dashboard drill-down. The strip then opens on the opening view's
-     * columns and ordering but keeps the drill-down's filters, and claims no view: those rows are not
-     * what any tab promises, so the table is neither reported as a drifted view nor offered to one as a save.
+     * Filters handed in for the strip to open on instead of its opening view's own. A drill-down opens on
+     * the opening view's columns and ordering and claims no view: those rows are not what any tab promises,
+     * so the table is neither reported as a drifted view nor offered to one as a save. A return goes back to
+     * the position the strip was left in, so the user's own filters come back on the tab they were on.
      */
-    opensOnDrillDown?: boolean;
+    handedIn?: HandedInFilters;
+    /** Reports where the strip stands, for a return from a detail page to come back to. */
+    onPositionChange?: (position: ViewPosition) => void;
     /**
      * Applies a view: its columns, its filters and its ordering, together. The caller is expected to
      * return to page 1 and clear its row selection — the filters change which rows exist, so a
@@ -126,7 +130,8 @@ export default function ViewTabs({
     columns,
     filters,
     sort,
-    opensOnDrillDown = false,
+    handedIn,
+    onPositionChange,
     onApply,
     dataTestId = 'view-tabs',
 }: ViewTabsProps) {
@@ -260,15 +265,27 @@ export default function ViewTabs({
         if (hasOpened.current === resource || !isReady) return;
         hasOpened.current = resource;
 
-        const initial = resolveInitialViewId(views);
+        const position = handedIn?.source === 'return' ? handedIn.position : undefined;
+        const returnsTo =
+            position && (position.viewId === STANDARD_VIEW_ID || views.some((view) => view.uuid === position.viewId))
+                ? position
+                : undefined;
+        const initial = returnsTo?.viewId ?? resolveInitialViewId(views);
         const opening =
             initial === STANDARD_VIEW_ID
                 ? toStandardSlice(standardColumns, standardSort)
                 : toViewSlice(views.find((view) => view.uuid === initial) as ListViewModel, fields, standardColumns);
         setActiveId(initial);
-        setIsDrillDown(opensOnDrillDown);
-        applyRef.current(opensOnDrillDown ? { ...opening, filters: liveSlice.current.filters } : opening);
-    }, [resource, isReady, views, fields, standardColumns, standardSort, opensOnDrillDown]);
+        setIsDrillDown(handedIn?.source === 'drill-down' || returnsTo?.isDrillDown === true);
+        applyRef.current(handedIn ? { ...opening, filters: liveSlice.current.filters } : opening);
+    }, [resource, isReady, views, fields, standardColumns, standardSort, handedIn]);
+
+    const positionRef = useRef(onPositionChange);
+    positionRef.current = onPositionChange;
+    useEffect(() => {
+        if (hasOpened.current !== resource || activeId === PENDING_VIEW_UUID) return;
+        positionRef.current?.({ viewId: activeId, isDrillDown });
+    }, [resource, activeId, isDrillDown]);
 
     // The tab the strip was on when a create started, so a create that fails has somewhere to go back
     // to instead of leaving the strip pointing at a row the rollback has taken away. A create that

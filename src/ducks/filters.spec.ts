@@ -181,32 +181,72 @@ describe('hasFailedFilters', () => {
     });
 });
 
-describe('drill-down filters', () => {
+describe('handed-in filters', () => {
     const stateFor = (filtersState: unknown) => ({ filters: filtersState }) as any;
     const drilledInto = [{ fieldSource: 'property', fieldIdentifier: 'CERTIFICATE_STATE', condition: 'EQUALS', value: ['issued'] }] as any;
+    const narrowed = [{ fieldSource: 'property', fieldIdentifier: 'COMMON_NAME', condition: 'CONTAINS', value: 'acme' }] as any;
+    const onExpiryWatch = { viewId: 'view-1', isDrillDown: false };
+    const handedIn = (next: typeof initialState) => selectors.handedInFilters(EntityType.CERTIFICATE)(stateFor(next));
 
-    test('is not pending before any drill-down', () => {
-        expect(selectors.isDrillDownPending(EntityType.CERTIFICATE)(stateFor(initialState))).toBe(false);
+    test('are absent before anything hands filters in', () => {
+        expect(handedIn(initialState)).toBeUndefined();
     });
 
-    test('applies the drill-down filters and marks them pending for the inventory to open on', () => {
+    test('a drill-down applies its filters and hands them in for the inventory to open on', () => {
         const next = reducer(initialState, actions.setDrillDownFilters({ entity: EntityType.CERTIFICATE, filters: drilledInto }));
 
         expect(selectors.currentFilters(EntityType.CERTIFICATE)(stateFor(next))).toEqual(drilledInto);
-        expect(selectors.isDrillDownPending(EntityType.CERTIFICATE)(stateFor(next))).toBe(true);
+        expect(handedIn(next)).toEqual({ source: 'drill-down' });
     });
 
-    test('is no longer pending once the inventory has opened on it, and keeps the filters it opened on', () => {
+    test('are taken once the inventory has opened on them, leaving the filters it opened on', () => {
         const drilled = reducer(initialState, actions.setDrillDownFilters({ entity: EntityType.CERTIFICATE, filters: drilledInto }));
-        const taken = reducer(drilled, actions.clearPendingDrillDown({ entity: EntityType.CERTIFICATE }));
+        const taken = reducer(drilled, actions.clearHandedInFilters({ entity: EntityType.CERTIFICATE }));
 
-        expect(selectors.isDrillDownPending(EntityType.CERTIFICATE)(stateFor(taken))).toBe(false);
+        expect(handedIn(taken)).toBeUndefined();
         expect(selectors.currentFilters(EntityType.CERTIFICATE)(stateFor(taken))).toEqual(drilledInto);
     });
 
-    test('is not marked pending by filters set from anywhere else', () => {
-        const next = reducer(initialState, actions.setCurrentFilters({ entity: EntityType.CERTIFICATE, currentFilters: drilledInto }));
+    test('are dropped by any filter the user sets, so a drill-down nobody opened on cannot label their filters later', () => {
+        const drilled = reducer(initialState, actions.setDrillDownFilters({ entity: EntityType.CERTIFICATE, filters: drilledInto }));
+        const typed = reducer(drilled, actions.setCurrentFilters({ entity: EntityType.CERTIFICATE, currentFilters: narrowed }));
 
-        expect(selectors.isDrillDownPending(EntityType.CERTIFICATE)(stateFor(next))).toBe(false);
+        expect(handedIn(typed)).toBeUndefined();
+    });
+
+    test('a return hands back the filters the list was left with, and the tab it was on', () => {
+        const positioned = reducer(initialState, actions.setViewPosition({ entity: EntityType.CERTIFICATE, position: onExpiryWatch }));
+        const left = reducer(positioned, actions.setPreservedFilters({ entity: EntityType.CERTIFICATE, preservedFilters: narrowed }));
+        const cleared = reducer(left, actions.setCurrentFilters({ entity: EntityType.CERTIFICATE, currentFilters: [] }));
+        const returned = reducer(cleared, actions.takePreservedFilters({ entity: EntityType.CERTIFICATE }));
+
+        expect(selectors.currentFilters(EntityType.CERTIFICATE)(stateFor(returned))).toEqual(narrowed);
+        expect(handedIn(returned)).toEqual({ source: 'return', position: onExpiryWatch });
+    });
+
+    test('a return is taken once, so a later visit opens on the view again', () => {
+        const left = reducer(initialState, actions.setPreservedFilters({ entity: EntityType.CERTIFICATE, preservedFilters: narrowed }));
+        const returned = reducer(left, actions.takePreservedFilters({ entity: EntityType.CERTIFICATE }));
+        const taken = reducer(returned, actions.clearHandedInFilters({ entity: EntityType.CERTIFICATE }));
+        const again = reducer(taken, actions.takePreservedFilters({ entity: EntityType.CERTIFICATE }));
+
+        expect(selectors.preservedFilters(EntityType.CERTIFICATE)(stateFor(returned))).toEqual([]);
+        expect(handedIn(again)).toBeUndefined();
+    });
+
+    test('a pending drill-down outranks filters kept for a return', () => {
+        const left = reducer(initialState, actions.setPreservedFilters({ entity: EntityType.CERTIFICATE, preservedFilters: narrowed }));
+        const drilled = reducer(left, actions.setDrillDownFilters({ entity: EntityType.CERTIFICATE, filters: drilledInto }));
+        const returned = reducer(drilled, actions.takePreservedFilters({ entity: EntityType.CERTIFICATE }));
+
+        expect(selectors.currentFilters(EntityType.CERTIFICATE)(stateFor(returned))).toEqual(drilledInto);
+        expect(handedIn(returned)).toEqual({ source: 'drill-down' });
+        expect(selectors.preservedFilters(EntityType.CERTIFICATE)(stateFor(returned))).toEqual([]);
+    });
+
+    test('nothing is handed in when nothing was kept for a return', () => {
+        const returned = reducer(initialState, actions.takePreservedFilters({ entity: EntityType.CERTIFICATE }));
+
+        expect(handedIn(returned)).toBeUndefined();
     });
 });

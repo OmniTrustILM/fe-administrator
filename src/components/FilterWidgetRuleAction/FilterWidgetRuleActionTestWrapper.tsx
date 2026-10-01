@@ -69,7 +69,6 @@ export function FilterWidgetRuleActionTestWrapper({
                     isFetchingFilters: false,
                     hasLoadedFilters: true,
                     hasFailedFilters: false,
-                    isDrillDownPending: false,
                 },
             },
         ];
@@ -83,7 +82,6 @@ export function FilterWidgetRuleActionTestWrapper({
                     isFetchingFilters: false,
                     hasLoadedFilters: true,
                     hasFailedFilters: false,
-                    isDrillDownPending: false,
                 },
             });
         }

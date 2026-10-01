@@ -1,4 +1,4 @@
-import { type EntityType, actions as filterActions, selectors as filterSelectors } from 'ducks/filters';
+import { type EntityType, type ViewPosition, actions as filterActions, selectors as filterSelectors } from 'ducks/filters';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router';
@@ -393,25 +393,30 @@ function PagedList<TRow extends object>({
     }, [checkedRows, onDeleteCallback, currentFilters, onCheckedRowsChanged, getFreshData]);
 
     /**
-     * Applies a view's columns, filters and ordering together. The strip opens on a pending drill-down by
-     * handing back the drill-down's own filters, and this is where the drill-down is taken, so the next
-     * visit opens on the view's filters instead of on whatever the duck still holds.
+     * Applies a view's columns, filters and ordering together. The strip opens on handed-in filters by
+     * handing them back, and this is where they are taken, so the next visit opens on the view's filters
+     * instead of on whatever the duck still holds.
      *
      * The ordering is put through the same sieve as `applyColumns`: this is the path the column
      * dialog comes back on, and it hands back the ordering the table was listing under before it.
      */
-    const isDrillDownPending = useSelector(filterSelectors.isDrillDownPending(entity));
+    const handedIn = useSelector(filterSelectors.handedInFilters(entity));
     const onApplyView = useCallback(
         (slice: ViewSlice) => {
             setColumnSelection(slice.columns);
             setSortSelection(toDisplayableSort(slice.sort, slice.columns));
             dispatch(filterActions.setCurrentFilters({ entity, currentFilters: slice.filters }));
-            if (isDrillDownPending) dispatch(filterActions.clearPendingDrillDown({ entity }));
+            if (handedIn) dispatch(filterActions.clearHandedInFilters({ entity }));
 
             dispatch(actions.setPagination({ entity, pageSize, pageNumber: 1 }));
             onCheckedRowsChanged([]);
         },
-        [dispatch, entity, pageSize, onCheckedRowsChanged, isDrillDownPending],
+        [dispatch, entity, pageSize, onCheckedRowsChanged, handedIn],
+    );
+
+    const onViewPositionChange = useCallback(
+        (position: ViewPosition) => dispatch(filterActions.setViewPosition({ entity, position })),
+        [dispatch, entity],
     );
 
     const onSortChanged = useCallback(
@@ -698,7 +703,8 @@ function PagedList<TRow extends object>({
                     columns={appliedColumns}
                     filters={currentFilters}
                     sort={appliedSort}
-                    opensOnDrillDown={isDrillDownPending}
+                    handedIn={handedIn}
+                    onPositionChange={onViewPositionChange}
                     onApply={onApplyView}
                 />
             )}

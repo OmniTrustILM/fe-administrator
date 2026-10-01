@@ -34,6 +34,18 @@ export enum EntityType {
     CBOM_SYNC_SKIP,
 }
 
+/** Where a list's view strip stood: the tab it was on, and whether that tab was only the backdrop to a drill-down. */
+export type ViewPosition = {
+    viewId: string;
+    isDrillDown: boolean;
+};
+
+/**
+ * Filters a list is to open on in place of its opening view's own. A drill-down opens over the pinned view
+ * without claiming it; a return from a detail page goes back to the position the list was left in.
+ */
+export type HandedInFilters = { source: 'drill-down' } | { source: 'return'; position?: ViewPosition };
+
 export type Filter = {
     entity: EntityType;
     filter: FilterObject;
@@ -56,11 +68,13 @@ type FilterObject = {
      */
     hasFailedFilters: boolean;
     /**
-     * Whether `currentFilters` were put there by a Dashboard drill-down that the inventory has not yet
-     * opened on. Only a pending drill-down outranks the opening view's own filters; filters merely left
-     * over from an earlier visit do not.
+     * Set while `currentFilters` were handed in for the list to open on and it has not yet done so. Only
+     * handed-in filters outrank the opening view's own; filters merely left over from an earlier visit do
+     * not. Any filter the user sets drops it, so a hand-in the list never opened on cannot label theirs.
      */
-    isDrillDownPending: boolean;
+    handedIn?: HandedInFilters;
+    /** The strip's last position, which a return from a detail page goes back to. */
+    viewPosition?: ViewPosition;
 };
 
 export type State = {
@@ -74,7 +88,6 @@ const EMPTY_FILTER: FilterObject = {
     isFetchingFilters: false,
     hasLoadedFilters: false,
     hasFailedFilters: false,
-    isDrillDownPending: false,
 };
 
 export const initialState: State = {
@@ -100,6 +113,7 @@ export const slice = createSlice({
         setCurrentFilters: (state, action: PayloadAction<{ entity: EntityType; currentFilters: SearchFilterModel[] }>) => {
             updateFilterState(state, action.payload.entity, (filter) => {
                 filter.currentFilters = action.payload.currentFilters;
+                filter.handedIn = undefined;
             });
         },
 
@@ -112,13 +126,33 @@ export const slice = createSlice({
         setDrillDownFilters: (state, action: PayloadAction<{ entity: EntityType; filters: SearchFilterModel[] }>) => {
             updateFilterState(state, action.payload.entity, (filter) => {
                 filter.currentFilters = action.payload.filters;
-                filter.isDrillDownPending = true;
+                filter.handedIn = { source: 'drill-down' };
             });
         },
 
-        clearPendingDrillDown: (state, action: PayloadAction<{ entity: EntityType }>) => {
+        /**
+         * Hands the filters a detail link kept back to the list it returns to, once: they are consumed here,
+         * so only the visit straight after is a return. A drill-down still waiting outranks them.
+         */
+        takePreservedFilters: (state, action: PayloadAction<{ entity: EntityType }>) => {
             updateFilterState(state, action.payload.entity, (filter) => {
-                filter.isDrillDownPending = false;
+                if (filter.handedIn?.source !== 'drill-down' && filter.preservedFilters.length > 0) {
+                    filter.currentFilters = filter.preservedFilters;
+                    filter.handedIn = { source: 'return', position: filter.viewPosition };
+                }
+                filter.preservedFilters = [];
+            });
+        },
+
+        clearHandedInFilters: (state, action: PayloadAction<{ entity: EntityType }>) => {
+            updateFilterState(state, action.payload.entity, (filter) => {
+                filter.handedIn = undefined;
+            });
+        },
+
+        setViewPosition: (state, action: PayloadAction<{ entity: EntityType; position: ViewPosition }>) => {
+            updateFilterState(state, action.payload.entity, (filter) => {
+                filter.viewPosition = action.payload.position;
             });
         },
 
@@ -169,8 +203,8 @@ const hasLoadedFilters = (entity: EntityType) =>
     createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).hasLoadedFilters);
 const hasFailedFilters = (entity: EntityType) =>
     createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).hasFailedFilters);
-const isDrillDownPending = (entity: EntityType) =>
-    createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).isDrillDownPending ?? false);
+const handedInFilters = (entity: EntityType) =>
+    createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).handedIn);
 
 export const selectors = {
     state,
@@ -181,7 +215,7 @@ export const selectors = {
     isFetchingFilters,
     hasLoadedFilters,
     hasFailedFilters,
-    isDrillDownPending,
+    handedInFilters,
 };
 
 export const actions = slice.actions;

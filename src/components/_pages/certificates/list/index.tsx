@@ -4,7 +4,7 @@ import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { actions, selectors } from 'ducks/certificates';
 import { EntityType, actions as filterActions, selectors as filterSelectors } from 'ducks/filters';
 import { selectors as pagingSelectors } from 'ducks/paging';
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate } from 'react-router';
 
@@ -19,7 +19,6 @@ import PagedList from 'components/PagedList/PagedList';
 import { actions as userAction, selectors as userSelectors } from 'ducks/users';
 import type { CertificateListResponseModel, SearchRequestModel } from 'types/certificate';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { preservedFilterRestore } from 'utils/preservedFilters';
 import { dateFormatter } from 'utils/dateUtil';
 import { type CertificateState, PlatformEnum, Resource } from '../../../../types/openapi';
 import { getCertificateStatusColor } from 'utils/certificate';
@@ -77,7 +76,6 @@ export default function CertificateList({
     const certificateTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateType));
     const isIncludeArchived = useSelector(selectors.isIncludeArchived);
     const currentFilters = useSelector(filterSelectors.currentFilters(EntityType.CERTIFICATE));
-    const preservedFilters = useSelector(filterSelectors.preservedFilters(EntityType.CERTIFICATE));
     const [upload, setUpload] = useState<boolean>(false);
     const [updateGroup, setUpdateGroup] = useState<boolean>(false);
     const [updateOwner, setUpdateOwner] = useState<boolean>(false);
@@ -287,26 +285,11 @@ export default function CertificateList({
         [dispatch, isIncludeArchived],
     );
 
-    // A deep-link restore applies on arrival and never again, or it fires later against a tab switch
-    // that deliberately cleared the filters; `preservedFilterRestore` decides when it is finished.
-    const hasRestoredPreservedFilters = useRef(false);
+    // The filters a certificate link kept come back as a hand-in, which the view strip opens on instead of
+    // replacing them with the opening view's own.
     useEffect(() => {
-        if (hasRestoredPreservedFilters.current) return;
-
-        const decision = preservedFilterRestore({
-            withPreservedFilters,
-            preservedCount: preservedFilters.length,
-            currentCount: currentFilters.length,
-        });
-
-        if (decision === 'inapplicable') return;
-
-        hasRestoredPreservedFilters.current = true;
-
-        if (decision === 'restore') {
-            dispatch(filterActions.setCurrentFilters({ entity: EntityType.CERTIFICATE, currentFilters: preservedFilters }));
-        }
-    }, [preservedFilters, currentFilters.length, dispatch, withPreservedFilters]);
+        if (withPreservedFilters) dispatch(filterActions.takePreservedFilters({ entity: EntityType.CERTIFICATE }));
+    }, [dispatch, withPreservedFilters]);
 
     return (
         <>

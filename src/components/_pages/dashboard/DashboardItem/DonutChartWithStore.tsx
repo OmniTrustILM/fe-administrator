@@ -24,7 +24,7 @@ const preloadedState: Parameters<typeof createMockStore>[0] = {
 };
 
 function DrillDownProbe({ entity }: Readonly<{ entity: DonutChartWithStoreProps['entity'] }>) {
-    const isPending = useSelector(filterSelectors.isDrillDownPending(entity));
+    const isPending = useSelector(filterSelectors.handedInFilters(entity))?.source === 'drill-down';
     return <span data-testid="drill-down-pending">{String(isPending)}</span>;
 }
 
