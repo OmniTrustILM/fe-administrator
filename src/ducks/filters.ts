@@ -131,10 +131,11 @@ export const slice = createSlice({
             });
         },
 
+        /** An empty drill-down narrows nothing, so it hands nothing in and the list opens on its view. */
         setDrillDownFilters: (state, action: PayloadAction<{ entity: EntityType; filters: SearchFilterModel[] }>) => {
             updateFilterState(state, action.payload.entity, (filter) => {
                 filter.currentFilters = action.payload.filters;
-                filter.handedIn = { source: 'drill-down' };
+                filter.handedIn = action.payload.filters.length > 0 ? { source: 'drill-down' } : undefined;
             });
         },
 
@@ -150,14 +151,22 @@ export const slice = createSlice({
             });
         },
 
-        /** Keeps what a list was left with only while the user stays inside its scope. */
+        /**
+         * Keeps what a list was left with only while the user stays inside its scope. Leaving the scope also
+         * drops a hand-in the list never opened on, so a later visit does not open on it.
+         */
         routeChanged: (state, action: PayloadAction<{ pathname: string }>) => {
             const { pathname } = action.payload;
             for (const { filter } of state.filters) {
                 const left = filter.leftList;
                 if (!left || pathname === left.path) continue;
-                if (isInScope(pathname, left.scope)) left.hasGoneAway = true;
-                else filter.leftList = undefined;
+                if (isInScope(pathname, left.scope)) {
+                    left.hasGoneAway = true;
+                } else {
+                    filter.leftList = undefined;
+                    filter.handedIn = undefined;
+                    filter.viewPosition = undefined;
+                }
             }
         },
 

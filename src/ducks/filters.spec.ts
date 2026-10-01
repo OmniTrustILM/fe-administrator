@@ -254,4 +254,20 @@ describe('handed-in filters', () => {
 
         expect(secretsHandedIn(returned)).toBeUndefined();
     });
+
+    test('a drill-down the list never opened on is dropped once the user leaves the list', () => {
+        const drilled = reducer(initialState, actions.setDrillDownFilters({ entity: EntityType.SECRET, filters: drilledInto }));
+        const away = route(leave(onSecretsView(drilled)), '/discoveries');
+        const returned = comeBack(route(away, '/secrets'));
+
+        expect(secretsHandedIn(returned)).toBeUndefined();
+        expect(selectors.handedInFilters(EntityType.SECRET)(stateFor(away))).toBeUndefined();
+    });
+
+    test('an empty drill-down hands nothing in, so the list opens on its view', () => {
+        const drilled = reducer(initialState, actions.setDrillDownFilters({ entity: EntityType.CERTIFICATE, filters: [] }));
+
+        expect(handedIn(drilled)).toBeUndefined();
+        expect(selectors.currentFilters(EntityType.CERTIFICATE)(stateFor(drilled))).toEqual([]);
+    });
 });

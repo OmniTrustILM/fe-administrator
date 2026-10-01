@@ -1,7 +1,7 @@
 import { test, expect } from '../../../../../playwright/ct-test';
 import DonutChartWithStore from './DonutChartWithStore';
 import { EntityType } from 'ducks/filters';
-import { CertificateState } from 'types/openapi';
+import { CertificateState, FilterConditionOperator, FilterFieldSource } from 'types/openapi';
 
 test.describe('DonutChart', () => {
     test('should render title and chart with data', async ({ mount }) => {
@@ -59,6 +59,14 @@ test.describe('DonutChart', () => {
                 entity={EntityType.CERTIFICATE}
                 redirect="/certificates"
                 onSetFilter={() => []}
+                legendFilters={[
+                    {
+                        fieldSource: FilterFieldSource.Property,
+                        fieldIdentifier: 'CERTIFICATE_STATE',
+                        condition: FilterConditionOperator.Equals,
+                        value: [CertificateState.Issued],
+                    },
+                ]}
             />,
         );
         await expect(page.getByTestId('drill-down-pending')).toHaveText('false');
@@ -66,6 +74,23 @@ test.describe('DonutChart', () => {
         await page.getByRole('button', { name: /issued/i }).click();
 
         await expect(page.getByTestId('drill-down-pending')).toHaveText('true');
+    });
+
+    test('hands nothing in for a segment that filters on nothing, so the inventory opens on its view', async ({ mount, page }) => {
+        await mount(
+            <DonutChartWithStore
+                title="Certificates by type"
+                data={{ [CertificateState.Issued]: 10, [CertificateState.Revoked]: 2 }}
+                entity={EntityType.CERTIFICATE}
+                redirect="/certificates"
+                onSetFilter={() => []}
+                legendFilters={[]}
+            />,
+        );
+
+        await page.getByRole('button', { name: /issued/i }).click();
+
+        await expect(page.getByTestId('drill-down-pending')).toHaveText('false');
     });
 
     test('should render non-clickable legend style when interactiveLegend is false', async ({ mount }) => {

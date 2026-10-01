@@ -223,10 +223,11 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
         return update(payload.entity, (filter) => ({ ...filter, currentFilters: payload.currentFilters ?? [], handedIn: undefined }));
     }
     if (a.type === 'filters/setDrillDownFilters') {
+        const filters = payload.filters ?? [];
         return update(payload.entity, (filter) => ({
             ...filter,
-            currentFilters: payload.filters ?? [],
-            handedIn: { source: 'drill-down' },
+            currentFilters: filters,
+            handedIn: filters.length > 0 ? { source: 'drill-down' } : undefined,
         }));
     }
     if (a.type === 'filters/clearHandedInFilters') {
@@ -254,7 +255,9 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
                 const left = entry.filter.leftList;
                 if (!left || pathname === left.path) return entry;
                 const inScope = pathname === left.scope || pathname.startsWith(`${left.scope}/`);
-                return { ...entry, filter: { ...entry.filter, leftList: inScope ? { ...left, hasGoneAway: true } : undefined } };
+                return inScope
+                    ? { ...entry, filter: { ...entry.filter, leftList: { ...left, hasGoneAway: true } } }
+                    : { ...entry, filter: { ...entry.filter, leftList: undefined, handedIn: undefined, viewPosition: undefined } };
             }),
         };
     }
