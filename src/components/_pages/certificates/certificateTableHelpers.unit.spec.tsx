@@ -88,8 +88,6 @@ describe('buildCertificateCellRegistry', () => {
     const opts = {
         isLinkDisabled: true,
         selectCertsOnly: false,
-        currentFilters: [],
-        dispatch: (() => undefined) as never,
         dateFormatter: (d: Date) => d.toISOString(),
         certificateTypeEnum: {},
         getEnumLabel: (_enumMap: unknown, key: string) => key,

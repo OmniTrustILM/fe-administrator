@@ -34,8 +34,6 @@ const inventories = [
         registry: buildCertificateCellRegistry({
             isLinkDisabled: false,
             selectCertsOnly: false,
-            currentFilters: [],
-            dispatch: () => undefined,
             dateFormatter: noop,
             certificateTypeEnum: undefined,
             getEnumLabel: noop,

@@ -462,7 +462,6 @@ describe('PagedList (redux pagination logic)', () => {
                         filter: {
                             availableFilters: [],
                             currentFilters,
-                            preservedFilters: [],
                             isFetchingFilters: false,
                         },
                     },
@@ -556,7 +555,6 @@ describe('PagedList (redux pagination logic)', () => {
                         filter: {
                             availableFilters: [],
                             currentFilters: [{ fieldSource: 'METADATA', fieldIdentifier: 'serialNumber', condition: 'EQUALS', value: 'x' }],
-                            preservedFilters: [],
                             isFetchingFilters: false,
                         },
                     },

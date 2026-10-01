@@ -17,7 +17,6 @@ export default function RelatedCertificatePicker({ onSelect }: Props) {
             multiSelect={false}
             isLinkDisabled={true}
             onCheckedRowsChanged={(rows) => onSelect(rows[0] as string | undefined)}
-            withPreservedFilters={false}
         />
     );
 }

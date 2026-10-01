@@ -155,6 +155,17 @@ function PagedList<TRow extends object>({
     // Taken apart rather than depended on whole: an unmemoised config would rebuild `getFreshData`
     // every render, and the effect watching it would refetch forever.
     const isColumnDriven = configurableColumns !== undefined;
+
+    // Only a list with a view strip records and takes a return: a picker over the same entity never takes one.
+    useEffect(() => {
+        if (!isColumnDriven) return;
+        const path = location.pathname;
+        const scope = `/${path.split('/')[1] ?? ''}`;
+        dispatch(filterActions.returnToList({ entity, path }));
+        return () => {
+            dispatch(filterActions.leaveList({ entity, path, scope }));
+        };
+    }, [dispatch, entity, isColumnDriven, location.pathname]);
     const {
         resource: columnsResource,
         standardColumns,
@@ -647,7 +658,6 @@ function PagedList<TRow extends object>({
 
     const onResetView = useCallback(() => {
         dispatch(filterActions.setCurrentFilters({ entity, currentFilters: [] }));
-        dispatch(filterActions.setPreservedFilters({ entity, preservedFilters: [] }));
         dispatch(actions.resetPaging({ entity }));
         // The columns stay: they belong to the tab the strip is on, and the strip offers Revert.
         setSortSelection(defaultSort);

@@ -26,7 +26,6 @@ const preloadedState: Parameters<typeof createMockStore>[0] = {
                         },
                     ],
                     currentFilters: [],
-                    preservedFilters: [],
                     isFetchingFilters: false,
                     hasLoadedFilters: true,
                 },

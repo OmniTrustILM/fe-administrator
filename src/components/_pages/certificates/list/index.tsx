@@ -2,7 +2,7 @@ import Dialog from 'components/Dialog';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 
 import { actions, selectors } from 'ducks/certificates';
-import { EntityType, actions as filterActions, selectors as filterSelectors } from 'ducks/filters';
+import { EntityType } from 'ducks/filters';
 import { selectors as pagingSelectors } from 'ducks/paging';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -40,7 +40,6 @@ type Props = Readonly<{
     hideWidgetButtons?: boolean;
     hideAdditionalButtons?: boolean;
     isLinkDisabled?: boolean;
-    withPreservedFilters?: boolean;
 }>;
 
 export default function CertificateList({
@@ -50,7 +49,6 @@ export default function CertificateList({
     onCheckedRowsChanged,
     hideAdditionalButtons = false,
     isLinkDisabled = false,
-    withPreservedFilters = true,
 }: Props) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
@@ -75,7 +73,6 @@ export default function CertificateList({
     const isImporting = useSelector(selectors.isImporting);
     const certificateTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateType));
     const isIncludeArchived = useSelector(selectors.isIncludeArchived);
-    const currentFilters = useSelector(filterSelectors.currentFilters(EntityType.CERTIFICATE));
     const [upload, setUpload] = useState<boolean>(false);
     const [updateGroup, setUpdateGroup] = useState<boolean>(false);
     const [updateOwner, setUpdateOwner] = useState<boolean>(false);
@@ -220,14 +217,12 @@ export default function CertificateList({
             buildCertificateCellRegistry({
                 isLinkDisabled,
                 selectCertsOnly,
-                currentFilters,
-                dispatch,
                 dateFormatter,
                 certificateTypeEnum,
                 getEnumLabel,
                 onPendingAction: setPendingAction,
             }),
-        [isLinkDisabled, selectCertsOnly, currentFilters, dispatch, certificateTypeEnum],
+        [isLinkDisabled, selectCertsOnly, certificateTypeEnum],
     );
 
     // Beside the heading rather than inside it: a sortable heading is itself a button.
@@ -284,12 +279,6 @@ export default function CertificateList({
         },
         [dispatch, isIncludeArchived],
     );
-
-    // The filters a certificate link kept come back as a hand-in, which the view strip opens on instead of
-    // replacing them with the opening view's own.
-    useEffect(() => {
-        if (withPreservedFilters) dispatch(filterActions.takePreservedFilters({ entity: EntityType.CERTIFICATE }));
-    }, [dispatch, withPreservedFilters]);
 
     return (
         <>

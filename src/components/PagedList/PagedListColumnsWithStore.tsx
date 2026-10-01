@@ -1,6 +1,6 @@
 import type { CellRegistry } from 'components/CustomTable/columns';
 import type { FiltersTestState, ListViewsTestState } from 'ducks/test-reducers';
-import { EntityType, actions as filterActions } from 'ducks/filters';
+import { EntityType } from 'ducks/filters';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { actions as pagingActions } from 'ducks/paging';
@@ -42,11 +42,6 @@ type Props = Readonly<{
     drillDownFilters?: SearchFilterModel[];
     /** Renders a control that unmounts the host and mounts it again, as leaving the page and returning does. */
     withRemountControl?: boolean;
-    /**
-     * Renders controls that leave for a certificate and come back, dispatching what the common-name link and
-     * the certificate list dispatch on the way, and one that sets these filters as the filter widget does.
-     */
-    typedFilters?: SearchFilterModel[];
     withRefreshControl?: boolean;
     /**
      * Renders a control that moves to page 2 with a row selected. Preloading the duck proves nothing:
@@ -110,55 +105,6 @@ function HandedIn() {
     );
 
     return <div data-testid="handed-in">{handedIn ? handedIn.source : 'none'}</div>;
-}
-
-function DetailRoundTripControls({
-    typedFilters,
-    onLeave,
-    onReturn,
-}: Readonly<{ typedFilters: SearchFilterModel[]; onLeave: () => void; onReturn: () => void }>) {
-    const dispatch = useDispatch();
-    const currentFilters = useSelector(
-        (state: { filters: FiltersTestState }) =>
-            state.filters.filters.find((entry) => entry.entity === EntityType.CERTIFICATE)?.filter.currentFilters ?? [],
-    );
-
-    return (
-        <>
-            <button
-                type="button"
-                data-testid="type-filters"
-                onClick={() => dispatch(filterActions.setCurrentFilters({ entity: EntityType.CERTIFICATE, currentFilters: typedFilters }))}
-            >
-                Type filters
-            </button>
-            <button
-                type="button"
-                data-testid="open-certificate"
-                onClick={() => {
-                    dispatch(
-                        filterActions.setPreservedFilters({
-                            entity: EntityType.CERTIFICATE,
-                            preservedFilters: currentFilters as SearchFilterModel[],
-                        }),
-                    );
-                    onLeave();
-                }}
-            >
-                Open certificate
-            </button>
-            <button
-                type="button"
-                data-testid="back-to-list"
-                onClick={() => {
-                    dispatch(filterActions.takePreservedFilters({ entity: EntityType.CERTIFICATE }));
-                    onReturn();
-                }}
-            >
-                Back to list
-            </button>
-        </>
-    );
 }
 
 function PagingControl() {
@@ -260,7 +206,6 @@ export default function PagedListColumnsWithStore({
     initialFilters = [],
     drillDownFilters,
     withRemountControl = false,
-    typedFilters,
     withRefreshControl = false,
     withPagingControl = false,
     withDeferredConfig = false,
@@ -285,7 +230,6 @@ export default function PagedListColumnsWithStore({
                         filter: {
                             availableFilters: withheldCatalogue ? [] : catalogue,
                             currentFilters: drillDownFilters ?? initialFilters,
-                            preservedFilters: [],
                             handedIn: drillDownFilters ? { source: 'drill-down' as const } : undefined,
                             isFetchingFilters: withheldCatalogue || isRefetchingCatalogue,
                             hasLoadedFilters: !withheldCatalogue,
@@ -375,14 +319,6 @@ export default function PagedListColumnsWithStore({
                 )}
 
                 <ListRequests requests={requests} />
-                {typedFilters && (
-                    <DetailRoundTripControls
-                        typedFilters={typedFilters}
-                        onLeave={() => setIsMounted(false)}
-                        onReturn={() => setIsMounted(true)}
-                    />
-                )}
-
                 <CurrentFilters />
                 <HandedIn />
                 <DispatchedActions />

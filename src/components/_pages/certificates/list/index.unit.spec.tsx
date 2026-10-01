@@ -4,7 +4,6 @@ import { createRoot, type Root } from 'react-dom/client';
 
 import CertificateList from './index';
 import certificatesReducer, { actions as certificatesActions, initialState as certificatesInitialState } from 'ducks/certificates';
-import { EntityType, actions as filterActions } from 'ducks/filters';
 import { clickByText, clickByTitle } from '../../test-utils/domActions';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
 import { useDispatchMock, useSelectorMock } from '../../test-utils/reactReduxMockModule';
@@ -96,26 +95,6 @@ describe('CertificateList', () => {
 
         expect(importDialog()).toBeNull();
         expect(listRefreshToken()).toBe('1');
-    });
-
-    it('takes the filters kept for a return from a certificate as it mounts', async () => {
-        const dispatch = vi.fn();
-        useDispatchMock.mockReturnValue(dispatch);
-
-        await renderList();
-
-        expect(dispatch).toHaveBeenCalledWith(filterActions.takePreservedFilters({ entity: EntityType.CERTIFICATE }));
-    });
-
-    it('leaves the filters kept for a return alone when mounted as a picker that ignores them', async () => {
-        const dispatch = vi.fn();
-        useDispatchMock.mockReturnValue(dispatch);
-
-        await act(async () => {
-            root.render(<CertificateList withPreservedFilters={false} />);
-        });
-
-        expect(dispatch).not.toHaveBeenCalledWith(filterActions.takePreservedFilters({ entity: EntityType.CERTIFICATE }));
     });
 
     it('keeps the import dialog open while an import runs', async () => {

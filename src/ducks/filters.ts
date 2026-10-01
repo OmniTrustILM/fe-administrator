@@ -46,6 +46,21 @@ export type ViewPosition = {
  */
 export type HandedInFilters = { source: 'drill-down' } | { source: 'return'; position?: ViewPosition };
 
+/**
+ * What a list with a view strip held when it unmounted, kept while the user stays inside the list's route
+ * scope, such as on one of its detail pages, so that coming back can hand it back.
+ */
+type LeftList = {
+    path: string;
+    scope: string;
+    filters: SearchFilterModel[];
+    position?: ViewPosition;
+    /** Whether a route other than the list's own has been visited since; a remount in place has not. */
+    hasGoneAway: boolean;
+};
+
+const isInScope = (pathname: string, scope: string) => pathname === scope || pathname.startsWith(`${scope}/`);
+
 export type Filter = {
     entity: EntityType;
     filter: FilterObject;
@@ -54,7 +69,6 @@ export type Filter = {
 type FilterObject = {
     availableFilters: SearchFieldListModel[];
     currentFilters: SearchFilterModel[];
-    preservedFilters: SearchFilterModel[];
     isFetchingFilters: boolean;
     /**
      * Whether a catalogue read has settled at least once, success or failure. `isFetchingFilters` is
@@ -75,6 +89,7 @@ type FilterObject = {
     handedIn?: HandedInFilters;
     /** The strip's last position, which a return from a detail page goes back to. */
     viewPosition?: ViewPosition;
+    leftList?: LeftList;
 };
 
 export type State = {
@@ -84,7 +99,6 @@ export type State = {
 const EMPTY_FILTER: FilterObject = {
     availableFilters: [],
     currentFilters: [],
-    preservedFilters: [],
     isFetchingFilters: false,
     hasLoadedFilters: false,
     hasFailedFilters: false,
@@ -117,12 +131,6 @@ export const slice = createSlice({
             });
         },
 
-        setPreservedFilters: (state, action: PayloadAction<{ entity: EntityType; preservedFilters: SearchFilterModel[] }>) => {
-            updateFilterState(state, action.payload.entity, (filter) => {
-                filter.preservedFilters = action.payload.preservedFilters;
-            });
-        },
-
         setDrillDownFilters: (state, action: PayloadAction<{ entity: EntityType; filters: SearchFilterModel[] }>) => {
             updateFilterState(state, action.payload.entity, (filter) => {
                 filter.currentFilters = action.payload.filters;
@@ -130,17 +138,41 @@ export const slice = createSlice({
             });
         },
 
-        /**
-         * Hands the filters a detail link kept back to the list it returns to, once: they are consumed here,
-         * so only the visit straight after is a return. A drill-down still waiting outranks them.
-         */
-        takePreservedFilters: (state, action: PayloadAction<{ entity: EntityType }>) => {
+        leaveList: (state, action: PayloadAction<{ entity: EntityType; path: string; scope: string }>) => {
             updateFilterState(state, action.payload.entity, (filter) => {
-                if (filter.handedIn?.source !== 'drill-down' && filter.preservedFilters.length > 0) {
-                    filter.currentFilters = filter.preservedFilters;
-                    filter.handedIn = { source: 'return', position: filter.viewPosition };
-                }
-                filter.preservedFilters = [];
+                filter.leftList = {
+                    path: action.payload.path,
+                    scope: action.payload.scope,
+                    filters: filter.currentFilters,
+                    position: filter.viewPosition,
+                    hasGoneAway: false,
+                };
+            });
+        },
+
+        /** Keeps what a list was left with only while the user stays inside its scope. */
+        routeChanged: (state, action: PayloadAction<{ pathname: string }>) => {
+            const { pathname } = action.payload;
+            for (const { filter } of state.filters) {
+                const left = filter.leftList;
+                if (!left || pathname === left.path) continue;
+                if (isInScope(pathname, left.scope)) left.hasGoneAway = true;
+                else filter.leftList = undefined;
+            }
+        },
+
+        /**
+         * Hands a list mounting at the path it was left at what it held then, once: the record is consumed here,
+         * so only the visit straight after is a return. A drill-down still waiting outranks it.
+         */
+        returnToList: (state, action: PayloadAction<{ entity: EntityType; path: string }>) => {
+            updateFilterState(state, action.payload.entity, (filter) => {
+                const left = filter.leftList;
+                filter.leftList = undefined;
+                if (!left?.hasGoneAway || left.path !== action.payload.path || filter.handedIn?.source === 'drill-down') return;
+
+                filter.currentFilters = left.filters;
+                filter.handedIn = { source: 'return', position: left.position };
             });
         },
 
@@ -195,8 +227,6 @@ const availableFilters = (entity: EntityType) =>
     createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).availableFilters);
 const currentFilters = (entity: EntityType) =>
     createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).currentFilters);
-const preservedFilters = (entity: EntityType) =>
-    createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).preservedFilters);
 const isFetchingFilters = (entity: EntityType) =>
     createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).isFetchingFilters);
 const hasLoadedFilters = (entity: EntityType) =>
@@ -211,7 +241,6 @@ export const selectors = {
 
     availableFilters,
     currentFilters,
-    preservedFilters,
     isFetchingFilters,
     hasLoadedFilters,
     hasFailedFilters,

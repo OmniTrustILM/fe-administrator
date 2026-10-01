@@ -123,12 +123,18 @@ export type FiltersTestState = {
         filter: {
             availableFilters: unknown[];
             currentFilters: unknown[];
-            preservedFilters: unknown[];
             isFetchingFilters: boolean;
             hasLoadedFilters: boolean;
             hasFailedFilters?: boolean;
             handedIn?: { source: 'drill-down' } | { source: 'return'; position?: { viewId: string; isDrillDown: boolean } };
             viewPosition?: { viewId: string; isDrillDown: boolean };
+            leftList?: {
+                path: string;
+                scope: string;
+                filters: unknown[];
+                position?: { viewId: string; isDrillDown: boolean };
+                hasGoneAway: boolean;
+            };
         };
     }>;
 };
@@ -146,9 +152,10 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
             entity: number;
             availableFilters?: unknown[];
             currentFilters?: unknown[];
-            preservedFilters?: unknown[];
             filters?: unknown[];
             position?: { viewId: string; isDrillDown: boolean };
+            path?: string;
+            scope?: string;
         };
     };
     if (a.type === 'filters/getAvailableFilters') {
@@ -163,7 +170,6 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
                 : {
                       availableFilters: [],
                       currentFilters: [],
-                      preservedFilters: [],
                       isFetchingFilters: false,
                       hasLoadedFilters: false,
                   };
@@ -205,7 +211,7 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
         const filter: FilterTestEntry =
             idx >= 0
                 ? state.filters[idx].filter
-                : { availableFilters: [], currentFilters: [], preservedFilters: [], isFetchingFilters: false, hasLoadedFilters: false };
+                : { availableFilters: [], currentFilters: [], isFetchingFilters: false, hasLoadedFilters: false };
         const next = { entity, filter: change(filter) };
         return idx >= 0
             ? { filters: state.filters.slice(0, idx).concat([next], state.filters.slice(idx + 1)) }
@@ -215,9 +221,6 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
     if (!payload) return state;
     if (a.type === 'filters/setCurrentFilters') {
         return update(payload.entity, (filter) => ({ ...filter, currentFilters: payload.currentFilters ?? [], handedIn: undefined }));
-    }
-    if (a.type === 'filters/setPreservedFilters') {
-        return update(payload.entity, (filter) => ({ ...filter, preservedFilters: payload.preservedFilters ?? [] }));
     }
     if (a.type === 'filters/setDrillDownFilters') {
         return update(payload.entity, (filter) => ({
@@ -232,15 +235,39 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
     if (a.type === 'filters/setViewPosition') {
         return update(payload.entity, (filter) => ({ ...filter, viewPosition: payload.position }));
     }
-    if (a.type === 'filters/takePreservedFilters') {
+    if (a.type === 'filters/leaveList') {
+        return update(payload.entity, (filter) => ({
+            ...filter,
+            leftList: {
+                path: payload.path ?? '',
+                scope: payload.scope ?? '',
+                filters: filter.currentFilters,
+                position: filter.viewPosition,
+                hasGoneAway: false,
+            },
+        }));
+    }
+    if (a.type === 'filters/routeChanged') {
+        const pathname = (a.payload as unknown as { pathname: string }).pathname;
+        return {
+            filters: state.filters.map((entry) => {
+                const left = entry.filter.leftList;
+                if (!left || pathname === left.path) return entry;
+                const inScope = pathname === left.scope || pathname.startsWith(`${left.scope}/`);
+                return { ...entry, filter: { ...entry.filter, leftList: inScope ? { ...left, hasGoneAway: true } : undefined } };
+            }),
+        };
+    }
+    if (a.type === 'filters/returnToList') {
         return update(payload.entity, (filter) => {
-            if (filter.handedIn?.source === 'drill-down' || filter.preservedFilters.length === 0)
-                return { ...filter, preservedFilters: [] };
+            const left = filter.leftList;
+            if (!left?.hasGoneAway || left.path !== payload.path || filter.handedIn?.source === 'drill-down')
+                return { ...filter, leftList: undefined };
             return {
                 ...filter,
-                currentFilters: filter.preservedFilters,
-                preservedFilters: [],
-                handedIn: { source: 'return', position: filter.viewPosition },
+                leftList: undefined,
+                currentFilters: left.filters,
+                handedIn: { source: 'return', position: left.position },
             };
         });
     }

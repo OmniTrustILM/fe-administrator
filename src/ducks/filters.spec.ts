@@ -13,13 +13,6 @@ describe('filters slice', () => {
         expect(found?.filter.currentFilters).toEqual(filters);
     });
 
-    test('setPreservedFilters sets preservedFilters for entity', () => {
-        const filters = [{ field: 'name', condition: 'EQUALS' as any, value: 'test' }];
-        const next = reducer(initialState, actions.setPreservedFilters({ entity: EntityType.KEY, preservedFilters: filters as any }));
-        const found = next.filters.find((f) => f.entity === EntityType.KEY);
-        expect(found?.filter.preservedFilters).toEqual(filters);
-    });
-
     test('getAvailableFilters / getAvailableFiltersSuccess / getAvailableFiltersFailure', () => {
         let next = reducer(initialState, actions.getAvailableFilters({ entity: EntityType.DISCOVERY, getAvailableFiltersApi: {} as any }));
         const found = next.filters.find((f) => f.entity === EntityType.DISCOVERY);
@@ -62,11 +55,6 @@ describe('filters selectors', () => {
         expect(selectors.currentFilters(EntityType.CERTIFICATE)(state)).toEqual([]);
     });
 
-    test('preservedFilters returns empty array when entity not in state', () => {
-        const state = { filters: initialState } as any;
-        expect(selectors.preservedFilters(EntityType.CERTIFICATE)(state)).toEqual([]);
-    });
-
     test('isFetchingFilters returns false when entity not in state', () => {
         const state = { filters: initialState } as any;
         expect(selectors.isFetchingFilters(EntityType.CERTIFICATE)(state)).toBe(false);
@@ -80,7 +68,6 @@ describe('filters selectors', () => {
                     filter: {
                         availableFilters: [{ field: 'cn' as any, label: 'CN', multiValue: false, type: 'string' as any }],
                         currentFilters: [{ field: 'cn' as any, condition: 'EQUALS' as any, value: 'x' }],
-                        preservedFilters: [{ field: 'cn' as any, condition: 'EQUALS' as any, value: 'y' }],
                         isFetchingFilters: true,
                     },
                 },
@@ -89,7 +76,6 @@ describe('filters selectors', () => {
         const state = { filters: filtersState } as any;
         expect(selectors.availableFilters(EntityType.KEY)(state)).toHaveLength(1);
         expect(selectors.currentFilters(EntityType.KEY)(state)).toHaveLength(1);
-        expect(selectors.preservedFilters(EntityType.KEY)(state)).toHaveLength(1);
         expect(selectors.isFetchingFilters(EntityType.KEY)(state)).toBe(true);
     });
 
@@ -214,39 +200,58 @@ describe('handed-in filters', () => {
         expect(handedIn(typed)).toBeUndefined();
     });
 
-    test('a return hands back the filters the list was left with, and the tab it was on', () => {
-        const positioned = reducer(initialState, actions.setViewPosition({ entity: EntityType.CERTIFICATE, position: onExpiryWatch }));
-        const left = reducer(positioned, actions.setPreservedFilters({ entity: EntityType.CERTIFICATE, preservedFilters: narrowed }));
-        const cleared = reducer(left, actions.setCurrentFilters({ entity: EntityType.CERTIFICATE, currentFilters: [] }));
-        const returned = reducer(cleared, actions.takePreservedFilters({ entity: EntityType.CERTIFICATE }));
+    const leave = (from: typeof initialState) =>
+        reducer(from, actions.leaveList({ entity: EntityType.SECRET, path: '/secrets', scope: '/secrets' }));
+    const route = (from: typeof initialState, pathname: string) => reducer(from, actions.routeChanged({ pathname }));
+    const comeBack = (from: typeof initialState) => reducer(from, actions.returnToList({ entity: EntityType.SECRET, path: '/secrets' }));
+    const secretsHandedIn = (next: typeof initialState) => selectors.handedInFilters(EntityType.SECRET)(stateFor(next));
+    const narrowedSecrets = (next: typeof initialState) =>
+        reducer(next, actions.setCurrentFilters({ entity: EntityType.SECRET, currentFilters: narrowed }));
+    const onSecretsView = (next: typeof initialState) =>
+        reducer(next, actions.setViewPosition({ entity: EntityType.SECRET, position: onExpiryWatch }));
 
-        expect(selectors.currentFilters(EntityType.CERTIFICATE)(stateFor(returned))).toEqual(narrowed);
-        expect(handedIn(returned)).toEqual({ source: 'return', position: onExpiryWatch });
+    test('a return from a page inside the list hands back the filters it was left with, and the tab it was on', () => {
+        const left = leave(onSecretsView(narrowedSecrets(initialState)));
+        const cleared = reducer(left, actions.setCurrentFilters({ entity: EntityType.SECRET, currentFilters: [] }));
+        const returned = comeBack(route(cleared, '/secrets/detail/1'));
+
+        expect(selectors.currentFilters(EntityType.SECRET)(stateFor(returned))).toEqual(narrowed);
+        expect(secretsHandedIn(returned)).toEqual({ source: 'return', position: onExpiryWatch });
+    });
+
+    test('a list that went nowhere is not returned to, as a remount in place does', () => {
+        const returned = comeBack(leave(narrowedSecrets(initialState)));
+
+        expect(secretsHandedIn(returned)).toBeUndefined();
+    });
+
+    test('leaving the list for another part of the app drops what it was left with', () => {
+        const away = route(route(leave(narrowedSecrets(initialState)), '/secrets/detail/1'), '/dashboard');
+        const returned = comeBack(route(away, '/secrets'));
+
+        expect(secretsHandedIn(returned)).toBeUndefined();
     });
 
     test('a return is taken once, so a later visit opens on the view again', () => {
-        const left = reducer(initialState, actions.setPreservedFilters({ entity: EntityType.CERTIFICATE, preservedFilters: narrowed }));
-        const returned = reducer(left, actions.takePreservedFilters({ entity: EntityType.CERTIFICATE }));
-        const taken = reducer(returned, actions.clearHandedInFilters({ entity: EntityType.CERTIFICATE }));
-        const again = reducer(taken, actions.takePreservedFilters({ entity: EntityType.CERTIFICATE }));
+        const returned = comeBack(route(leave(narrowedSecrets(initialState)), '/secrets/detail/1'));
+        const again = comeBack(route(reducer(returned, actions.clearHandedInFilters({ entity: EntityType.SECRET })), '/secrets/detail/1'));
 
-        expect(selectors.preservedFilters(EntityType.CERTIFICATE)(stateFor(returned))).toEqual([]);
-        expect(handedIn(again)).toBeUndefined();
+        expect(secretsHandedIn(again)).toBeUndefined();
     });
 
-    test('a pending drill-down outranks filters kept for a return', () => {
-        const left = reducer(initialState, actions.setPreservedFilters({ entity: EntityType.CERTIFICATE, preservedFilters: narrowed }));
-        const drilled = reducer(left, actions.setDrillDownFilters({ entity: EntityType.CERTIFICATE, filters: drilledInto }));
-        const returned = reducer(drilled, actions.takePreservedFilters({ entity: EntityType.CERTIFICATE }));
+    test('a pending drill-down outranks what the list was left with', () => {
+        const left = route(leave(narrowedSecrets(initialState)), '/secrets/detail/1');
+        const drilled = reducer(left, actions.setDrillDownFilters({ entity: EntityType.SECRET, filters: drilledInto }));
+        const returned = comeBack(drilled);
 
-        expect(selectors.currentFilters(EntityType.CERTIFICATE)(stateFor(returned))).toEqual(drilledInto);
-        expect(handedIn(returned)).toEqual({ source: 'drill-down' });
-        expect(selectors.preservedFilters(EntityType.CERTIFICATE)(stateFor(returned))).toEqual([]);
+        expect(selectors.currentFilters(EntityType.SECRET)(stateFor(returned))).toEqual(drilledInto);
+        expect(secretsHandedIn(returned)).toEqual({ source: 'drill-down' });
     });
 
-    test('nothing is handed in when nothing was kept for a return', () => {
-        const returned = reducer(initialState, actions.takePreservedFilters({ entity: EntityType.CERTIFICATE }));
+    test('a return to a different path within the scope is not a return to this list', () => {
+        const left = route(leave(narrowedSecrets(initialState)), '/secrets/detail/1');
+        const returned = reducer(left, actions.returnToList({ entity: EntityType.SECRET, path: '/secrets/other' }));
 
-        expect(handedIn(returned)).toBeUndefined();
+        expect(secretsHandedIn(returned)).toBeUndefined();
     });
 });
