@@ -50,7 +50,7 @@ export interface ResourceViews {
 export type State = {
     byResource: Partial<Record<Resource, ResourceViews>>;
     /**
-     * Column keys of attribute fields a stored view held while the catalogue did not publish them. Kept apart
+     * Per-view column keys of attribute fields a stored view held while the catalogue did not publish them. Kept apart
      * from `byResource`, which a list read rebuilds, because a later field under the same key is held back
      * until the user confirms it, and that must outlast leaving the page.
      */

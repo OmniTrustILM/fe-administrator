@@ -288,8 +288,14 @@ function catalogueKeys(catalogue: readonly SearchFieldDataByGroupDto[]): Set<str
     return keys;
 }
 
+/** A column of one stored view, so confirming an attribute in one view does not confirm it in another. */
+export function toDormantKey(viewUuid: string, column: Pick<ColumnDefinition, 'fieldSource' | 'fieldIdentifier'>): string {
+    return `${viewUuid}|${getColumnKey(column)}`;
+}
+
 /**
- * The keys of the attribute columns any stored view holds whose field the catalogue no longer publishes.
+ * The {@link toDormantKey} of each attribute column a stored view holds whose field the catalogue no longer
+ * publishes.
  *
  * A column names its attribute only by name and content type, so a later attribute under the same pair may be
  * a different one; these keys are what gets held back for the user to confirm. An empty catalogue names
@@ -302,8 +308,9 @@ export function goneAttributeKeys(views: readonly ListViewModel[], catalogue: re
     const gone = new Set<string>();
     for (const view of views) {
         for (const column of view.columns) {
-            const key = getColumnKey(column);
-            if (column.fieldSource !== FilterFieldSource.Property && !published.has(key)) gone.add(key);
+            if (column.fieldSource !== FilterFieldSource.Property && !published.has(getColumnKey(column))) {
+                gone.add(toDormantKey(view.uuid, column));
+            }
         }
     }
 

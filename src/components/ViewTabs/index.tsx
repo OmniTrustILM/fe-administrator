@@ -15,6 +15,7 @@ import {
     STANDARD_VIEW_NAME,
     duplicateName,
     goneAttributeKeys,
+    toDormantKey,
     isSliceDirty,
     newViewName,
     resolveInitialViewId,
@@ -144,9 +145,10 @@ export default function ViewTabs({
     const catalogueFields = useMemo(() => toCatalogueFields(catalogue, renderableProperties), [catalogue, renderableProperties]);
     const dormant = useMemo<ReadonlySet<string>>(() => new Set(dormantFields), [dormantFields]);
 
-    // A field seen gone and published again resolves no stored column until the user confirms it is the same attribute.
-    const fields = useMemo(
-        () => (dormant.size === 0 ? catalogueFields : catalogueFields.filter((field) => !dormant.has(getColumnKey(field)))),
+    // A field seen gone from a view and published again resolves no column of that view until the user confirms it.
+    const fieldsFor = useCallback(
+        (view: ListViewModel | undefined) =>
+            !view || dormant.size === 0 ? catalogueFields : catalogueFields.filter((field) => !dormant.has(toDormantKey(view.uuid, field))),
         [catalogueFields, dormant],
     );
     const schema = useMemo<ViewSchema>(() => ({ catalogue, standardColumns }), [catalogue, standardColumns]);
@@ -180,8 +182,8 @@ export default function ViewTabs({
     const activeTab = useMemo(() => tabs.find((tab) => tab.id === activeId) ?? tabs[0], [tabs, activeId]);
 
     const resolved = useMemo(
-        () => (activeView ? resolveView(activeView.columns, fields, standardColumns) : undefined),
-        [activeView, fields, standardColumns],
+        () => (activeView ? resolveView(activeView.columns, fieldsFor(activeView), standardColumns) : undefined),
+        [activeView, fieldsFor, standardColumns],
     );
 
     /**
@@ -195,14 +197,14 @@ export default function ViewTabs({
     const storedSlice = useMemo(() => {
         if (!activeView) return toStandardSlice(standardColumns, standardSort);
 
-        const slice = toViewSlice(activeView, fields, standardColumns);
+        const slice = toViewSlice(activeView, fieldsFor(activeView), standardColumns);
         return { ...slice, filters: toStorableFilters(slice.filters, catalogue, activeView.filters ?? []) };
-    }, [activeView, fields, standardColumns, standardSort, catalogue]);
+    }, [activeView, fieldsFor, standardColumns, standardSort, catalogue]);
 
     const held = useMemo(() => {
         if (!activeView || dormant.size === 0) return [];
         return resolveView(activeView.columns, catalogueFields, standardColumns).columns.filter(
-            (column) => column.available && dormant.has(getColumnKey(column)),
+            (column) => column.available && dormant.has(toDormantKey(activeView.uuid, column)),
         );
     }, [activeView, dormant, catalogueFields, standardColumns]);
 
@@ -244,9 +246,9 @@ export default function ViewTabs({
 
     const apply = useCallback(
         (view: ListViewModel | undefined) => {
-            applyRef.current(view ? toViewSlice(view, fields, standardColumns) : toStandardSlice(standardColumns, standardSort));
+            applyRef.current(view ? toViewSlice(view, fieldsFor(view), standardColumns) : toStandardSlice(standardColumns, standardSort));
         },
-        [fields, standardColumns, standardSort],
+        [fieldsFor, standardColumns, standardSort],
     );
 
     const select = useCallback(
@@ -272,13 +274,16 @@ export default function ViewTabs({
         if (gone.length > 0) dispatch(listViewActions.markFieldsDormant({ resource, keys: gone }));
     }, [dispatch, resource, isReady, views, catalogue, dormant]);
 
-    // Putting a held-back field on the table, from the column menu or otherwise, is the user's confirmation of it.
+    // Putting a held-back field on the table of its view, from the column menu or otherwise, is the user's confirmation of it.
     useEffect(() => {
-        if (!isReady || dormant.size === 0) return;
+        if (!isReady || !activeView || dormant.size === 0) return;
         const published = new Set(catalogueFields.map(getColumnKey));
-        const chosen = columns.map(getColumnKey).filter((key) => dormant.has(key) && published.has(key));
+        const chosen = columns
+            .filter((column) => published.has(getColumnKey(column)))
+            .map((column) => toDormantKey(activeView.uuid, column))
+            .filter((key) => dormant.has(key));
         if (chosen.length > 0) dispatch(listViewActions.releaseDormantFields({ resource, keys: chosen }));
-    }, [dispatch, resource, isReady, dormant, catalogueFields, columns]);
+    }, [dispatch, resource, isReady, activeView, dormant, catalogueFields, columns]);
 
     // The pinned view opens on load, and Standard when none is pinned. Once only: a later list read —
     // after a rename, say — must not throw the user back to the tab they started on.
@@ -292,9 +297,13 @@ export default function ViewTabs({
         applyRef.current(
             initial === STANDARD_VIEW_ID
                 ? toStandardSlice(standardColumns, standardSort)
-                : toViewSlice(views.find((view) => view.uuid === initial) as ListViewModel, fields, standardColumns),
+                : toViewSlice(
+                      views.find((view) => view.uuid === initial) as ListViewModel,
+                      fieldsFor(views.find((view) => view.uuid === initial)),
+                      standardColumns,
+                  ),
         );
-    }, [resource, isReady, views, fields, standardColumns, standardSort]);
+    }, [resource, isReady, views, fieldsFor, standardColumns, standardSort]);
 
     // The tab the strip was on when a create started, so a create that fails has somewhere to go back
     // to instead of leaving the strip pointing at a row the rollback has taken away. A create that
@@ -369,9 +378,9 @@ export default function ViewTabs({
             const view = toCreateRequest(name, resource, slice, schema);
             // The failure goes back to the tab the create started from, so that tab's slice is what comes back.
             create(view, () => ({ columns, filters, sort }));
-            applyRef.current({ ...slice, columns: resolveView(view.columns, fields, standardColumns).renderable });
+            applyRef.current({ ...slice, columns: resolveView(view.columns, catalogueFields, standardColumns).renderable });
         },
-        [create, resource, schema, standardColumns, fields, columns, filters, sort],
+        [create, resource, schema, standardColumns, catalogueFields, columns, filters, sort],
     );
 
     const patchView = useCallback(
@@ -419,8 +428,8 @@ export default function ViewTabs({
         if (activeId !== pending.fallbackId) return;
 
         setActiveId(restored.uuid);
-        applyRef.current(toViewSlice(restored, fields, standardColumns));
-    }, [views, activeId, isMutating, fields, standardColumns]);
+        applyRef.current(toViewSlice(restored, fieldsFor(restored), standardColumns));
+    }, [views, activeId, isMutating, fieldsFor, standardColumns]);
 
     const onDelete = useCallback(() => {
         if (!targetView) return;
@@ -459,11 +468,11 @@ export default function ViewTabs({
         if (!activeView) return;
 
         const keys = new Set(returned.map(getColumnKey));
-        dispatch(listViewActions.releaseDormantFields({ resource, keys: [...keys] }));
+        dispatch(listViewActions.releaseDormantFields({ resource, keys: returned.map((column) => toDormantKey(activeView.uuid, column)) }));
 
         const released = resolveView(
             activeView.columns,
-            catalogueFields.filter((field) => keys.has(getColumnKey(field)) || !dormant.has(getColumnKey(field))),
+            catalogueFields.filter((field) => keys.has(getColumnKey(field)) || !dormant.has(toDormantKey(activeView.uuid, field))),
             standardColumns,
         ).renderable;
         const shown = resolved?.fellBackToStandard
@@ -477,10 +486,13 @@ export default function ViewTabs({
         applyRef.current({ columns: shown, filters, sort });
     }, [activeView, returned, dispatch, resource, catalogueFields, dormant, standardColumns, resolved, columns, filters, sort]);
 
-    const onRemoveReturned = useCallback(() => {
+    // Withheld when every stored column is held back: Core refuses a view with no columns.
+    const remainingAfterReturned = useMemo(() => {
         const keys = new Set(returned.map(getColumnKey));
-        patchActive({ columns: activeView?.columns.filter((column) => !keys.has(getColumnKey(column))) });
-    }, [returned, patchActive, activeView]);
+        return activeView?.columns.filter((column) => !keys.has(getColumnKey(column))) ?? [];
+    }, [returned, activeView]);
+
+    const onRemoveReturned = useCallback(() => patchActive({ columns: remainingAfterReturned }), [patchActive, remainingAfterReturned]);
 
     const takenNames = useMemo(() => [STANDARD_VIEW_NAME, ...views.map((view) => view.name)], [views]);
 
@@ -627,7 +639,7 @@ export default function ViewTabs({
             <ReturnedColumnsNotice
                 returned={returned}
                 onShow={onShowReturned}
-                onRemove={onRemoveReturned}
+                onRemove={remainingAfterReturned.length > 0 ? onRemoveReturned : undefined}
                 isBusy={isMutating}
                 dataTestId={`${dataTestId}-returned`}
             />

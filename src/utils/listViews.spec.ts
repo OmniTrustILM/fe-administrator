@@ -17,6 +17,7 @@ import {
     STANDARD_VIEW_NAME,
     duplicateName,
     goneAttributeKeys,
+    toDormantKey,
     isSliceDirty,
     newViewName,
     resolveInitialViewId,
@@ -36,7 +37,6 @@ import {
     toViewSlice,
     withoutMissingFieldFilters,
 } from './listViews';
-import { getColumnKey } from './tableColumns';
 
 const view = (uuid: string, name: string, overrides: Partial<ListViewModel> = {}): ListViewModel => ({
     uuid,
@@ -957,13 +957,13 @@ describe('goneAttributeKeys', () => {
         },
     ];
 
-    it('names each attribute column a stored view holds whose field the catalogue no longer publishes, once', () => {
+    it('names each attribute column a stored view holds whose field the catalogue no longer publishes, per view', () => {
         const views = [
             view('a', 'One', { columns: [retired, { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'cost_centre' }] }),
             view('b', 'Two', { columns: [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }, retired] }),
         ];
 
-        expect(goneAttributeKeys(views, catalogue)).toEqual([getColumnKey(retired)]);
+        expect(goneAttributeKeys(views, catalogue)).toEqual([toDormantKey('a', retired), toDormantKey('b', retired)]);
     });
 
     it('leaves out a platform column the catalogue does not publish, which is not an attribute', () => {

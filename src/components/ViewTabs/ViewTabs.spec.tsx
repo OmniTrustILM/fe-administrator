@@ -89,7 +89,8 @@ const withRetired = [
     { filterFieldSource: FilterFieldSource.Custom, searchFieldData: [field('retired', 'Retired', { sortable: false })] },
 ] as unknown as SearchFieldDataByGroupDto[];
 
-const retiredKey = `${FilterFieldSource.Custom}:retired`;
+// Spelt out because a component spec runs in Node, where utils/listViews cannot be imported.
+const retiredKey = `view-1|${FilterFieldSource.Custom}:retired`;
 
 /** A view of the two columns the catalogue publishes, under a filter and an ordering of its own. */
 const expiryWatch = (overrides: Partial<ListViewModel> = {}): ListViewModel => ({
@@ -1300,6 +1301,43 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
         await expect(page.getByTestId('view-tabs-notice')).toContainText('showing 2 of its 3 columns');
         expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'retired']);
+    });
+
+    test('keeps holding a column back in one view when the user adds its attribute in another', async ({ mount, page }) => {
+        const first = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)] });
+        const second = audit({ columns: [stored('COMMON_NAME')] });
+        await mount(
+            strip({
+                views: [first, second],
+                laterCatalogue: withRetired,
+                driftColumn: column('retired', 'Retired', FilterFieldSource.Custom),
+            }),
+        );
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('retired cannot be shown');
+        await page.getByTestId('swap-catalogue').click();
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+
+        await page.getByTestId('view-tabs-tab-view-2').click();
+        await page.getByTestId('drift-columns').click();
+        await expect
+            .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
+            .toEqual(['COMMON_NAME', 'retired']);
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('Retired is available again');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+    });
+
+    test('offers no removal when every column of the view is held back, which would leave it with none', async ({ mount, page }) => {
+        const only = expiryWatch({ defaultView: true, columns: [stored('retired', FilterFieldSource.Custom)] });
+        await mount(strip({ views: [only], laterCatalogue: withRetired }));
+        await expect(page.getByTestId('view-tabs-notice')).toBeVisible();
+
+        await page.getByTestId('swap-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('Retired is available again');
+        await expect(page.getByTestId('view-tabs-returned-show')).toBeVisible();
+        await expect(page.getByTestId('view-tabs-returned-remove')).toHaveCount(0);
     });
 
     test('keeps a held-back column when the unavailable one beside it is removed', async ({ mount, page }) => {

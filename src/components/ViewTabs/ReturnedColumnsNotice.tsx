@@ -6,7 +6,7 @@ import { getColumnHeading } from 'utils/tableColumns';
 type Props = Readonly<{
     returned: PickerColumn[];
     onShow: () => void;
-    onRemove: () => void;
+    onRemove?: () => void;
     /** Whether a view write is already out. A second one would be built from the first one's optimistic state. */
     isBusy?: boolean;
     dataTestId: string;
@@ -38,9 +38,11 @@ export default function ReturnedColumnsNotice({ returned, onShow, onRemove, isBu
             <Button variant="transparent" color="secondary" onClick={onShow} data-testid={`${dataTestId}-show`}>
                 Show in view
             </Button>
-            <Button variant="transparent" color="secondary" onClick={onRemove} disabled={isBusy} data-testid={`${dataTestId}-remove`}>
-                Remove from view
-            </Button>
+            {onRemove && (
+                <Button variant="transparent" color="secondary" onClick={onRemove} disabled={isBusy} data-testid={`${dataTestId}-remove`}>
+                    Remove from view
+                </Button>
+            )}
         </output>
     );
 }
