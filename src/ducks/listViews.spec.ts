@@ -366,6 +366,31 @@ describe('deleting a view', () => {
     });
 });
 
+describe('attribute columns seen without their field', () => {
+    const dormant = (state: State) => selectors.dormantFields(Resource.Certificates)({ [slice.name]: state } as never);
+
+    test('are remembered per resource, each once', () => {
+        const marked = reduceAll([
+            actions.markFieldsDormant({ resource: Resource.Certificates, keys: ['Custom:retired'] }),
+            actions.markFieldsDormant({ resource: Resource.Certificates, keys: ['Custom:retired', 'Meta:gone'] }),
+        ]);
+
+        expect(dormant(marked)).toEqual(['Custom:retired', 'Meta:gone']);
+        expect(selectors.dormantFields(Resource.Keys)({ [slice.name]: marked } as never)).toEqual([]);
+    });
+
+    test('are forgotten once released, and survive a fresh read of the views', () => {
+        const released = reduceAll([
+            actions.markFieldsDormant({ resource: Resource.Certificates, keys: ['Custom:retired', 'Meta:gone'] }),
+            actions.listViews({ resource: Resource.Certificates }),
+            actions.listViewsSuccess({ resource: Resource.Certificates, views: [] }),
+            actions.releaseDormantFields({ resource: Resource.Certificates, keys: ['Custom:retired'] }),
+        ]);
+
+        expect(dormant(released)).toEqual(['Meta:gone']);
+    });
+});
+
 describe('resetState', () => {
     test('drops every resource', () => {
         const cleared = reduce(listed([view('a', 'One')]), actions.resetState());

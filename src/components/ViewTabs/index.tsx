@@ -14,6 +14,7 @@ import {
     STANDARD_VIEW_ID,
     STANDARD_VIEW_NAME,
     duplicateName,
+    goneAttributeKeys,
     isSliceDirty,
     newViewName,
     resolveInitialViewId,
@@ -36,6 +37,7 @@ import {
 import { type ColumnSort, getColumnKey } from 'utils/tableColumns';
 import NameViewDialog from './NameViewDialog';
 import OverflowViewsMenu from './OverflowViewsMenu';
+import ReturnedColumnsNotice from './ReturnedColumnsNotice';
 import UnresolvedColumnsNotice from './UnresolvedColumnsNotice';
 import ViewSummaryBar from './ViewSummaryBar';
 import ViewTab from './ViewTab';
@@ -131,6 +133,7 @@ export default function ViewTabs({
     const isMutating = useSelector(listViewSelectors.isMutating(resource));
     const isStale = useSelector(listViewSelectors.isStale(resource));
     const createdUuid = useSelector(listViewSelectors.createdUuid(resource));
+    const dormantFields = useSelector(listViewSelectors.dormantFields(resource));
 
     const [activeId, setActiveId] = useState(STANDARD_VIEW_ID);
     const [dialog, setDialog] = useState<PendingDialog | undefined>(undefined);
@@ -138,7 +141,14 @@ export default function ViewTabs({
     const [dismissedNotices, setDismissedNotices] = useState<ReadonlySet<string>>(() => new Set());
     const [targetId, setTargetId] = useState<string | undefined>(undefined);
 
-    const fields = useMemo(() => toCatalogueFields(catalogue, renderableProperties), [catalogue, renderableProperties]);
+    const catalogueFields = useMemo(() => toCatalogueFields(catalogue, renderableProperties), [catalogue, renderableProperties]);
+    const dormant = useMemo<ReadonlySet<string>>(() => new Set(dormantFields), [dormantFields]);
+
+    // A field seen gone and published again resolves no stored column until the user confirms it is the same attribute.
+    const fields = useMemo(
+        () => (dormant.size === 0 ? catalogueFields : catalogueFields.filter((field) => !dormant.has(getColumnKey(field)))),
+        [catalogueFields, dormant],
+    );
     const schema = useMemo<ViewSchema>(() => ({ catalogue, standardColumns }), [catalogue, standardColumns]);
 
     /**
@@ -189,8 +199,23 @@ export default function ViewTabs({
         return { ...slice, filters: toStorableFilters(slice.filters, catalogue, activeView.filters ?? []) };
     }, [activeView, fields, standardColumns, standardSort, catalogue]);
 
+    const held = useMemo(() => {
+        if (!activeView || dormant.size === 0) return [];
+        return resolveView(activeView.columns, catalogueFields, standardColumns).columns.filter(
+            (column) => column.available && dormant.has(getColumnKey(column)),
+        );
+    }, [activeView, dormant, catalogueFields, standardColumns]);
+
+    const returned = useMemo(() => {
+        const shown = new Set(columns.map(getColumnKey));
+        return held.filter((column) => !shown.has(getColumnKey(column)));
+    }, [held, columns]);
+
     /** The stored columns this table cannot render, which the notice names. */
-    const unavailable = useMemo(() => resolved?.columns.filter((column) => !column.available) ?? [], [resolved]);
+    const unavailable = useMemo(() => {
+        const heldKeys = new Set(held.map(getColumnKey));
+        return resolved?.columns.filter((column) => !column.available && !heldKeys.has(getColumnKey(column))) ?? [];
+    }, [resolved, held]);
 
     // A dismissal holds for the view and the columns it named, so a column that goes missing later is reported again.
     const noticeKey = useMemo(
@@ -240,6 +265,12 @@ export default function ViewTabs({
     useEffect(() => {
         if (requestedFor === resource && isStale && !isMutating) dispatch(listViewActions.listViews({ resource }));
     }, [dispatch, resource, requestedFor, isStale, isMutating]);
+
+    useEffect(() => {
+        if (!isReady) return;
+        const gone = goneAttributeKeys(views, catalogue).filter((key) => !dormant.has(key));
+        if (gone.length > 0) dispatch(listViewActions.markFieldsDormant({ resource, keys: gone }));
+    }, [dispatch, resource, isReady, views, catalogue, dormant]);
 
     // The pinned view opens on load, and Standard when none is pinned. Once only: a later list read —
     // after a rename, say — must not throw the user back to the tab they started on.
@@ -416,6 +447,33 @@ export default function ViewTabs({
         });
     }, [activeView, patchActive, columns, resolved, storableFilters, sort]);
 
+    const onShowReturned = useCallback(() => {
+        if (!activeView) return;
+
+        const keys = new Set(returned.map(getColumnKey));
+        dispatch(listViewActions.releaseDormantFields({ resource, keys: [...keys] }));
+
+        const released = resolveView(
+            activeView.columns,
+            catalogueFields.filter((field) => keys.has(getColumnKey(field)) || !dormant.has(getColumnKey(field))),
+            standardColumns,
+        ).renderable;
+        const shown = resolved?.fellBackToStandard
+            ? released
+            : reinsert(
+                  columns,
+                  released.filter((column) => keys.has(getColumnKey(column))),
+                  released,
+                  getColumnKey,
+              );
+        applyRef.current({ columns: shown, filters, sort });
+    }, [activeView, returned, dispatch, resource, catalogueFields, dormant, standardColumns, resolved, columns, filters, sort]);
+
+    const onRemoveReturned = useCallback(() => {
+        const keys = new Set(returned.map(getColumnKey));
+        patchActive({ columns: activeView?.columns.filter((column) => !keys.has(getColumnKey(column))) });
+    }, [returned, patchActive, activeView]);
+
     const takenNames = useMemo(() => [STANDARD_VIEW_NAME, ...views.map((view) => view.name)], [views]);
 
     const viewActions = useCallback(
@@ -558,10 +616,19 @@ export default function ViewTabs({
                 </div>
             </SimpleBar>
 
+            <ReturnedColumnsNotice
+                returned={returned}
+                onShow={onShowReturned}
+                onRemove={onRemoveReturned}
+                isBusy={isMutating}
+                dataTestId={`${dataTestId}-returned`}
+            />
+
             {resolved && !(noticeKey && dismissedNotices.has(noticeKey)) && (
                 <UnresolvedColumnsNotice
                     unavailable={unavailable}
                     storedCount={resolved.columns.length}
+                    withheld={held.length}
                     fellBackToStandard={resolved.fellBackToStandard}
                     // Written from the stored side, not from the table: the table is showing the platform
                     // fallback when nothing resolved, and carries unsaved changes besides, so saving it
@@ -569,7 +636,12 @@ export default function ViewTabs({
                     // on a fallback, where nothing resolved and there is no column list left to write.
                     onRemove={
                         activeView && !resolved.fellBackToStandard
-                            ? () => patchActive({ columns: toStoredColumns(resolved.columns.filter((column) => column.available)) })
+                            ? () => {
+                                  const removed = new Set(unavailable.map(getColumnKey));
+                                  patchActive({
+                                      columns: toStoredColumns(resolved.columns.filter((column) => !removed.has(getColumnKey(column)))),
+                                  });
+                              }
                             : undefined
                     }
                     onDismiss={() => {

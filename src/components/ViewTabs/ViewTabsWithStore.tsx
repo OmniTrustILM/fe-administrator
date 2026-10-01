@@ -26,6 +26,10 @@ type Props = Readonly<{
     refreshedViews?: ListViewModel[];
     /** Withholds the catalogue until released, so a test can make it land after the views did. */
     withheldCatalogue?: boolean;
+    /** The catalogue a later read answers with once `swap-catalogue` is pressed, e.g. with an attribute re-created. */
+    laterCatalogue?: SearchFieldDataByGroupDto[];
+    /** Attribute column keys an earlier visit saw without their field. */
+    dormantFields?: string[];
     /** Passed straight through, so a test can say the catalogue read has settled on nothing. */
     isCatalogueLoaded?: boolean;
     /** As an array: a `Set` does not survive the props boundary. */
@@ -61,6 +65,8 @@ export default function ViewTabsWithStore({
     isRefreshing = false,
     refreshedViews = [],
     withheldCatalogue = false,
+    laterCatalogue,
+    dormantFields,
     isCatalogueLoaded,
     renderableProperties,
     driftColumn,
@@ -71,6 +77,7 @@ export default function ViewTabsWithStore({
         createMockStore({
             listViews: {
                 byResource: { [resource]: { views, isFetching: !hasLoaded || isRefreshing, hasLoaded, isMutating } },
+                ...(dormantFields ? { dormantFields: { [resource]: dormantFields } } : {}),
                 dispatched: [],
             },
         }),
@@ -78,14 +85,18 @@ export default function ViewTabsWithStore({
 
     const [slice, setSlice] = useState<ViewSlice>({ columns: standardColumns, filters: [], sort: undefined });
     const [isCatalogueReleased, setIsCatalogueReleased] = useState(!withheldCatalogue);
+    const [isCatalogueSwapped, setIsCatalogueSwapped] = useState(false);
+    const [mountKey, setMountKey] = useState(0);
+    const liveCatalogue = isCatalogueSwapped && laterCatalogue ? laterCatalogue : catalogue;
     const gate = useMemo(() => (renderableProperties ? new Set(renderableProperties) : undefined), [renderableProperties]);
 
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/certificates']}>
                 <ViewTabs
+                    key={mountKey}
                     resource={resource}
-                    catalogue={isCatalogueReleased ? catalogue : []}
+                    catalogue={isCatalogueReleased ? liveCatalogue : []}
                     isCatalogueLoaded={isCatalogueReleased ? isCatalogueLoaded : false}
                     standardColumns={standardColumns}
                     renderableProperties={gate}
@@ -97,6 +108,14 @@ export default function ViewTabsWithStore({
 
                 <div data-testid="applied-slice">{JSON.stringify(slice)}</div>
                 <DispatchedActions />
+
+                <button type="button" data-testid="swap-catalogue" onClick={() => setIsCatalogueSwapped(true)}>
+                    answer a later catalogue read
+                </button>
+
+                <button type="button" data-testid="remount-strip" onClick={() => setMountKey((current) => current + 1)}>
+                    leave the page and come back
+                </button>
 
                 <button type="button" data-testid="release-catalogue" onClick={() => setIsCatalogueReleased(true)}>
                     release the catalogue

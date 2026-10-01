@@ -1396,6 +1396,7 @@ export type ListViewsTestState = {
             rollback?: ListViewDto[];
         }
     >;
+    dormantFields?: Record<string, string[]>;
     error?: string;
     dispatched: Array<{ type: string; payload?: unknown }>;
 };
@@ -1417,6 +1418,17 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
 
     const resource = a.payload?.resource;
     if (!resource) return recorded;
+
+    const keys = (a.payload as { keys?: string[] }).keys ?? [];
+    const dormant = recorded.dormantFields?.[resource] ?? [];
+
+    if (a.type === 'listViews/markFieldsDormant') {
+        return { ...recorded, dormantFields: { ...recorded.dormantFields, [resource]: [...new Set([...dormant, ...keys])] } };
+    }
+
+    if (a.type === 'listViews/releaseDormantFields') {
+        return { ...recorded, dormantFields: { ...recorded.dormantFields, [resource]: dormant.filter((key) => !keys.includes(key)) } };
+    }
 
     const view = a.payload?.view;
     const entry = recorded.byResource[resource] ?? { views: [], isFetching: false, hasLoaded: false, isMutating: false };

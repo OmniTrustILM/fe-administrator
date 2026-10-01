@@ -288,6 +288,28 @@ function catalogueKeys(catalogue: readonly SearchFieldDataByGroupDto[]): Set<str
     return keys;
 }
 
+/**
+ * The keys of the attribute columns any stored view holds whose field the catalogue no longer publishes.
+ *
+ * A column names its attribute only by name and content type, so a later attribute under the same pair may be
+ * a different one; these keys are what gets held back for the user to confirm. An empty catalogue names
+ * nothing, because it has not arrived.
+ */
+export function goneAttributeKeys(views: readonly ListViewModel[], catalogue: readonly SearchFieldDataByGroupDto[]): string[] {
+    const published = catalogueKeys(catalogue);
+    if (published.size === 0) return [];
+
+    const gone = new Set<string>();
+    for (const view of views) {
+        for (const column of view.columns) {
+            const key = getColumnKey(column);
+            if (column.fieldSource !== FilterFieldSource.Property && !published.has(key)) gone.add(key);
+        }
+    }
+
+    return [...gone];
+}
+
 /** What a write is checked against: the live column catalogue and the page's own platform column set. */
 export interface ViewSchema {
     catalogue: readonly SearchFieldDataByGroupDto[];
@@ -462,9 +484,10 @@ export function toStoredColumnsKeepingUnavailable(
     resolved: readonly PickerColumn[],
 ): ListViewColumnModel[] {
     const stored = toStoredColumns(rendered);
+    const renderedKeys = new Set(rendered.map(getColumnKey));
 
     resolved.forEach((column, index) => {
-        if (column.available) return;
+        if (column.available || renderedKeys.has(getColumnKey(column))) return;
         stored.splice(Math.min(index, stored.length), 0, ...toStoredColumns([column]));
     });
 

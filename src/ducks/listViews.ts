@@ -49,12 +49,21 @@ export interface ResourceViews {
 
 export type State = {
     byResource: Partial<Record<Resource, ResourceViews>>;
+    /**
+     * Column keys of attribute fields a stored view held while the catalogue did not publish them. Kept apart
+     * from `byResource`, which a list read rebuilds, because a later field under the same key is held back
+     * until the user confirms it, and that must outlast leaving the page.
+     */
+    dormantFields: Partial<Record<Resource, string[]>>;
     error?: string;
 };
 
 export const initialState: State = {
     byResource: {},
+    dormantFields: {},
 };
+
+const NO_DORMANT_FIELDS: string[] = [];
 
 const EMPTY_RESOURCE_VIEWS: ResourceViews = {
     views: [],
@@ -224,6 +233,18 @@ export const slice = createSlice({
             rollBack(state, action.payload.resource, action.payload.error);
         },
 
+        markFieldsDormant: (state, action: PayloadAction<{ resource: Resource; keys: string[] }>) => {
+            const held = new Set(state.dormantFields[action.payload.resource] ?? []);
+            for (const key of action.payload.keys) held.add(key);
+            state.dormantFields[action.payload.resource] = [...held];
+        },
+
+        releaseDormantFields: (state, action: PayloadAction<{ resource: Resource; keys: string[] }>) => {
+            const released = new Set(action.payload.keys);
+            const held = state.dormantFields[action.payload.resource];
+            if (held) state.dormantFields[action.payload.resource] = held.filter((key) => !released.has(key));
+        },
+
         deleteView: (state, action: PayloadAction<{ resource: Resource; uuid: string }>) => {
             const entry = beginMutation(state, action.payload.resource);
             entry.views = entry.views.filter((view) => view.uuid !== action.payload.uuid);
@@ -252,6 +273,7 @@ const isMutating = (resource: Resource) => createSelector(resourceViews(resource
 const isStale = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.isStale ?? false);
 const createdUuid = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.createdUuid);
 const error = createSelector(state, (state) => state?.error);
+const dormantFields = (resource: Resource) => createSelector(state, (state) => state?.dormantFields?.[resource] ?? NO_DORMANT_FIELDS);
 
 export const selectors = {
     state,
@@ -263,6 +285,7 @@ export const selectors = {
     isStale,
     createdUuid,
     error,
+    dormantFields,
 };
 
 export const actions = slice.actions;
