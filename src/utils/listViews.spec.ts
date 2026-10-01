@@ -972,7 +972,7 @@ describe('goneAttributeKeys', () => {
         expect(goneAttributeKeys(views, catalogue)).toEqual([]);
     });
 
-    it('names nothing against an empty catalogue, which has not arrived rather than lost every field', () => {
-        expect(goneAttributeKeys([view('a', 'One', { columns: [retired] })], [])).toEqual([]);
+    it('names every attribute column against a settled empty catalogue', () => {
+        expect(goneAttributeKeys([view('a', 'One', { columns: [retired] })], [])).toEqual([toDormantKey('a', retired)]);
     });
 });

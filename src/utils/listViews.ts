@@ -298,13 +298,11 @@ export function toDormantKey(viewUuid: string, column: Pick<ColumnDefinition, 'f
  * publishes.
  *
  * A column names its attribute only by name and content type, so a later attribute under the same pair may be
- * a different one; these keys are what gets held back for the user to confirm. An empty catalogue names
- * nothing, because it has not arrived.
+ * a different one; these keys are what gets held back for the user to confirm. Call it only once the catalogue
+ * has settled: an empty one then means every attribute is gone, not that it has not arrived.
  */
 export function goneAttributeKeys(views: readonly ListViewModel[], catalogue: readonly SearchFieldDataByGroupDto[]): string[] {
     const published = catalogueKeys(catalogue);
-    if (published.size === 0) return [];
-
     const gone = new Set<string>();
     for (const view of views) {
         for (const column of view.columns) {
