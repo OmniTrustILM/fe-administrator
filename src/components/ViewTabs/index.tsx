@@ -71,6 +71,12 @@ export type ViewTabsProps = Readonly<{
     /** The ordering the table is listing under. */
     sort?: ColumnSort;
     /**
+     * Whether the page arrived through a Dashboard drill-down. The strip then opens on the opening view's
+     * columns and ordering but keeps the drill-down's filters, and claims no view: those rows are not
+     * what any tab promises, so the table is neither reported as a drifted view nor offered to one as a save.
+     */
+    opensOnDrillDown?: boolean;
+    /**
      * Applies a view: its columns, its filters and its ordering, together. The caller is expected to
      * return to page 1 and clear its row selection — the filters change which rows exist, so a
      * carried-over selection would span rows the user can no longer see.
@@ -120,6 +126,7 @@ export default function ViewTabs({
     columns,
     filters,
     sort,
+    opensOnDrillDown = false,
     onApply,
     dataTestId = 'view-tabs',
 }: ViewTabsProps) {
@@ -133,6 +140,7 @@ export default function ViewTabs({
     const createdUuid = useSelector(listViewSelectors.createdUuid(resource));
 
     const [activeId, setActiveId] = useState(STANDARD_VIEW_ID);
+    const [isDrillDown, setIsDrillDown] = useState(false);
     const [dialog, setDialog] = useState<PendingDialog | undefined>(undefined);
     const [requestedFor, setRequestedFor] = useState<Resource | undefined>(undefined);
     const [dismissedNotices, setDismissedNotices] = useState<ReadonlySet<string>>(() => new Set());
@@ -210,7 +218,7 @@ export default function ViewTabs({
     );
 
     const currentSlice = useMemo<ViewSlice>(() => ({ columns, filters: storableFilters, sort }), [columns, storableFilters, sort]);
-    const isDirty = isSliceDirty(storedSlice, currentSlice, activeView ? 'view' : 'standard');
+    const isDirty = !isDrillDown && isSliceDirty(storedSlice, currentSlice, activeView ? 'view' : 'standard');
 
     // `onApply` is typically an inline callback, so holding it in a ref keeps the load effect below
     // from re-running — and re-applying the view — on every render of the page around it.
@@ -226,6 +234,7 @@ export default function ViewTabs({
 
     const select = useCallback(
         (id: string) => {
+            setIsDrillDown(false);
             setActiveId(id);
             apply(views.find((view) => view.uuid === id));
         },
@@ -241,6 +250,9 @@ export default function ViewTabs({
         if (requestedFor === resource && isStale && !isMutating) dispatch(listViewActions.listViews({ resource }));
     }, [dispatch, resource, requestedFor, isStale, isMutating]);
 
+    const liveSlice = useRef<ViewSlice>({ columns, filters, sort });
+    liveSlice.current = { columns, filters, sort };
+
     // The pinned view opens on load, and Standard when none is pinned. Once only: a later list read —
     // after a rename, say — must not throw the user back to the tab they started on.
     const hasOpened = useRef<Resource | undefined>(undefined);
@@ -249,21 +261,22 @@ export default function ViewTabs({
         hasOpened.current = resource;
 
         const initial = resolveInitialViewId(views);
-        setActiveId(initial);
-        applyRef.current(
+        const opening =
             initial === STANDARD_VIEW_ID
                 ? toStandardSlice(standardColumns, standardSort)
-                : toViewSlice(views.find((view) => view.uuid === initial) as ListViewModel, fields, standardColumns),
-        );
-    }, [resource, isReady, views, fields, standardColumns, standardSort]);
+                : toViewSlice(views.find((view) => view.uuid === initial) as ListViewModel, fields, standardColumns);
+        setActiveId(initial);
+        setIsDrillDown(opensOnDrillDown);
+        applyRef.current(opensOnDrillDown ? { ...opening, filters: liveSlice.current.filters } : opening);
+    }, [resource, isReady, views, fields, standardColumns, standardSort, opensOnDrillDown]);
 
     // The tab the strip was on when a create started, so a create that fails has somewhere to go back
     // to instead of leaving the strip pointing at a row the rollback has taken away. A create that
     // changed the table's slice as it started also holds how its failure turns the live slice back.
-    const tabBeforeCreate = useRef<{ id: string; restore?: (live: ViewSlice) => ViewSlice }>({ id: STANDARD_VIEW_ID });
-
-    const liveSlice = useRef<ViewSlice>({ columns, filters, sort });
-    liveSlice.current = { columns, filters, sort };
+    const tabBeforeCreate = useRef<{ id: string; wasDrillDown: boolean; restore?: (live: ViewSlice) => ViewSlice }>({
+        id: STANDARD_VIEW_ID,
+        wasDrillDown: false,
+    });
 
     // A created view arrives with the uuid the API gave it, replacing the optimistic row the strip
     // has been showing, and the tab under the cursor has to follow it rather than vanish. A failed
@@ -280,19 +293,21 @@ export default function ViewTabs({
             // A create that kept the table as it was is deliberately not re-applied: the columns, filters
             // and ordering it was trying to keep are still on the table, and a failure is not a reason to
             // drop them.
-            const { id, restore } = tabBeforeCreate.current;
+            const { id, wasDrillDown, restore } = tabBeforeCreate.current;
             setActiveId(views.some((view) => view.uuid === id) ? id : STANDARD_VIEW_ID);
+            setIsDrillDown(wasDrillDown);
             if (restore) applyRef.current(restore(liveSlice.current));
         }
     }, [activeId, createdUuid, views]);
 
     const create = useCallback(
         (view: ListViewRequestModel, restore?: (live: ViewSlice) => ViewSlice) => {
-            tabBeforeCreate.current = { id: activeId, restore };
+            tabBeforeCreate.current = { id: activeId, wasDrillDown: isDrillDown, restore };
             dispatch(listViewActions.createView({ resource, view }));
+            setIsDrillDown(false);
             setActiveId(PENDING_VIEW_UUID);
         },
-        [dispatch, resource, activeId],
+        [dispatch, resource, activeId, isDrillDown],
     );
 
     // A create leaves out display-only columns and filters on a field that is gone, and the table follows at
@@ -513,12 +528,13 @@ export default function ViewTabs({
                         <ViewTab
                             key={tab.id}
                             tab={tab}
-                            isActive={tab.id === activeId}
+                            isActive={!isDrillDown && tab.id === activeId}
+                            isTabStop={tab.id === activeId}
                             isDirty={tab.id === activeId && isDirty}
                             onSelect={() => select(tab.id)}
                             dataTestId={`${dataTestId}-tab-${tab.id}`}
                             menu={
-                                tab.id === activeId ? (
+                                !isDrillDown && tab.id === activeId ? (
                                     <Dropdown
                                         btnStyle="transparent"
                                         hideArrow
@@ -588,6 +604,8 @@ export default function ViewTabs({
                 isBusy={isMutating}
                 onRevert={() => apply(activeView)}
                 onSave={onSaveDrift}
+                drillDownReturnsTo={isDrillDown ? activeTab.name : undefined}
+                onLeaveDrillDown={() => select(activeId)}
                 dataTestId={`${dataTestId}-summary`}
             />
 

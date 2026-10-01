@@ -180,3 +180,33 @@ describe('hasFailedFilters', () => {
         expect(selectors.hasFailedFilters(EntityType.CERTIFICATE)(stateFor(recovered))).toBe(false);
     });
 });
+
+describe('drill-down filters', () => {
+    const stateFor = (filtersState: unknown) => ({ filters: filtersState }) as any;
+    const drilledInto = [{ fieldSource: 'property', fieldIdentifier: 'CERTIFICATE_STATE', condition: 'EQUALS', value: ['issued'] }] as any;
+
+    test('is not pending before any drill-down', () => {
+        expect(selectors.isDrillDownPending(EntityType.CERTIFICATE)(stateFor(initialState))).toBe(false);
+    });
+
+    test('applies the drill-down filters and marks them pending for the inventory to open on', () => {
+        const next = reducer(initialState, actions.setDrillDownFilters({ entity: EntityType.CERTIFICATE, filters: drilledInto }));
+
+        expect(selectors.currentFilters(EntityType.CERTIFICATE)(stateFor(next))).toEqual(drilledInto);
+        expect(selectors.isDrillDownPending(EntityType.CERTIFICATE)(stateFor(next))).toBe(true);
+    });
+
+    test('is no longer pending once the inventory has opened on it, and keeps the filters it opened on', () => {
+        const drilled = reducer(initialState, actions.setDrillDownFilters({ entity: EntityType.CERTIFICATE, filters: drilledInto }));
+        const taken = reducer(drilled, actions.clearPendingDrillDown({ entity: EntityType.CERTIFICATE }));
+
+        expect(selectors.isDrillDownPending(EntityType.CERTIFICATE)(stateFor(taken))).toBe(false);
+        expect(selectors.currentFilters(EntityType.CERTIFICATE)(stateFor(taken))).toEqual(drilledInto);
+    });
+
+    test('is not marked pending by filters set from anywhere else', () => {
+        const next = reducer(initialState, actions.setCurrentFilters({ entity: EntityType.CERTIFICATE, currentFilters: drilledInto }));
+
+        expect(selectors.isDrillDownPending(EntityType.CERTIFICATE)(stateFor(next))).toBe(false);
+    });
+});

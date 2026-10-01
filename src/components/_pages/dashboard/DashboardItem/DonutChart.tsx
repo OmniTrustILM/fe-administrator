@@ -175,7 +175,7 @@ function DonutChart({
                                     }`}
                                     onClick={() => {
                                         if (!interactiveLegend) return;
-                                        dispatch(actions.setCurrentFilters({ entity, currentFilters: onLegendClick(index, labels) }));
+                                        dispatch(actions.setDrillDownFilters({ entity, filters: onLegendClick(index, labels) }));
                                         navigate(redirect);
                                     }}
                                 >

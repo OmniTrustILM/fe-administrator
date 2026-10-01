@@ -126,9 +126,9 @@ function CryptoAssetsDashboard() {
                                     className="text-sm text-brand hover:underline"
                                     onClick={() =>
                                         dispatch(
-                                            filterActions.setCurrentFilters({
+                                            filterActions.setDrillDownFilters({
                                                 entity: EntityType.CRYPTO_ASSET,
-                                                currentFilters: buildEmptyFilter(CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily),
+                                                filters: buildEmptyFilter(CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily),
                                             }),
                                         )
                                     }
@@ -173,9 +173,9 @@ function CryptoAssetsDashboard() {
                                         className="text-brand hover:underline"
                                         onClick={() =>
                                             dispatch(
-                                                filterActions.setCurrentFilters({
+                                                filterActions.setDrillDownFilters({
                                                     entity: EntityType.CBOM,
-                                                    currentFilters: buildEqualsFilter('CBOM_ASSET_SYNC_STATE', state.code),
+                                                    filters: buildEqualsFilter('CBOM_ASSET_SYNC_STATE', state.code),
                                                 }),
                                             )
                                         }

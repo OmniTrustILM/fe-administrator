@@ -127,6 +127,7 @@ export type FiltersTestState = {
             isFetchingFilters: boolean;
             hasLoadedFilters: boolean;
             hasFailedFilters?: boolean;
+            isDrillDownPending?: boolean;
         };
     }>;
 };
@@ -138,7 +139,13 @@ const filtersTestInitialState: FiltersTestState = {
 function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, action: UnknownAction): FiltersTestState {
     const a = action as {
         type: string;
-        payload?: { entity: number; availableFilters?: unknown[]; currentFilters?: unknown[]; preservedFilters?: unknown[] };
+        payload?: {
+            entity: number;
+            availableFilters?: unknown[];
+            currentFilters?: unknown[];
+            preservedFilters?: unknown[];
+            filters?: unknown[];
+        };
     };
     if (a.type === 'filters/getAvailableFilters') {
         return state;
@@ -201,6 +208,33 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
                       hasLoadedFilters: false,
                   };
         const next = { entity: payload.entity, filter: { ...filter, currentFilters: payload.currentFilters ?? [] } };
+        if (idx >= 0) {
+            return {
+                filters: state.filters.slice(0, idx).concat([next], state.filters.slice(idx + 1)),
+            };
+        }
+        return { filters: [...state.filters, next] };
+    }
+    if ((a.type === 'filters/setDrillDownFilters' || a.type === 'filters/clearPendingDrillDown') && a.payload) {
+        const payload = a.payload;
+        const idx = state.filters.findIndex((f) => f.entity === payload.entity);
+        const filter =
+            idx >= 0
+                ? state.filters[idx].filter
+                : {
+                      availableFilters: [],
+                      currentFilters: [],
+                      preservedFilters: [],
+                      isFetchingFilters: false,
+                      hasLoadedFilters: false,
+                  };
+        const next = {
+            entity: payload.entity,
+            filter:
+                a.type === 'filters/setDrillDownFilters'
+                    ? { ...filter, currentFilters: payload.filters ?? [], isDrillDownPending: true }
+                    : { ...filter, isDrillDownPending: false },
+        };
         if (idx >= 0) {
             return {
                 filters: state.filters.slice(0, idx).concat([next], state.filters.slice(idx + 1)),

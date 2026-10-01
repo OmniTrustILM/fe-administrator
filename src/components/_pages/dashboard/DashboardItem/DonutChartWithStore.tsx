@@ -1,5 +1,6 @@
 import type React from 'react';
-import { Provider } from 'react-redux';
+import { selectors as filterSelectors } from 'ducks/filters';
+import { Provider, useSelector } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import { createMockStore } from 'utils/test-helpers';
 import DonutChart from './DonutChart';
@@ -22,6 +23,11 @@ const preloadedState: Parameters<typeof createMockStore>[0] = {
     },
 };
 
+function DrillDownProbe({ entity }: Readonly<{ entity: DonutChartWithStoreProps['entity'] }>) {
+    const isPending = useSelector(filterSelectors.isDrillDownPending(entity));
+    return <span data-testid="drill-down-pending">{String(isPending)}</span>;
+}
+
 export type DonutChartWithStoreProps = Readonly<React.ComponentProps<typeof DonutChart>>;
 
 export default function DonutChartWithStore(props: DonutChartWithStoreProps) {
@@ -30,6 +36,7 @@ export default function DonutChartWithStore(props: DonutChartWithStoreProps) {
         <Provider store={store}>
             <MemoryRouter initialEntries={['/']}>
                 <DonutChart {...props} />
+                <DrillDownProbe entity={props.entity} />
             </MemoryRouter>
         </Provider>
     );

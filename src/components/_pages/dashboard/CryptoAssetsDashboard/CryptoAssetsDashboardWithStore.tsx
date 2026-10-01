@@ -52,10 +52,12 @@ const statisticsFor = (variant: Variant) => {
 function CurrentFiltersProbe() {
     const currentFilters = useSelector(filterSelectors.currentFilters(EntityType.CRYPTO_ASSET));
     const cbomFilters = useSelector(filterSelectors.currentFilters(EntityType.CBOM));
+    const isCbomDrillDownPending = useSelector(filterSelectors.isDrillDownPending(EntityType.CBOM));
     return (
         <>
             <span data-testid="current-filters">{JSON.stringify(currentFilters)}</span>
             <span data-testid="cbom-current-filters">{JSON.stringify(cbomFilters)}</span>
+            <span data-testid="cbom-drill-down-pending">{String(isCbomDrillDownPending)}</span>
         </>
     );
 }

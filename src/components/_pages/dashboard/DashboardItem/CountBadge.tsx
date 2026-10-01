@@ -34,9 +34,7 @@ function CountBadge({
     const dispatch = useDispatch();
 
     const applyFilter =
-        link && entity && onSetFilter
-            ? () => dispatch(filterActions.setCurrentFilters({ entity, currentFilters: onSetFilter() }))
-            : undefined;
+        link && entity && onSetFilter ? () => dispatch(filterActions.setDrillDownFilters({ entity, filters: onSetFilter() })) : undefined;
 
     return (
         <Widget

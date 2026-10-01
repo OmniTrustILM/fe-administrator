@@ -55,6 +55,12 @@ type FilterObject = {
      * catalogue says has to ask this too.
      */
     hasFailedFilters: boolean;
+    /**
+     * Whether `currentFilters` were put there by a Dashboard drill-down that the inventory has not yet
+     * opened on. Only a pending drill-down outranks the opening view's own filters; filters merely left
+     * over from an earlier visit do not.
+     */
+    isDrillDownPending: boolean;
 };
 
 export type State = {
@@ -68,6 +74,7 @@ const EMPTY_FILTER: FilterObject = {
     isFetchingFilters: false,
     hasLoadedFilters: false,
     hasFailedFilters: false,
+    isDrillDownPending: false,
 };
 
 export const initialState: State = {
@@ -99,6 +106,19 @@ export const slice = createSlice({
         setPreservedFilters: (state, action: PayloadAction<{ entity: EntityType; preservedFilters: SearchFilterModel[] }>) => {
             updateFilterState(state, action.payload.entity, (filter) => {
                 filter.preservedFilters = action.payload.preservedFilters;
+            });
+        },
+
+        setDrillDownFilters: (state, action: PayloadAction<{ entity: EntityType; filters: SearchFilterModel[] }>) => {
+            updateFilterState(state, action.payload.entity, (filter) => {
+                filter.currentFilters = action.payload.filters;
+                filter.isDrillDownPending = true;
+            });
+        },
+
+        clearPendingDrillDown: (state, action: PayloadAction<{ entity: EntityType }>) => {
+            updateFilterState(state, action.payload.entity, (filter) => {
+                filter.isDrillDownPending = false;
             });
         },
 
@@ -149,6 +169,8 @@ const hasLoadedFilters = (entity: EntityType) =>
     createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).hasLoadedFilters);
 const hasFailedFilters = (entity: EntityType) =>
     createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).hasFailedFilters);
+const isDrillDownPending = (entity: EntityType) =>
+    createSelector(state, (state) => (state?.filters.find((f) => f.entity === entity)?.filter ?? EMPTY_FILTER).isDrillDownPending ?? false);
 
 export const selectors = {
     state,
@@ -159,6 +181,7 @@ export const selectors = {
     isFetchingFilters,
     hasLoadedFilters,
     hasFailedFilters,
+    isDrillDownPending,
 };
 
 export const actions = slice.actions;

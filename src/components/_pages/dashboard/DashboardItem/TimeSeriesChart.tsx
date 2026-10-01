@@ -71,7 +71,7 @@ function TimeSeriesChart({
     const handleBucketClick = (index: number) => {
         if (index < 0 || index >= isoKeys.length) return;
         const filters = onSetFilter(isoKeys[index], bucketEndIso(index));
-        dispatch(filterActions.setCurrentFilters({ entity, currentFilters: filters }));
+        dispatch(filterActions.setDrillDownFilters({ entity, filters }));
         navigate(redirect);
     };
 

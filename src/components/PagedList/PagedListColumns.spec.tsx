@@ -400,39 +400,103 @@ test.describe('PagedList · configurable columns', () => {
         await expect(page.getByRole('button', { name: 'Subject Common Name' })).toHaveCount(0);
     });
 
-    test('keeps filters that arrived with the page when the pinned view opens', async ({ mount, page }) => {
-        const incoming = [
+    test.describe('a drill-down from the Dashboard', () => {
+        const drilledInto = [
             {
                 fieldSource: FilterFieldSource.Property,
                 fieldIdentifier: 'COMMON_NAME',
                 condition: FilterConditionOperator.Contains,
-                value: 'from-a-deep-link',
+                value: 'from-the-dashboard',
             },
         ];
-        await mount(
-            <PagedListColumnsWithStore
-                rows={rows}
-                standardColumns={standardColumns}
-                catalogue={catalogue}
-                views={[expiryWatch]}
-                initialFilters={incoming}
-            />,
-        );
 
-        await expect.poll(() => headings(page)).toEqual(['property:NOT_AFTER', 'custom:department|STRING']);
+        const drillDown = {
+            rows,
+            standardColumns,
+            catalogue,
+            views: [expiryWatch],
+            drillDownFilters: drilledInto,
+            withRemountControl: true,
+        };
 
-        await expect(page.getByTestId('current-filters')).toContainText('from-a-deep-link');
-        await expect(page.getByTestId('current-filters')).not.toContainText('acme');
-        await expect.poll(async () => (await lastRequest(page))?.filters).toEqual(incoming);
+        test('lists under its own filters in the pinned view columns', async ({ mount, page }) => {
+            await mount(<PagedListColumnsWithStore {...drillDown} />);
+
+            await expect.poll(() => headings(page)).toEqual(['property:NOT_AFTER', 'custom:department|STRING']);
+
+            await expect(page.getByTestId('current-filters')).toContainText('from-the-dashboard');
+            await expect(page.getByTestId('current-filters')).not.toContainText('acme');
+            await expect.poll(async () => (await lastRequest(page))?.filters).toEqual(drilledInto);
+        });
+
+        test('claims no view and reports no unsaved change, naming the Dashboard instead', async ({ mount, page }) => {
+            await mount(<PagedListColumnsWithStore {...drillDown} />);
+            await expect(page.getByRole('tab', { name: 'Expiry watch' })).toBeVisible();
+
+            await expect(page.getByRole('tab', { selected: true })).toHaveCount(0);
+            await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveCount(0);
+            await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+            await expect(page.getByTestId('view-tabs-summary-drill-down')).toContainText('Filtered from the Dashboard');
+        });
+
+        test('keeps the strip reachable from the keyboard while no view is claimed', async ({ mount, page }) => {
+            await mount(<PagedListColumnsWithStore {...drillDown} />);
+            await expect(page.getByTestId('view-tabs-summary-drill-down')).toBeVisible();
+
+            await expect(page.getByRole('tab', { name: 'Expiry watch' })).toHaveAttribute('tabindex', '0');
+        });
+
+        test('takes the pending drill-down, so it is not opened on a second time', async ({ mount, page }) => {
+            await mount(<PagedListColumnsWithStore {...drillDown} />);
+            await expect(page.getByTestId('view-tabs-summary-drill-down')).toBeVisible();
+
+            await expect(page.getByTestId('drill-down-pending')).toHaveText('false');
+        });
+
+        test('opens the pinned view with its own filters when the page is opened again', async ({ mount, page }) => {
+            await mount(<PagedListColumnsWithStore {...drillDown} />);
+            await expect(page.getByTestId('view-tabs-summary-drill-down')).toBeVisible();
+
+            await page.getByTestId('remount-list').click();
+            await page.getByTestId('remount-list').click();
+
+            await expect(page.getByRole('tab', { name: 'Expiry watch' })).toHaveAttribute('aria-selected', 'true');
+            await expect(page.getByTestId('current-filters')).toContainText('acme');
+            await expect(page.getByTestId('current-filters')).not.toContainText('from-the-dashboard');
+            await expect(page.getByTestId('view-tabs-summary-drill-down')).toHaveCount(0);
+            await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveCount(0);
+        });
+
+        test('offers no Save to view, even once the table is changed under it', async ({ mount, page }) => {
+            await mount(<PagedListColumnsWithStore {...drillDown} />);
+            await expect(page.getByRole('tab', { name: 'Expiry watch' })).toBeVisible();
+
+            await page.getByRole('button', { name: 'Expires At', exact: true }).click();
+            await expect.poll(async () => (await lastRequest(page))?.sort?.direction).toBe(SortDirection.Asc);
+
+            await expect(page.getByTestId('view-tabs-summary-save')).toHaveCount(0);
+            await expect(page.getByRole('button', { name: 'Actions for Expiry watch' })).toHaveCount(0);
+        });
+
+        test('goes back to the view it opened over, with that view filters', async ({ mount, page }) => {
+            await mount(<PagedListColumnsWithStore {...drillDown} />);
+
+            await page.getByTestId('view-tabs-summary-drill-down-leave').click();
+
+            await expect(page.getByRole('tab', { name: 'Expiry watch' })).toHaveAttribute('aria-selected', 'true');
+            await expect(page.getByTestId('current-filters')).toContainText('acme');
+            await expect(page.getByTestId('current-filters')).not.toContainText('from-the-dashboard');
+            await expect(page.getByTestId('view-tabs-summary-drill-down')).toHaveCount(0);
+        });
     });
 
-    test('replaces those filters on the next tab switch', async ({ mount, page }) => {
-        const incoming = [
+    test('replaces filters left from an earlier visit with the opening view own', async ({ mount, page }) => {
+        const leftOver = [
             {
                 fieldSource: FilterFieldSource.Property,
                 fieldIdentifier: 'COMMON_NAME',
                 condition: FilterConditionOperator.Contains,
-                value: 'from-a-deep-link',
+                value: 'left-from-an-earlier-visit',
             },
         ];
         await mount(
@@ -441,14 +505,14 @@ test.describe('PagedList · configurable columns', () => {
                 standardColumns={standardColumns}
                 catalogue={catalogue}
                 views={[expiryWatch]}
-                initialFilters={incoming}
+                initialFilters={leftOver}
             />,
         );
-        await expect(page.getByTestId('current-filters')).toContainText('from-a-deep-link');
 
-        await page.getByRole('tab', { name: 'Standard' }).click();
-
-        await expect(page.getByTestId('current-filters')).not.toContainText('from-a-deep-link');
+        await expect(page.getByRole('tab', { name: 'Expiry watch' })).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('current-filters')).toContainText('acme');
+        await expect(page.getByTestId('current-filters')).not.toContainText('left-from-an-earlier-visit');
+        await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveCount(0);
     });
 
     /**

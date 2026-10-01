@@ -75,6 +75,7 @@ test.describe('CryptoAssetsDashboard', () => {
         expect(applied).toEqual([
             { fieldSource: 'property', condition: 'EQUALS', fieldIdentifier: 'CBOM_ASSET_SYNC_STATE', value: ['failed'] },
         ]);
+        await expect(component.getByTestId('cbom-drill-down-pending')).toHaveText('true');
     });
 
     test('an estate nobody has synced says the counts are empty rather than complete', async ({ mount }) => {

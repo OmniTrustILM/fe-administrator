@@ -13,6 +13,9 @@ type Props = Readonly<{
     isBusy: boolean;
     onRevert: () => void;
     onSave: () => void;
+    /** The tab a Dashboard drill-down opened over, named while the table shows the drill-down instead of any view. */
+    drillDownReturnsTo?: string;
+    onLeaveDrillDown?: () => void;
     dataTestId: string;
 }>;
 
@@ -23,7 +26,18 @@ type Props = Readonly<{
  * The sort is named here as well as on its own header because the active sort has to stay legible
  * after that header has scrolled out of a wide table.
  */
-export default function ViewSummaryBar({ columns, sort, isDirty, isStandard, isBusy, onRevert, onSave, dataTestId }: Props) {
+export default function ViewSummaryBar({
+    columns,
+    sort,
+    isDirty,
+    isStandard,
+    isBusy,
+    onRevert,
+    onSave,
+    drillDownReturnsTo,
+    onLeaveDrillDown,
+    dataTestId,
+}: Props) {
     const sorted = sort ? columns.find((column) => getSortKey(sort) === `${column.fieldSource}:${column.fieldIdentifier}`) : undefined;
     const SortGlyph = sort?.direction === 'desc' ? ArrowDown : ArrowUp;
 
@@ -36,6 +50,22 @@ export default function ViewSummaryBar({ columns, sort, isDirty, isStandard, isB
                     {`Sorted by ${sorted ? getColumnHeading(sorted) : sort.fieldIdentifier}`}
                     <SortGlyph className="size-3.5" aria-label={sort.direction === 'desc' ? 'descending' : 'ascending'} />
                 </span>
+            )}
+
+            {drillDownReturnsTo !== undefined && (
+                <div className="ml-auto flex items-center gap-x-3">
+                    <span className="text-content" data-testid={`${dataTestId}-drill-down`}>
+                        Filtered from the Dashboard — not part of any view
+                    </span>
+                    <Button
+                        variant="transparent"
+                        color="secondary"
+                        onClick={onLeaveDrillDown}
+                        data-testid={`${dataTestId}-drill-down-leave`}
+                    >
+                        {`Open ${drillDownReturnsTo}`}
+                    </Button>
+                </div>
             )}
 
             {isDirty && (

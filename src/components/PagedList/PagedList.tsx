@@ -393,30 +393,25 @@ function PagedList<TRow extends object>({
     }, [checkedRows, onDeleteCallback, currentFilters, onCheckedRowsChanged, getFreshData]);
 
     /**
-     * Applies a view's columns, filters and ordering together. The first application leaves filters
-     * already in the duck alone: the strip opens its pinned view after a deep link has put its own
-     * filters there, and would replace them a moment after they were asked for.
+     * Applies a view's columns, filters and ordering together. The strip opens on a pending drill-down by
+     * handing back the drill-down's own filters, and this is where the drill-down is taken, so the next
+     * visit opens on the view's filters instead of on whatever the duck still holds.
      *
      * The ordering is put through the same sieve as `applyColumns`: this is the path the column
      * dialog comes back on, and it hands back the ordering the table was listing under before it.
      */
-    const hasAppliedView = useRef(false);
+    const isDrillDownPending = useSelector(filterSelectors.isDrillDownPending(entity));
     const onApplyView = useCallback(
         (slice: ViewSlice) => {
-            const isInitialApplication = !hasAppliedView.current;
-
-            hasAppliedView.current = true;
             setColumnSelection(slice.columns);
             setSortSelection(toDisplayableSort(slice.sort, slice.columns));
-
-            if (!isInitialApplication || currentFilters.length === 0) {
-                dispatch(filterActions.setCurrentFilters({ entity, currentFilters: slice.filters }));
-            }
+            dispatch(filterActions.setCurrentFilters({ entity, currentFilters: slice.filters }));
+            if (isDrillDownPending) dispatch(filterActions.clearPendingDrillDown({ entity }));
 
             dispatch(actions.setPagination({ entity, pageSize, pageNumber: 1 }));
             onCheckedRowsChanged([]);
         },
-        [dispatch, entity, pageSize, onCheckedRowsChanged, currentFilters.length],
+        [dispatch, entity, pageSize, onCheckedRowsChanged, isDrillDownPending],
     );
 
     const onSortChanged = useCallback(
@@ -703,6 +698,7 @@ function PagedList<TRow extends object>({
                     columns={appliedColumns}
                     filters={currentFilters}
                     sort={appliedSort}
+                    opensOnDrillDown={isDrillDownPending}
                     onApply={onApplyView}
                 />
             )}

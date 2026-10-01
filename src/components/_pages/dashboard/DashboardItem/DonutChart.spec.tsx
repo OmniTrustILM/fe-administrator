@@ -51,6 +51,23 @@ test.describe('DonutChart', () => {
         await expect(component.getByText('Issued')).toHaveAttribute('title', 'Issued');
     });
 
+    test('opens the inventory as a pending drill-down rather than as filters typed into it', async ({ mount, page }) => {
+        await mount(
+            <DonutChartWithStore
+                title="Certificates by status"
+                data={{ [CertificateState.Issued]: 10, [CertificateState.Revoked]: 2 }}
+                entity={EntityType.CERTIFICATE}
+                redirect="/certificates"
+                onSetFilter={() => []}
+            />,
+        );
+        await expect(page.getByTestId('drill-down-pending')).toHaveText('false');
+
+        await page.getByRole('button', { name: /issued/i }).click();
+
+        await expect(page.getByTestId('drill-down-pending')).toHaveText('true');
+    });
+
     test('should render non-clickable legend style when interactiveLegend is false', async ({ mount }) => {
         const component = await mount(
             <DonutChartWithStore

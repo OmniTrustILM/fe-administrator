@@ -83,7 +83,7 @@ function HorizontalBarChart({ title, data = {}, entity, redirect, onSetFilter, o
     const yAxisMaxChars = Math.max(6, Math.floor((yAxisWidth - 8) / 7));
 
     const openFiltered = (label: string) => {
-        dispatch(filterActions.setCurrentFilters({ entity, currentFilters: onSetFilter(label) }));
+        dispatch(filterActions.setDrillDownFilters({ entity, filters: onSetFilter(label) }));
         navigate(redirect);
     };
 
