@@ -108,7 +108,8 @@ export function getCryptoAssetFieldLabel(key: string): string {
 
 export function formatPqcFieldValue(value: unknown): string {
     if (Array.isArray(value)) return value.length === 0 ? 'none' : value.map(formatPqcFieldValue).join(', ');
-    if (value === null || value === undefined || value === '') return '-';
-    if (typeof value === 'object') return JSON.stringify(value);
-    return String(value);
+    if (typeof value === 'string') return value === '' ? '-' : value;
+    if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+    if (value === null || value === undefined) return '-';
+    return JSON.stringify(value);
 }

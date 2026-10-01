@@ -99,7 +99,10 @@ const STEP_HEADERS: TableHeader[] = [
 ];
 
 // Marked by a badge and a bold title rather than a row fill: a tinted row takes a resolved step's link under AA in the light theme.
-const DECIDING_OUTCOMES = [PqcExplanationStepOutcome.Decided, PqcExplanationStepOutcome.Resolved];
+const DECIDING_OUTCOMES: ReadonlySet<PqcExplanationStepOutcome> = new Set([
+    PqcExplanationStepOutcome.Decided,
+    PqcExplanationStepOutcome.Resolved,
+]);
 
 const fieldValueText = (key: string, value: unknown, typeEnum: PlatformEnumMap) =>
     key === 'assetType' && typeof value === 'string' ? getEnumLabel(typeEnum, value) : formatPqcFieldValue(value);
@@ -338,7 +341,7 @@ function ExplanationStatus({
 
 function stepRow(step: PqcExplanationStepDto, index: number, enums: PqcLabelEnums): TableDataRow {
     const outcome = getEnumLabel(enums.outcome, step.outcome);
-    const isDeciding = DECIDING_OUTCOMES.includes(step.outcome);
+    const isDeciding = DECIDING_OUTCOMES.has(step.outcome);
     return {
         id: `${index}:${step.ruleId}`,
         columns: [
