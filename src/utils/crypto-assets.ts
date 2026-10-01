@@ -76,3 +76,39 @@ export function describeEvidenceCoverage(shown: number, total: number): string {
     if (shown >= total) return `all ${total.toLocaleString()}`;
     return `${shown.toLocaleString()} shown of ${total.toLocaleString()} recorded`;
 }
+
+const FIELD_LABELS = new Map<string, string>([
+    ['assetType', 'Asset type'],
+    ['algorithmFamily', 'Algorithm family'],
+    ['primitive', 'Primitive'],
+    ['parameterSet', 'Parameter set'],
+    ['curve', 'Elliptic curve'],
+    ['mode', 'Mode'],
+    ['padding', 'Padding'],
+    ['variant', 'Variant'],
+    ['name', 'Name'],
+    ['hybridComponents', 'Hybrid components'],
+    ['materialType', 'Material type'],
+    ['materialSize', 'Material size'],
+    ['nistQuantumSecurityLevel', 'NIST quantum security level'],
+    ['subjectPublicKeyRef', 'Subject public key reference'],
+    ['signatureAlgorithmRef', 'Signature algorithm reference'],
+    ['cipherSuites', 'Cipher suites'],
+    ['cipherSuiteAlgorithmRefs', 'Cipher suite algorithm references'],
+    ['unresolvedRefs', 'Unresolved references'],
+    ['cipherSuite', 'Cipher suite'],
+    ['cipherSuiteAlgorithmRef', 'Cipher suite algorithm reference'],
+    ['referencedRuleId', 'Rule of the referenced asset'],
+]);
+
+// Core serves raw property keys, so a key it adds later shows under its own name until it is labelled here.
+export function getCryptoAssetFieldLabel(key: string): string {
+    return FIELD_LABELS.get(key) ?? key;
+}
+
+export function formatPqcFieldValue(value: unknown): string {
+    if (Array.isArray(value)) return value.length === 0 ? 'none' : value.map(formatPqcFieldValue).join(', ');
+    if (value === null || value === undefined || value === '') return '-';
+    if (typeof value === 'object') return JSON.stringify(value);
+    return String(value);
+}

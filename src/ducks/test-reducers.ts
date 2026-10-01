@@ -504,11 +504,15 @@ export type CryptoAssetsTestState = {
     assetDetailErrorStatusCode?: number;
     isFetchingList: boolean;
     isFetchingDetail: boolean;
+    pqcExplanation?: unknown;
+    pqcExplanationLock?: unknown;
+    isFetchingPqcExplanation: boolean;
 };
 
 const cryptoAssetsTestInitialState: CryptoAssetsTestState = {
     isFetchingList: false,
     isFetchingDetail: false,
+    isFetchingPqcExplanation: false,
 };
 
 function cryptoAssetsTestReducer(state: CryptoAssetsTestState | undefined, _action: UnknownAction): CryptoAssetsTestState {

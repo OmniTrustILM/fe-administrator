@@ -3,6 +3,8 @@ import { Provider } from 'react-redux';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { actions } from 'ducks/crypto-assets';
+import { LockTypeEnum } from 'types/user-interface';
 import { createMockStore } from 'utils/test-helpers';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
 import CryptoAssetDetail from './index';
@@ -15,14 +17,29 @@ vi.mock('./CryptoAssetDetailSections', () => ({
     CryptoAssetVerdict: () => <div />,
     CryptoAssetSources: () => <div />,
     CryptoAssetPayloads: () => <div />,
+    CryptoAssetPqcExplanation: () => <div data-testid="pqc-explanation" />,
 }));
 
-type CryptoAssetsState = { assetDetail?: unknown; assetDetailError?: string; assetDetailErrorStatusCode?: number };
+type CryptoAssetsState = {
+    assetDetail?: unknown;
+    assetDetailError?: string;
+    assetDetailErrorStatusCode?: number;
+    pqcExplanation?: unknown;
+    pqcExplanationLock?: unknown;
+};
 
 const storeWith = (cryptoAssets: CryptoAssetsState) =>
     createMockStore({
-        cryptoAssets: { assetsData: undefined, isFetchingList: false, isFetchingDetail: false, ...cryptoAssets } as never,
+        cryptoAssets: {
+            assetsData: undefined,
+            isFetchingList: false,
+            isFetchingDetail: false,
+            isFetchingPqcExplanation: false,
+            ...cryptoAssets,
+        } as never,
     });
+
+const loadedAsset = { uuid: 'asset-1', name: 'RSA-2048', type: 'algorithm', pqcVerdict: 'notReady' };
 
 describe('CryptoAssetDetail', () => {
     let container: HTMLDivElement;
@@ -80,9 +97,51 @@ describe('CryptoAssetDetail', () => {
     });
 
     test('a loaded asset heads the page with its name and shows the summary', async () => {
-        await render(storeWith({ assetDetail: { uuid: 'asset-1', name: 'RSA-2048', type: 'algorithm', pqcVerdict: 'notReady' } }));
+        await render(storeWith({ assetDetail: loadedAsset }));
 
         expect(container.querySelector('h1')?.textContent).toBe('RSA-2048');
         expect(container.querySelector('[data-testid="crypto-asset-summary"]')).not.toBeNull();
+    });
+
+    const explanationWidget = '[data-testid="crypto-asset-pqc-explanation"]';
+
+    const lock = { lockTitle: 'Not Found', lockText: 'Gone', lockType: LockTypeEnum.GENERIC };
+    const refresh = () => container.querySelector(`${explanationWidget} [data-testid="refresh-icon"]`) as HTMLButtonElement;
+
+    test('a failed explanation locks its own widget and leaves the rest of the page rendered', async () => {
+        await render(storeWith({ assetDetail: loadedAsset, pqcExplanationLock: lock }));
+
+        expect(container.querySelector(`${explanationWidget} [data-testid="widget-lock"]`)?.textContent).toContain('Gone');
+        expect(container.querySelectorAll('[data-testid="widget-lock"]')).toHaveLength(1);
+        expect(container.querySelector('h1')?.textContent).toBe('RSA-2048');
+        expect(container.querySelector('[data-testid="crypto-asset-summary"]')).not.toBeNull();
+    });
+
+    // The explanation follows from the detail loading, in the epic, so an asset that fails to load never has one computed.
+    test('loading the page asks for the detail of the routed asset, and not for its explanation', async () => {
+        const store = storeWith({ assetDetail: loadedAsset });
+        const dispatch = vi.spyOn(store, 'dispatch');
+
+        await render(store);
+
+        expect(dispatch.mock.calls).toEqual([[actions.getCryptoAssetDetail({ uuid: 'asset-1' })]]);
+    });
+
+    // A lock held in the slice leaves the widget's Refresh live, so it is also the retry.
+    test.each([
+        ['a loaded explanation', { pqcExplanation: { uuid: 'asset-1' } }],
+        ['a locked explanation', { pqcExplanationLock: lock }],
+    ])("%s is re-fetched by the widget's own Refresh, without reloading the asset", async (_, explanationState) => {
+        const store = storeWith({ assetDetail: loadedAsset, ...explanationState });
+        const dispatch = vi.spyOn(store, 'dispatch');
+        await render(store);
+        dispatch.mockClear();
+
+        expect(refresh().disabled).toBe(false);
+        await act(async () => {
+            refresh().click();
+        });
+
+        expect(dispatch.mock.calls).toEqual([[actions.getCryptoAssetPqcExplanation({ uuid: 'asset-1' })]]);
     });
 });

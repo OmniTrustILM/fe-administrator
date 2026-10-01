@@ -1,6 +1,14 @@
 import { describe, expect, test } from 'vitest';
 import { PqcVerdict } from 'types/openapi';
-import { describeEvidenceCoverage, diffPayloads, getPqcVerdictBadgeColor, getPqcVerdictDotClass, isSamePayload } from './crypto-assets';
+import {
+    describeEvidenceCoverage,
+    diffPayloads,
+    formatPqcFieldValue,
+    getCryptoAssetFieldLabel,
+    getPqcVerdictBadgeColor,
+    getPqcVerdictDotClass,
+    isSamePayload,
+} from './crypto-assets';
 
 describe('getPqcVerdictBadgeColor', () => {
     test.each([
@@ -114,5 +122,39 @@ describe('describeEvidenceCoverage', () => {
 
     test('a source with no occurrences says so', () => {
         expect(describeEvidenceCoverage(0, 0)).toBe('none recorded');
+    });
+});
+
+describe('getCryptoAssetFieldLabel', () => {
+    test.each([
+        ['algorithmFamily', 'Algorithm family'],
+        ['nistQuantumSecurityLevel', 'NIST quantum security level'],
+        ['cipherSuiteAlgorithmRef', 'Cipher suite algorithm reference'],
+        ['referencedRuleId', 'Rule of the referenced asset'],
+    ])('%s reads as %s', (key, label) => {
+        expect(getCryptoAssetFieldLabel(key)).toBe(label);
+    });
+
+    test('a key the platform adds later keeps its raw name rather than disappearing', () => {
+        expect(getCryptoAssetFieldLabel('keyAgreementScheme')).toBe('keyAgreementScheme');
+    });
+
+    test('a key named like an object property is not resolved through the prototype', () => {
+        expect(getCryptoAssetFieldLabel('constructor')).toBe('constructor');
+    });
+});
+
+describe('formatPqcFieldValue', () => {
+    test.each([
+        ['RSA', 'RSA'],
+        [2048, '2048'],
+        [false, 'false'],
+        [['ML-KEM-768', 'X25519'], 'ML-KEM-768, X25519'],
+        [[], 'none'],
+        [null, '-'],
+        ['', '-'],
+        [{ unexpected: true }, '{"unexpected":true}'],
+    ])('%j renders as %s', (value, expected) => {
+        expect(formatPqcFieldValue(value)).toBe(expected);
     });
 });
