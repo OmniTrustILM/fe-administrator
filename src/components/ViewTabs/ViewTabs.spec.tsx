@@ -1270,6 +1270,38 @@ test.describe('ViewTabs', () => {
         });
     });
 
+    test('stops holding back a column the user adds to the table from the column menu', async ({ mount, page }) => {
+        const dormant = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom), stored('withdrawn', FilterFieldSource.Custom)],
+        });
+        await mount(
+            strip({
+                views: [dormant],
+                fields: withRetired,
+                dormantFields: [retiredKey],
+                driftColumn: column('retired', 'Retired', FilterFieldSource.Custom),
+            }),
+        );
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+
+        await page.getByTestId('drift-columns').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('showing 2 of its 3 columns');
+        const release = await lastDispatched(page, 'listViews/releaseDormantFields');
+        expect(release?.payload).toMatchObject({ resource: Resource.Certificates, keys: [retiredKey] });
+
+        await page.getByTestId('remount-strip').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-returned')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('showing 2 of its 3 columns');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'retired']);
+    });
+
     test('keeps a held-back column when the unavailable one beside it is removed', async ({ mount, page }) => {
         const dormant = expiryWatch({
             defaultView: true,

@@ -272,6 +272,14 @@ export default function ViewTabs({
         if (gone.length > 0) dispatch(listViewActions.markFieldsDormant({ resource, keys: gone }));
     }, [dispatch, resource, isReady, views, catalogue, dormant]);
 
+    // Putting a held-back field on the table, from the column menu or otherwise, is the user's confirmation of it.
+    useEffect(() => {
+        if (!isReady || dormant.size === 0) return;
+        const published = new Set(catalogueFields.map(getColumnKey));
+        const chosen = columns.map(getColumnKey).filter((key) => dormant.has(key) && published.has(key));
+        if (chosen.length > 0) dispatch(listViewActions.releaseDormantFields({ resource, keys: chosen }));
+    }, [dispatch, resource, isReady, dormant, catalogueFields, columns]);
+
     // The pinned view opens on load, and Standard when none is pinned. Once only: a later list read —
     // after a rename, say — must not throw the user back to the tab they started on.
     const hasOpened = useRef<Resource | undefined>(undefined);
