@@ -185,12 +185,6 @@ export const slice = createSlice({
             });
         },
 
-        clearHandedInFilters: (state, action: PayloadAction<{ entity: EntityType }>) => {
-            updateFilterState(state, action.payload.entity, (filter) => {
-                filter.handedIn = undefined;
-            });
-        },
-
         setViewPosition: (state, action: PayloadAction<{ entity: EntityType; position: ViewPosition }>) => {
             updateFilterState(state, action.payload.entity, (filter) => {
                 filter.viewPosition = action.payload.position;

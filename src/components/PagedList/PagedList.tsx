@@ -417,12 +417,11 @@ function PagedList<TRow extends object>({
             setColumnSelection(slice.columns);
             setSortSelection(toDisplayableSort(slice.sort, slice.columns));
             dispatch(filterActions.setCurrentFilters({ entity, currentFilters: slice.filters }));
-            if (handedIn) dispatch(filterActions.clearHandedInFilters({ entity }));
 
             dispatch(actions.setPagination({ entity, pageSize, pageNumber: 1 }));
             onCheckedRowsChanged([]);
         },
-        [dispatch, entity, pageSize, onCheckedRowsChanged, handedIn],
+        [dispatch, entity, pageSize, onCheckedRowsChanged],
     );
 
     const onViewPositionChange = useCallback(

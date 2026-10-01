@@ -187,7 +187,7 @@ describe('handed-in filters', () => {
 
     test('are taken once the inventory has opened on them, leaving the filters it opened on', () => {
         const drilled = reducer(initialState, actions.setDrillDownFilters({ entity: EntityType.CERTIFICATE, filters: drilledInto }));
-        const taken = reducer(drilled, actions.clearHandedInFilters({ entity: EntityType.CERTIFICATE }));
+        const taken = reducer(drilled, actions.setCurrentFilters({ entity: EntityType.CERTIFICATE, currentFilters: drilledInto }));
 
         expect(handedIn(taken)).toBeUndefined();
         expect(selectors.currentFilters(EntityType.CERTIFICATE)(stateFor(taken))).toEqual(drilledInto);
@@ -234,7 +234,18 @@ describe('handed-in filters', () => {
 
     test('a return is taken once, so a later visit opens on the view again', () => {
         const returned = comeBack(route(leave(narrowedSecrets(initialState)), '/secrets/detail/1'));
-        const again = comeBack(route(reducer(returned, actions.clearHandedInFilters({ entity: EntityType.SECRET })), '/secrets/detail/1'));
+        const again = comeBack(
+            route(
+                reducer(
+                    returned,
+                    actions.setCurrentFilters({
+                        entity: EntityType.SECRET,
+                        currentFilters: selectors.currentFilters(EntityType.SECRET)(stateFor(returned)),
+                    }),
+                ),
+                '/secrets/detail/1',
+            ),
+        );
 
         expect(secretsHandedIn(again)).toBeUndefined();
     });

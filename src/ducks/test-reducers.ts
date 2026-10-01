@@ -230,9 +230,6 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
             handedIn: filters.length > 0 ? { source: 'drill-down' } : undefined,
         }));
     }
-    if (a.type === 'filters/clearHandedInFilters') {
-        return update(payload.entity, (filter) => ({ ...filter, handedIn: undefined }));
-    }
     if (a.type === 'filters/setViewPosition') {
         return update(payload.entity, (filter) => ({ ...filter, viewPosition: payload.position }));
     }
