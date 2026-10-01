@@ -37,7 +37,7 @@ export interface ListViewDto {
      */
     resource: Resource;
     /**
-     * Columns of the view, in display order. Columns whose field is no longer in the resource\'s catalogue are omitted.
+     * Columns of the view, in display order. A column whose field the resource no longer defines, such as a deleted attribute, is still returned, so a client can show it as unavailable and offer to remove it.
      * @type {Array<ListViewColumnDto>}
      * @memberof ListViewDto
      */

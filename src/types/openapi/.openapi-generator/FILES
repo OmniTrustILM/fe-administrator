@@ -304,6 +304,7 @@ models/CryptographicAssetDto.ts
 models/CryptographicAssetEvidenceDto.ts
 models/CryptographicAssetNormalizedFieldsDto.ts
 models/CryptographicAssetOidDto.ts
+models/CryptographicAssetPqcExplanationDto.ts
 models/CryptographicAssetSourceDto.ts
 models/CryptographicAssetStatisticsDto.ts
 models/CryptographicAssetSyncCompletenessDto.ts
@@ -518,6 +519,9 @@ models/PaginationResponseDtoVaultProfileDto.ts
 models/PlatformEnum.ts
 models/PlatformSettingsDto.ts
 models/PlatformSettingsUpdateDto.ts
+models/PqcExplanationStepDto.ts
+models/PqcExplanationStepOutcome.ts
+models/PqcReferencedAssetDto.ts
 models/PqcVerdict.ts
 models/PrivateKeySecretContent.ts
 models/ProgrammingLanguageEnum.ts
@@ -601,6 +605,7 @@ models/ScheduledJobDetailDto.ts
 models/ScheduledJobDto.ts
 models/ScheduledJobHistoryDto.ts
 models/ScheduledJobHistoryResponseDto.ts
+models/ScheduledJobScheduleState.ts
 models/ScheduledJobsResponseDto.ts
 models/SchedulerJobExecutionStatus.ts
 models/SearchColumnRequestDto.ts
