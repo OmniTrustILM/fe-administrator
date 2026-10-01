@@ -210,6 +210,17 @@ describe('handed-in filters', () => {
     const onSecretsView = (next: typeof initialState) =>
         reducer(next, actions.setViewPosition({ entity: EntityType.SECRET, position: onExpiryWatch }));
 
+    test('a list left at a trailing-slash path is returned to at its canonical path', () => {
+        const left = reducer(
+            narrowedSecrets(initialState),
+            actions.leaveList({ entity: EntityType.SECRET, path: '/secrets/', scope: '/secrets/' }),
+        );
+        const returned = comeBack(route(left, '/secrets/detail/1'));
+
+        expect(secretsHandedIn(returned)).toEqual({ source: 'return', position: undefined });
+        expect(selectors.currentFilters(EntityType.SECRET)(stateFor(returned))).toEqual(narrowed);
+    });
+
     test('a return from a page inside the list hands back the filters it was left with, and the tab it was on', () => {
         const left = leave(onSecretsView(narrowedSecrets(initialState)));
         const cleared = reducer(left, actions.setCurrentFilters({ entity: EntityType.SECRET, currentFilters: [] }));

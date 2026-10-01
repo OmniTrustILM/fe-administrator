@@ -237,8 +237,8 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
         return update(payload.entity, (filter) => ({
             ...filter,
             leftList: {
-                path: payload.path ?? '',
-                scope: payload.scope ?? '',
+                path: (payload.path ?? '').replace(/(.)\/+$/, '$1'),
+                scope: (payload.scope ?? '').replace(/(.)\/+$/, '$1'),
                 filters: filter.currentFilters,
                 position: filter.viewPosition,
                 hasGoneAway: false,
@@ -246,7 +246,7 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
         }));
     }
     if (a.type === 'filters/routeChanged') {
-        const pathname = (a.payload as unknown as { pathname: string }).pathname;
+        const pathname = (a.payload as unknown as { pathname: string }).pathname.replace(/(.)\/+$/, '$1');
         return {
             filters: state.filters.map((entry) => {
                 const left = entry.filter.leftList;
@@ -261,7 +261,11 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
     if (a.type === 'filters/returnToList') {
         return update(payload.entity, (filter) => {
             const left = filter.leftList;
-            if (!left?.hasGoneAway || left.path !== payload.path || filter.handedIn?.source === 'drill-down')
+            if (
+                !left?.hasGoneAway ||
+                left.path !== (payload.path ?? '').replace(/(.)\/+$/, '$1') ||
+                filter.handedIn?.source === 'drill-down'
+            )
                 return { ...filter, leftList: undefined };
             return {
                 ...filter,

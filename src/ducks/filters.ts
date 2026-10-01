@@ -59,6 +59,9 @@ type LeftList = {
     hasGoneAway: boolean;
 };
 
+// React Router matches `/secrets/` and `/secrets` alike, so a record must compare them alike too.
+const toRoutePath = (path: string) => path.replace(/(.)\/+$/, '$1');
+
 const isInScope = (pathname: string, scope: string) => pathname === scope || pathname.startsWith(`${scope}/`);
 
 export type Filter = {
@@ -142,8 +145,8 @@ export const slice = createSlice({
         leaveList: (state, action: PayloadAction<{ entity: EntityType; path: string; scope: string }>) => {
             updateFilterState(state, action.payload.entity, (filter) => {
                 filter.leftList = {
-                    path: action.payload.path,
-                    scope: action.payload.scope,
+                    path: toRoutePath(action.payload.path),
+                    scope: toRoutePath(action.payload.scope),
                     filters: filter.currentFilters,
                     position: filter.viewPosition,
                     hasGoneAway: false,
@@ -156,7 +159,7 @@ export const slice = createSlice({
          * drops a hand-in the list never opened on, so a later visit does not open on it.
          */
         routeChanged: (state, action: PayloadAction<{ pathname: string }>) => {
-            const { pathname } = action.payload;
+            const pathname = toRoutePath(action.payload.pathname);
             for (const { filter } of state.filters) {
                 const left = filter.leftList;
                 if (!left || pathname === left.path) continue;
@@ -178,7 +181,8 @@ export const slice = createSlice({
             updateFilterState(state, action.payload.entity, (filter) => {
                 const left = filter.leftList;
                 filter.leftList = undefined;
-                if (!left?.hasGoneAway || left.path !== action.payload.path || filter.handedIn?.source === 'drill-down') return;
+                if (!left?.hasGoneAway || left.path !== toRoutePath(action.payload.path) || filter.handedIn?.source === 'drill-down')
+                    return;
 
                 filter.currentFilters = left.filters;
                 filter.handedIn = { source: 'return', position: left.position };
