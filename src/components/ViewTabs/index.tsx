@@ -8,7 +8,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { SearchFilterModel } from 'types/certificate';
 import type { ListViewModel, ListViewRequestModel, ViewSlice } from 'types/listViews';
 import type { Resource, SearchFieldDataByGroupDto } from 'types/openapi';
-import type { ColumnDefinition } from 'types/tableColumns';
+import type { ColumnDefinition, PickerColumn } from 'types/tableColumns';
 import { toCatalogueFields } from 'utils/columnPicker';
 import {
     STANDARD_VIEW_ID,
@@ -544,6 +544,34 @@ export default function ViewTabs({
         apply(remaining.find((view) => view.uuid === fallback));
     }, [dispatch, resource, targetView, activeId, views, apply]);
 
+    /** Releases held-back columns of the active view and puts them on the table with their stored filters and ordering. */
+    const confirm = useCallback(
+        (confirmed: readonly PickerColumn[]) => {
+            if (!activeView || confirmed.length === 0) return;
+
+            const keys = new Set(confirmed.map(getColumnKey));
+            dispatch(
+                listViewActions.releaseDormantFields({ resource, keys: confirmed.map((column) => toDormantKey(activeView.uuid, column)) }),
+            );
+
+            const released = resolveView(
+                activeView.columns,
+                catalogueFields.filter((field) => keys.has(getColumnKey(field)) || !dormant.has(toDormantKey(activeView.uuid, field))),
+                standardColumns,
+            ).renderable;
+            // A table on the platform fallback gives it up for the view, keeping only what the user added to it.
+            const fallback = new Set(resolved?.fellBackToStandard ? resolved.renderable.map(getColumnKey) : []);
+            const shown = reinsert(
+                columns.filter((column) => !fallback.has(getColumnKey(column))),
+                resolved?.fellBackToStandard ? released : released.filter((column) => keys.has(getColumnKey(column))),
+                released,
+                getColumnKey,
+            );
+            applyRef.current(withConfirmed(keys, { columns: shown, filters, sort }));
+        },
+        [activeView, dispatch, resource, catalogueFields, dormant, standardColumns, resolved, columns, filters, sort, withConfirmed],
+    );
+
     const onSaveDrift = useCallback(() => {
         if (!activeView) {
             // Standard has nothing to save into, so the offer is to keep the change as a new view.
@@ -558,42 +586,14 @@ export default function ViewTabs({
             filters: reinsert(storableFilters, heldFilters, activeView.filters ?? [], getFilterKey),
             sort: toStoredSort(sort ?? heldSort),
         });
-    }, [activeView, patchActive, columns, resolved, storableFilters, heldFilters, sort, heldSort]);
 
-    const onShowReturned = useCallback(() => {
-        if (!activeView) return;
+        // Saving a filter of the user's own on a held-back field confirms the field, as adding its column would: held, the
+        // view would withhold the filter just saved.
+        const filtered = new Set(storableFilters.map(getColumnKey));
+        confirm(returned.filter((column) => filtered.has(getColumnKey(column))));
+    }, [activeView, patchActive, columns, resolved, storableFilters, heldFilters, sort, heldSort, confirm, returned]);
 
-        const keys = new Set(returned.map(getColumnKey));
-        dispatch(listViewActions.releaseDormantFields({ resource, keys: returned.map((column) => toDormantKey(activeView.uuid, column)) }));
-
-        const released = resolveView(
-            activeView.columns,
-            catalogueFields.filter((field) => keys.has(getColumnKey(field)) || !dormant.has(toDormantKey(activeView.uuid, field))),
-            standardColumns,
-        ).renderable;
-        // A table on the platform fallback gives it up for the view, keeping only what the user added to it.
-        const fallback = new Set(resolved?.fellBackToStandard ? resolved.renderable.map(getColumnKey) : []);
-        const shown = reinsert(
-            columns.filter((column) => !fallback.has(getColumnKey(column))),
-            resolved?.fellBackToStandard ? released : released.filter((column) => keys.has(getColumnKey(column))),
-            released,
-            getColumnKey,
-        );
-        applyRef.current(withConfirmed(keys, { columns: shown, filters, sort }));
-    }, [
-        activeView,
-        returned,
-        dispatch,
-        resource,
-        catalogueFields,
-        dormant,
-        standardColumns,
-        resolved,
-        columns,
-        filters,
-        sort,
-        withConfirmed,
-    ]);
+    const onShowReturned = useCallback(() => confirm(returned), [confirm, returned]);
 
     // Withheld when every stored column is held back: Core refuses a view with no columns.
     const remainingAfterReturned = useMemo(() => {

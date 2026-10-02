@@ -1487,6 +1487,11 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
         return withEntry({ isMutating: false, views: entry.rollback ?? entry.views, rollback: undefined });
     }
 
+    // Applied as the real reducer applies it, but not held as in flight, so a test can go on acting on the strip.
+    if (a.type === 'listViews/updateView' && uuid && view) {
+        return withEntry({ views: entry.views.map((each) => (each.uuid === uuid ? ({ ...each, ...view } as ListViewDto) : each)) });
+    }
+
     return recorded;
 }
 

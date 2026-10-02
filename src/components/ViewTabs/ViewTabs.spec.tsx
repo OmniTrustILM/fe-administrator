@@ -1379,6 +1379,34 @@ test.describe('ViewTabs', () => {
         expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
     });
 
+    test('confirms a held-back column when the view is saved with a filter of the user on it', async ({ mount, page }) => {
+        const ownFilter: SearchFilterModel = { ...retiredFilter, value: 'false' };
+        const filtered = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+            filters: [retiredFilter],
+            sort: undefined,
+        });
+        await mount(strip({ views: [filtered], fields: withRetired, dormantFields: [retiredKey], driftFilter: ownFilter }));
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+        const release = await lastDispatched(page, 'listViews/releaseDormantFields');
+        expect(release?.payload).toMatchObject({ resource: Resource.Certificates, keys: [retiredKey] });
+
+        await page.getByTestId('view-tabs-tab-standard').click();
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        const slice = await appliedSlice(page);
+        expect(slice.columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'retired']);
+        expect(slice.filters).toEqual([retiredFilter, ownFilter]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+    });
+
     test('puts back the filter on a held-back column the user adds from the column menu', async ({ mount, page }) => {
         const filtered = expiryWatch({
             defaultView: true,
