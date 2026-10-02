@@ -28,6 +28,8 @@ type Props = Readonly<{
     withheldCatalogue?: boolean;
     /** The catalogue a later read answers with once `swap-catalogue` is pressed, and pressing it again goes back. */
     laterCatalogue?: SearchFieldDataByGroupDto[];
+    /** The catalogues later reads answer with, one per press of `next-catalogue`, the last one standing. */
+    catalogueSequence?: SearchFieldDataByGroupDto[][];
     /** Drops an applied ordering on a column the applied slice does not show, as PagedList does. */
     dropsUnshownSort?: boolean;
     /** Attribute column keys an earlier visit saw without their field. */
@@ -76,6 +78,7 @@ export default function ViewTabsWithStore({
     refreshedViews = [],
     withheldCatalogue = false,
     laterCatalogue,
+    catalogueSequence = [],
     dropsUnshownSort = false,
     dormantFields,
     isCatalogueLoaded,
@@ -98,7 +101,9 @@ export default function ViewTabsWithStore({
     const [isCatalogueReleased, setIsCatalogueReleased] = useState(!withheldCatalogue);
     const [isCatalogueSwapped, setIsCatalogueSwapped] = useState(false);
     const [mountKey, setMountKey] = useState(0);
-    const liveCatalogue = isCatalogueSwapped && laterCatalogue ? laterCatalogue : catalogue;
+    const [catalogueStep, setCatalogueStep] = useState(0);
+    const swappedCatalogue = isCatalogueSwapped && laterCatalogue ? laterCatalogue : catalogue;
+    const liveCatalogue = catalogueStep > 0 ? catalogueSequence[Math.min(catalogueStep, catalogueSequence.length) - 1] : swappedCatalogue;
     const gate = useMemo(() => (renderableProperties ? new Set(renderableProperties) : undefined), [renderableProperties]);
 
     return (
@@ -122,6 +127,10 @@ export default function ViewTabsWithStore({
 
                 <button type="button" data-testid="swap-catalogue" onClick={() => setIsCatalogueSwapped((current) => !current)}>
                     answer another catalogue read
+                </button>
+
+                <button type="button" data-testid="next-catalogue" onClick={() => setCatalogueStep((current) => current + 1)}>
+                    answer the next catalogue read
                 </button>
 
                 <button type="button" data-testid="remount-strip" onClick={() => setMountKey((current) => current + 1)}>

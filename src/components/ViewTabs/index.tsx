@@ -316,20 +316,31 @@ export default function ViewTabs({
         if (requestedFor === resource && isStale && !isMutating) dispatch(listViewActions.listViews({ resource }));
     }, [dispatch, resource, requestedFor, isStale, isMutating]);
 
-    // A column of the active view whose field goes while it is on the table comes off it, or the table would keep it
-    // through the field's return and show whatever attribute answers under that key without asking.
+    /**
+     * Keeps the open view's table off fields it has not confirmed. A column whose field goes while it is on the table comes
+     * off it, or the table would keep it through the field's return and show whatever attribute answers under that key.
+     * A filter comes off when its field turns held, as a freshly applied view would leave it out.
+     *
+     * One effect and one apply for both: an apply replaces the whole slice, so a second one built from the same render
+     * would put back what the first took off.
+     */
+    const previousHeldKeys = useRef<ReadonlySet<string>>(NO_KEYS);
     useEffect(() => {
-        if (!isReady) return;
-        const gone = goneAttributeKeys(views, catalogue).filter((key) => !dormant.has(key));
-        if (gone.length === 0) return;
+        const heldKeys = heldKeysOf(activeView);
+        const wasHeld = previousHeldKeys.current;
+        previousHeldKeys.current = heldKeys;
 
-        dispatch(listViewActions.markFieldsDormant({ resource, keys: gone }));
+        const gone = isReady ? goneAttributeKeys(views, catalogue).filter((key) => !dormant.has(key)) : [];
+        if (gone.length > 0) dispatch(listViewActions.markFieldsDormant({ resource, keys: gone }));
         if (!activeView) return;
 
         const goneHere = new Set(gone);
-        const kept = columns.filter((column) => !goneHere.has(toDormantKey(activeView.uuid, column)));
-        if (kept.length < columns.length) applyRef.current({ columns: kept.length > 0 ? kept : [...standardColumns], filters, sort });
-    }, [dispatch, resource, isReady, views, catalogue, dormant, activeView, columns, filters, sort, standardColumns]);
+        const keptColumns = columns.filter((column) => !goneHere.has(toDormantKey(activeView.uuid, column)));
+        const keptFilters = filters.filter((filter) => !heldKeys.has(getColumnKey(filter)) || wasHeld.has(getColumnKey(filter)));
+        if (keptColumns.length < columns.length || keptFilters.length < filters.length) {
+            applyRef.current({ columns: keptColumns.length > 0 ? keptColumns : [...standardColumns], filters: keptFilters, sort });
+        }
+    }, [dispatch, resource, isReady, views, catalogue, dormant, activeView, heldKeysOf, columns, filters, sort, standardColumns]);
 
     /** `live` with the stored filters and ordering on the confirmed column keys put back, unless the user ordered it otherwise. */
     const withConfirmed = useCallback(
@@ -367,20 +378,6 @@ export default function ViewTabs({
         const confirmed = withConfirmed(new Set(arrived.map(getColumnKey)), { columns, filters, sort });
         if (confirmed.filters.length !== filters.length || confirmed.sort !== sort) applyRef.current(confirmed);
     }, [dispatch, resource, isReady, activeView, dormant, catalogueFields, columns, filters, sort, withConfirmed]);
-
-    // A filter of the open view comes off the table when its field turns held, as a freshly applied view would leave it out.
-    const previousHeldKeys = useRef<ReadonlySet<string>>(NO_KEYS);
-    useEffect(() => {
-        const heldKeys = heldKeysOf(activeView);
-        const before = previousHeldKeys.current;
-        previousHeldKeys.current = heldKeys;
-
-        const kept = filters.filter((filter) => {
-            const key = getColumnKey(filter);
-            return !heldKeys.has(key) || before.has(key);
-        });
-        if (kept.length < filters.length) applyRef.current({ columns, filters: kept, sort });
-    }, [activeView, heldKeysOf, columns, filters, sort]);
 
     // The pinned view opens on load, and Standard when none is pinned. Once only: a later list read —
     // after a rename, say — must not throw the user back to the tab they started on.

@@ -131,6 +131,7 @@ type MountOptions = {
     refreshedViews?: ListViewModel[];
     withheldCatalogue?: boolean;
     laterCatalogue?: SearchFieldDataByGroupDto[];
+    catalogueSequence?: SearchFieldDataByGroupDto[][];
     dropsUnshownSort?: boolean;
     dormantFields?: string[];
     isCatalogueLoaded?: boolean;
@@ -150,6 +151,7 @@ const strip = ({
     refreshedViews,
     withheldCatalogue,
     laterCatalogue,
+    catalogueSequence,
     dropsUnshownSort,
     dormantFields,
     isCatalogueLoaded,
@@ -169,6 +171,7 @@ const strip = ({
         refreshedViews={refreshedViews}
         withheldCatalogue={withheldCatalogue}
         laterCatalogue={laterCatalogue}
+        catalogueSequence={catalogueSequence}
         dropsUnshownSort={dropsUnshownSort}
         dormantFields={dormantFields}
         isCatalogueLoaded={isCatalogueLoaded}
@@ -1260,6 +1263,37 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
         const release = await lastDispatched(page, 'listViews/releaseDormantFields');
         expect(release?.payload).toMatchObject({ resource: Resource.Certificates, keys: [retiredKey] });
+    });
+
+    test('holds back a column whose attribute goes in the same catalogue read that brings back a filtered one', async ({ mount, page }) => {
+        const retiredOnly = [
+            catalogue[0],
+            { filterFieldSource: FilterFieldSource.Custom, searchFieldData: [field('retired', 'Retired')] },
+        ] as unknown as SearchFieldDataByGroupDto[];
+        const view = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('environment', FilterFieldSource.Custom), stored('retired', FilterFieldSource.Custom)],
+            filters: [retiredFilter],
+            sort: undefined,
+        });
+        await mount(strip({ views: [view], fields: withRetired, catalogueSequence: [catalogue, retiredOnly, withRetired] }));
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+
+        await page.getByTestId('next-catalogue').click();
+        await expect
+            .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
+            .toEqual(['COMMON_NAME', 'environment']);
+
+        await page.getByTestId('next-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('Retired is available again');
+        await expect.poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+        expect((await appliedSlice(page)).filters).toEqual([]);
+
+        await page.getByTestId('next-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('Environment and Retired are available again');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
     });
 
     test('keeps the ordering of a held-back column without reporting it as an edit, and lists under it once shown', async ({
