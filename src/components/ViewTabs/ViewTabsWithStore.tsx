@@ -26,8 +26,10 @@ type Props = Readonly<{
     refreshedViews?: ListViewModel[];
     /** Withholds the catalogue until released, so a test can make it land after the views did. */
     withheldCatalogue?: boolean;
-    /** The catalogue a later read answers with once `swap-catalogue` is pressed, e.g. with an attribute re-created. */
+    /** The catalogue a later read answers with once `swap-catalogue` is pressed, and pressing it again goes back. */
     laterCatalogue?: SearchFieldDataByGroupDto[];
+    /** Drops an applied ordering on a column the applied slice does not show, as PagedList does. */
+    dropsUnshownSort?: boolean;
     /** Attribute column keys an earlier visit saw without their field. */
     dormantFields?: string[];
     /** Passed straight through, so a test can say the catalogue read has settled on nothing. */
@@ -39,6 +41,14 @@ type Props = Readonly<{
     driftSort?: ColumnSort;
     driftFilter?: SearchFilterModel;
 }>;
+
+const withShownSort = (slice: ViewSlice): ViewSlice => {
+    const { sort } = slice;
+    const isShown = slice.columns.some(
+        (column) => column.fieldSource === sort?.fieldSource && column.fieldIdentifier === sort?.fieldIdentifier,
+    );
+    return sort && !isShown ? { ...slice, sort: undefined } : slice;
+};
 
 /** The listViews actions the strip has dispatched, which is all a no-epic test can observe of them. */
 function DispatchedActions() {
@@ -66,6 +76,7 @@ export default function ViewTabsWithStore({
     refreshedViews = [],
     withheldCatalogue = false,
     laterCatalogue,
+    dropsUnshownSort = false,
     dormantFields,
     isCatalogueLoaded,
     renderableProperties,
@@ -103,14 +114,14 @@ export default function ViewTabsWithStore({
                     columns={slice.columns}
                     filters={slice.filters}
                     sort={slice.sort}
-                    onApply={setSlice}
+                    onApply={(next) => setSlice(dropsUnshownSort ? withShownSort(next) : next)}
                 />
 
                 <div data-testid="applied-slice">{JSON.stringify(slice)}</div>
                 <DispatchedActions />
 
-                <button type="button" data-testid="swap-catalogue" onClick={() => setIsCatalogueSwapped(true)}>
-                    answer a later catalogue read
+                <button type="button" data-testid="swap-catalogue" onClick={() => setIsCatalogueSwapped((current) => !current)}>
+                    answer another catalogue read
                 </button>
 
                 <button type="button" data-testid="remount-strip" onClick={() => setMountKey((current) => current + 1)}>

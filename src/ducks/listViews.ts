@@ -50,9 +50,8 @@ export interface ResourceViews {
 export type State = {
     byResource: Partial<Record<Resource, ResourceViews>>;
     /**
-     * Per-view column keys of attribute fields a stored view held while the catalogue did not publish them. Kept apart
-     * from `byResource`, which a list read rebuilds, because a later field under the same key is held back
-     * until the user confirms it, and that must outlast leaving the page.
+     * Per-view column keys of attribute fields a stored view held while the catalogue did not publish them. A later
+     * field under the same key is held back until the user confirms it, and that must outlast leaving the page.
      */
     dormantFields: Partial<Record<Resource, string[]>>;
     error?: string;

@@ -21,6 +21,7 @@ import {
     resolveInitialViewId,
     resolveView,
     splitTabs,
+    toColumnSort,
     toCreateRequest,
     toStandardSlice,
     toStorableFilters,
@@ -35,7 +36,7 @@ import {
     getFilterKey,
     type ViewTab as ViewTabModel,
 } from 'utils/listViews';
-import { type ColumnSort, getColumnKey } from 'utils/tableColumns';
+import { type ColumnSort, getColumnKey, getSortKey } from 'utils/tableColumns';
 import NameViewDialog from './NameViewDialog';
 import OverflowViewsMenu from './OverflowViewsMenu';
 import ReturnedColumnsNotice from './ReturnedColumnsNotice';
@@ -186,6 +187,22 @@ export default function ViewTabs({
         [activeView, fieldsFor, standardColumns],
     );
 
+    const held = useMemo(() => {
+        if (!activeView || dormant.size === 0) return [];
+        return resolveView(activeView.columns, catalogueFields, standardColumns).columns.filter(
+            (column) => column.available && dormant.has(toDormantKey(activeView.uuid, column)),
+        );
+    }, [activeView, dormant, catalogueFields, standardColumns]);
+
+    /**
+     * The active view's stored ordering when it is on a held-back column. The table drops an ordering on a column it
+     * is not showing, so this one is not an unsaved edit, and a save or a confirmation of the column keeps it.
+     */
+    const heldSort = useMemo(() => {
+        const stored = toColumnSort(activeView?.sort);
+        return stored && held.some((column) => getColumnKey(column) === getSortKey(stored)) ? stored : undefined;
+    }, [activeView, held]);
+
     /**
      * The slice behind the active tab, which drift is measured against.
      *
@@ -198,15 +215,12 @@ export default function ViewTabs({
         if (!activeView) return toStandardSlice(standardColumns, standardSort);
 
         const slice = toViewSlice(activeView, fieldsFor(activeView), standardColumns);
-        return { ...slice, filters: toStorableFilters(slice.filters, catalogue, activeView.filters ?? []) };
-    }, [activeView, fieldsFor, standardColumns, standardSort, catalogue]);
-
-    const held = useMemo(() => {
-        if (!activeView || dormant.size === 0) return [];
-        return resolveView(activeView.columns, catalogueFields, standardColumns).columns.filter(
-            (column) => column.available && dormant.has(toDormantKey(activeView.uuid, column)),
-        );
-    }, [activeView, dormant, catalogueFields, standardColumns]);
+        return {
+            ...slice,
+            filters: toStorableFilters(slice.filters, catalogue, activeView.filters ?? []),
+            sort: heldSort ? undefined : slice.sort,
+        };
+    }, [activeView, fieldsFor, standardColumns, standardSort, catalogue, heldSort]);
 
     const returned = useMemo(() => {
         const shown = new Set(columns.map(getColumnKey));
@@ -268,18 +282,32 @@ export default function ViewTabs({
         if (requestedFor === resource && isStale && !isMutating) dispatch(listViewActions.listViews({ resource }));
     }, [dispatch, resource, requestedFor, isStale, isMutating]);
 
+    // A column of the active view whose field goes while it is on the table comes off it, or the table would keep it
+    // through the field's return and show whatever attribute answers under that key without asking.
     useEffect(() => {
         if (!isReady) return;
         const gone = goneAttributeKeys(views, catalogue).filter((key) => !dormant.has(key));
-        if (gone.length > 0) dispatch(listViewActions.markFieldsDormant({ resource, keys: gone }));
-    }, [dispatch, resource, isReady, views, catalogue, dormant]);
+        if (gone.length === 0) return;
 
-    // Putting a held-back field on the table of its view, from the column menu or otherwise, is the user's confirmation of it.
+        dispatch(listViewActions.markFieldsDormant({ resource, keys: gone }));
+        if (!activeView) return;
+
+        const goneHere = new Set(gone);
+        const kept = columns.filter((column) => !goneHere.has(toDormantKey(activeView.uuid, column)));
+        if (kept.length < columns.length) applyRef.current({ columns: kept.length > 0 ? kept : [...standardColumns], filters, sort });
+    }, [dispatch, resource, isReady, views, catalogue, dormant, activeView, columns, filters, sort, standardColumns]);
+
+    // Putting a held-back field on the table of its view, from the column menu or otherwise, is the user's confirmation
+    // of it. Only a column that arrives on the table counts: one that was already there was never chosen.
+    const previousColumns = useRef(columns);
     useEffect(() => {
+        const before = new Set(previousColumns.current.map(getColumnKey));
+        previousColumns.current = columns;
         if (!isReady || !activeView || dormant.size === 0) return;
+
         const published = new Set(catalogueFields.map(getColumnKey));
         const chosen = columns
-            .filter((column) => published.has(getColumnKey(column)))
+            .filter((column) => !before.has(getColumnKey(column)) && published.has(getColumnKey(column)))
             .map((column) => toDormantKey(activeView.uuid, column))
             .filter((key) => dormant.has(key));
         if (chosen.length > 0) dispatch(listViewActions.releaseDormantFields({ resource, keys: chosen }));
@@ -460,9 +488,9 @@ export default function ViewTabs({
         patchActive({
             columns: toStoredColumnsKeepingUnavailable(columns, resolved?.columns ?? []),
             filters: storableFilters,
-            sort: toStoredSort(sort),
+            sort: toStoredSort(sort ?? heldSort),
         });
-    }, [activeView, patchActive, columns, resolved, storableFilters, sort]);
+    }, [activeView, patchActive, columns, resolved, storableFilters, sort, heldSort]);
 
     const onShowReturned = useCallback(() => {
         if (!activeView) return;
@@ -475,16 +503,17 @@ export default function ViewTabs({
             catalogueFields.filter((field) => keys.has(getColumnKey(field)) || !dormant.has(toDormantKey(activeView.uuid, field))),
             standardColumns,
         ).renderable;
-        const shown = resolved?.fellBackToStandard
-            ? released
-            : reinsert(
-                  columns,
-                  released.filter((column) => keys.has(getColumnKey(column))),
-                  released,
-                  getColumnKey,
-              );
-        applyRef.current({ columns: shown, filters, sort });
-    }, [activeView, returned, dispatch, resource, catalogueFields, dormant, standardColumns, resolved, columns, filters, sort]);
+        // A table on the platform fallback gives it up for the view, keeping only what the user added to it.
+        const fallback = new Set(resolved?.fellBackToStandard ? resolved.renderable.map(getColumnKey) : []);
+        const shown = reinsert(
+            columns.filter((column) => !fallback.has(getColumnKey(column))),
+            resolved?.fellBackToStandard ? released : released.filter((column) => keys.has(getColumnKey(column))),
+            released,
+            getColumnKey,
+        );
+        const restoredSort = heldSort && keys.has(getSortKey(heldSort)) ? heldSort : undefined;
+        applyRef.current({ columns: shown, filters, sort: sort ?? restoredSort });
+    }, [activeView, returned, dispatch, resource, catalogueFields, dormant, standardColumns, resolved, columns, filters, sort, heldSort]);
 
     // Withheld when every stored column is held back: Core refuses a view with no columns.
     const remainingAfterReturned = useMemo(() => {
