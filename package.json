@@ -85,7 +85,7 @@
         ]
     },
     "devDependencies": {
-        "@biomejs/biome": "2.5.14",
+        "@biomejs/biome": "2.5.15",
         "@openapitools/openapi-generator-cli": "^2.31.1",
         "@playwright/experimental-ct-react": "1.62.1",
         "@playwright/test": "1.62.1",
