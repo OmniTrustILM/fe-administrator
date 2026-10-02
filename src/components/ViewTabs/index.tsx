@@ -135,7 +135,6 @@ export default function ViewTabs({
     const hasLoaded = useSelector(listViewSelectors.hasLoaded(resource));
     const isFetching = useSelector(listViewSelectors.isFetching(resource));
     const isMutating = useSelector(listViewSelectors.isMutating(resource));
-    const mutationError = useSelector(listViewSelectors.error);
     const isStale = useSelector(listViewSelectors.isStale(resource));
     const createdUuid = useSelector(listViewSelectors.createdUuid(resource));
     const dormantFields = useSelector(listViewSelectors.dormantFields(resource));
@@ -583,7 +582,10 @@ export default function ViewTabs({
         if (!pending || isMutating) return;
 
         pendingConfirmation.current = undefined;
-        if (mutationError || activeView?.uuid !== pending.uuid) return;
+        // Judged by the keys rather than the slice's error, which any read or write of any resource can set: only a
+        // successful save releases them.
+        if (activeView?.uuid !== pending.uuid || pending.confirmed.some((column) => dormant.has(toDormantKey(pending.uuid, column))))
+            return;
 
         const keys = new Set(pending.confirmed.map(getColumnKey));
         const stored = resolveView(activeView.columns, fieldsFor(activeView), standardColumns).renderable;
@@ -594,7 +596,7 @@ export default function ViewTabs({
             getColumnKey,
         );
         applyRef.current({ columns: shown, filters, sort: sort ?? pending.sort });
-    }, [isMutating, mutationError, activeView, fieldsFor, standardColumns, columns, filters, sort]);
+    }, [isMutating, dormant, activeView, fieldsFor, standardColumns, columns, filters, sort]);
 
     const onSaveDrift = useCallback(() => {
         if (!activeView) {
@@ -812,10 +814,10 @@ export default function ViewTabs({
                     fellBackToStandard={resolved.fellBackToStandard}
                     // Written from the stored side, not from the table: the table is showing the platform
                     // fallback when nothing resolved, and carries unsaved changes besides, so saving it
-                    // here would overwrite the view with columns the user never chose. Withheld entirely
-                    // on a fallback, where nothing resolved and there is no column list left to write.
+                    // here would overwrite the view with columns the user never chose. Withheld on a
+                    // fallback with nothing held back either, where there is no column list left to write.
                     onRemove={
-                        activeView && !resolved.fellBackToStandard
+                        activeView && (!resolved.fellBackToStandard || held.length > 0)
                             ? () => {
                                   const removed = new Set(unavailable.map(getColumnKey));
                                   patchActive({

@@ -204,6 +204,16 @@ export default function ViewTabsWithStore({
 
                 <button
                     type="button"
+                    data-testid="simulate-unrelated-read-failure"
+                    onClick={() =>
+                        store.dispatch({ type: 'listViews/listViewsFailure', payload: { resource: 'keys', error: 'Could not be read' } })
+                    }
+                >
+                    fail a read of another resource
+                </button>
+
+                <button
+                    type="button"
                     data-testid="simulate-update-failure"
                     onClick={() =>
                         store.dispatch({ type: 'listViews/updateViewFailure', payload: { resource, error: 'Could not be saved' } })

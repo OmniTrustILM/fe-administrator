@@ -1445,6 +1445,46 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
     });
 
+    test('puts a confirmed column on the table when its save succeeds after an unrelated read failed', async ({ mount, page }) => {
+        const ownFilter: SearchFilterModel = { ...retiredFilter, value: 'false' };
+        const filtered = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+            filters: [retiredFilter],
+            sort: undefined,
+        });
+        await mount(strip({ views: [filtered], fields: withRetired, dormantFields: [retiredKey], driftFilter: ownFilter }));
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+        await page.getByTestId('simulate-unrelated-read-failure').click();
+        await page.getByTestId('simulate-update-success').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toHaveCount(0);
+        await expect
+            .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
+            .toEqual(['COMMON_NAME', 'retired']);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+    });
+
+    test('offers to remove a missing column beside a held-back one, keeping the held-back column', async ({ mount, page }) => {
+        const mixed = expiryWatch({
+            defaultView: true,
+            columns: [stored('retired', FilterFieldSource.Custom), stored('withdrawn', FilterFieldSource.Custom)],
+            filters: [],
+            sort: undefined,
+        });
+        await mount(strip({ views: [mixed], fields: withRetired, dormantFields: [retiredKey] }));
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('withdrawn cannot be shown');
+
+        await page.getByTestId('view-tabs-notice-remove').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect(action?.payload).toMatchObject({ view: { columns: [stored('retired', FilterFieldSource.Custom)] } });
+    });
+
     test('keeps a held-back column held when the save that would confirm it fails', async ({ mount, page }) => {
         const ownFilter: SearchFilterModel = { ...retiredFilter, value: 'false' };
         const filtered = expiryWatch({

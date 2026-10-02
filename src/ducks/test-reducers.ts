@@ -1511,6 +1511,11 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
         return { ...saved, dormantFields: { ...saved.dormantFields, [resource]: dormant.filter((key) => !confirmed.includes(key)) } };
     }
 
+    // The real slice keeps one error for every resource, so a failed read of another resource sets it too.
+    if (a.type === 'listViews/listViewsFailure') {
+        return { ...withEntry({ isFetching: false, hasLoaded: true }), error: (a.payload as { error?: string }).error };
+    }
+
     if (a.type === 'listViews/updateViewFailure') {
         const failed = withEntry({ isMutating: false, views: entry.rollback ?? entry.views, rollback: undefined, confirming: undefined });
         return { ...failed, error: (a.payload as { error?: string }).error };
