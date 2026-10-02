@@ -491,6 +491,18 @@ test.describe('PagedList · configurable columns', () => {
             await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveText('Unsaved changes — Standard cannot hold them');
         });
 
+        test('keeps the filters the user own once they are edited back to the Dashboard ones', async ({ mount, page }) => {
+            await mount(<PagedListColumnsWithStore {...drillDown} retypedFilters={drilledInto} />);
+            await expect(page.getByTestId('view-tabs-summary-unsaved')).toContainText('Filtered from the Dashboard');
+            await page.getByTestId('type-filters').click();
+            await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveText('Unsaved changes — Standard cannot hold them');
+
+            await page.getByTestId('retype-filters').click();
+
+            await expect(page.getByTestId('current-filters')).toContainText('from-the-dashboard');
+            await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveText('Unsaved changes — Standard cannot hold them');
+        });
+
         test('takes the pending drill-down, so it is not opened on a second time', async ({ mount, page }) => {
             await mount(<PagedListColumnsWithStore {...drillDown} />);
             await expect(page.getByTestId('view-tabs-summary-unsaved')).toBeVisible();

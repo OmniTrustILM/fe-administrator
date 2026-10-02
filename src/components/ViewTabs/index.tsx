@@ -227,8 +227,14 @@ export default function ViewTabs({
 
     const currentSlice = useMemo<ViewSlice>(() => ({ columns, filters: storableFilters, sort }), [columns, storableFilters, sort]);
     const isDirty = isSliceDirty(storedSlice, currentSlice, activeView ? 'view' : 'standard');
-    const isDrillDown =
-        activeId === STANDARD_VIEW_ID && drillDownFilters !== undefined && filtersKey(filters) === filtersKey(drillDownFilters);
+    const liveFiltersKey = filtersKey(filters);
+    const isDrillDown = activeId === STANDARD_VIEW_ID && drillDownFilters !== undefined && liveFiltersKey === filtersKey(drillDownFilters);
+
+    // An edit makes the filters the user's own for good, so editing them back does not hand them to the Dashboard again.
+    // Only on a filter change: a failed create can put the snapshot back a render before the filters it matches.
+    useEffect(() => {
+        setDrillDownFilters((snapshot) => (snapshot && filtersKey(snapshot) !== liveFiltersKey ? undefined : snapshot));
+    }, [liveFiltersKey]);
 
     // `onApply` is typically an inline callback, so holding it in a ref keeps the load effect below
     // from re-running — and re-applying the view — on every render of the page around it.

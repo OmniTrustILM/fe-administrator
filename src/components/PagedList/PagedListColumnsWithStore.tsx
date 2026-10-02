@@ -62,6 +62,8 @@ type Props = Readonly<{
     withListInFlightControl?: boolean;
     /** Renders a control that sets these filters, as a user typing into the filter widget does. */
     typedFilters?: SearchFilterModel[];
+    /** Renders a second such control, for a user typing a different set of filters afterwards. */
+    retypedFilters?: SearchFilterModel[];
 }>;
 
 const registry: CellRegistry<StubRow> = {
@@ -185,13 +187,13 @@ function ViewsControl({ views }: Readonly<{ views: ListViewModel[] }>) {
     );
 }
 
-function TypeFiltersControl({ filters }: Readonly<{ filters: SearchFilterModel[] }>) {
+function TypeFiltersControl({ filters, testId }: Readonly<{ filters: SearchFilterModel[]; testId: string }>) {
     const dispatch = useDispatch();
 
     return (
         <button
             type="button"
-            data-testid="type-filters"
+            data-testid={testId}
             onClick={() => dispatch(filterActions.setCurrentFilters({ entity: EntityType.CERTIFICATE, currentFilters: filters }))}
         >
             Type filters
@@ -231,6 +233,7 @@ export default function PagedListColumnsWithStore({
     withViewsControl = false,
     withListInFlightControl = false,
     typedFilters,
+    retypedFilters,
 }: Props) {
     const [store] = useState(() =>
         createMockStore({
@@ -329,7 +332,9 @@ export default function PagedListColumnsWithStore({
 
                 {withPagingControl && <PagingControl />}
 
-                {typedFilters && <TypeFiltersControl filters={typedFilters} />}
+                {typedFilters && <TypeFiltersControl filters={typedFilters} testId="type-filters" />}
+
+                {retypedFilters && <TypeFiltersControl filters={retypedFilters} testId="retype-filters" />}
 
                 {withRefreshControl && (
                     <button type="button" data-testid="page-refresh" onClick={() => setRefreshToken((token) => token + 1)}>
