@@ -23,6 +23,8 @@ type Props = Readonly<{
     drillDownFilters?: SearchFilterModel[];
     /** What the control standing in for the filter widget sets. */
     typedFilters: SearchFilterModel[];
+    /** What a second such control sets, for a user typing a different set of filters afterwards. */
+    retypedFilters?: SearchFilterModel[];
     /** The views a control on the detail page replaces the list with, as a change made elsewhere meanwhile does. */
     viewsOnDetail?: ListViewModel[];
 }>;
@@ -38,13 +40,13 @@ function SecretsFilters() {
     return <div data-testid="current-filters">{JSON.stringify(filters)}</div>;
 }
 
-function TypeFilters({ filters }: Readonly<{ filters: SearchFilterModel[] }>) {
+function TypeFilters({ filters, testId }: Readonly<{ filters: SearchFilterModel[]; testId: string }>) {
     const dispatch = useDispatch();
 
     return (
         <button
             type="button"
-            data-testid="type-filters"
+            data-testid={testId}
             onClick={() => dispatch(filterActions.setCurrentFilters({ entity: EntityType.SECRET, currentFilters: filters }))}
         >
             Type filters
@@ -71,7 +73,7 @@ function SecretsList({
     standardColumns,
     catalogue,
     onRequest,
-}: Readonly<Omit<Props, 'views' | 'typedFilters' | 'viewsOnDetail'> & { onRequest: (request: SearchRequestModel) => void }>) {
+}: Readonly<Pick<Props, 'rows' | 'standardColumns' | 'catalogue'> & { onRequest: (request: SearchRequestModel) => void }>) {
     const getAvailableFiltersApi = useCallback(() => of(catalogue), [catalogue]);
     const config = useMemo(
         () => ({ resource: Resource.Secrets, standardColumns, rows, getRowId: (row: SecretRow) => row.uuid, registry }),
@@ -110,6 +112,7 @@ export default function PagedListReturnWithStore({
     views,
     drillDownFilters,
     typedFilters,
+    retypedFilters,
     viewsOnDetail,
 }: Props) {
     const [store] = useState(() =>
@@ -175,7 +178,8 @@ export default function PagedListReturnWithStore({
                         }
                     />
                 </Routes>
-                <TypeFilters filters={typedFilters} />
+                <TypeFilters filters={typedFilters} testId="type-filters" />
+                {retypedFilters && <TypeFilters filters={retypedFilters} testId="retype-filters" />}
                 <SecretsFilters />
                 <div data-testid="list-requests">{JSON.stringify(requests)}</div>
             </MemoryRouter>

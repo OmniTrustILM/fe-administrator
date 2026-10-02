@@ -94,6 +94,21 @@ test.describe('PagedList · coming back from a detail page', () => {
         await expect(page.getByTestId('current-filters')).toContainText('from-the-dashboard');
     });
 
+    test("comes back with the user's own filters once a drill-down was edited back to the Dashboard ones", async ({ mount, page }) => {
+        const fromTheDashboard = [nameContains('from-the-dashboard')];
+        await mount(<PagedListReturnWithStore {...props} drillDownFilters={fromTheDashboard} retypedFilters={fromTheDashboard} />);
+        await expect(page.getByTestId('view-tabs-summary-unsaved')).toContainText('Filtered from the Dashboard');
+        await page.getByTestId('type-filters').click();
+        await page.getByTestId('retype-filters').click();
+        await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveText('Unsaved changes — Standard cannot hold them');
+
+        await openSecretAndComeBack(page);
+
+        await expect(page.getByRole('tab', { name: 'Standard' })).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('current-filters')).toContainText('from-the-dashboard');
+        await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveText('Unsaved changes — Standard cannot hold them');
+    });
+
     test('comes back on Standard when the view it was left on has gone', async ({ mount, page }) => {
         await mount(<PagedListReturnWithStore {...props} viewsOnDetail={[pinned]} />);
         await page.getByRole('tab', { name: 'Everything' }).click();

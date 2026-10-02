@@ -472,7 +472,7 @@ test.describe('PagedList · configurable columns', () => {
             await expect(page.getByRole('tab', { name: 'Standard' })).toHaveAttribute('aria-selected', 'true');
         });
 
-        test('reads the same filters as the user own once Revert has dropped the drill-down', async ({ mount, page }) => {
+        test("reads the same filters as the user's own once Revert has dropped the drill-down", async ({ mount, page }) => {
             await mount(<PagedListColumnsWithStore {...drillDown} typedFilters={drilledInto} />);
             await page.getByTestId('view-tabs-summary-revert').click();
             await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveCount(0);
@@ -491,7 +491,7 @@ test.describe('PagedList · configurable columns', () => {
             await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveText('Unsaved changes — Standard cannot hold them');
         });
 
-        test('keeps the filters the user own once they are edited back to the Dashboard ones', async ({ mount, page }) => {
+        test("keeps the filters the user's own once they are edited back to the Dashboard ones", async ({ mount, page }) => {
             await mount(<PagedListColumnsWithStore {...drillDown} retypedFilters={drilledInto} />);
             await expect(page.getByTestId('view-tabs-summary-unsaved')).toContainText('Filtered from the Dashboard');
             await page.getByTestId('type-filters').click();
