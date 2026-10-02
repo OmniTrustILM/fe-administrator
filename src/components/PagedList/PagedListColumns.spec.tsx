@@ -472,6 +472,16 @@ test.describe('PagedList · configurable columns', () => {
             await expect(page.getByRole('tab', { name: 'Standard' })).toHaveAttribute('aria-selected', 'true');
         });
 
+        test('reads the same filters as the user own once Revert has dropped the drill-down', async ({ mount, page }) => {
+            await mount(<PagedListColumnsWithStore {...drillDown} typedFilters={drilledInto} />);
+            await page.getByTestId('view-tabs-summary-revert').click();
+            await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveCount(0);
+
+            await page.getByTestId('type-filters').click();
+
+            await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveText('Unsaved changes — Standard cannot hold them');
+        });
+
         test('reads as an ordinary unsaved change once the filters are edited', async ({ mount, page }) => {
             await mount(<PagedListColumnsWithStore {...drillDown} />);
             await expect(page.getByTestId('view-tabs-summary-unsaved')).toContainText('Filtered from the Dashboard');

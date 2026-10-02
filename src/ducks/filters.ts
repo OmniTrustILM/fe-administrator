@@ -34,15 +34,15 @@ export enum EntityType {
     CBOM_SYNC_SKIP,
 }
 
-/** Where a list's view strip stood: the tab it was on, and whether that tab was only the backdrop to a drill-down. */
+/** Where a list's view strip stood: the tab it was on, and whether Standard was showing a drill-down's filters. */
 export type ViewPosition = {
     viewId: string;
     isDrillDown: boolean;
 };
 
 /**
- * Filters a list is to open on in place of its opening view's own. A drill-down opens over the pinned view
- * without claiming it; a return from a detail page goes back to the position the list was left in.
+ * Filters a list is to open on in place of its opening view's own. A drill-down opens on Standard with its
+ * filters; a return from a detail page goes back to the position the list was left in.
  */
 export type HandedInFilters = { source: 'drill-down' } | { source: 'return'; position?: ViewPosition };
 

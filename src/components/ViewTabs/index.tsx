@@ -623,7 +623,10 @@ export default function ViewTabs({
                 isDirty={isDirty}
                 isStandard={activeView === undefined}
                 isBusy={isMutating}
-                onRevert={() => apply(activeView)}
+                onRevert={() => {
+                    setDrillDownFilters(undefined);
+                    apply(activeView);
+                }}
                 onSave={onSaveDrift}
                 isDrillDown={isDrillDown}
                 dataTestId={`${dataTestId}-summary`}
