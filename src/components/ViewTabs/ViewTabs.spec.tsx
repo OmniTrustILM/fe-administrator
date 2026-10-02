@@ -83,6 +83,22 @@ const secretFilter: SearchFilterModel = {
     value: 'hunter2',
 };
 
+/** The catalogue after an attribute named like a deleted one was created again. */
+const withRetired = [
+    ...catalogue,
+    { filterFieldSource: FilterFieldSource.Custom, searchFieldData: [field('retired', 'Retired')] },
+] as unknown as SearchFieldDataByGroupDto[];
+
+const retiredFilter: SearchFilterModel = {
+    fieldSource: FilterFieldSource.Custom,
+    fieldIdentifier: 'retired',
+    condition: FilterConditionOperator.Equals,
+    value: 'true',
+};
+
+// Spelt out because a component spec runs in Node, where utils/listViews cannot be imported.
+const retiredKey = `view-1|${FilterFieldSource.Custom}:retired`;
+
 /** A view of the two columns the catalogue publishes, under a filter and an ordering of its own. */
 const expiryWatch = (overrides: Partial<ListViewModel> = {}): ListViewModel => ({
     uuid: 'view-1',
@@ -114,6 +130,10 @@ type MountOptions = {
     isRefreshing?: boolean;
     refreshedViews?: ListViewModel[];
     withheldCatalogue?: boolean;
+    laterCatalogue?: SearchFieldDataByGroupDto[];
+    catalogueSequence?: SearchFieldDataByGroupDto[][];
+    dropsUnshownSort?: boolean;
+    dormantFields?: string[];
     isCatalogueLoaded?: boolean;
     renderableProperties?: string[];
     driftColumn?: ColumnDefinition;
@@ -130,6 +150,10 @@ const strip = ({
     isRefreshing,
     refreshedViews,
     withheldCatalogue,
+    laterCatalogue,
+    catalogueSequence,
+    dropsUnshownSort,
+    dormantFields,
     isCatalogueLoaded,
     renderableProperties,
     driftColumn,
@@ -146,6 +170,10 @@ const strip = ({
         isRefreshing={isRefreshing}
         refreshedViews={refreshedViews}
         withheldCatalogue={withheldCatalogue}
+        laterCatalogue={laterCatalogue}
+        catalogueSequence={catalogueSequence}
+        dropsUnshownSort={dropsUnshownSort}
+        dormantFields={dormantFields}
         isCatalogueLoaded={isCatalogueLoaded}
         renderableProperties={renderableProperties}
         driftColumn={driftColumn}
@@ -1175,6 +1203,578 @@ test.describe('ViewTabs', () => {
 
         await expect(page.getByTestId('view-tabs-notice')).toHaveCount(0);
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+    });
+
+    test('keeps the notice about an unavailable column up until it is dismissed, however long it stands', async ({ mount, page }) => {
+        await page.clock.install();
+        const dormant = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)] });
+        await mount(strip({ views: [dormant] }));
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('retired cannot be shown');
+
+        await page.clock.fastForward('30:00');
+
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('retired cannot be shown');
+        await expect(page.getByTestId('view-tabs-notice-remove')).toBeEnabled();
+    });
+
+    test('holds back a column whose attribute reappears after the view was seen without it', async ({ mount, page }) => {
+        const dormant = expiryWatch({ defaultView: true, columns: [stored('retired', FilterFieldSource.Custom), stored('COMMON_NAME')] });
+        await mount(strip({ views: [dormant], laterCatalogue: withRetired }));
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('retired cannot be shown');
+
+        await page.getByTestId('swap-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('Retired is available again');
+        await expect(page.getByTestId('view-tabs-notice')).toHaveCount(0);
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+    });
+
+    test('holds back a column whose attribute goes and comes back while the view is open on it', async ({ mount, page }) => {
+        const view = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+            filters: [stateFilter, retiredFilter],
+        });
+        await mount(strip({ views: [view], fields: withRetired, laterCatalogue: catalogue }));
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'retired']);
+
+        await page.getByTestId('swap-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('retired cannot be shown');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+
+        await page.getByTestId('swap-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('not showing or filtering by it');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+        await expect.poll(async () => (await appliedSlice(page)).filters).toEqual([stateFilter]);
+        expect(await dispatchedTypes(page)).not.toContain('listViews/releaseDormantFields');
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+
+        await page.getByTestId('view-tabs-returned-show').click();
+
+        await expect
+            .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
+            .toEqual(['COMMON_NAME', 'retired']);
+        expect((await appliedSlice(page)).filters).toEqual([stateFilter, retiredFilter]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+        const release = await lastDispatched(page, 'listViews/releaseDormantFields');
+        expect(release?.payload).toMatchObject({ resource: Resource.Certificates, keys: [retiredKey] });
+    });
+
+    test('holds back a column whose attribute goes in the same catalogue read that brings back a filtered one', async ({ mount, page }) => {
+        const retiredOnly = [
+            catalogue[0],
+            { filterFieldSource: FilterFieldSource.Custom, searchFieldData: [field('retired', 'Retired')] },
+        ] as unknown as SearchFieldDataByGroupDto[];
+        const view = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('environment', FilterFieldSource.Custom), stored('retired', FilterFieldSource.Custom)],
+            filters: [retiredFilter],
+            sort: undefined,
+        });
+        await mount(strip({ views: [view], fields: withRetired, catalogueSequence: [catalogue, retiredOnly, withRetired] }));
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+
+        await page.getByTestId('next-catalogue').click();
+        await expect
+            .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
+            .toEqual(['COMMON_NAME', 'environment']);
+
+        await page.getByTestId('next-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('Retired is available again');
+        await expect.poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+        expect((await appliedSlice(page)).filters).toEqual([]);
+
+        await page.getByTestId('next-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('Environment and Retired are available again');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+    });
+
+    test('keeps the ordering of a held-back column without reporting it as an edit, and lists under it once shown', async ({
+        mount,
+        page,
+    }) => {
+        const sorted = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+            sort: { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', direction: SortDirection.Desc },
+        });
+        await mount(strip({ views: [sorted], fields: withRetired, dormantFields: [retiredKey], dropsUnshownSort: true }));
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+        expect((await appliedSlice(page)).sort).toBeUndefined();
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+
+        await page.getByTestId('view-tabs-returned-show').click();
+
+        await expect
+            .poll(async () => (await appliedSlice(page)).sort)
+            .toEqual({ fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', direction: 'desc' });
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+    });
+
+    test('keeps the filter and ordering of a held-back column when the view is saved', async ({ mount, page }) => {
+        const nameFilter: SearchFilterModel = { ...stateFilter, fieldIdentifier: 'COMMON_NAME', value: 'example' };
+        const sorted = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+            filters: [stateFilter, retiredFilter],
+            sort: { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', direction: SortDirection.Desc },
+        });
+        await mount(
+            strip({ views: [sorted], fields: withRetired, dormantFields: [retiredKey], driftFilter: nameFilter, dropsUnshownSort: true }),
+        );
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect(action?.payload).toMatchObject({
+            view: {
+                columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+                filters: [nameFilter, retiredFilter],
+                sort: { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', direction: SortDirection.Desc },
+            },
+        });
+    });
+
+    test('withholds a filter on a held-back column until the column is shown', async ({ mount, page }) => {
+        const filtered = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+            filters: [stateFilter, retiredFilter],
+        });
+        await mount(strip({ views: [filtered], fields: withRetired, dormantFields: [retiredKey] }));
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('this view is not showing or filtering by it');
+        expect((await appliedSlice(page)).filters).toEqual([stateFilter]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+
+        await page.getByTestId('view-tabs-returned-show').click();
+
+        await expect.poll(async () => (await appliedSlice(page)).filters).toEqual([stateFilter, retiredFilter]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+    });
+
+    test('stops saying the view is not filtering by a held-back column once the user filters by it', async ({ mount, page }) => {
+        const ownFilter: SearchFilterModel = { ...retiredFilter, value: 'false' };
+        const filtered = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+            filters: [retiredFilter],
+        });
+        await mount(strip({ views: [filtered], fields: withRetired, dormantFields: [retiredKey], driftFilter: ownFilter }));
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('this view is not showing or filtering by it.');
+
+        await page.getByTestId('drift-filter').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('this view is not showing it.');
+        expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
+    });
+
+    test('confirms a held-back column when the view is saved with a filter of the user on it', async ({ mount, page }) => {
+        const ownFilter: SearchFilterModel = { ...retiredFilter, value: 'false' };
+        const filtered = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+            filters: [retiredFilter],
+            sort: undefined,
+        });
+        await mount(strip({ views: [filtered], fields: withRetired, dormantFields: [retiredKey], driftFilter: ownFilter }));
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const update = await lastDispatched(page, 'listViews/updateView');
+        expect(update?.payload?.view).toHaveProperty('filters', [ownFilter]);
+
+        await page.getByTestId('simulate-update-success').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+        expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
+        expect(update?.payload).toMatchObject({ resource: Resource.Certificates, confirms: [retiredKey] });
+
+        await page.getByTestId('view-tabs-tab-standard').click();
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        const slice = await appliedSlice(page);
+        expect(slice.columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'retired']);
+        expect(slice.filters).toEqual([ownFilter]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+    });
+
+    test('keeps an edit made while a save confirming a held-back column is in flight', async ({ mount, page }) => {
+        const ownFilter: SearchFilterModel = { ...retiredFilter, value: 'false' };
+        const filtered = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+            filters: [retiredFilter],
+            sort: undefined,
+        });
+        await mount(
+            strip({
+                views: [filtered],
+                fields: withRetired,
+                dormantFields: [retiredKey],
+                driftFilter: ownFilter,
+                driftColumn: serialNumber,
+            }),
+        );
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+        await page.getByTestId('drift-columns').click();
+        await page.getByTestId('simulate-update-success').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toHaveCount(0);
+        await expect
+            .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
+            .toEqual(['COMMON_NAME', 'retired', 'SERIAL_NUMBER']);
+        expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
+    });
+
+    test('puts a confirmed column on the table when its save succeeds after an unrelated read failed', async ({ mount, page }) => {
+        const ownFilter: SearchFilterModel = { ...retiredFilter, value: 'false' };
+        const filtered = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+            filters: [retiredFilter],
+            sort: undefined,
+        });
+        await mount(strip({ views: [filtered], fields: withRetired, dormantFields: [retiredKey], driftFilter: ownFilter }));
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+        await page.getByTestId('simulate-unrelated-read-failure').click();
+        await page.getByTestId('simulate-update-success').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toHaveCount(0);
+        await expect
+            .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
+            .toEqual(['COMMON_NAME', 'retired']);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+    });
+
+    test('offers to remove a missing column beside a held-back one, keeping the held-back column', async ({ mount, page }) => {
+        const mixed = expiryWatch({
+            defaultView: true,
+            columns: [stored('retired', FilterFieldSource.Custom), stored('withdrawn', FilterFieldSource.Custom)],
+            filters: [],
+            sort: undefined,
+        });
+        await mount(strip({ views: [mixed], fields: withRetired, dormantFields: [retiredKey] }));
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('withdrawn cannot be shown');
+
+        await page.getByTestId('view-tabs-notice-remove').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect(action?.payload).toMatchObject({ view: { columns: [stored('retired', FilterFieldSource.Custom)] } });
+    });
+
+    test('keeps a held-back column held when the save that would confirm it fails', async ({ mount, page }) => {
+        const ownFilter: SearchFilterModel = { ...retiredFilter, value: 'false' };
+        const filtered = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+            filters: [retiredFilter],
+            sort: undefined,
+        });
+        await mount(strip({ views: [filtered], fields: withRetired, dormantFields: [retiredKey], driftFilter: ownFilter }));
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+        await page.getByTestId('simulate-update-failure').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('Retired is available again');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+        expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
+        expect(await dispatchedTypes(page)).not.toContain('listViews/releaseDormantFields');
+
+        await page.getByTestId('view-tabs-summary-revert').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('Retired is available again');
+        const reverted = await appliedSlice(page);
+        expect(reverted.columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+        expect(reverted.filters).toEqual([]);
+    });
+
+    test('saves a view whose every column is held back as the table showed it, filter of the user included', async ({ mount, page }) => {
+        const ownFilter: SearchFilterModel = { ...retiredFilter, value: 'false' };
+        const only = expiryWatch({
+            defaultView: true,
+            columns: [stored('retired', FilterFieldSource.Custom)],
+            filters: [],
+            sort: undefined,
+        });
+        await mount(strip({ views: [only], fields: withRetired, dormantFields: [retiredKey], driftFilter: ownFilter }));
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+        await page.getByTestId('simulate-update-success').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+        const saved = await appliedSlice(page);
+        expect(saved.columns.map((each) => each.fieldIdentifier)).toEqual(['retired', 'COMMON_NAME', 'SERIAL_NUMBER']);
+        expect(saved.filters).toEqual([ownFilter]);
+
+        await page.getByTestId('view-tabs-tab-standard').click();
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        const reopened = await appliedSlice(page);
+        expect(reopened.columns.map((each) => each.fieldIdentifier)).toEqual(['retired', 'COMMON_NAME', 'SERIAL_NUMBER']);
+        expect(reopened.filters).toEqual([ownFilter]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+    });
+
+    test('names only the held-back columns the view is not filtering by when the user filters by one of them', async ({ mount, page }) => {
+        const withBoth = [
+            ...catalogue,
+            {
+                filterFieldSource: FilterFieldSource.Custom,
+                searchFieldData: [field('retired', 'Retired'), field('decom', 'Decom')],
+            },
+        ] as unknown as SearchFieldDataByGroupDto[];
+        const decomFilter: SearchFilterModel = { ...retiredFilter, fieldIdentifier: 'decom' };
+        const ownFilter: SearchFilterModel = { ...retiredFilter, value: 'false' };
+        const filtered = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom), stored('decom', FilterFieldSource.Custom)],
+            filters: [retiredFilter, decomFilter],
+        });
+        await mount(
+            strip({
+                views: [filtered],
+                fields: withBoth,
+                dormantFields: [retiredKey, `view-1|${FilterFieldSource.Custom}:decom`],
+                driftFilter: ownFilter,
+            }),
+        );
+        await expect(page.getByTestId('view-tabs-returned')).toContainText(
+            'Retired and Decom are available again, but may be different attributes with the same names and content types, so this view is not showing or filtering by them.',
+        );
+
+        await page.getByTestId('drift-filter').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText(
+            'Retired and Decom are available again, but may be different attributes with the same names and content types, so this view is not showing them, and is not filtering by Decom.',
+        );
+        expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
+    });
+
+    test('puts back the filter on a held-back column the user adds from the column menu', async ({ mount, page }) => {
+        const filtered = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+            filters: [retiredFilter],
+        });
+        await mount(
+            strip({
+                views: [filtered],
+                fields: withRetired,
+                dormantFields: [retiredKey],
+                driftColumn: column('retired', 'Retired', FilterFieldSource.Custom),
+            }),
+        );
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+        expect((await appliedSlice(page)).filters).toEqual([]);
+
+        await page.getByTestId('drift-columns').click();
+
+        await expect.poll(async () => (await appliedSlice(page)).filters).toEqual([retiredFilter]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+    });
+
+    test('takes the filter and ordering of a held-back column out of the view with the column', async ({ mount, page }) => {
+        const sorted = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+            filters: [stateFilter, retiredFilter],
+            sort: { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', direction: SortDirection.Desc },
+        });
+        await mount(strip({ views: [sorted], fields: withRetired, dormantFields: [retiredKey], dropsUnshownSort: true }));
+
+        await page.getByTestId('view-tabs-returned-remove').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect(action?.payload).toMatchObject({ view: { columns: [stored('COMMON_NAME')], filters: [stateFilter] } });
+        expect(action?.payload?.view).not.toHaveProperty('sort');
+    });
+
+    test('keeps a column the user added to the fallback when the held-back column is shown', async ({ mount, page }) => {
+        const only = expiryWatch({ defaultView: true, columns: [stored('retired', FilterFieldSource.Custom)], sort: undefined });
+        await mount(
+            strip({
+                views: [only],
+                fields: withRetired,
+                dormantFields: [retiredKey],
+                driftColumn: column('environment', 'Environment', FilterFieldSource.Custom),
+            }),
+        );
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+
+        await page.getByTestId('drift-columns').click();
+        await page.getByTestId('view-tabs-returned-show').click();
+
+        await expect
+            .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
+            .toEqual(['retired', 'environment']);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
+    });
+
+    test('still holds the reappeared column back after the page is left and opened again', async ({ mount, page }) => {
+        const dormant = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)] });
+        await mount(strip({ views: [dormant], laterCatalogue: withRetired }));
+        await expect(page.getByTestId('view-tabs-notice')).toBeVisible();
+
+        await page.getByTestId('swap-catalogue').click();
+        await page.getByTestId('remount-strip').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('Retired is available again');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+    });
+
+    test('shows a column whose attribute has always been there without asking', async ({ mount, page }) => {
+        const view = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)] });
+        await mount(strip({ views: [view], fields: withRetired }));
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'retired']);
+        await expect(page.getByTestId('view-tabs-returned')).toHaveCount(0);
+    });
+
+    test('puts a reappeared column back in its stored place once the user chooses to show it', async ({ mount, page }) => {
+        const dormant = expiryWatch({ defaultView: true, columns: [stored('retired', FilterFieldSource.Custom), stored('COMMON_NAME')] });
+        await mount(strip({ views: [dormant], fields: withRetired, dormantFields: [retiredKey] }));
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+
+        await page.getByTestId('view-tabs-returned-show').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toHaveCount(0);
+        await expect
+            .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
+            .toEqual(['retired', 'COMMON_NAME']);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+        const release = await lastDispatched(page, 'listViews/releaseDormantFields');
+        expect(release?.payload).toMatchObject({ resource: Resource.Certificates, keys: [retiredKey] });
+    });
+
+    test('takes a reappeared column out of the view and leaves a still-missing one in place', async ({ mount, page }) => {
+        const dormant = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom), stored('withdrawn', FilterFieldSource.Custom)],
+        });
+        await mount(strip({ views: [dormant], fields: withRetired, dormantFields: [retiredKey] }));
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('withdrawn cannot be shown');
+
+        await page.getByTestId('view-tabs-returned-remove').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect(action?.payload).toMatchObject({
+            view: { columns: [stored('COMMON_NAME'), stored('withdrawn', FilterFieldSource.Custom)] },
+        });
+    });
+
+    test('stops holding back a column the user adds to the table from the column menu', async ({ mount, page }) => {
+        const dormant = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom), stored('withdrawn', FilterFieldSource.Custom)],
+        });
+        await mount(
+            strip({
+                views: [dormant],
+                fields: withRetired,
+                dormantFields: [retiredKey],
+                driftColumn: column('retired', 'Retired', FilterFieldSource.Custom),
+            }),
+        );
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+
+        await page.getByTestId('drift-columns').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('showing 2 of its 3 columns');
+        const release = await lastDispatched(page, 'listViews/releaseDormantFields');
+        expect(release?.payload).toMatchObject({ resource: Resource.Certificates, keys: [retiredKey] });
+
+        await page.getByTestId('remount-strip').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-returned')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('showing 2 of its 3 columns');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'retired']);
+    });
+
+    test('keeps holding a column back in one view when the user adds its attribute in another', async ({ mount, page }) => {
+        const first = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)] });
+        const second = audit({ columns: [stored('COMMON_NAME')] });
+        await mount(
+            strip({
+                views: [first, second],
+                laterCatalogue: withRetired,
+                driftColumn: column('retired', 'Retired', FilterFieldSource.Custom),
+            }),
+        );
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('retired cannot be shown');
+        await page.getByTestId('swap-catalogue').click();
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+
+        await page.getByTestId('view-tabs-tab-view-2').click();
+        await page.getByTestId('drift-columns').click();
+        await expect
+            .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
+            .toEqual(['COMMON_NAME', 'retired']);
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('Retired is available again');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+    });
+
+    test('offers no removal when every column of the view is held back, which would leave it with none', async ({ mount, page }) => {
+        const only = expiryWatch({ defaultView: true, columns: [stored('retired', FilterFieldSource.Custom)] });
+        await mount(strip({ views: [only], laterCatalogue: withRetired }));
+        await expect(page.getByTestId('view-tabs-notice')).toBeVisible();
+
+        await page.getByTestId('swap-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('Retired is available again');
+        await expect(page.getByTestId('view-tabs-returned-show')).toBeVisible();
+        await expect(page.getByTestId('view-tabs-returned-remove')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-notice')).toHaveCount(0);
+    });
+
+    test('keeps a held-back column when the unavailable one beside it is removed', async ({ mount, page }) => {
+        const dormant = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom), stored('withdrawn', FilterFieldSource.Custom)],
+        });
+        await mount(strip({ views: [dormant], fields: withRetired, dormantFields: [retiredKey] }));
+
+        await page.getByTestId('view-tabs-notice-remove').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
+        expect(action?.payload).toMatchObject({ view: { columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)] } });
     });
 
     test('keeps a notice dismissed on one view while the notice of another is dismissed too', async ({ mount, page }) => {

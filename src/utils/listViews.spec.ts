@@ -16,6 +16,8 @@ import {
     STANDARD_VIEW_ID,
     STANDARD_VIEW_NAME,
     duplicateName,
+    goneAttributeKeys,
+    toDormantKey,
     isSliceDirty,
     newViewName,
     resolveInitialViewId,
@@ -926,9 +928,51 @@ describe('toStoredColumnsKeepingUnavailable', () => {
         ]);
     });
 
+    it('does not put back an unavailable column the table is rendering again', () => {
+        const withReturned = [
+            ...rendered,
+            { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', catalogueLabel: 'Retired' },
+        ];
+        const resolved = [
+            { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', catalogueLabel: 'retired', available: false },
+            ...rendered.map((column) => ({ ...column, available: true })),
+        ];
+
+        expect(toStoredColumnsKeepingUnavailable(withReturned, resolved)).toEqual(toStoredColumns(withReturned));
+    });
+
     it('is the plain stored shape when everything resolved', () => {
         const resolved = rendered.map((column) => ({ ...column, available: true }));
 
         expect(toStoredColumnsKeepingUnavailable(rendered, resolved)).toEqual(toStoredColumns(rendered));
+    });
+});
+
+describe('goneAttributeKeys', () => {
+    const catalogue: SearchFieldDataByGroupDto[] = [
+        ...standardCatalogue,
+        {
+            filterFieldSource: FilterFieldSource.Custom,
+            searchFieldData: [{ fieldIdentifier: 'cost_centre', fieldLabel: 'Cost centre', type: FilterFieldType.String, conditions: [] }],
+        },
+    ];
+
+    it('names each attribute column a stored view holds whose field the catalogue no longer publishes, per view', () => {
+        const views = [
+            view('a', 'One', { columns: [retired, { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'cost_centre' }] }),
+            view('b', 'Two', { columns: [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }, retired] }),
+        ];
+
+        expect(goneAttributeKeys(views, catalogue)).toEqual([toDormantKey('a', retired), toDormantKey('b', retired)]);
+    });
+
+    it('leaves out a platform column the catalogue does not publish, which is not an attribute', () => {
+        const views = [view('a', 'One', { columns: [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CERTIFICATE_TYPE' }] })];
+
+        expect(goneAttributeKeys(views, catalogue)).toEqual([]);
+    });
+
+    it('names every attribute column against a settled empty catalogue', () => {
+        expect(goneAttributeKeys([view('a', 'One', { columns: [retired] })], [])).toEqual([toDormantKey('a', retired)]);
     });
 });

@@ -366,6 +366,71 @@ describe('deleting a view', () => {
     });
 });
 
+describe('attribute columns seen without their field', () => {
+    const dormant = (state: State) => selectors.dormantFields(Resource.Certificates)({ [slice.name]: state } as never);
+
+    test('are remembered per resource, each once', () => {
+        const marked = reduceAll([
+            actions.markFieldsDormant({ resource: Resource.Certificates, keys: ['Custom:retired'] }),
+            actions.markFieldsDormant({ resource: Resource.Certificates, keys: ['Custom:retired', 'Meta:gone'] }),
+        ]);
+
+        expect(dormant(marked)).toEqual(['Custom:retired', 'Meta:gone']);
+        expect(selectors.dormantFields(Resource.Keys)({ [slice.name]: marked } as never)).toEqual([]);
+    });
+
+    test('are forgotten once released, and survive a fresh read of the views', () => {
+        const released = reduceAll([
+            actions.markFieldsDormant({ resource: Resource.Certificates, keys: ['Custom:retired', 'Meta:gone'] }),
+            actions.listViews({ resource: Resource.Certificates }),
+            actions.listViewsSuccess({ resource: Resource.Certificates, views: [] }),
+            actions.releaseDormantFields({ resource: Resource.Certificates, keys: ['Custom:retired'] }),
+        ]);
+
+        expect(dormant(released)).toEqual(['Meta:gone']);
+    });
+
+    test('stay held while an update confirming them is in flight, and are released once it succeeds', () => {
+        const confirming = reduceAll(
+            [
+                actions.markFieldsDormant({ resource: Resource.Certificates, keys: ['a|Custom:retired', 'a|Meta:gone'] }),
+                actions.updateView({
+                    resource: Resource.Certificates,
+                    uuid: 'a',
+                    view: { name: 'One', columns },
+                    confirms: ['a|Custom:retired'],
+                }),
+            ],
+            listed([view('a', 'One')]),
+        );
+        expect(dormant(confirming)).toEqual(['a|Custom:retired', 'a|Meta:gone']);
+
+        const saved = reduce(confirming, actions.updateViewSuccess({ resource: Resource.Certificates, view: view('a', 'One') }));
+
+        expect(dormant(saved)).toEqual(['a|Meta:gone']);
+    });
+
+    test('stay held when the update confirming them fails', () => {
+        const failed = reduceAll(
+            [
+                actions.markFieldsDormant({ resource: Resource.Certificates, keys: ['a|Custom:retired'] }),
+                actions.updateView({
+                    resource: Resource.Certificates,
+                    uuid: 'a',
+                    view: { name: 'One', columns },
+                    confirms: ['a|Custom:retired'],
+                }),
+                actions.updateViewFailure({ resource: Resource.Certificates, error: 'Refused' }),
+                actions.updateView({ resource: Resource.Certificates, uuid: 'a', view: { name: 'Renamed', columns } }),
+                actions.updateViewSuccess({ resource: Resource.Certificates, view: view('a', 'Renamed') }),
+            ],
+            listed([view('a', 'One')]),
+        );
+
+        expect(dormant(failed)).toEqual(['a|Custom:retired']);
+    });
+});
+
 describe('resetState', () => {
     test('drops every resource', () => {
         const cleared = reduce(listed([view('a', 'One')]), actions.resetState());
