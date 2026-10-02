@@ -1228,7 +1228,11 @@ test.describe('ViewTabs', () => {
     });
 
     test('holds back a column whose attribute goes and comes back while the view is open on it', async ({ mount, page }) => {
-        const view = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)] });
+        const view = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+            filters: [stateFilter, retiredFilter],
+        });
         await mount(strip({ views: [view], fields: withRetired, laterCatalogue: catalogue }));
         await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
         expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'retired']);
@@ -1241,8 +1245,9 @@ test.describe('ViewTabs', () => {
 
         await page.getByTestId('swap-catalogue').click();
 
-        await expect(page.getByTestId('view-tabs-returned')).toContainText('Retired is available again');
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('not showing or filtering by it');
         expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+        await expect.poll(async () => (await appliedSlice(page)).filters).toEqual([stateFilter]);
         expect(await dispatchedTypes(page)).not.toContain('listViews/releaseDormantFields');
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
 
@@ -1251,6 +1256,8 @@ test.describe('ViewTabs', () => {
         await expect
             .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
             .toEqual(['COMMON_NAME', 'retired']);
+        expect((await appliedSlice(page)).filters).toEqual([stateFilter, retiredFilter]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
         const release = await lastDispatched(page, 'listViews/releaseDormantFields');
         expect(release?.payload).toMatchObject({ resource: Resource.Certificates, keys: [retiredKey] });
     });

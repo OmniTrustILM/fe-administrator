@@ -368,6 +368,20 @@ export default function ViewTabs({
         if (confirmed.filters.length !== filters.length || confirmed.sort !== sort) applyRef.current(confirmed);
     }, [dispatch, resource, isReady, activeView, dormant, catalogueFields, columns, filters, sort, withConfirmed]);
 
+    // A filter of the open view comes off the table when its field turns held, as a freshly applied view would leave it out.
+    const previousHeldKeys = useRef<ReadonlySet<string>>(NO_KEYS);
+    useEffect(() => {
+        const heldKeys = heldKeysOf(activeView);
+        const before = previousHeldKeys.current;
+        previousHeldKeys.current = heldKeys;
+
+        const kept = filters.filter((filter) => {
+            const key = getColumnKey(filter);
+            return !heldKeys.has(key) || before.has(key);
+        });
+        if (kept.length < filters.length) applyRef.current({ columns, filters: kept, sort });
+    }, [activeView, heldKeysOf, columns, filters, sort]);
+
     // The pinned view opens on load, and Standard when none is pinned. Once only: a later list read —
     // after a rename, say — must not throw the user back to the tab they started on.
     const hasOpened = useRef<Resource | undefined>(undefined);
