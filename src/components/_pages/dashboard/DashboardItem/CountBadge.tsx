@@ -4,6 +4,7 @@ import { type EntityType, actions as filterActions } from 'ducks/filters';
 import { useDispatch } from 'react-redux';
 import type { SearchFilterModel } from 'types/certificate';
 import { LockTypeEnum } from 'types/user-interface';
+import { onSameTabClick } from 'utils/link-click';
 
 type Props = Readonly<{
     data?: number | null;
@@ -34,7 +35,9 @@ function CountBadge({
     const dispatch = useDispatch();
 
     const applyFilter =
-        link && entity && onSetFilter ? () => dispatch(filterActions.setDrillDownFilters({ entity, filters: onSetFilter() })) : undefined;
+        link && entity && onSetFilter
+            ? onSameTabClick(() => dispatch(filterActions.setDrillDownFilters({ entity, filters: onSetFilter() })))
+            : undefined;
 
     return (
         <Widget

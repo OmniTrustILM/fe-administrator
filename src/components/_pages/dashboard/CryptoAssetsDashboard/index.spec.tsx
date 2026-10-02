@@ -78,6 +78,21 @@ test.describe('CryptoAssetsDashboard', () => {
         await expect(component.getByTestId('cbom-drill-down-pending')).toHaveText('true');
     });
 
+    test('a link opened with a modifier key hands no drill-down to the tab left on the Dashboard', async ({ mount }) => {
+        const component = await mount(<CryptoAssetsDashboardWithStore variant="partial" />);
+        const coverage = component.getByTestId('crypto-assets-dashboard-coverage');
+
+        await component.getByRole('link', { name: 'Not PQC ready' }).click({ modifiers: ['ControlOrMeta'] });
+        await component.getByRole('link', { name: '3,010 assets carry none' }).click({ modifiers: ['Shift'] });
+        await coverage.getByRole('link', { name: /^failed$/i }).click({ modifiers: ['ControlOrMeta'] });
+
+        await expect(component.getByTestId('route')).toHaveText('/dashboard/crypto-assets');
+        await expect(component.getByTestId('drill-down-pending')).toHaveText('false');
+        await expect(component.getByTestId('cbom-drill-down-pending')).toHaveText('false');
+        await expect(component.getByTestId('current-filters')).toHaveText('[]');
+        await expect(component.getByTestId('cbom-current-filters')).toHaveText('[]');
+    });
+
     test('an estate nobody has synced says the counts are empty rather than complete', async ({ mount }) => {
         const component = await mount(<CryptoAssetsDashboardWithStore variant="empty" />);
 

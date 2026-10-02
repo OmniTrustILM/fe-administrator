@@ -16,6 +16,7 @@ import {
 } from 'utils/cryptoAssetsDashboard';
 import { getDonutChartColorsByRandomNumberOfOptions } from 'utils/dashboard';
 import { dateFormatter } from 'utils/dateUtil';
+import { onSameTabClick } from 'utils/link-click';
 import CountBadge from '../DashboardItem/CountBadge';
 import DashboardSkeleton from '../DashboardItem/DashboardSkeleton';
 import DonutChart from '../DashboardItem/DonutChart';
@@ -124,14 +125,14 @@ function CryptoAssetsDashboard() {
                                 <Link
                                     to={LINK}
                                     className="text-sm text-brand hover:underline"
-                                    onClick={() =>
+                                    onClick={onSameTabClick(() =>
                                         dispatch(
                                             filterActions.setDrillDownFilters({
                                                 entity: EntityType.CRYPTO_ASSET,
                                                 filters: buildEmptyFilter(CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily),
                                             }),
-                                        )
-                                    }
+                                        ),
+                                    )}
                                 >
                                     {unassignedCaption}
                                 </Link>
@@ -171,14 +172,14 @@ function CryptoAssetsDashboard() {
                                     <Link
                                         to={CBOMS_LINK}
                                         className="text-brand hover:underline"
-                                        onClick={() =>
+                                        onClick={onSameTabClick(() =>
                                             dispatch(
                                                 filterActions.setDrillDownFilters({
                                                     entity: EntityType.CBOM,
                                                     filters: buildEqualsFilter('CBOM_ASSET_SYNC_STATE', state.code),
                                                 }),
-                                            )
-                                        }
+                                            ),
+                                        )}
                                     >
                                         {getEnumLabel(syncStateEnum, state.code)}
                                     </Link>
