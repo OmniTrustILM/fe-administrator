@@ -77,12 +77,12 @@ export const slice = createSlice({
             state.isFetchingEventsSetting = false;
         },
 
-        updateEventSettings: (state, action: PayloadAction<{ eventSettings: EventSettingsDto; redirect?: string }>) => {
+        updateEventSettings: (state, action: PayloadAction<{ eventSettings: EventSettingsDto }>) => {
             state.isUpdatingEventsSetting = true;
             state.updateEventSettingsSucceeded = false;
         },
 
-        updateEventSettingsSuccess: (state, action: PayloadAction<{ eventSettings: EventSettingsDto; redirect?: string }>) => {
+        updateEventSettingsSuccess: (state, action: PayloadAction<{ eventSettings: EventSettingsDto }>) => {
             state.isUpdatingEventsSetting = false;
             state.updateEventSettingsSucceeded = true;
             if (state.eventsSettings) {
