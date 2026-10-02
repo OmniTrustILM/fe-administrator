@@ -5,8 +5,6 @@ import type { ViewTab as ViewTabModel } from 'utils/listViews';
 type Props = Readonly<{
     tab: ViewTabModel;
     isActive: boolean;
-    /** Whether the tab holds the strip's single tab stop, which stays put while no tab is selected. */
-    isTabStop?: boolean;
     /** Whether the table has drifted from what this view stores. Only ever true for the active tab. */
     isDirty: boolean;
     onSelect: () => void;
@@ -22,7 +20,7 @@ type Props = Readonly<{
  * would be one interactive element inside another, which leaves both unreachable from the keyboard
  * in the order they appear.
  */
-export default function ViewTab({ tab, isActive, isTabStop = isActive, isDirty, onSelect, menu, dataTestId }: Props) {
+export default function ViewTab({ tab, isActive, isDirty, onSelect, menu, dataTestId }: Props) {
     return (
         <div
             className={cn('inline-flex items-center rounded-lg', {
@@ -35,7 +33,7 @@ export default function ViewTab({ tab, isActive, isTabStop = isActive, isDirty, 
                 role="tab"
                 id={`view-tab-${tab.id}`}
                 aria-selected={isActive}
-                tabIndex={isTabStop ? 0 : -1}
+                tabIndex={isActive ? 0 : -1}
                 onClick={onSelect}
                 data-testid={dataTestId}
                 className={cn(

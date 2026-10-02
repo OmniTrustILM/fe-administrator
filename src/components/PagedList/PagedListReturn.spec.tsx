@@ -83,15 +83,44 @@ test.describe('PagedList · coming back from a detail page', () => {
         await expect(page.getByTestId('view-tabs-summary-unsaved')).toContainText('Unsaved changes to this view');
     });
 
-    test('keeps a drill-down it was left showing, still claiming no view', async ({ mount, page }) => {
+    test('keeps a drill-down it was left showing, on Standard', async ({ mount, page }) => {
         await mount(<PagedListReturnWithStore {...props} drillDownFilters={[nameContains('from-the-dashboard')]} />);
-        await expect(page.getByTestId('view-tabs-summary-drill-down')).toBeVisible();
+        await expect(page.getByTestId('view-tabs-summary-unsaved')).toContainText('Filtered from the Dashboard');
 
         await openSecretAndComeBack(page);
 
-        await expect(page.getByTestId('view-tabs-summary-drill-down')).toBeVisible();
-        await expect(page.getByRole('tab', { selected: true })).toHaveCount(0);
+        await expect(page.getByRole('tab', { name: 'Standard' })).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-summary-unsaved')).toContainText('Filtered from the Dashboard');
         await expect(page.getByTestId('current-filters')).toContainText('from-the-dashboard');
+    });
+
+    test('comes back on Standard when the view it was left on has gone', async ({ mount, page }) => {
+        await mount(<PagedListReturnWithStore {...props} viewsOnDetail={[pinned]} />);
+        await page.getByRole('tab', { name: 'Everything' }).click();
+        await page.getByTestId('type-filters').click();
+
+        await page.getByTestId('open-secret').click();
+        await page.getByTestId('replace-views').click();
+        await page.getByTestId('back-to-list').click();
+
+        await expect(page.getByRole('tab', { name: 'Standard' })).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByRole('tab', { name: 'Production' })).toHaveAttribute('aria-selected', 'false');
+        await expect(page.getByTestId('current-filters')).toContainText('typed-by-the-user');
+        await expect(page.getByTestId('view-tabs-summary-save')).toHaveText('Save as view…');
+    });
+
+    test('comes back on Standard when it opened there and a view was pinned meanwhile', async ({ mount, page }) => {
+        await mount(<PagedListReturnWithStore {...props} views={[unfiltered]} viewsOnDetail={[{ ...unfiltered, defaultView: true }]} />);
+        await expect(page.getByRole('tab', { name: 'Standard' })).toHaveAttribute('aria-selected', 'true');
+        await page.getByTestId('type-filters').click();
+
+        await page.getByTestId('open-secret').click();
+        await page.getByTestId('replace-views').click();
+        await page.getByTestId('back-to-list').click();
+
+        await expect(page.getByRole('tab', { name: 'Standard' })).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByRole('tab', { name: 'Everything' })).toHaveAttribute('aria-selected', 'false');
+        await expect(page.getByTestId('current-filters')).toContainText('typed-by-the-user');
     });
 
     test('opens the pinned view with its own filters once the list is left for elsewhere', async ({ mount, page }) => {

@@ -13,11 +13,15 @@ type Props = Readonly<{
     isBusy: boolean;
     onRevert: () => void;
     onSave: () => void;
-    /** The tab a Dashboard drill-down opened over, named while the table shows the drill-down instead of any view. */
-    drillDownReturnsTo?: string;
-    onLeaveDrillDown?: () => void;
+    /** Whether Standard is listing under the filters a Dashboard drill-down opened it on. */
+    isDrillDown?: boolean;
     dataTestId: string;
 }>;
+
+function unsavedMessage(isStandard: boolean, isDrillDown: boolean): string {
+    if (!isStandard) return 'Unsaved changes to this view';
+    return isDrillDown ? 'Filtered from the Dashboard — Standard cannot hold these filters' : 'Unsaved changes — Standard cannot hold them';
+}
 
 /**
  * The row under the tab strip: what the view is showing, and — once it has drifted — the offer to
@@ -34,8 +38,7 @@ export default function ViewSummaryBar({
     isBusy,
     onRevert,
     onSave,
-    drillDownReturnsTo,
-    onLeaveDrillDown,
+    isDrillDown = false,
     dataTestId,
 }: Props) {
     const sorted = sort ? columns.find((column) => getSortKey(sort) === `${column.fieldSource}:${column.fieldIdentifier}`) : undefined;
@@ -52,26 +55,10 @@ export default function ViewSummaryBar({
                 </span>
             )}
 
-            {drillDownReturnsTo !== undefined && (
-                <div className="ml-auto flex items-center gap-x-3">
-                    <span className="text-content" data-testid={`${dataTestId}-drill-down`}>
-                        Filtered from the Dashboard — not part of any view
-                    </span>
-                    <Button
-                        variant="transparent"
-                        color="secondary"
-                        onClick={onLeaveDrillDown}
-                        data-testid={`${dataTestId}-drill-down-leave`}
-                    >
-                        {`Open ${drillDownReturnsTo}`}
-                    </Button>
-                </div>
-            )}
-
             {isDirty && (
                 <div className="ml-auto flex items-center gap-x-3">
                     <span className="text-content" data-testid={`${dataTestId}-unsaved`}>
-                        {isStandard ? 'Unsaved changes — Standard cannot hold them' : 'Unsaved changes to this view'}
+                        {unsavedMessage(isStandard, isDrillDown)}
                     </span>
                     <Button variant="transparent" color="secondary" onClick={onRevert} data-testid={`${dataTestId}-revert`}>
                         Revert

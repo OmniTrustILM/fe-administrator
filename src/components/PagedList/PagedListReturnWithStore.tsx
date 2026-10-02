@@ -23,6 +23,8 @@ type Props = Readonly<{
     drillDownFilters?: SearchFilterModel[];
     /** What the control standing in for the filter widget sets. */
     typedFilters: SearchFilterModel[];
+    /** The views a control on the detail page replaces the list with, as a change made elsewhere meanwhile does. */
+    viewsOnDetail?: ListViewModel[];
 }>;
 
 const registry = { 'property:COMMON_NAME': (row: SecretRow) => row.name };
@@ -50,12 +52,26 @@ function TypeFilters({ filters }: Readonly<{ filters: SearchFilterModel[] }>) {
     );
 }
 
+function ReplaceViews({ views }: Readonly<{ views: ListViewModel[] }>) {
+    const dispatch = useDispatch();
+
+    return (
+        <button
+            type="button"
+            data-testid="replace-views"
+            onClick={() => dispatch({ type: 'listViews/listViewsSuccess', payload: { resource: Resource.Secrets, views } })}
+        >
+            Replace views
+        </button>
+    );
+}
+
 function SecretsList({
     rows,
     standardColumns,
     catalogue,
     onRequest,
-}: Readonly<Omit<Props, 'views' | 'typedFilters'> & { onRequest: (request: SearchRequestModel) => void }>) {
+}: Readonly<Omit<Props, 'views' | 'typedFilters' | 'viewsOnDetail'> & { onRequest: (request: SearchRequestModel) => void }>) {
     const getAvailableFiltersApi = useCallback(() => of(catalogue), [catalogue]);
     const config = useMemo(
         () => ({ resource: Resource.Secrets, standardColumns, rows, getRowId: (row: SecretRow) => row.uuid, registry }),
@@ -87,7 +103,15 @@ function SecretsList({
  * Mounts a secrets inventory behind real routes, with a detail page inside its scope and a page outside
  * it, so leaving and coming back unmounts the list the way navigating the app does.
  */
-export default function PagedListReturnWithStore({ rows, standardColumns, catalogue, views, drillDownFilters, typedFilters }: Props) {
+export default function PagedListReturnWithStore({
+    rows,
+    standardColumns,
+    catalogue,
+    views,
+    drillDownFilters,
+    typedFilters,
+    viewsOnDetail,
+}: Props) {
     const [store] = useState(() =>
         createMockStore({
             listViews: {
@@ -134,9 +158,12 @@ export default function PagedListReturnWithStore({ rows, standardColumns, catalo
                     <Route
                         path="/secrets/detail/:id"
                         element={
-                            <Link to="/secrets" data-testid="back-to-list">
-                                Back
-                            </Link>
+                            <>
+                                <Link to="/secrets" data-testid="back-to-list">
+                                    Back
+                                </Link>
+                                {viewsOnDetail && <ReplaceViews views={viewsOnDetail} />}
+                            </>
                         }
                     />
                     <Route

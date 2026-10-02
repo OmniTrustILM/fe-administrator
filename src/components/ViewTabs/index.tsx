@@ -73,9 +73,9 @@ export type ViewTabsProps = Readonly<{
     sort?: ColumnSort;
     /**
      * Filters handed in for the strip to open on instead of its opening view's own. A drill-down opens on
-     * the opening view's columns and ordering and claims no view: those rows are not what any tab promises,
-     * so the table is neither reported as a drifted view nor offered to one as a save. A return goes back to
-     * the position the strip was left in, so the user's own filters come back on the tab they were on.
+     * Standard with its filters, reported as Standard's unsaved changes: Standard cannot hold them, so the
+     * only save offered is a new view and no stored view is ever written with filters its owner never set.
+     * A return goes back to the position the strip was left in, or to Standard when that view is gone.
      */
     handedIn?: HandedInFilters;
     /** Reports where the strip stands, for a return from a detail page to come back to. */
@@ -101,6 +101,8 @@ type PendingDialog = 'rename' | 'create' | 'new' | 'delete';
 export function isViewStripReady(hasLoadedViews: boolean, isCatalogueLoaded: boolean): boolean {
     return hasLoadedViews && isCatalogueLoaded;
 }
+
+const filtersKey = (filters: readonly SearchFilterModel[]) => filters.map(getFilterKey).join('\n');
 
 /** `live` with each of `dropped` put back at the index it held in `original`, unless `live` already has it. */
 function reinsert<T>(live: readonly T[], dropped: readonly T[], original: readonly T[], keyOf: (item: T) => string): T[] {
@@ -145,7 +147,8 @@ export default function ViewTabs({
     const createdUuid = useSelector(listViewSelectors.createdUuid(resource));
 
     const [activeId, setActiveId] = useState(STANDARD_VIEW_ID);
-    const [isDrillDown, setIsDrillDown] = useState(false);
+    // The filters a drill-down opened Standard on, kept to tell the Dashboard's filters from the user's own edits.
+    const [drillDownFilters, setDrillDownFilters] = useState<SearchFilterModel[] | undefined>(undefined);
     const [dialog, setDialog] = useState<PendingDialog | undefined>(undefined);
     const [requestedFor, setRequestedFor] = useState<Resource | undefined>(undefined);
     const [dismissedNotices, setDismissedNotices] = useState<ReadonlySet<string>>(() => new Set());
@@ -223,7 +226,9 @@ export default function ViewTabs({
     );
 
     const currentSlice = useMemo<ViewSlice>(() => ({ columns, filters: storableFilters, sort }), [columns, storableFilters, sort]);
-    const isDirty = !isDrillDown && isSliceDirty(storedSlice, currentSlice, activeView ? 'view' : 'standard');
+    const isDirty = isSliceDirty(storedSlice, currentSlice, activeView ? 'view' : 'standard');
+    const isDrillDown =
+        activeId === STANDARD_VIEW_ID && drillDownFilters !== undefined && filtersKey(filters) === filtersKey(drillDownFilters);
 
     // `onApply` is typically an inline callback, so holding it in a ref keeps the load effect below
     // from re-running — and re-applying the view — on every render of the page around it.
@@ -239,7 +244,7 @@ export default function ViewTabs({
 
     const select = useCallback(
         (id: string) => {
-            setIsDrillDown(false);
+            setDrillDownFilters(undefined);
             setActiveId(id);
             apply(views.find((view) => view.uuid === id));
         },
@@ -266,33 +271,33 @@ export default function ViewTabs({
         hasOpened.current = resource;
 
         const position = handedIn?.source === 'return' ? handedIn.position : undefined;
-        const returnsTo =
-            position && (position.viewId === STANDARD_VIEW_ID || views.some((view) => view.uuid === position.viewId))
-                ? position
-                : undefined;
-        const initial = returnsTo?.viewId ?? resolveInitialViewId(views);
+        const isDrillDown = handedIn?.source === 'drill-down' || position?.isDrillDown === true;
+        // Handed-in filters only ever land on Standard or on the view they were left on. Put on any other
+        // view, they would read as that view's unsaved changes and Save to view would write them into it.
+        const returnsToView = !isDrillDown && position !== undefined && views.some((view) => view.uuid === position.viewId);
+        const initial = handedIn ? (returnsToView ? position.viewId : STANDARD_VIEW_ID) : resolveInitialViewId(views);
         const opening =
             initial === STANDARD_VIEW_ID
                 ? toStandardSlice(standardColumns, standardSort)
                 : toViewSlice(views.find((view) => view.uuid === initial) as ListViewModel, fields, standardColumns);
         setActiveId(initial);
-        setIsDrillDown(handedIn?.source === 'drill-down' || returnsTo?.isDrillDown === true);
+        setDrillDownFilters(isDrillDown ? liveSlice.current.filters : undefined);
         applyRef.current(handedIn ? { ...opening, filters: liveSlice.current.filters } : opening);
     }, [resource, isReady, views, fields, standardColumns, standardSort, handedIn]);
 
     const positionRef = useRef(onPositionChange);
     positionRef.current = onPositionChange;
+    // `isReady` is a dependency so the opening position is recorded even when the strip opens on the tab it started on.
     useEffect(() => {
-        if (hasOpened.current !== resource || activeId === PENDING_VIEW_UUID) return;
+        if (!isReady || hasOpened.current !== resource || activeId === PENDING_VIEW_UUID) return;
         positionRef.current?.({ viewId: activeId, isDrillDown });
-    }, [resource, activeId, isDrillDown]);
+    }, [resource, isReady, activeId, isDrillDown]);
 
     // The tab the strip was on when a create started, so a create that fails has somewhere to go back
     // to instead of leaving the strip pointing at a row the rollback has taken away. A create that
     // changed the table's slice as it started also holds how its failure turns the live slice back.
-    const tabBeforeCreate = useRef<{ id: string; wasDrillDown: boolean; restore?: (live: ViewSlice) => ViewSlice }>({
+    const tabBeforeCreate = useRef<{ id: string; drillDownFilters?: SearchFilterModel[]; restore?: (live: ViewSlice) => ViewSlice }>({
         id: STANDARD_VIEW_ID,
-        wasDrillDown: false,
     });
 
     // A created view arrives with the uuid the API gave it, replacing the optimistic row the strip
@@ -310,21 +315,21 @@ export default function ViewTabs({
             // A create that kept the table as it was is deliberately not re-applied: the columns, filters
             // and ordering it was trying to keep are still on the table, and a failure is not a reason to
             // drop them.
-            const { id, wasDrillDown, restore } = tabBeforeCreate.current;
+            const { id, drillDownFilters: wasDrillDown, restore } = tabBeforeCreate.current;
             setActiveId(views.some((view) => view.uuid === id) ? id : STANDARD_VIEW_ID);
-            setIsDrillDown(wasDrillDown);
+            setDrillDownFilters(wasDrillDown);
             if (restore) applyRef.current(restore(liveSlice.current));
         }
     }, [activeId, createdUuid, views]);
 
     const create = useCallback(
         (view: ListViewRequestModel, restore?: (live: ViewSlice) => ViewSlice) => {
-            tabBeforeCreate.current = { id: activeId, wasDrillDown: isDrillDown, restore };
+            tabBeforeCreate.current = { id: activeId, drillDownFilters, restore };
             dispatch(listViewActions.createView({ resource, view }));
-            setIsDrillDown(false);
+            setDrillDownFilters(undefined);
             setActiveId(PENDING_VIEW_UUID);
         },
-        [dispatch, resource, activeId, isDrillDown],
+        [dispatch, resource, activeId, drillDownFilters],
     );
 
     // A create leaves out display-only columns and filters on a field that is gone, and the table follows at
@@ -545,13 +550,12 @@ export default function ViewTabs({
                         <ViewTab
                             key={tab.id}
                             tab={tab}
-                            isActive={!isDrillDown && tab.id === activeId}
-                            isTabStop={tab.id === activeId}
+                            isActive={tab.id === activeId}
                             isDirty={tab.id === activeId && isDirty}
                             onSelect={() => select(tab.id)}
                             dataTestId={`${dataTestId}-tab-${tab.id}`}
                             menu={
-                                !isDrillDown && tab.id === activeId ? (
+                                tab.id === activeId ? (
                                     <Dropdown
                                         btnStyle="transparent"
                                         hideArrow
@@ -621,8 +625,7 @@ export default function ViewTabs({
                 isBusy={isMutating}
                 onRevert={() => apply(activeView)}
                 onSave={onSaveDrift}
-                drillDownReturnsTo={isDrillDown ? activeTab.name : undefined}
-                onLeaveDrillDown={() => select(activeId)}
+                isDrillDown={isDrillDown}
                 dataTestId={`${dataTestId}-summary`}
             />
 

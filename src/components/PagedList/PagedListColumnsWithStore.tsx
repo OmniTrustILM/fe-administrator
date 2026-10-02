@@ -1,6 +1,6 @@
 import type { CellRegistry } from 'components/CustomTable/columns';
 import type { FiltersTestState, ListViewsTestState } from 'ducks/test-reducers';
-import { EntityType } from 'ducks/filters';
+import { actions as filterActions, EntityType } from 'ducks/filters';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { actions as pagingActions } from 'ducks/paging';
@@ -60,6 +60,8 @@ type Props = Readonly<{
     withViewsControl?: boolean;
     /** Renders a control that blanks the rows and puts a list request in flight, as a listing duck does. */
     withListInFlightControl?: boolean;
+    /** Renders a control that sets these filters, as a user typing into the filter widget does. */
+    typedFilters?: SearchFilterModel[];
 }>;
 
 const registry: CellRegistry<StubRow> = {
@@ -183,6 +185,20 @@ function ViewsControl({ views }: Readonly<{ views: ListViewModel[] }>) {
     );
 }
 
+function TypeFiltersControl({ filters }: Readonly<{ filters: SearchFilterModel[] }>) {
+    const dispatch = useDispatch();
+
+    return (
+        <button
+            type="button"
+            data-testid="type-filters"
+            onClick={() => dispatch(filterActions.setCurrentFilters({ entity: EntityType.CERTIFICATE, currentFilters: filters }))}
+        >
+            Type filters
+        </button>
+    );
+}
+
 function DispatchedActions() {
     const dispatched = useSelector((state: { listViews: ListViewsTestState }) => state.listViews.dispatched);
 
@@ -214,6 +230,7 @@ export default function PagedListColumnsWithStore({
     withCatalogueFailureControl = false,
     withViewsControl = false,
     withListInFlightControl = false,
+    typedFilters,
 }: Props) {
     const [store] = useState(() =>
         createMockStore({
@@ -311,6 +328,8 @@ export default function PagedListColumnsWithStore({
                 {withListInFlightControl && <ListInFlightControl onBlank={() => setAnsweredRows([])} />}
 
                 {withPagingControl && <PagingControl />}
+
+                {typedFilters && <TypeFiltersControl filters={typedFilters} />}
 
                 {withRefreshControl && (
                     <button type="button" data-testid="page-refresh" onClick={() => setRefreshToken((token) => token + 1)}>
