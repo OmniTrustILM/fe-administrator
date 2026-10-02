@@ -1503,6 +1503,37 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
     });
 
+    test('still says the view is not filtering by held-back columns when the user filters by only one of them', async ({ mount, page }) => {
+        const withBoth = [
+            ...catalogue,
+            {
+                filterFieldSource: FilterFieldSource.Custom,
+                searchFieldData: [field('retired', 'Retired'), field('decom', 'Decom')],
+            },
+        ] as unknown as SearchFieldDataByGroupDto[];
+        const decomFilter: SearchFilterModel = { ...retiredFilter, fieldIdentifier: 'decom' };
+        const ownFilter: SearchFilterModel = { ...retiredFilter, value: 'false' };
+        const filtered = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom), stored('decom', FilterFieldSource.Custom)],
+            filters: [retiredFilter, decomFilter],
+        });
+        await mount(
+            strip({
+                views: [filtered],
+                fields: withBoth,
+                dormantFields: [retiredKey, `view-1|${FilterFieldSource.Custom}:decom`],
+                driftFilter: ownFilter,
+            }),
+        );
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('not showing or filtering by them');
+
+        await page.getByTestId('drift-filter').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('not showing or filtering by them');
+        expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
+    });
+
     test('puts back the filter on a held-back column the user adds from the column menu', async ({ mount, page }) => {
         const filtered = expiryWatch({
             defaultView: true,
