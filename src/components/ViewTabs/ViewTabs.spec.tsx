@@ -1363,6 +1363,22 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
     });
 
+    test('stops saying the view is not filtering by a held-back column once the user filters by it', async ({ mount, page }) => {
+        const ownFilter: SearchFilterModel = { ...retiredFilter, value: 'false' };
+        const filtered = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+            filters: [retiredFilter],
+        });
+        await mount(strip({ views: [filtered], fields: withRetired, dormantFields: [retiredKey], driftFilter: ownFilter }));
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('this view is not showing or filtering by it.');
+
+        await page.getByTestId('drift-filter').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('this view is not showing it.');
+        expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
+    });
+
     test('puts back the filter on a held-back column the user adds from the column menu', async ({ mount, page }) => {
         const filtered = expiryWatch({
             defaultView: true,

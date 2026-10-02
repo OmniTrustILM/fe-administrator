@@ -261,6 +261,12 @@ export default function ViewTabs({
         return held.filter((column) => !shown.has(getColumnKey(column)));
     }, [held, columns]);
 
+    // Not once the user has filtered by a returned field themselves: the list is then filtered by it.
+    const isFilterHeld = useMemo(() => {
+        const keys = new Set(returned.map(getColumnKey));
+        return heldFilters.some((filter) => keys.has(getColumnKey(filter))) && !filters.some((filter) => keys.has(getColumnKey(filter)));
+    }, [returned, heldFilters, filters]);
+
     /** The stored columns this table cannot render, which the notice names. */
     const unavailable = useMemo(() => {
         const heldKeys = new Set(held.map(getColumnKey));
@@ -749,7 +755,7 @@ export default function ViewTabs({
 
             <ReturnedColumnsNotice
                 returned={returned}
-                isFilterHeld={heldFilters.length > 0}
+                isFilterHeld={isFilterHeld}
                 onShow={onShowReturned}
                 onRemove={remainingAfterReturned.length > 0 ? onRemoveReturned : undefined}
                 isBusy={isMutating}
