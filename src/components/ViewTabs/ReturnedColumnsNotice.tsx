@@ -29,13 +29,17 @@ export default function ReturnedColumnsNotice({ returned, unfiltered = [], onSho
     const names = returned.map(getColumnHeading);
     const subject = names.length === 1 ? `${names[0]} is` : `${list(names)} are`;
     const pronoun = names.length === 1 ? 'it' : 'them';
+    const identity =
+        names.length === 1
+            ? 'may be a different attribute with the same name and content type'
+            : 'may be different attributes with the same names and content types';
     const withheld =
         unfiltered.length === 0
             ? `showing ${pronoun}`
             : unfiltered.length === returned.length
               ? `showing or filtering by ${pronoun}`
               : `showing ${pronoun}, and is not filtering by ${list(unfiltered.map(getColumnHeading))}`;
-    const message = `${subject} available again, but may be a different attribute with the same name and content type, so this view is not ${withheld}.`;
+    const message = `${subject} available again, but ${identity}, so this view is not ${withheld}.`;
 
     return (
         <output

@@ -1567,13 +1567,13 @@ test.describe('ViewTabs', () => {
             }),
         );
         await expect(page.getByTestId('view-tabs-returned')).toContainText(
-            'Retired and Decom are available again, but may be a different attribute with the same name and content type, so this view is not showing or filtering by them.',
+            'Retired and Decom are available again, but may be different attributes with the same names and content types, so this view is not showing or filtering by them.',
         );
 
         await page.getByTestId('drift-filter').click();
 
         await expect(page.getByTestId('view-tabs-returned')).toContainText(
-            'Retired and Decom are available again, but may be a different attribute with the same name and content type, so this view is not showing them, and is not filtering by Decom.',
+            'Retired and Decom are available again, but may be different attributes with the same names and content types, so this view is not showing them, and is not filtering by Decom.',
         );
         expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
     });
