@@ -545,11 +545,13 @@ export default function ViewTabs({
     }, [dispatch, resource, targetView, activeId, views, apply]);
 
     /**
-     * Releases held-back columns of the active view and puts them on the table with their stored ordering, and with their
-     * stored filters unless the user's own filters on them are replacing those.
+     * Releases held-back columns of the active view and puts them on the table with their stored ordering.
+     *
+     * Shown from the notice, they bring their stored filters and replace a platform fallback. Confirmed by a save, the rest
+     * of the table stays as the user had it, which is what the save stored.
      */
     const confirm = useCallback(
-        (confirmed: readonly PickerColumn[], { keepsLiveFilters = false } = {}) => {
+        (confirmed: readonly PickerColumn[], { keepsTable = false } = {}) => {
             if (!activeView || confirmed.length === 0) return;
 
             const keys = new Set(confirmed.map(getColumnKey));
@@ -563,15 +565,16 @@ export default function ViewTabs({
                 standardColumns,
             ).renderable;
             // A table on the platform fallback gives it up for the view, keeping only what the user added to it.
-            const fallback = new Set(resolved?.fellBackToStandard ? resolved.renderable.map(getColumnKey) : []);
+            const replacesFallback = !keepsTable && resolved?.fellBackToStandard === true;
+            const fallback = new Set(replacesFallback ? (resolved?.renderable ?? []).map(getColumnKey) : []);
             const shown = reinsert(
                 columns.filter((column) => !fallback.has(getColumnKey(column))),
-                resolved?.fellBackToStandard ? released : released.filter((column) => keys.has(getColumnKey(column))),
+                replacesFallback ? released : released.filter((column) => keys.has(getColumnKey(column))),
                 released,
                 getColumnKey,
             );
             const next = withConfirmed(keys, { columns: shown, filters, sort });
-            applyRef.current(keepsLiveFilters ? { ...next, filters } : next);
+            applyRef.current(keepsTable ? { ...next, filters } : next);
         },
         [activeView, dispatch, resource, catalogueFields, dormant, standardColumns, resolved, columns, filters, sort, withConfirmed],
     );
@@ -597,7 +600,7 @@ export default function ViewTabs({
             filters: reinsert(storableFilters, stillHeld, activeView.filters ?? [], getFilterKey),
             sort: toStoredSort(sort ?? heldSort),
         });
-        confirm(confirmed, { keepsLiveFilters: true });
+        confirm(confirmed, { keepsTable: true });
     }, [activeView, patchActive, columns, resolved, storableFilters, heldFilters, sort, heldSort, confirm, returned]);
 
     const onShowReturned = useCallback(() => confirm(returned), [confirm, returned]);
