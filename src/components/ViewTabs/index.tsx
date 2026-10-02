@@ -545,14 +545,9 @@ export default function ViewTabs({
         apply(remaining.find((view) => view.uuid === fallback));
     }, [dispatch, resource, targetView, activeId, views, apply]);
 
-    /**
-     * The table with held-back columns of the active view put on it, with their stored ordering.
-     *
-     * Shown from the notice, they bring their stored filters and replace a platform fallback. Confirmed by a save, the rest
-     * of the table stays as the user had it, which is what the save stored.
-     */
+    /** The table with held-back columns of the active view put on it, with their stored filters and ordering. */
     const confirmedSlice = useCallback(
-        (confirmed: readonly PickerColumn[], { keepsTable = false } = {}): ViewSlice | undefined => {
+        (confirmed: readonly PickerColumn[]): ViewSlice | undefined => {
             if (!activeView || confirmed.length === 0) return undefined;
 
             const keys = new Set(confirmed.map(getColumnKey));
@@ -562,30 +557,43 @@ export default function ViewTabs({
                 standardColumns,
             ).renderable;
             // A table on the platform fallback gives it up for the view, keeping only what the user added to it.
-            const replacesFallback = !keepsTable && resolved?.fellBackToStandard === true;
-            const fallback = new Set(replacesFallback ? (resolved?.renderable ?? []).map(getColumnKey) : []);
+            const fallback = new Set(resolved?.fellBackToStandard ? resolved.renderable.map(getColumnKey) : []);
             const shown = reinsert(
                 columns.filter((column) => !fallback.has(getColumnKey(column))),
-                replacesFallback ? released : released.filter((column) => keys.has(getColumnKey(column))),
+                resolved?.fellBackToStandard ? released : released.filter((column) => keys.has(getColumnKey(column))),
                 released,
                 getColumnKey,
             );
-            const next = withConfirmed(keys, { columns: shown, filters, sort });
-            return keepsTable ? { ...next, filters } : next;
+            return withConfirmed(keys, { columns: shown, filters, sort });
         },
         [activeView, catalogueFields, dormant, standardColumns, resolved, columns, filters, sort, withConfirmed],
     );
 
-    // A save that confirms held-back columns puts them on the table only once it succeeds: the duck releases them then,
-    // and one put on the table earlier would stay there unconfirmed if the save failed.
-    const pendingConfirmation = useRef<{ uuid: string; slice: ViewSlice } | undefined>(undefined);
+    /**
+     * A save that confirms held-back columns puts them on the table only once it succeeds: the duck releases them then,
+     * and one put on the table earlier would stay there unconfirmed if the save failed.
+     *
+     * They go into the table as it is by then, not as it was at Save, so an edit made while the save was out stays. The
+     * rest of the table is left as the user had it, which is what the save stored.
+     */
+    const pendingConfirmation = useRef<{ uuid: string; confirmed: PickerColumn[]; sort?: ColumnSort } | undefined>(undefined);
     useEffect(() => {
         const pending = pendingConfirmation.current;
         if (!pending || isMutating) return;
 
         pendingConfirmation.current = undefined;
-        if (!mutationError && activeId === pending.uuid) applyRef.current(pending.slice);
-    }, [isMutating, mutationError, activeId]);
+        if (mutationError || activeView?.uuid !== pending.uuid) return;
+
+        const keys = new Set(pending.confirmed.map(getColumnKey));
+        const stored = resolveView(activeView.columns, fieldsFor(activeView), standardColumns).renderable;
+        const shown = reinsert(
+            columns,
+            stored.filter((column) => keys.has(getColumnKey(column))),
+            stored,
+            getColumnKey,
+        );
+        applyRef.current({ columns: shown, filters, sort: sort ?? pending.sort });
+    }, [isMutating, mutationError, activeView, fieldsFor, standardColumns, columns, filters, sort]);
 
     const onSaveDrift = useCallback(() => {
         if (!activeView) {
@@ -613,9 +621,11 @@ export default function ViewTabs({
             confirmed.map((column) => toDormantKey(activeView.uuid, column)),
         );
 
-        const slice = confirmedSlice(confirmed, { keepsTable: true });
-        if (slice) pendingConfirmation.current = { uuid: activeView.uuid, slice };
-    }, [activeView, patchView, columns, resolved, storableFilters, heldFilters, sort, heldSort, confirmedSlice, returned]);
+        if (confirmed.length > 0) {
+            const confirmedSort = heldSort && confirmedKeys.has(getSortKey(heldSort)) ? heldSort : undefined;
+            pendingConfirmation.current = { uuid: activeView.uuid, confirmed, sort: confirmedSort };
+        }
+    }, [activeView, patchView, columns, resolved, storableFilters, heldFilters, sort, heldSort, returned]);
 
     const onShowReturned = useCallback(() => {
         const slice = confirmedSlice(returned);

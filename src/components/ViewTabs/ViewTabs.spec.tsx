@@ -1413,6 +1413,38 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
     });
 
+    test('keeps an edit made while a save confirming a held-back column is in flight', async ({ mount, page }) => {
+        const ownFilter: SearchFilterModel = { ...retiredFilter, value: 'false' };
+        const filtered = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+            filters: [retiredFilter],
+            sort: undefined,
+        });
+        await mount(
+            strip({
+                views: [filtered],
+                fields: withRetired,
+                dormantFields: [retiredKey],
+                driftFilter: ownFilter,
+                driftColumn: serialNumber,
+            }),
+        );
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+        await page.getByTestId('drift-columns').click();
+        await page.getByTestId('simulate-update-success').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toHaveCount(0);
+        await expect
+            .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
+            .toEqual(['COMMON_NAME', 'retired', 'SERIAL_NUMBER']);
+        expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
+    });
+
     test('keeps a held-back column held when the save that would confirm it fails', async ({ mount, page }) => {
         const ownFilter: SearchFilterModel = { ...retiredFilter, value: 'false' };
         const filtered = expiryWatch({
