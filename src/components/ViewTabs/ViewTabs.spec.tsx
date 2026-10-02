@@ -1543,7 +1543,7 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
     });
 
-    test('still says the view is not filtering by held-back columns when the user filters by only one of them', async ({ mount, page }) => {
+    test('names only the held-back columns the view is not filtering by when the user filters by one of them', async ({ mount, page }) => {
         const withBoth = [
             ...catalogue,
             {
@@ -1566,11 +1566,15 @@ test.describe('ViewTabs', () => {
                 driftFilter: ownFilter,
             }),
         );
-        await expect(page.getByTestId('view-tabs-returned')).toContainText('not showing or filtering by them');
+        await expect(page.getByTestId('view-tabs-returned')).toContainText(
+            'Retired and Decom are available again, but may be a different attribute with the same name and content type, so this view is not showing or filtering by them.',
+        );
 
         await page.getByTestId('drift-filter').click();
 
-        await expect(page.getByTestId('view-tabs-returned')).toContainText('not showing or filtering by them');
+        await expect(page.getByTestId('view-tabs-returned')).toContainText(
+            'Retired and Decom are available again, but may be a different attribute with the same name and content type, so this view is not showing them, and is not filtering by Decom.',
+        );
         expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
     });
 
