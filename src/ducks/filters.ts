@@ -42,9 +42,10 @@ export type ViewPosition = {
 
 /**
  * Filters a list is to open on in place of its opening view's own. A drill-down opens on Standard with its
- * filters; a return from a detail page goes back to the position the list was left in.
+ * filters, and holds only while the user stays inside the route scope it was opened for; a return from a
+ * detail page goes back to the position the list was left in.
  */
-export type HandedInFilters = { source: 'drill-down' } | { source: 'return'; position?: ViewPosition };
+export type HandedInFilters = { source: 'drill-down'; scope: string } | { source: 'return'; position?: ViewPosition };
 
 /**
  * What a list with a view strip held when it unmounted, kept while the user stays inside the list's route
@@ -63,6 +64,9 @@ type LeftList = {
 const toRoutePath = (path: string) => path.replace(/(.)\/+$/, '$1');
 
 const isInScope = (pathname: string, scope: string) => pathname === scope || pathname.startsWith(`${scope}/`);
+
+/** The route scope a list path belongs to: its first segment, which its detail pages share. */
+export const toListScope = (pathname: string) => `/${pathname.split('/')[1] ?? ''}`;
 
 export type Filter = {
     entity: EntityType;
@@ -134,11 +138,17 @@ export const slice = createSlice({
             });
         },
 
-        /** An empty drill-down narrows nothing, so it hands nothing in and the list opens on its view. */
-        setDrillDownFilters: (state, action: PayloadAction<{ entity: EntityType; filters: SearchFilterModel[] }>) => {
+        /**
+         * Hands filters to the list at `path`, the resolved pathname the drill-down navigates to. An empty
+         * drill-down narrows nothing, so it hands nothing in and the list opens on its view.
+         */
+        setDrillDownFilters: (state, action: PayloadAction<{ entity: EntityType; filters: SearchFilterModel[]; path: string }>) => {
             updateFilterState(state, action.payload.entity, (filter) => {
                 filter.currentFilters = action.payload.filters;
-                filter.handedIn = action.payload.filters.length > 0 ? { source: 'drill-down' } : undefined;
+                filter.handedIn =
+                    action.payload.filters.length > 0
+                        ? { source: 'drill-down', scope: toListScope(toRoutePath(action.payload.path)) }
+                        : undefined;
             });
         },
 
@@ -157,10 +167,15 @@ export const slice = createSlice({
         /**
          * Keeps what a list was left with only while the user stays inside its scope. Leaving the scope also
          * drops a hand-in the list never opened on, so a later visit does not open on it.
+         *
+         * A drill-down is dropped on leaving its own scope even when its list never mounted: a navigation
+         * superseded while the lazy route loads, or a route that failed to load, leaves no record behind.
          */
         routeChanged: (state, action: PayloadAction<{ pathname: string }>) => {
             const pathname = toRoutePath(action.payload.pathname);
             for (const { filter } of state.filters) {
+                if (filter.handedIn?.source === 'drill-down' && !isInScope(pathname, filter.handedIn.scope)) filter.handedIn = undefined;
+
                 const left = filter.leftList;
                 if (!left || pathname === left.path) continue;
                 if (isInScope(pathname, left.scope)) {

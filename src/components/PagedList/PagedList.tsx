@@ -1,4 +1,4 @@
-import { type EntityType, type ViewPosition, actions as filterActions, selectors as filterSelectors } from 'ducks/filters';
+import { type EntityType, type ViewPosition, actions as filterActions, selectors as filterSelectors, toListScope } from 'ducks/filters';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router';
@@ -160,10 +160,9 @@ function PagedList<TRow extends object>({
     useEffect(() => {
         if (!isColumnDriven) return;
         const path = location.pathname;
-        const scope = `/${path.split('/')[1] ?? ''}`;
         dispatch(filterActions.returnToList({ entity, path }));
         return () => {
-            dispatch(filterActions.leaveList({ entity, path, scope }));
+            dispatch(filterActions.leaveList({ entity, path, scope: toListScope(path) }));
         };
     }, [dispatch, entity, isColumnDriven, location.pathname]);
     const {

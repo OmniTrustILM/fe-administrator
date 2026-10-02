@@ -2,6 +2,7 @@ import Widget from 'components/Widget';
 import WidgetLock from 'components/WidgetLock';
 import { type EntityType, actions as filterActions } from 'ducks/filters';
 import { useDispatch } from 'react-redux';
+import { useResolvedPath } from 'react-router';
 import type { SearchFilterModel } from 'types/certificate';
 import { LockTypeEnum } from 'types/user-interface';
 import { onSameTabClick } from 'utils/link-click';
@@ -33,10 +34,11 @@ function CountBadge({
     lockText = 'This count could not be loaded.',
 }: Props) {
     const dispatch = useDispatch();
+    const destination = useResolvedPath(link ?? '.').pathname;
 
     const applyFilter =
         link && entity && onSetFilter
-            ? onSameTabClick(() => dispatch(filterActions.setDrillDownFilters({ entity, filters: onSetFilter() })))
+            ? onSameTabClick(() => dispatch(filterActions.setDrillDownFilters({ entity, filters: onSetFilter(), path: destination })))
             : undefined;
 
     return (

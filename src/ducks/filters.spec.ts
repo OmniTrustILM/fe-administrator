@@ -179,14 +179,20 @@ describe('handed-in filters', () => {
     });
 
     test('a drill-down applies its filters and hands them in for the inventory to open on', () => {
-        const next = reducer(initialState, actions.setDrillDownFilters({ entity: EntityType.CERTIFICATE, filters: drilledInto }));
+        const next = reducer(
+            initialState,
+            actions.setDrillDownFilters({ entity: EntityType.CERTIFICATE, filters: drilledInto, path: '/certificates' }),
+        );
 
         expect(selectors.currentFilters(EntityType.CERTIFICATE)(stateFor(next))).toEqual(drilledInto);
-        expect(handedIn(next)).toEqual({ source: 'drill-down' });
+        expect(handedIn(next)).toEqual({ source: 'drill-down', scope: '/certificates' });
     });
 
     test('are taken once the inventory has opened on them, leaving the filters it opened on', () => {
-        const drilled = reducer(initialState, actions.setDrillDownFilters({ entity: EntityType.CERTIFICATE, filters: drilledInto }));
+        const drilled = reducer(
+            initialState,
+            actions.setDrillDownFilters({ entity: EntityType.CERTIFICATE, filters: drilledInto, path: '/certificates' }),
+        );
         const taken = reducer(drilled, actions.setCurrentFilters({ entity: EntityType.CERTIFICATE, currentFilters: drilledInto }));
 
         expect(handedIn(taken)).toBeUndefined();
@@ -194,7 +200,10 @@ describe('handed-in filters', () => {
     });
 
     test('are dropped by any filter the user sets, so a drill-down nobody opened on cannot label their filters later', () => {
-        const drilled = reducer(initialState, actions.setDrillDownFilters({ entity: EntityType.CERTIFICATE, filters: drilledInto }));
+        const drilled = reducer(
+            initialState,
+            actions.setDrillDownFilters({ entity: EntityType.CERTIFICATE, filters: drilledInto, path: '/certificates' }),
+        );
         const typed = reducer(drilled, actions.setCurrentFilters({ entity: EntityType.CERTIFICATE, currentFilters: narrowed }));
 
         expect(handedIn(typed)).toBeUndefined();
@@ -263,11 +272,11 @@ describe('handed-in filters', () => {
 
     test('a pending drill-down outranks what the list was left with', () => {
         const left = route(leave(narrowedSecrets(initialState)), '/secrets/detail/1');
-        const drilled = reducer(left, actions.setDrillDownFilters({ entity: EntityType.SECRET, filters: drilledInto }));
+        const drilled = reducer(left, actions.setDrillDownFilters({ entity: EntityType.SECRET, filters: drilledInto, path: '/secrets' }));
         const returned = comeBack(drilled);
 
         expect(selectors.currentFilters(EntityType.SECRET)(stateFor(returned))).toEqual(drilledInto);
-        expect(secretsHandedIn(returned)).toEqual({ source: 'drill-down' });
+        expect(secretsHandedIn(returned)).toEqual({ source: 'drill-down', scope: '/secrets' });
     });
 
     test('a return to a different path within the scope is not a return to this list', () => {
@@ -278,7 +287,10 @@ describe('handed-in filters', () => {
     });
 
     test('a drill-down the list never opened on is dropped once the user leaves the list', () => {
-        const drilled = reducer(initialState, actions.setDrillDownFilters({ entity: EntityType.SECRET, filters: drilledInto }));
+        const drilled = reducer(
+            initialState,
+            actions.setDrillDownFilters({ entity: EntityType.SECRET, filters: drilledInto, path: '/secrets' }),
+        );
         const away = route(leave(onSecretsView(drilled)), '/discoveries');
         const returned = comeBack(route(away, '/secrets'));
 
@@ -286,8 +298,35 @@ describe('handed-in filters', () => {
         expect(selectors.handedInFilters(EntityType.SECRET)(stateFor(away))).toBeUndefined();
     });
 
+    const drillIntoSecrets = (from: typeof initialState) =>
+        reducer(from, actions.setDrillDownFilters({ entity: EntityType.SECRET, filters: drilledInto, path: '/secrets/' }));
+
+    test('a drill-down holds while the user stays inside the scope it was opened for', () => {
+        const arrived = route(route(drillIntoSecrets(initialState), '/secrets'), '/secrets/detail/1');
+
+        expect(secretsHandedIn(arrived)).toEqual({ source: 'drill-down', scope: '/secrets' });
+    });
+
+    test('a drill-down whose navigation was superseded before the list mounted is dropped', () => {
+        const away = route(drillIntoSecrets(initialState), '/discoveries');
+        const visited = comeBack(route(away, '/secrets'));
+
+        expect(secretsHandedIn(away)).toBeUndefined();
+        expect(secretsHandedIn(visited)).toBeUndefined();
+    });
+
+    test('a drill-down whose list never mounted at its route is dropped once the user goes elsewhere', () => {
+        const away = route(route(drillIntoSecrets(initialState), '/secrets'), '/dashboard');
+        const visited = comeBack(route(away, '/secrets'));
+
+        expect(secretsHandedIn(visited)).toBeUndefined();
+    });
+
     test('an empty drill-down hands nothing in, so the list opens on its view', () => {
-        const drilled = reducer(initialState, actions.setDrillDownFilters({ entity: EntityType.CERTIFICATE, filters: [] }));
+        const drilled = reducer(
+            initialState,
+            actions.setDrillDownFilters({ entity: EntityType.CERTIFICATE, filters: [], path: '/certificates' }),
+        );
 
         expect(handedIn(drilled)).toBeUndefined();
         expect(selectors.currentFilters(EntityType.CERTIFICATE)(stateFor(drilled))).toEqual([]);

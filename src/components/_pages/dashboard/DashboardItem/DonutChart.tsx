@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import Widget from 'components/Widget';
 import { type EntityType, actions } from 'ducks/filters';
 import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router';
+import { useNavigate, useResolvedPath } from 'react-router';
 import { Pie, PieChart, Tooltip } from 'recharts';
 import SimpleBar from 'simplebar-react';
 import type { SearchFilterModel } from 'types/certificate';
@@ -67,6 +67,7 @@ function DonutChart({
     const chartContainerRef = useRef<HTMLDivElement | null>(null);
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const destination = useResolvedPath(redirect).pathname;
 
     const chartColors = colorOptions?.colors || getDefaultColors();
     const isFixedChartSize = chartSize === 'fixed';
@@ -175,7 +176,13 @@ function DonutChart({
                                     }`}
                                     onClick={() => {
                                         if (!interactiveLegend) return;
-                                        dispatch(actions.setDrillDownFilters({ entity, filters: onLegendClick(index, labels) }));
+                                        dispatch(
+                                            actions.setDrillDownFilters({
+                                                entity,
+                                                filters: onLegendClick(index, labels),
+                                                path: destination,
+                                            }),
+                                        );
                                         navigate(redirect);
                                     }}
                                 >

@@ -78,6 +78,27 @@ test.describe('CryptoAssetsDashboard', () => {
         await expect(component.getByTestId('cbom-drill-down-pending')).toHaveText('true');
     });
 
+    test('a drill-down records the inventory it opens as the scope it holds within', async ({ mount }) => {
+        const component = await mount(<CryptoAssetsDashboardWithStore variant="partial" atAppRoute />);
+
+        await component
+            .getByTestId('crypto-assets-dashboard-coverage')
+            .getByRole('link', { name: /^failed$/i })
+            .click();
+
+        await expect(component.getByTestId('route')).toHaveText('/cboms');
+        await expect(component.getByTestId('cbom-drill-down-scope')).toHaveText('/cboms');
+    });
+
+    test('a count tile drill-down records the asset inventory as its scope', async ({ mount }) => {
+        const component = await mount(<CryptoAssetsDashboardWithStore atAppRoute />);
+
+        await component.getByRole('link', { name: 'Not PQC ready' }).click();
+
+        await expect(component.getByTestId('route')).toHaveText('/cryptoassets');
+        await expect(component.getByTestId('drill-down-scope')).toHaveText('/cryptoassets');
+    });
+
     test('a link opened with a modifier key hands no drill-down to the tab left on the Dashboard', async ({ mount }) => {
         const component = await mount(<CryptoAssetsDashboardWithStore variant="partial" />);
         const coverage = component.getByTestId('crypto-assets-dashboard-coverage');

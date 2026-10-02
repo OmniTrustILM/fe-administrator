@@ -250,7 +250,7 @@ export default function PagedListColumnsWithStore({
                         filter: {
                             availableFilters: withheldCatalogue ? [] : catalogue,
                             currentFilters: drillDownFilters ?? initialFilters,
-                            handedIn: drillDownFilters ? { source: 'drill-down' as const } : undefined,
+                            handedIn: drillDownFilters ? { source: 'drill-down' as const, scope: '/certificates' } : undefined,
                             isFetchingFilters: withheldCatalogue || isRefetchingCatalogue,
                             hasLoadedFilters: !withheldCatalogue,
                             hasFailedFilters: failedCatalogue,

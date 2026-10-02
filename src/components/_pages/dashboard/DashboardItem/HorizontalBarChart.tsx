@@ -2,7 +2,7 @@ import Widget from 'components/Widget';
 import { useTheme } from 'components/ThemeProvider';
 import { type EntityType, actions as filterActions } from 'ducks/filters';
 import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router';
+import { useNavigate, useResolvedPath } from 'react-router';
 import { Bar, BarChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import type { SearchFilterModel } from 'types/certificate';
 import { countAxisDomain } from 'utils/chart-axis';
@@ -67,6 +67,7 @@ function YAxisTick({ x, y, payload, maxChars = 12, onActivate }: YAxisTickProps)
 function HorizontalBarChart({ title, data = {}, entity, redirect, onSetFilter, overflowCount, topN = 10, colorOptions }: Props) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const destination = useResolvedPath(redirect).pathname;
     const { resolvedTheme } = useTheme();
     const themeColors = CHART_COLORS[resolvedTheme];
 
@@ -83,7 +84,7 @@ function HorizontalBarChart({ title, data = {}, entity, redirect, onSetFilter, o
     const yAxisMaxChars = Math.max(6, Math.floor((yAxisWidth - 8) / 7));
 
     const openFiltered = (label: string) => {
-        dispatch(filterActions.setDrillDownFilters({ entity, filters: onSetFilter(label) }));
+        dispatch(filterActions.setDrillDownFilters({ entity, filters: onSetFilter(label), path: destination }));
         navigate(redirect);
     };
 

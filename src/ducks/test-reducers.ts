@@ -126,7 +126,7 @@ export type FiltersTestState = {
             isFetchingFilters: boolean;
             hasLoadedFilters: boolean;
             hasFailedFilters?: boolean;
-            handedIn?: { source: 'drill-down' } | { source: 'return'; position?: { viewId: string; isDrillDown: boolean } };
+            handedIn?: { source: 'drill-down'; scope: string } | { source: 'return'; position?: { viewId: string; isDrillDown: boolean } };
             viewPosition?: { viewId: string; isDrillDown: boolean };
             leftList?: {
                 path: string;
@@ -227,7 +227,7 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
         return update(payload.entity, (filter) => ({
             ...filter,
             currentFilters: filters,
-            handedIn: filters.length > 0 ? { source: 'drill-down' } : undefined,
+            handedIn: filters.length > 0 ? { source: 'drill-down', scope: `/${(payload.path ?? '').split('/')[1] ?? ''}` } : undefined,
         }));
     }
     if (a.type === 'filters/setViewPosition') {
@@ -248,7 +248,11 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
     if (a.type === 'filters/routeChanged') {
         const pathname = (a.payload as unknown as { pathname: string }).pathname.replace(/(.)\/+$/, '$1');
         return {
-            filters: state.filters.map((entry) => {
+            filters: state.filters.map((current) => {
+                const handedIn = current.filter.handedIn;
+                const leftDrillDown =
+                    handedIn?.source === 'drill-down' && pathname !== handedIn.scope && !pathname.startsWith(`${handedIn.scope}/`);
+                const entry = leftDrillDown ? { ...current, filter: { ...current.filter, handedIn: undefined } } : current;
                 const left = entry.filter.leftList;
                 if (!left || pathname === left.path) return entry;
                 const inScope = pathname === left.scope || pathname.startsWith(`${left.scope}/`);

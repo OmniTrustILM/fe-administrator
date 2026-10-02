@@ -1,5 +1,5 @@
 import { Provider, useSelector } from 'react-redux';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import ThemeProvider from 'components/ThemeProvider';
 import { EntityType, actions as filterActions, selectors as filterSelectors } from 'ducks/filters';
 import type { SearchFilterModel } from 'types/certificate';
@@ -52,14 +52,18 @@ const statisticsFor = (variant: Variant) => {
 function CurrentFiltersProbe() {
     const currentFilters = useSelector(filterSelectors.currentFilters(EntityType.CRYPTO_ASSET));
     const cbomFilters = useSelector(filterSelectors.currentFilters(EntityType.CBOM));
-    const isDrillDownPending = useSelector(filterSelectors.handedInFilters(EntityType.CRYPTO_ASSET))?.source === 'drill-down';
-    const isCbomDrillDownPending = useSelector(filterSelectors.handedInFilters(EntityType.CBOM))?.source === 'drill-down';
+    const handedIn = useSelector(filterSelectors.handedInFilters(EntityType.CRYPTO_ASSET));
+    const cbomHandedIn = useSelector(filterSelectors.handedInFilters(EntityType.CBOM));
+    const isDrillDownPending = handedIn?.source === 'drill-down';
+    const isCbomDrillDownPending = cbomHandedIn?.source === 'drill-down';
     return (
         <>
             <span data-testid="current-filters">{JSON.stringify(currentFilters)}</span>
             <span data-testid="drill-down-pending">{String(isDrillDownPending)}</span>
             <span data-testid="cbom-current-filters">{JSON.stringify(cbomFilters)}</span>
             <span data-testid="cbom-drill-down-pending">{String(isCbomDrillDownPending)}</span>
+            <span data-testid="drill-down-scope">{handedIn?.source === 'drill-down' ? handedIn.scope : 'none'}</span>
+            <span data-testid="cbom-drill-down-scope">{cbomHandedIn?.source === 'drill-down' ? cbomHandedIn.scope : 'none'}</span>
         </>
     );
 }
@@ -67,7 +71,13 @@ function CurrentFiltersProbe() {
 export default function CryptoAssetsDashboardWithStore({
     variant = 'synced',
     initialCbomFilter,
-}: Readonly<{ variant?: Variant; initialCbomFilter?: SearchFilterModel }>) {
+    atAppRoute = false,
+}: Readonly<{
+    variant?: Variant;
+    initialCbomFilter?: SearchFilterModel;
+    /** Mounts the dashboard under its application route, so its relative links resolve as they do in the app. */
+    atAppRoute?: boolean;
+}>) {
     const store = createMockStore({
         cryptoAssetsDashboard: { isFetching: false, statistics: statisticsFor(variant) },
     } as Parameters<typeof createMockStore>[0]);
@@ -79,7 +89,14 @@ export default function CryptoAssetsDashboardWithStore({
         <Provider store={store}>
             <MemoryRouter initialEntries={['/dashboard/crypto-assets']}>
                 <ThemeProvider>
-                    <CryptoAssetsDashboard />
+                    {atAppRoute ? (
+                        <Routes>
+                            <Route path="/dashboard/crypto-assets" element={<CryptoAssetsDashboard />} />
+                            <Route path="*" element={null} />
+                        </Routes>
+                    ) : (
+                        <CryptoAssetsDashboard />
+                    )}
                     <TestRouteDisplay />
                     <CurrentFiltersProbe />
                 </ThemeProvider>

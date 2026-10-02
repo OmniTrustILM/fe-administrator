@@ -131,7 +131,7 @@ export default function PagedListReturnWithStore({
                             isFetchingFilters: false,
                             hasLoadedFilters: true,
                             hasFailedFilters: false,
-                            handedIn: drillDownFilters ? { source: 'drill-down' as const } : undefined,
+                            handedIn: drillDownFilters ? { source: 'drill-down' as const, scope: '/secrets' } : undefined,
                         },
                     },
                 ],

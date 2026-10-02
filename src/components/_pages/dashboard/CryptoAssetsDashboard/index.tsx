@@ -3,7 +3,7 @@ import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
 import { EntityType, actions as filterActions } from 'ducks/filters';
 import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router';
+import { Link, useResolvedPath } from 'react-router';
 import { FilterConditionOperator, FilterFieldSource, PlatformEnum, PqcVerdict } from 'types/openapi';
 import { LockTypeEnum } from 'types/user-interface';
 import {
@@ -40,6 +40,8 @@ function labelled(stat: { [key: string]: number } | undefined, toLabel: (code: s
 
 function CryptoAssetsDashboard() {
     const dispatch = useDispatch();
+    const assetsPath = useResolvedPath(LINK).pathname;
+    const cbomsPath = useResolvedPath(CBOMS_LINK).pathname;
 
     const statistics = useSelector(selectors.statistics);
     const isFetching = useSelector(selectors.isFetching);
@@ -130,6 +132,7 @@ function CryptoAssetsDashboard() {
                                             filterActions.setDrillDownFilters({
                                                 entity: EntityType.CRYPTO_ASSET,
                                                 filters: buildEmptyFilter(CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily),
+                                                path: assetsPath,
                                             }),
                                         ),
                                     )}
@@ -177,6 +180,7 @@ function CryptoAssetsDashboard() {
                                                 filterActions.setDrillDownFilters({
                                                     entity: EntityType.CBOM,
                                                     filters: buildEqualsFilter('CBOM_ASSET_SYNC_STATE', state.code),
+                                                    path: cbomsPath,
                                                 }),
                                             ),
                                         )}
