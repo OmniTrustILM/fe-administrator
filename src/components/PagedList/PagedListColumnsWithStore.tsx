@@ -1,6 +1,6 @@
 import type { CellRegistry } from 'components/CustomTable/columns';
 import type { FiltersTestState, ListViewsTestState } from 'ducks/test-reducers';
-import { EntityType } from 'ducks/filters';
+import { actions as filterActions, EntityType } from 'ducks/filters';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { actions as pagingActions } from 'ducks/paging';
@@ -36,8 +36,12 @@ type Props = Readonly<{
     failedCatalogue?: boolean;
     /** Preloads the view list as still in flight, which is the other half of what the strip waits for. */
     withheldViews?: boolean;
-    /** Filters already in the duck when the host mounts, as a deep link leaves them. */
+    /** Filters already in the duck when the host mounts, as an earlier visit leaves them. */
     initialFilters?: SearchFilterModel[];
+    /** Filters a Dashboard drill-down left pending in the duck when the host mounts. */
+    drillDownFilters?: SearchFilterModel[];
+    /** Renders a control that unmounts the host and mounts it again, as leaving the page and returning does. */
+    withRemountControl?: boolean;
     withRefreshControl?: boolean;
     /**
      * Renders a control that moves to page 2 with a row selected. Preloading the duck proves nothing:
@@ -56,6 +60,10 @@ type Props = Readonly<{
     withViewsControl?: boolean;
     /** Renders a control that blanks the rows and puts a list request in flight, as a listing duck does. */
     withListInFlightControl?: boolean;
+    /** Renders a control that sets these filters, as a user typing into the filter widget does. */
+    typedFilters?: SearchFilterModel[];
+    /** Renders a second such control, for a user typing a different set of filters afterwards. */
+    retypedFilters?: SearchFilterModel[];
 }>;
 
 const registry: CellRegistry<StubRow> = {
@@ -92,6 +100,15 @@ function CurrentFilters() {
     );
 
     return <div data-testid="current-filters">{JSON.stringify(filters)}</div>;
+}
+
+function HandedIn() {
+    const handedIn = useSelector(
+        (state: { filters: FiltersTestState }) =>
+            state.filters.filters.find((entry) => entry.entity === EntityType.CERTIFICATE)?.filter.handedIn,
+    );
+
+    return <div data-testid="handed-in">{handedIn ? handedIn.source : 'none'}</div>;
 }
 
 function PagingControl() {
@@ -170,6 +187,20 @@ function ViewsControl({ views }: Readonly<{ views: ListViewModel[] }>) {
     );
 }
 
+function TypeFiltersControl({ filters, testId }: Readonly<{ filters: SearchFilterModel[]; testId: string }>) {
+    const dispatch = useDispatch();
+
+    return (
+        <button
+            type="button"
+            data-testid={testId}
+            onClick={() => dispatch(filterActions.setCurrentFilters({ entity: EntityType.CERTIFICATE, currentFilters: filters }))}
+        >
+            Type filters
+        </button>
+    );
+}
+
 function DispatchedActions() {
     const dispatched = useSelector((state: { listViews: ListViewsTestState }) => state.listViews.dispatched);
 
@@ -191,6 +222,8 @@ export default function PagedListColumnsWithStore({
     failedCatalogue = false,
     withheldViews = false,
     initialFilters = [],
+    drillDownFilters,
+    withRemountControl = false,
     withRefreshControl = false,
     withPagingControl = false,
     withDeferredConfig = false,
@@ -199,6 +232,8 @@ export default function PagedListColumnsWithStore({
     withCatalogueFailureControl = false,
     withViewsControl = false,
     withListInFlightControl = false,
+    typedFilters,
+    retypedFilters,
 }: Props) {
     const [store] = useState(() =>
         createMockStore({
@@ -214,8 +249,8 @@ export default function PagedListColumnsWithStore({
                         entity: EntityType.CERTIFICATE,
                         filter: {
                             availableFilters: withheldCatalogue ? [] : catalogue,
-                            currentFilters: initialFilters,
-                            preservedFilters: [],
+                            currentFilters: drillDownFilters ?? initialFilters,
+                            handedIn: drillDownFilters ? { source: 'drill-down' as const, scope: '/certificates' } : undefined,
                             isFetchingFilters: withheldCatalogue || isRefetchingCatalogue,
                             hasLoadedFilters: !withheldCatalogue,
                             hasFailedFilters: failedCatalogue,
@@ -237,6 +272,7 @@ export default function PagedListColumnsWithStore({
     const [answeredRows, setAnsweredRows] = useState(rows);
     const [requests, setRequests] = useState<SearchRequestModel[]>([]);
     const [refreshToken, setRefreshToken] = useState(0);
+    const [isMounted, setIsMounted] = useState(true);
 
     // Stabilised as a real page's are: the host refetches when its list callback changes identity.
     const onListCallback = useCallback((request: SearchRequestModel) => setRequests((current) => [...current, request]), []);
@@ -267,16 +303,24 @@ export default function PagedListColumnsWithStore({
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/certificates/list']}>
-                <PagedList
-                    entity={EntityType.CERTIFICATE}
-                    title="List of Certificates"
-                    filterTitle="Certificate Inventory Filter"
-                    getAvailableFiltersApi={getAvailableFiltersApi}
-                    onListCallback={onListCallback}
-                    addHidden
-                    configurableColumns={config}
-                    refreshToken={refreshToken}
-                />
+                {isMounted && (
+                    <PagedList
+                        entity={EntityType.CERTIFICATE}
+                        title="List of Certificates"
+                        filterTitle="Certificate Inventory Filter"
+                        getAvailableFiltersApi={getAvailableFiltersApi}
+                        onListCallback={onListCallback}
+                        addHidden
+                        configurableColumns={config}
+                        refreshToken={refreshToken}
+                    />
+                )}
+
+                {withRemountControl && (
+                    <button type="button" data-testid="remount-list" onClick={() => setIsMounted((mounted) => !mounted)}>
+                        Toggle list
+                    </button>
+                )}
 
                 {withCatalogueControl && <CatalogueControl catalogue={refreshedCatalogue ?? catalogue} />}
 
@@ -288,6 +332,10 @@ export default function PagedListColumnsWithStore({
 
                 {withPagingControl && <PagingControl />}
 
+                {typedFilters && <TypeFiltersControl filters={typedFilters} testId="type-filters" />}
+
+                {retypedFilters && <TypeFiltersControl filters={retypedFilters} testId="retype-filters" />}
+
                 {withRefreshControl && (
                     <button type="button" data-testid="page-refresh" onClick={() => setRefreshToken((token) => token + 1)}>
                         Refresh
@@ -296,6 +344,7 @@ export default function PagedListColumnsWithStore({
 
                 <ListRequests requests={requests} />
                 <CurrentFilters />
+                <HandedIn />
                 <DispatchedActions />
             </MemoryRouter>
         </Provider>
