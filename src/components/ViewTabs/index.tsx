@@ -759,7 +759,8 @@ export default function ViewTabs({
                 dataTestId={`${dataTestId}-returned`}
             />
 
-            {resolved && !(noticeKey && dismissedNotices.has(noticeKey)) && (
+            {/* A view whose only missing columns are held back is described by the returned-columns notice alone. */}
+            {resolved && (unavailable.length > 0 || held.length === 0) && !(noticeKey && dismissedNotices.has(noticeKey)) && (
                 <UnresolvedColumnsNotice
                     unavailable={unavailable}
                     storedCount={resolved.columns.length}

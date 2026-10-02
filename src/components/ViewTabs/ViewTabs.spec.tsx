@@ -1511,6 +1511,7 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-returned')).toContainText('Retired is available again');
         await expect(page.getByTestId('view-tabs-returned-show')).toBeVisible();
         await expect(page.getByTestId('view-tabs-returned-remove')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-notice')).toHaveCount(0);
     });
 
     test('keeps a held-back column when the unavailable one beside it is removed', async ({ mount, page }) => {
