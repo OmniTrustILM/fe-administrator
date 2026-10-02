@@ -190,6 +190,30 @@ export default function ViewTabsWithStore({
 
                 <button
                     type="button"
+                    data-testid="simulate-update-success"
+                    onClick={() => {
+                        const { listViews } = store.getState();
+                        const update = listViews.dispatched.filter((each) => each.type === 'listViews/updateView').at(-1);
+                        const uuid = (update?.payload as { uuid?: string } | undefined)?.uuid;
+                        const row = listViews.byResource[resource]?.views.find((each) => each.uuid === uuid);
+                        if (row) store.dispatch({ type: 'listViews/updateViewSuccess', payload: { resource, view: row } });
+                    }}
+                >
+                    answer the update
+                </button>
+
+                <button
+                    type="button"
+                    data-testid="simulate-update-failure"
+                    onClick={() =>
+                        store.dispatch({ type: 'listViews/updateViewFailure', payload: { resource, error: 'Could not be saved' } })
+                    }
+                >
+                    fail the update
+                </button>
+
+                <button
+                    type="button"
                     data-testid="simulate-delete-failure"
                     onClick={() =>
                         store.dispatch({

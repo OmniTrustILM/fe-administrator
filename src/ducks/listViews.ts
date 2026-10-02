@@ -45,6 +45,8 @@ export interface ResourceViews {
     readEpoch?: number;
     /** Whether the last read was answered but set aside because a write overlapped it, so `views` is not its answer. */
     isStale?: boolean;
+    /** The `dormantFields` keys the update in flight confirms, released only once it succeeds. */
+    confirming?: string[];
 }
 
 export type State = {
@@ -102,6 +104,7 @@ function beginMutation(state: State, resource: Resource): ResourceViews {
 function endMutation(entry: ResourceViews): void {
     entry.isMutating = false;
     entry.rollback = undefined;
+    entry.confirming = undefined;
     entry.mutationEpoch += 1;
 }
 
@@ -209,8 +212,12 @@ export const slice = createSlice({
             rollBack(state, action.payload.resource, action.payload.error);
         },
 
-        updateView: (state, action: PayloadAction<{ resource: Resource; uuid: string; view: ListViewUpdateRequestModel }>) => {
+        updateView: (
+            state,
+            action: PayloadAction<{ resource: Resource; uuid: string; view: ListViewUpdateRequestModel; confirms?: string[] }>,
+        ) => {
             const entry = beginMutation(state, action.payload.resource);
+            entry.confirming = action.payload.confirms;
             const stored = entry.views.find((view) => view.uuid === action.payload.uuid);
             if (!stored) return;
 
@@ -224,6 +231,10 @@ export const slice = createSlice({
 
             if (index !== -1) entry.views[index] = action.payload.view;
             if (action.payload.view.defaultView) keepOnePinned(entry.views, action.payload.view.uuid);
+
+            const confirmed = new Set(entry.confirming);
+            const held = state.dormantFields[action.payload.resource];
+            if (held && confirmed.size > 0) state.dormantFields[action.payload.resource] = held.filter((key) => !confirmed.has(key));
 
             endMutation(entry);
         },

@@ -1394,6 +1394,7 @@ export type ListViewsTestState = {
             isStale?: boolean;
             createdUuid?: string;
             rollback?: ListViewDto[];
+            confirming?: string[];
         }
     >;
     dormantFields?: Record<string, string[]>;
@@ -1487,9 +1488,32 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
         return withEntry({ isMutating: false, views: entry.rollback ?? entry.views, rollback: undefined });
     }
 
-    // Applied as the real reducer applies it, but not held as in flight, so a test can go on acting on the strip.
+    // An update is applied optimistically and held in flight until a test answers it, as the real reducer does, and
+    // releases the dormant fields it confirms only on success.
     if (a.type === 'listViews/updateView' && uuid && view) {
-        return withEntry({ views: entry.views.map((each) => (each.uuid === uuid ? ({ ...each, ...view } as ListViewDto) : each)) });
+        const updated = withEntry({
+            isMutating: true,
+            rollback: entry.views,
+            confirming: (a.payload as { confirms?: string[] }).confirms,
+            views: entry.views.map((each) => (each.uuid === uuid ? ({ ...each, ...view } as ListViewDto) : each)),
+        });
+        return { ...updated, error: undefined };
+    }
+
+    if (a.type === 'listViews/updateViewSuccess' && view) {
+        const confirmed = entry.confirming ?? [];
+        const saved = withEntry({
+            isMutating: false,
+            rollback: undefined,
+            confirming: undefined,
+            views: entry.views.map((each) => (each.uuid === view.uuid ? (view as ListViewDto) : each)),
+        });
+        return { ...saved, dormantFields: { ...saved.dormantFields, [resource]: dormant.filter((key) => !confirmed.includes(key)) } };
+    }
+
+    if (a.type === 'listViews/updateViewFailure') {
+        const failed = withEntry({ isMutating: false, views: entry.rollback ?? entry.views, rollback: undefined, confirming: undefined });
+        return { ...failed, error: (a.payload as { error?: string }).error };
     }
 
     return recorded;
