@@ -1393,8 +1393,13 @@ test.describe('ViewTabs', () => {
         await page.getByTestId('drift-filter').click();
         await page.getByTestId('view-tabs-summary-save').click();
 
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const update = await lastDispatched(page, 'listViews/updateView');
+        expect(update?.payload?.view).toHaveProperty('filters', [ownFilter]);
+
         await expect(page.getByTestId('view-tabs-returned')).toHaveCount(0);
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+        expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
         const release = await lastDispatched(page, 'listViews/releaseDormantFields');
         expect(release?.payload).toMatchObject({ resource: Resource.Certificates, keys: [retiredKey] });
 
@@ -1403,7 +1408,7 @@ test.describe('ViewTabs', () => {
 
         const slice = await appliedSlice(page);
         expect(slice.columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'retired']);
-        expect(slice.filters).toEqual([retiredFilter, ownFilter]);
+        expect(slice.filters).toEqual([ownFilter]);
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
     });
 

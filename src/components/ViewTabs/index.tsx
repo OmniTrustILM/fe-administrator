@@ -544,9 +544,12 @@ export default function ViewTabs({
         apply(remaining.find((view) => view.uuid === fallback));
     }, [dispatch, resource, targetView, activeId, views, apply]);
 
-    /** Releases held-back columns of the active view and puts them on the table with their stored filters and ordering. */
+    /**
+     * Releases held-back columns of the active view and puts them on the table with their stored ordering, and with their
+     * stored filters unless the user's own filters on them are replacing those.
+     */
     const confirm = useCallback(
-        (confirmed: readonly PickerColumn[]) => {
+        (confirmed: readonly PickerColumn[], { keepsLiveFilters = false } = {}) => {
             if (!activeView || confirmed.length === 0) return;
 
             const keys = new Set(confirmed.map(getColumnKey));
@@ -567,7 +570,8 @@ export default function ViewTabs({
                 released,
                 getColumnKey,
             );
-            applyRef.current(withConfirmed(keys, { columns: shown, filters, sort }));
+            const next = withConfirmed(keys, { columns: shown, filters, sort });
+            applyRef.current(keepsLiveFilters ? { ...next, filters } : next);
         },
         [activeView, dispatch, resource, catalogueFields, dormant, standardColumns, resolved, columns, filters, sort, withConfirmed],
     );
@@ -579,18 +583,21 @@ export default function ViewTabs({
             return;
         }
 
+        // Saving a filter of the user's own on a held-back field confirms the field, as adding its column would: held, the
+        // view would withhold the filter just saved. The user's filters on it replace the stored ones they never saw apply.
+        const filtered = new Set(storableFilters.map(getColumnKey));
+        const confirmed = returned.filter((column) => filtered.has(getColumnKey(column)));
+        const confirmedKeys = new Set(confirmed.map(getColumnKey));
+        const stillHeld = heldFilters.filter((filter) => !confirmedKeys.has(getColumnKey(filter)));
+
         // The stored columns this table cannot render go back in: the user never saw them, so saving a
         // filter or an ordering is not the moment to drop them.
         patchActive({
             columns: toStoredColumnsKeepingUnavailable(columns, resolved?.columns ?? []),
-            filters: reinsert(storableFilters, heldFilters, activeView.filters ?? [], getFilterKey),
+            filters: reinsert(storableFilters, stillHeld, activeView.filters ?? [], getFilterKey),
             sort: toStoredSort(sort ?? heldSort),
         });
-
-        // Saving a filter of the user's own on a held-back field confirms the field, as adding its column would: held, the
-        // view would withhold the filter just saved.
-        const filtered = new Set(storableFilters.map(getColumnKey));
-        confirm(returned.filter((column) => filtered.has(getColumnKey(column))));
+        confirm(confirmed, { keepsLiveFilters: true });
     }, [activeView, patchActive, columns, resolved, storableFilters, heldFilters, sort, heldSort, confirm, returned]);
 
     const onShowReturned = useCallback(() => confirm(returned), [confirm, returned]);
