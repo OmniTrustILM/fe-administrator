@@ -5,6 +5,8 @@ import { getColumnHeading } from 'utils/tableColumns';
 
 type Props = Readonly<{
     returned: PickerColumn[];
+    /** Whether the view's filters on these columns are withheld as well. */
+    isFilterHeld?: boolean;
     onShow: () => void;
     onRemove?: () => void;
     /** Whether a view write is already out. A second one would be built from the first one's optimistic state. */
@@ -21,12 +23,14 @@ const list = (names: string[]): string => (names.length === 1 ? names[0] : `${na
  * different one created under the same pair. The column stays off the table until the user chooses, and
  * the notice has no dismissal, because dismissing it would leave the column hidden with nothing naming it.
  */
-export default function ReturnedColumnsNotice({ returned, onShow, onRemove, isBusy = false, dataTestId }: Props) {
+export default function ReturnedColumnsNotice({ returned, isFilterHeld = false, onShow, onRemove, isBusy = false, dataTestId }: Props) {
     if (returned.length === 0) return null;
 
     const names = returned.map(getColumnHeading);
     const subject = names.length === 1 ? `${names[0]} is` : `${list(names)} are`;
-    const message = `${subject} available again, but may be a different attribute with the same name and content type, so this view is not showing ${names.length === 1 ? 'it' : 'them'}.`;
+    const pronoun = names.length === 1 ? 'it' : 'them';
+    const withheld = isFilterHeld ? `showing or filtering by ${pronoun}` : `showing ${pronoun}`;
+    const message = `${subject} available again, but may be a different attribute with the same name and content type, so this view is not ${withheld}.`;
 
     return (
         <output

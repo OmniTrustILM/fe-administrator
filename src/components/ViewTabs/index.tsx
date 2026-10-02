@@ -85,6 +85,8 @@ export type ViewTabsProps = Readonly<{
 
 type PendingDialog = 'rename' | 'create' | 'new' | 'delete';
 
+const NO_KEYS: ReadonlySet<string> = new Set();
+
 /**
  * Whether the strip is up, given a settled view list and a settled catalogue. A host withholding its
  * own column controls has to ask the same question, or a change made before the opening view lands is
@@ -152,6 +154,33 @@ export default function ViewTabs({
             !view || dormant.size === 0 ? catalogueFields : catalogueFields.filter((field) => !dormant.has(toDormantKey(view.uuid, field))),
         [catalogueFields, dormant],
     );
+
+    /** The column keys of a view's held-back fields, published again and not yet confirmed. */
+    const heldKeysOf = useCallback(
+        (view: ListViewModel | undefined): ReadonlySet<string> => {
+            if (!view || dormant.size === 0) return NO_KEYS;
+            const published = new Set(catalogueFields.map(getColumnKey));
+            return new Set(
+                view.columns
+                    .filter((column) => published.has(getColumnKey(column)) && dormant.has(toDormantKey(view.uuid, column)))
+                    .map(getColumnKey),
+            );
+        },
+        [catalogueFields, dormant],
+    );
+
+    // A filter on a held-back field is withheld with its column, or it would narrow the list by an attribute nobody confirmed.
+    const sliceOf = useCallback(
+        (view: ListViewModel): ViewSlice => {
+            const slice = toViewSlice(view, fieldsFor(view), standardColumns);
+            const heldKeys = heldKeysOf(view);
+            return heldKeys.size === 0
+                ? slice
+                : { ...slice, filters: slice.filters.filter((filter) => !heldKeys.has(getColumnKey(filter))) };
+        },
+        [fieldsFor, heldKeysOf, standardColumns],
+    );
+
     const schema = useMemo<ViewSchema>(() => ({ catalogue, standardColumns }), [catalogue, standardColumns]);
 
     /**
@@ -203,6 +232,11 @@ export default function ViewTabs({
         return stored && held.some((column) => getColumnKey(column) === getSortKey(stored)) ? stored : undefined;
     }, [activeView, held]);
 
+    const heldFilters = useMemo(() => {
+        const heldKeys = heldKeysOf(activeView);
+        return activeView?.filters?.filter((filter) => heldKeys.has(getColumnKey(filter))) ?? [];
+    }, [activeView, heldKeysOf]);
+
     /**
      * The slice behind the active tab, which drift is measured against.
      *
@@ -214,13 +248,13 @@ export default function ViewTabs({
     const storedSlice = useMemo(() => {
         if (!activeView) return toStandardSlice(standardColumns, standardSort);
 
-        const slice = toViewSlice(activeView, fieldsFor(activeView), standardColumns);
+        const slice = sliceOf(activeView);
         return {
             ...slice,
             filters: toStorableFilters(slice.filters, catalogue, activeView.filters ?? []),
             sort: heldSort ? undefined : slice.sort,
         };
-    }, [activeView, fieldsFor, standardColumns, standardSort, catalogue, heldSort]);
+    }, [activeView, sliceOf, standardColumns, standardSort, catalogue, heldSort]);
 
     const returned = useMemo(() => {
         const shown = new Set(columns.map(getColumnKey));
@@ -260,9 +294,9 @@ export default function ViewTabs({
 
     const apply = useCallback(
         (view: ListViewModel | undefined) => {
-            applyRef.current(view ? toViewSlice(view, fieldsFor(view), standardColumns) : toStandardSlice(standardColumns, standardSort));
+            applyRef.current(view ? sliceOf(view) : toStandardSlice(standardColumns, standardSort));
         },
-        [fieldsFor, standardColumns, standardSort],
+        [sliceOf, standardColumns, standardSort],
     );
 
     const select = useCallback(
@@ -297,6 +331,21 @@ export default function ViewTabs({
         if (kept.length < columns.length) applyRef.current({ columns: kept.length > 0 ? kept : [...standardColumns], filters, sort });
     }, [dispatch, resource, isReady, views, catalogue, dormant, activeView, columns, filters, sort, standardColumns]);
 
+    /** `live` with the stored filters and ordering on the confirmed column keys put back, unless the user ordered it otherwise. */
+    const withConfirmed = useCallback(
+        (keys: ReadonlySet<string>, live: ViewSlice): ViewSlice => ({
+            ...live,
+            filters: reinsert(
+                live.filters,
+                heldFilters.filter((filter) => keys.has(getColumnKey(filter))),
+                activeView?.filters ?? [],
+                getFilterKey,
+            ),
+            sort: live.sort ?? (heldSort && keys.has(getSortKey(heldSort)) ? heldSort : undefined),
+        }),
+        [heldFilters, heldSort, activeView],
+    );
+
     // Putting a held-back field on the table of its view, from the column menu or otherwise, is the user's confirmation
     // of it. Only a column that arrives on the table counts: one that was already there was never chosen.
     const previousColumns = useRef(columns);
@@ -306,12 +355,18 @@ export default function ViewTabs({
         if (!isReady || !activeView || dormant.size === 0) return;
 
         const published = new Set(catalogueFields.map(getColumnKey));
-        const chosen = columns
-            .filter((column) => !before.has(getColumnKey(column)) && published.has(getColumnKey(column)))
-            .map((column) => toDormantKey(activeView.uuid, column))
-            .filter((key) => dormant.has(key));
-        if (chosen.length > 0) dispatch(listViewActions.releaseDormantFields({ resource, keys: chosen }));
-    }, [dispatch, resource, isReady, activeView, dormant, catalogueFields, columns]);
+        const arrived = columns.filter(
+            (column) =>
+                !before.has(getColumnKey(column)) &&
+                published.has(getColumnKey(column)) &&
+                dormant.has(toDormantKey(activeView.uuid, column)),
+        );
+        if (arrived.length === 0) return;
+
+        dispatch(listViewActions.releaseDormantFields({ resource, keys: arrived.map((column) => toDormantKey(activeView.uuid, column)) }));
+        const confirmed = withConfirmed(new Set(arrived.map(getColumnKey)), { columns, filters, sort });
+        if (confirmed.filters.length !== filters.length || confirmed.sort !== sort) applyRef.current(confirmed);
+    }, [dispatch, resource, isReady, activeView, dormant, catalogueFields, columns, filters, sort, withConfirmed]);
 
     // The pinned view opens on load, and Standard when none is pinned. Once only: a later list read —
     // after a rename, say — must not throw the user back to the tab they started on.
@@ -325,13 +380,9 @@ export default function ViewTabs({
         applyRef.current(
             initial === STANDARD_VIEW_ID
                 ? toStandardSlice(standardColumns, standardSort)
-                : toViewSlice(
-                      views.find((view) => view.uuid === initial) as ListViewModel,
-                      fieldsFor(views.find((view) => view.uuid === initial)),
-                      standardColumns,
-                  ),
+                : sliceOf(views.find((view) => view.uuid === initial) as ListViewModel),
         );
-    }, [resource, isReady, views, fieldsFor, standardColumns, standardSort]);
+    }, [resource, isReady, views, sliceOf, standardColumns, standardSort]);
 
     // The tab the strip was on when a create started, so a create that fails has somewhere to go back
     // to instead of leaving the strip pointing at a row the rollback has taken away. A create that
@@ -456,8 +507,8 @@ export default function ViewTabs({
         if (activeId !== pending.fallbackId) return;
 
         setActiveId(restored.uuid);
-        applyRef.current(toViewSlice(restored, fieldsFor(restored), standardColumns));
-    }, [views, activeId, isMutating, fieldsFor, standardColumns]);
+        applyRef.current(sliceOf(restored));
+    }, [views, activeId, isMutating, sliceOf]);
 
     const onDelete = useCallback(() => {
         if (!targetView) return;
@@ -487,10 +538,10 @@ export default function ViewTabs({
         // filter or an ordering is not the moment to drop them.
         patchActive({
             columns: toStoredColumnsKeepingUnavailable(columns, resolved?.columns ?? []),
-            filters: storableFilters,
+            filters: reinsert(storableFilters, heldFilters, activeView.filters ?? [], getFilterKey),
             sort: toStoredSort(sort ?? heldSort),
         });
-    }, [activeView, patchActive, columns, resolved, storableFilters, sort, heldSort]);
+    }, [activeView, patchActive, columns, resolved, storableFilters, heldFilters, sort, heldSort]);
 
     const onShowReturned = useCallback(() => {
         if (!activeView) return;
@@ -511,9 +562,21 @@ export default function ViewTabs({
             released,
             getColumnKey,
         );
-        const restoredSort = heldSort && keys.has(getSortKey(heldSort)) ? heldSort : undefined;
-        applyRef.current({ columns: shown, filters, sort: sort ?? restoredSort });
-    }, [activeView, returned, dispatch, resource, catalogueFields, dormant, standardColumns, resolved, columns, filters, sort, heldSort]);
+        applyRef.current(withConfirmed(keys, { columns: shown, filters, sort }));
+    }, [
+        activeView,
+        returned,
+        dispatch,
+        resource,
+        catalogueFields,
+        dormant,
+        standardColumns,
+        resolved,
+        columns,
+        filters,
+        sort,
+        withConfirmed,
+    ]);
 
     // Withheld when every stored column is held back: Core refuses a view with no columns.
     const remainingAfterReturned = useMemo(() => {
@@ -521,7 +584,15 @@ export default function ViewTabs({
         return activeView?.columns.filter((column) => !keys.has(getColumnKey(column))) ?? [];
     }, [returned, activeView]);
 
-    const onRemoveReturned = useCallback(() => patchActive({ columns: remainingAfterReturned }), [patchActive, remainingAfterReturned]);
+    // The filters and ordering on a removed column go with it: kept, they would act on the attribute the user just refused.
+    const onRemoveReturned = useCallback(() => {
+        const keys = new Set(returned.map(getColumnKey));
+        patchActive({
+            columns: remainingAfterReturned,
+            filters: activeView?.filters?.filter((filter) => !keys.has(getColumnKey(filter))),
+            ...(heldSort && keys.has(getSortKey(heldSort)) ? { sort: undefined } : {}),
+        });
+    }, [patchActive, remainingAfterReturned, returned, activeView, heldSort]);
 
     const takenNames = useMemo(() => [STANDARD_VIEW_NAME, ...views.map((view) => view.name)], [views]);
 
@@ -667,6 +738,7 @@ export default function ViewTabs({
 
             <ReturnedColumnsNotice
                 returned={returned}
+                isFilterHeld={heldFilters.length > 0}
                 onShow={onShowReturned}
                 onRemove={remainingAfterReturned.length > 0 ? onRemoveReturned : undefined}
                 isBusy={isMutating}
