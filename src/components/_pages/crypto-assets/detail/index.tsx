@@ -12,6 +12,7 @@ import { PlatformEnum } from 'types/openapi';
 import {
     CryptoAssetIdentity,
     CryptoAssetPayloads,
+    CryptoAssetPqcExplanation,
     CryptoAssetSources,
     CryptoAssetSummary,
     CryptoAssetVerdict,
@@ -29,9 +30,18 @@ export default function CryptoAssetDetail() {
     const isFetching = useSelector(selectors.selectIsFetchingDetail);
     const detailError = useSelector(selectors.selectCryptoAssetDetailError);
     const detailErrorStatusCode = useSelector(selectors.selectCryptoAssetDetailErrorStatusCode);
+    const pqcExplanation = useSelector(selectors.selectPqcExplanation);
+    const pqcExplanationLock = useSelector(selectors.selectPqcExplanationLock);
+    const isFetchingPqcExplanation = useSelector(selectors.selectIsFetchingPqcExplanation);
 
     const typeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CryptographicAssetType));
     const pqcVerdictEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.PqcVerdict));
+    const stepOutcomeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.PqcExplanationStepOutcome));
+
+    const getFreshPqcExplanation = useCallback(() => {
+        if (!id) return;
+        dispatch(actions.getCryptoAssetPqcExplanation({ uuid: id }));
+    }, [dispatch, id]);
 
     const getFreshDetail = useCallback(() => {
         if (!id) return;
@@ -114,9 +124,24 @@ export default function CryptoAssetDetail() {
                         <CryptoAssetIdentity detail={detail} />
                     </Widget>
                     <Widget title="PQC verdict" titleSize="large">
-                        <CryptoAssetVerdict detail={detail} verdictLabel={verdictLabel} />
+                        <CryptoAssetVerdict detail={detail} verdictLabel={verdictLabel} typeEnum={typeEnum} />
                     </Widget>
                 </div>
+                <Widget
+                    title="PQC verdict explanation"
+                    titleSize="large"
+                    dataTestId="crypto-asset-pqc-explanation"
+                    busy={isFetchingPqcExplanation}
+                    widgetLock={pqcExplanationLock}
+                    refreshAction={getFreshPqcExplanation}
+                >
+                    {pqcExplanation && (
+                        <CryptoAssetPqcExplanation
+                            explanation={pqcExplanation}
+                            enums={{ assetType: typeEnum, verdict: pqcVerdictEnum, outcome: stepOutcomeEnum }}
+                        />
+                    )}
+                </Widget>
                 <Widget title="Source CBOMs" titleSize="large">
                     <CryptoAssetSources detail={detail} />
                 </Widget>
