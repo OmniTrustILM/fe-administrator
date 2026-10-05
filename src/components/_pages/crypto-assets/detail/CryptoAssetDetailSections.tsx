@@ -156,7 +156,6 @@ export function CryptoAssetVerdict({ detail, verdictLabel }: LabelledDetailProps
     const evaluatedFields = Object.entries(verdict.evaluatedFields ?? {});
     const rows: TableDataRow[] = [
         { id: 'verdict', columns: ['Verdict', <PqcVerdictBadge key="verdict" verdict={detail.pqcVerdict} label={verdictLabel} />] },
-        { id: 'ruleSet', columns: ['Rule set', `v${verdict.ruleSetVersion}`] },
         {
             id: 'rule',
             columns: [
