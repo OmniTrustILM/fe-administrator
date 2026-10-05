@@ -708,6 +708,17 @@ export default function ViewTabs({
         });
     }, [patchActive, remainingAfterReturned, returned, activeView, heldSort]);
 
+    // A held-back field the listing cannot display is named only here, so its filters go with it as they do there.
+    const onRemoveUnavailable = useCallback(() => {
+        if (!resolved) return;
+        const removed = new Set(unavailable.map(getColumnKey));
+        const refused = new Set([...heldKeysOf(activeView)].filter((key) => removed.has(key)));
+        patchActive({
+            columns: toStoredColumns(resolved.columns.filter((column) => !removed.has(getColumnKey(column)))),
+            ...(refused.size > 0 ? { filters: activeView?.filters?.filter((filter) => !refused.has(getColumnKey(filter))) } : {}),
+        });
+    }, [patchActive, resolved, unavailable, heldKeysOf, activeView]);
+
     const takenNames = useMemo(() => [STANDARD_VIEW_NAME, ...views.map((view) => view.name)], [views]);
 
     const viewActions = useCallback(
@@ -870,16 +881,7 @@ export default function ViewTabs({
                     // fallback when nothing resolved, and carries unsaved changes besides, so saving it
                     // here would overwrite the view with columns the user never chose. Withheld on a
                     // fallback with nothing held back either, where there is no column list left to write.
-                    onRemove={
-                        activeView && (!resolved.fellBackToStandard || held.length > 0)
-                            ? () => {
-                                  const removed = new Set(unavailable.map(getColumnKey));
-                                  patchActive({
-                                      columns: toStoredColumns(resolved.columns.filter((column) => !removed.has(getColumnKey(column)))),
-                                  });
-                              }
-                            : undefined
-                    }
+                    onRemove={activeView && (!resolved.fellBackToStandard || held.length > 0) ? onRemoveUnavailable : undefined}
                     onDismiss={() => {
                         if (noticeKey) setDismissedNotices((dismissed) => new Set(dismissed).add(noticeKey));
                     }}

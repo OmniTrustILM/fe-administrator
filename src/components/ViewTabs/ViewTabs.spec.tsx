@@ -89,6 +89,12 @@ const withRetired = [
     { filterFieldSource: FilterFieldSource.Custom, searchFieldData: [field('retired', 'Retired')] },
 ] as unknown as SearchFieldDataByGroupDto[];
 
+/** As `withRetired`, with the re-created attribute published as one the listing cannot display. */
+const hiddenRetired = [
+    ...catalogue,
+    { filterFieldSource: FilterFieldSource.Custom, searchFieldData: [field('retired', 'Retired', { displayable: false })] },
+] as unknown as SearchFieldDataByGroupDto[];
+
 const retiredFilter: SearchFilterModel = {
     fieldSource: FilterFieldSource.Custom,
     fieldIdentifier: 'retired',
@@ -1397,10 +1403,6 @@ test.describe('ViewTabs', () => {
     });
 
     test('withholds a filter on a held-back field that came back as one the listing cannot display', async ({ mount, page }) => {
-        const hiddenRetired = [
-            ...catalogue,
-            { filterFieldSource: FilterFieldSource.Custom, searchFieldData: [field('retired', 'Retired', { displayable: false })] },
-        ] as unknown as SearchFieldDataByGroupDto[];
         await mount(heldBackStrip({ fields: hiddenRetired }));
         await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
 
@@ -1420,6 +1422,18 @@ test.describe('ViewTabs', () => {
 
         expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+    });
+
+    test('drops the stored filter with a held-back column the listing cannot display when the user removes it', async ({ mount, page }) => {
+        await mount(heldBackStrip({ fields: hiddenRetired }));
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('retired cannot be shown');
+
+        await page.getByTestId('view-tabs-notice-remove').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const update = await lastDispatched(page, 'listViews/updateView');
+        expect(update?.payload).toMatchObject({ view: { columns: [stored('COMMON_NAME')] } });
+        expect(update?.payload?.view).not.toHaveProperty('filters', [retiredFilter]);
     });
 
     test('stops saying the view is not filtering by a held-back column once the user filters by it', async ({ mount, page }) => {
