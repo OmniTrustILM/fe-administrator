@@ -25,7 +25,7 @@ export interface ListViewRequestDto {
      */
     name: string;
     /**
-     * Columns of the view, in display order
+     * Columns of the view, in display order. A column whose field the resource no longer defines, such as a deleted attribute, or can no longer show as a column is accepted only when editing a view that already holds it; a new view may name only fields the resource defines and can show.
      * @type {Array<ListViewColumnDto>}
      * @memberof ListViewRequestDto
      */
@@ -37,7 +37,7 @@ export interface ListViewRequestDto {
      */
     defaultView?: boolean;
     /**
-     * Filters the view applies. Absent or empty means the view applies no filter of its own and shows the whole inventory.
+     * Filters the view applies. Absent or empty means the view applies no filter of its own and shows the whole inventory. A filter on a field the resource no longer defines is accepted only when editing a view that already filters on that field.
      * @type {Array<SearchFilterRequestDto>}
      * @memberof ListViewRequestDto
      */

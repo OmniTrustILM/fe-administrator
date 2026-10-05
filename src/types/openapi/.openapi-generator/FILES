@@ -153,6 +153,7 @@ models/BulkOperationResponse.ts
 models/BulkTokenProfileKeyUsageRequestDto.ts
 models/CancelPendingCertificateRequestDto.ts
 models/CbomAssetSyncState.ts
+models/CbomContributedAssetDto.ts
 models/CbomDetailDto.ts
 models/CbomDto.ts
 models/CbomSyncSkipDto.ts
@@ -304,6 +305,7 @@ models/CryptographicAssetDto.ts
 models/CryptographicAssetEvidenceDto.ts
 models/CryptographicAssetNormalizedFieldsDto.ts
 models/CryptographicAssetOidDto.ts
+models/CryptographicAssetPqcExplanationDto.ts
 models/CryptographicAssetSourceDto.ts
 models/CryptographicAssetStatisticsDto.ts
 models/CryptographicAssetSyncCompletenessDto.ts
@@ -499,6 +501,7 @@ models/Operation.ts
 models/OperationResult.ts
 models/OperationSupport.ts
 models/PaginationRequestDto.ts
+models/PaginationResponseDtoCbomContributedAssetDto.ts
 models/PaginationResponseDtoCbomDto.ts
 models/PaginationResponseDtoCbomSyncSkipDto.ts
 models/PaginationResponseDtoConnectorDtoV2.ts
@@ -518,6 +521,9 @@ models/PaginationResponseDtoVaultProfileDto.ts
 models/PlatformEnum.ts
 models/PlatformSettingsDto.ts
 models/PlatformSettingsUpdateDto.ts
+models/PqcExplanationStepDto.ts
+models/PqcExplanationStepOutcome.ts
+models/PqcReferencedAssetDto.ts
 models/PqcVerdict.ts
 models/PrivateKeySecretContent.ts
 models/ProgrammingLanguageEnum.ts
@@ -601,6 +607,7 @@ models/ScheduledJobDetailDto.ts
 models/ScheduledJobDto.ts
 models/ScheduledJobHistoryDto.ts
 models/ScheduledJobHistoryResponseDto.ts
+models/ScheduledJobScheduleState.ts
 models/ScheduledJobsResponseDto.ts
 models/SchedulerJobExecutionStatus.ts
 models/SearchColumnRequestDto.ts
