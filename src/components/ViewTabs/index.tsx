@@ -11,6 +11,7 @@ import type { Resource, SearchFieldDataByGroupDto } from 'types/openapi';
 import type { ColumnDefinition, PickerColumn } from 'types/tableColumns';
 import { toCatalogueFields } from 'utils/columnPicker';
 import {
+    catalogueKeys,
     STANDARD_VIEW_ID,
     STANDARD_VIEW_NAME,
     duplicateName,
@@ -156,18 +157,21 @@ export default function ViewTabs({
         [catalogueFields, dormant],
     );
 
-    /** The column keys of a view's held-back fields, published again and not yet confirmed. */
+    /**
+     * The column keys of a view's held-back fields, published again and not yet confirmed. Judged against every
+     * published field, not only the displayable ones: a filter on a field the listing cannot show still narrows it.
+     */
     const heldKeysOf = useCallback(
         (view: ListViewModel | undefined): ReadonlySet<string> => {
             if (!view || dormant.size === 0) return NO_KEYS;
-            const published = new Set(catalogueFields.map(getColumnKey));
+            const published = catalogueKeys(catalogue);
             return new Set(
                 view.columns
                     .filter((column) => published.has(getColumnKey(column)) && dormant.has(toDormantKey(view.uuid, column)))
                     .map(getColumnKey),
             );
         },
-        [catalogueFields, dormant],
+        [catalogue, dormant],
     );
 
     // A filter on a held-back field is withheld with its column, or it would narrow the list by an attribute nobody confirmed.
@@ -625,8 +629,8 @@ export default function ViewTabs({
         // Saving a filter of the user's own on a held-back field confirms the field, as adding its column would: held, the
         // view would withhold the filter just saved. The user's filters on it replace the stored ones they never saw apply.
         const filtered = new Set(storableFilters.map(getColumnKey));
-        const confirmed = returned.filter((column) => filtered.has(getColumnKey(column)));
-        const confirmedKeys = new Set(confirmed.map(getColumnKey));
+        const confirmedKeys = new Set([...heldKeysOf(activeView)].filter((key) => filtered.has(key)));
+        const confirmed = returned.filter((column) => confirmedKeys.has(getColumnKey(column)));
         const stillHeld = heldFilters.filter((filter) => !confirmedKeys.has(getColumnKey(filter)));
 
         // The stored columns this table cannot render go back in: the user never saw them, so saving a
@@ -638,14 +642,16 @@ export default function ViewTabs({
                 filters: reinsert(storableFilters, stillHeld, activeView.filters ?? [], getFilterKey),
                 sort: toStoredSort(sort ?? heldSort),
             },
-            confirmed.map((column) => toDormantKey(activeView.uuid, column)),
+            activeView.columns
+                .filter((column) => confirmedKeys.has(getColumnKey(column)))
+                .map((column) => toDormantKey(activeView.uuid, column)),
         );
 
         if (confirmed.length > 0) {
             const confirmedSort = heldSort && confirmedKeys.has(getSortKey(heldSort)) ? heldSort : undefined;
             pendingConfirmation.current = { uuid: activeView.uuid, confirmed, sort: confirmedSort };
         }
-    }, [activeView, patchView, columns, resolved, storableFilters, heldFilters, sort, heldSort, returned]);
+    }, [activeView, patchView, columns, resolved, storableFilters, heldKeysOf, heldFilters, sort, heldSort, returned]);
 
     const onShowReturned = useCallback(() => {
         const slice = confirmedSlice(returned);

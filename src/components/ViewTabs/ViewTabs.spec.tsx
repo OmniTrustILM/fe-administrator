@@ -1388,6 +1388,32 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
     });
 
+    test('withholds a filter on a held-back field that came back as one the listing cannot display', async ({ mount, page }) => {
+        const hiddenRetired = [
+            ...catalogue,
+            { filterFieldSource: FilterFieldSource.Custom, searchFieldData: [field('retired', 'Retired', { displayable: false })] },
+        ] as unknown as SearchFieldDataByGroupDto[];
+        await mount(heldBackStrip({ fields: hiddenRetired }));
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+
+        expect((await appliedSlice(page)).filters).toEqual([]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const update = await lastDispatched(page, 'listViews/updateView');
+        expect(update?.payload).toMatchObject({ confirms: [retiredKey], view: { filters: [ownFilter] } });
+
+        await page.getByTestId('simulate-update-success').click();
+        await page.getByTestId('view-tabs-tab-standard').click();
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+    });
+
     test('stops saying the view is not filtering by a held-back column once the user filters by it', async ({ mount, page }) => {
         const filtered = expiryWatch({
             defaultView: true,

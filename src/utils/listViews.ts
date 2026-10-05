@@ -276,7 +276,8 @@ export function getFilterKey(filter: SearchFilterModel): string {
  */
 export type StoredField = Pick<ListViewColumnModel, 'fieldSource' | 'fieldIdentifier'>;
 
-function catalogueKeys(catalogue: readonly SearchFieldDataByGroupDto[]): Set<string> {
+/** The column key of every field the catalogue publishes, whether or not the listing can display it. */
+export function catalogueKeys(catalogue: readonly SearchFieldDataByGroupDto[]): Set<string> {
     const keys = new Set<string>();
 
     for (const group of catalogue) {
