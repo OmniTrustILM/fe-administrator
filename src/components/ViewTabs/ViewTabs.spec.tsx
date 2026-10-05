@@ -139,6 +139,7 @@ type MountOptions = {
     driftColumn?: ColumnDefinition;
     driftSort?: { fieldSource: FilterFieldSource; fieldIdentifier: string; direction: 'asc' | 'desc' };
     driftFilter?: SearchFilterModel;
+    driftAddedFilter?: SearchFilterModel;
 };
 
 const strip = ({
@@ -159,6 +160,7 @@ const strip = ({
     driftColumn,
     driftSort,
     driftFilter,
+    driftAddedFilter,
 }: MountOptions = {}) => (
     <ViewTabsWithStore
         resource={Resource.Certificates}
@@ -179,6 +181,7 @@ const strip = ({
         driftColumn={driftColumn}
         driftSort={driftSort}
         driftFilter={driftFilter}
+        driftAddedFilter={driftAddedFilter}
     />
 );
 
@@ -1507,6 +1510,40 @@ test.describe('ViewTabs', () => {
 
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
         expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+    });
+
+    test('lists under the saved filter when the user leaves and reopens the view while the save confirming it is in flight', async ({
+        mount,
+        page,
+    }) => {
+        await mount(heldBackStrip());
+        await saveOwnFilter(page);
+        await page.getByTestId('view-tabs-tab-standard').click();
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await expect.poll(async () => (await appliedSlice(page)).filters).toEqual([]);
+
+        await page.getByTestId('simulate-update-success').click();
+
+        await expect
+            .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
+            .toEqual(['COMMON_NAME', 'retired']);
+        expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+    });
+
+    test('keeps a filter the user sets after reopening the view while the save confirming it is in flight', async ({ mount, page }) => {
+        const nameFilter: SearchFilterModel = { ...stateFilter, fieldIdentifier: 'COMMON_NAME', value: 'example' };
+        await mount(heldBackStrip({ driftAddedFilter: nameFilter }));
+        await saveOwnFilter(page);
+        await page.getByTestId('view-tabs-tab-standard').click();
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await expect.poll(async () => (await appliedSlice(page)).filters).toEqual([]);
+        await page.getByTestId('drift-add-filter').click();
+
+        await page.getByTestId('simulate-update-success').click();
+
+        await expect.poll(async () => (await appliedSlice(page)).filters).toEqual([ownFilter, nameFilter]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
     });
 
     test('puts a confirmed column on the table when its save succeeds after an unrelated read failed', async ({ mount, page }) => {

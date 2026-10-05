@@ -42,6 +42,8 @@ type Props = Readonly<{
     driftColumn?: ColumnDefinition;
     driftSort?: ColumnSort;
     driftFilter?: SearchFilterModel;
+    /** Added beside the filters already applied, where `driftFilter` replaces them. */
+    driftAddedFilter?: SearchFilterModel;
 }>;
 
 const withShownSort = (slice: ViewSlice): ViewSlice => {
@@ -86,6 +88,7 @@ export default function ViewTabsWithStore({
     driftColumn,
     driftSort,
     driftFilter,
+    driftAddedFilter,
 }: Props) {
     const [store] = useState(() =>
         createMockStore({
@@ -258,6 +261,15 @@ export default function ViewTabsWithStore({
                     onClick={() => setSlice((current) => ({ ...current, filters: [driftFilter as SearchFilterModel] }))}
                 >
                     filter the table
+                </button>
+                <button
+                    type="button"
+                    data-testid="drift-add-filter"
+                    onClick={() =>
+                        setSlice((current) => ({ ...current, filters: [...current.filters, driftAddedFilter as SearchFilterModel] }))
+                    }
+                >
+                    add a filter
                 </button>
             </MemoryRouter>
         </Provider>

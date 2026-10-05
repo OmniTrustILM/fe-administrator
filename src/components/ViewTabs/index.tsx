@@ -32,6 +32,7 @@ import {
     toTabs,
     toUpdateRequest,
     toViewSlice,
+    type StoredField,
     type ViewSchema,
     withoutMissingFieldFilters,
     getFilterKey,
@@ -304,9 +305,30 @@ export default function ViewTabs({
     const applyRef = useRef(onApply);
     applyRef.current = onApply;
 
+    /**
+     * A save that confirms held-back columns puts them on the table only once it succeeds: the duck releases them then,
+     * and one put on the table earlier would stay there unconfirmed if the save failed.
+     *
+     * They go into the table as it is by then, not as it was at Save, so an edit made while the save was out stays. The
+     * rest of the table is left as the user had it, which is what the save stored, except for the `suppressed` filters on
+     * them that reopening the view withheld while the save was out.
+     */
+    const pendingConfirmation = useRef<{ uuid: string; confirmed: StoredField[]; sort?: ColumnSort; suppressed?: string[] } | undefined>(
+        undefined,
+    );
+
     const apply = useCallback(
         (view: ListViewModel | undefined) => {
-            applyRef.current(view ? sliceOf(view) : toStandardSlice(standardColumns, standardSort));
+            const slice = view ? sliceOf(view) : toStandardSlice(standardColumns, standardSort);
+            const pending = pendingConfirmation.current;
+            if (pending) {
+                const keys = new Set(pending.confirmed.map(getColumnKey));
+                const withheld = (view?.uuid === pending.uuid ? (view.filters ?? []) : []).filter(
+                    (filter) => keys.has(getColumnKey(filter)) && !slice.filters.includes(filter),
+                );
+                pending.suppressed = withheld.map(getFilterKey);
+            }
+            applyRef.current(slice);
         },
         [sliceOf, standardColumns, standardSort],
     );
@@ -369,15 +391,6 @@ export default function ViewTabs({
         sort,
         standardColumns,
     ]);
-
-    /**
-     * A save that confirms held-back columns puts them on the table only once it succeeds: the duck releases them then,
-     * and one put on the table earlier would stay there unconfirmed if the save failed.
-     *
-     * They go into the table as it is by then, not as it was at Save, so an edit made while the save was out stays. The
-     * rest of the table is left as the user had it, which is what the save stored.
-     */
-    const pendingConfirmation = useRef<{ uuid: string; confirmed: PickerColumn[]; sort?: ColumnSort } | undefined>(undefined);
 
     // A column the user confirms directly is theirs from then on, so the save must not put it back after they remove it.
     const forgetDirectlyConfirmed = useCallback((uuid: string, keys: ReadonlySet<string>) => {
@@ -629,7 +642,13 @@ export default function ViewTabs({
             stored,
             getColumnKey,
         );
-        applyRef.current({ columns: shown, filters, sort: sort ?? pending.sort });
+        const suppressed = new Set(pending.suppressed);
+        const storedFilters = activeView.filters ?? [];
+        const restored = storedFilters.filter((filter) => keys.has(getColumnKey(filter)) && suppressed.has(getFilterKey(filter)));
+        const confirmed = { columns: shown, filters: reinsert(filters, restored, storedFilters, getFilterKey), sort: sort ?? pending.sort };
+        // A field the listing cannot display has no column to put on the table, and an apply would reset the page for nothing.
+        if (shown.length !== columns.length || confirmed.filters.length !== filters.length || confirmed.sort !== sort)
+            applyRef.current(confirmed);
     }, [isMutating, dormant, activeView, fieldsFor, standardColumns, columns, filters, sort]);
 
     const onSaveDrift = useCallback(() => {
@@ -643,7 +662,7 @@ export default function ViewTabs({
         // view would withhold the filter just saved. The user's filters on it replace the stored ones they never saw apply.
         const filtered = new Set(storableFilters.map(getColumnKey));
         const confirmedKeys = new Set([...heldKeysOf(activeView)].filter((key) => filtered.has(key)));
-        const confirmed = returned.filter((column) => confirmedKeys.has(getColumnKey(column)));
+        const confirmed = activeView.columns.filter((column) => confirmedKeys.has(getColumnKey(column)));
         const stillHeld = heldFilters.filter((filter) => !confirmedKeys.has(getColumnKey(filter)));
 
         // The stored columns this table cannot render go back in: the user never saw them, so saving a
@@ -655,16 +674,14 @@ export default function ViewTabs({
                 filters: reinsert(storableFilters, stillHeld, activeView.filters ?? [], getFilterKey),
                 sort: toStoredSort(sort ?? heldSort),
             },
-            activeView.columns
-                .filter((column) => confirmedKeys.has(getColumnKey(column)))
-                .map((column) => toDormantKey(activeView.uuid, column)),
+            confirmed.map((column) => toDormantKey(activeView.uuid, column)),
         );
 
         if (confirmed.length > 0) {
             const confirmedSort = heldSort && confirmedKeys.has(getSortKey(heldSort)) ? heldSort : undefined;
             pendingConfirmation.current = { uuid: activeView.uuid, confirmed, sort: confirmedSort };
         }
-    }, [activeView, patchView, columns, resolved, storableFilters, heldKeysOf, heldFilters, sort, heldSort, returned]);
+    }, [activeView, patchView, columns, resolved, storableFilters, heldKeysOf, heldFilters, sort, heldSort]);
 
     const onShowReturned = useCallback(() => {
         const slice = confirmedSlice(returned);
