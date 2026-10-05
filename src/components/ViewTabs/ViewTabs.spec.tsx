@@ -195,6 +195,11 @@ const lastDispatched = async (page: Page, type: string): Promise<DispatchedActio
 const appliedSlice = async (page: Page): Promise<ViewSlice> =>
     JSON.parse((await page.getByTestId('applied-slice').textContent()) ?? '{}') as ViewSlice;
 
+// A slice applied from an effect renders a frame later, so asserting that something did not happen has to wait for it.
+const settle = async (page: Page) => {
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve(null)))));
+};
+
 const openTabMenu = async (page: Page, name: string) => {
     await page.getByRole('button', { name: `Actions for ${name}` }).click();
 };
@@ -1483,6 +1488,25 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-returned')).toContainText('Retired is available again');
         expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
         expect((await appliedSlice(page)).filters).toEqual([]);
+    });
+
+    test('keeps a column off the table that the user shows and then removes while the save confirming it is in flight', async ({
+        mount,
+        page,
+    }) => {
+        await mount(heldBackStrip());
+        await saveOwnFilter(page);
+        await page.getByTestId('view-tabs-returned-show').click();
+        await expect
+            .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
+            .toEqual(['COMMON_NAME', 'retired']);
+        await page.getByTestId('drift-drop-last-column').click();
+
+        await page.getByTestId('simulate-update-success').click();
+        await settle(page);
+
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
     });
 
     test('puts a confirmed column on the table when its save succeeds after an unrelated read failed', async ({ mount, page }) => {

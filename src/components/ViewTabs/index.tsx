@@ -370,6 +370,25 @@ export default function ViewTabs({
         standardColumns,
     ]);
 
+    /**
+     * A save that confirms held-back columns puts them on the table only once it succeeds: the duck releases them then,
+     * and one put on the table earlier would stay there unconfirmed if the save failed.
+     *
+     * They go into the table as it is by then, not as it was at Save, so an edit made while the save was out stays. The
+     * rest of the table is left as the user had it, which is what the save stored.
+     */
+    const pendingConfirmation = useRef<{ uuid: string; confirmed: PickerColumn[]; sort?: ColumnSort } | undefined>(undefined);
+
+    // A column the user confirms directly is theirs from then on, so the save must not put it back after they remove it.
+    const forgetDirectlyConfirmed = useCallback((uuid: string, keys: ReadonlySet<string>) => {
+        const pending = pendingConfirmation.current;
+        if (pending?.uuid !== uuid) return;
+
+        const confirmed = pending.confirmed.filter((column) => !keys.has(getColumnKey(column)));
+        const sort = pending.sort && !keys.has(getSortKey(pending.sort)) ? pending.sort : undefined;
+        pendingConfirmation.current = confirmed.length > 0 ? { ...pending, confirmed, sort } : undefined;
+    }, []);
+
     /** `live` with the stored filters and ordering on the confirmed column keys put back, unless the user ordered it otherwise. */
     const withConfirmed = useCallback(
         (keys: ReadonlySet<string>, live: ViewSlice): ViewSlice => ({
@@ -403,9 +422,11 @@ export default function ViewTabs({
         if (arrived.length === 0) return;
 
         dispatch(listViewActions.releaseDormantFields({ resource, keys: arrived.map((column) => toDormantKey(activeView.uuid, column)) }));
-        const confirmed = withConfirmed(new Set(arrived.map(getColumnKey)), { columns, filters, sort });
+        const arrivedKeys = new Set(arrived.map(getColumnKey));
+        forgetDirectlyConfirmed(activeView.uuid, arrivedKeys);
+        const confirmed = withConfirmed(arrivedKeys, { columns, filters, sort });
         if (confirmed.filters.length !== filters.length || confirmed.sort !== sort) applyRef.current(confirmed);
-    }, [dispatch, resource, isReady, activeView, dormant, catalogueFields, columns, filters, sort, withConfirmed]);
+    }, [dispatch, resource, isReady, activeView, dormant, catalogueFields, columns, filters, sort, withConfirmed, forgetDirectlyConfirmed]);
 
     // The pinned view opens on load, and Standard when none is pinned. Once only: a later list read —
     // after a rename, say — must not throw the user back to the tab they started on.
@@ -590,14 +611,6 @@ export default function ViewTabs({
         [activeView, catalogueFields, dormant, standardColumns, resolved, columns, filters, sort, withConfirmed],
     );
 
-    /**
-     * A save that confirms held-back columns puts them on the table only once it succeeds: the duck releases them then,
-     * and one put on the table earlier would stay there unconfirmed if the save failed.
-     *
-     * They go into the table as it is by then, not as it was at Save, so an edit made while the save was out stays. The
-     * rest of the table is left as the user had it, which is what the save stored.
-     */
-    const pendingConfirmation = useRef<{ uuid: string; confirmed: PickerColumn[]; sort?: ColumnSort } | undefined>(undefined);
     useEffect(() => {
         const pending = pendingConfirmation.current;
         if (!pending || isMutating) return;
@@ -658,8 +671,9 @@ export default function ViewTabs({
         if (!activeView || !slice) return;
 
         dispatch(listViewActions.releaseDormantFields({ resource, keys: returned.map((column) => toDormantKey(activeView.uuid, column)) }));
+        forgetDirectlyConfirmed(activeView.uuid, new Set(returned.map(getColumnKey)));
         applyRef.current(slice);
-    }, [confirmedSlice, returned, activeView, dispatch, resource]);
+    }, [confirmedSlice, returned, activeView, dispatch, resource, forgetDirectlyConfirmed]);
 
     // Withheld when every stored column is held back: Core refuses a view with no columns.
     const remainingAfterReturned = useMemo(() => {
