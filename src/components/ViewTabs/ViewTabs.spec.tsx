@@ -1507,6 +1507,50 @@ test.describe('ViewTabs', () => {
         expect((await appliedSlice(page)).filters).toEqual([]);
     });
 
+    test('puts the confirmed columns on the table that stayed while another one went and came back during the save', async ({
+        mount,
+        page,
+    }) => {
+        const custom = (...names: string[]) =>
+            [
+                ...catalogue,
+                { filterFieldSource: FilterFieldSource.Custom, searchFieldData: names.map((name) => field(name, name)) },
+            ] as unknown as SearchFieldDataByGroupDto[];
+        const legacyFilter: SearchFilterModel = { ...retiredFilter, fieldIdentifier: 'legacy' };
+        const ownLegacyFilter: SearchFilterModel = { ...legacyFilter, value: 'false' };
+        const both = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom), stored('legacy', FilterFieldSource.Custom)],
+            filters: [retiredFilter, legacyFilter],
+            sort: undefined,
+        });
+        await mount(
+            heldBackStrip({
+                views: [both],
+                fields: custom('retired', 'legacy'),
+                catalogueSequence: [custom('legacy'), custom('retired', 'legacy')],
+                dormantFields: [retiredKey, `view-1|${FilterFieldSource.Custom}:legacy`],
+                driftAddedFilter: ownLegacyFilter,
+            }),
+        );
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('drift-add-filter').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+        await page.getByTestId('next-catalogue').click();
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('legacy is available again');
+        await page.getByTestId('next-catalogue').click();
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('retired and legacy are available again');
+
+        await page.getByTestId('simulate-update-success').click();
+
+        await expect
+            .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
+            .toEqual(['COMMON_NAME', 'legacy']);
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('retired is available again');
+        expect((await appliedSlice(page)).filters).toEqual([ownLegacyFilter]);
+    });
+
     test('keeps a column off the table that the user shows and then removes while the save confirming it is in flight', async ({
         mount,
         page,

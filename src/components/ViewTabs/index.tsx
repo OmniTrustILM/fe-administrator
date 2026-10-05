@@ -629,12 +629,13 @@ export default function ViewTabs({
         if (!pending || isMutating) return;
 
         pendingConfirmation.current = undefined;
+        if (activeView?.uuid !== pending.uuid) return;
         // Judged by the keys rather than the slice's error, which any read or write of any resource can set: only a
-        // successful save releases them.
-        if (activeView?.uuid !== pending.uuid || pending.confirmed.some((column) => dormant.has(toDormantKey(pending.uuid, column))))
-            return;
+        // successful save releases them, and one seen gone again during the save stays held.
+        const released = pending.confirmed.filter((column) => !dormant.has(toDormantKey(pending.uuid, column)));
+        if (released.length === 0) return;
 
-        const keys = new Set(pending.confirmed.map(getColumnKey));
+        const keys = new Set(released.map(getColumnKey));
         const stored = resolveView(activeView.columns, fieldsFor(activeView), standardColumns).renderable;
         const shown = reinsert(
             columns,
@@ -645,7 +646,8 @@ export default function ViewTabs({
         const suppressed = new Set(pending.suppressed);
         const storedFilters = activeView.filters ?? [];
         const restored = storedFilters.filter((filter) => keys.has(getColumnKey(filter)) && suppressed.has(getFilterKey(filter)));
-        const confirmed = { columns: shown, filters: reinsert(filters, restored, storedFilters, getFilterKey), sort: sort ?? pending.sort };
+        const releasedSort = pending.sort && keys.has(getSortKey(pending.sort)) ? pending.sort : undefined;
+        const confirmed = { columns: shown, filters: reinsert(filters, restored, storedFilters, getFilterKey), sort: sort ?? releasedSort };
         // A field the listing cannot display has no column to put on the table, and an apply would reset the page for nothing.
         if (shown.length !== columns.length || confirmed.filters.length !== filters.length || confirmed.sort !== sort)
             applyRef.current(confirmed);
