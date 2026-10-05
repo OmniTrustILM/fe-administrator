@@ -410,6 +410,27 @@ describe('attribute columns seen without their field', () => {
         expect(dormant(saved)).toEqual(['a|Meta:gone']);
     });
 
+    test('stay held when they are seen gone again while the update confirming them is in flight', () => {
+        const regone = reduceAll(
+            [
+                actions.markFieldsDormant({ resource: Resource.Certificates, keys: ['a|Custom:retired', 'a|Meta:gone'] }),
+                actions.updateView({
+                    resource: Resource.Certificates,
+                    uuid: 'a',
+                    view: { name: 'One', columns },
+                    confirms: ['a|Custom:retired', 'a|Meta:gone'],
+                }),
+                actions.markFieldsDormant({ resource: Resource.Certificates, keys: ['a|Custom:retired'] }),
+            ],
+            listed([view('a', 'One')]),
+        );
+        expect(selectors.confirming(Resource.Certificates)({ [slice.name]: regone } as never)).toEqual(['a|Meta:gone']);
+
+        const saved = reduce(regone, actions.updateViewSuccess({ resource: Resource.Certificates, view: view('a', 'One') }));
+
+        expect(dormant(saved)).toEqual(['a|Custom:retired']);
+    });
+
     test('stay held when the update confirming them fails', () => {
         const failed = reduceAll(
             [

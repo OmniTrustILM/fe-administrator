@@ -1441,6 +1441,24 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
     });
 
+    test('keeps holding a column back whose attribute goes and comes back while the save confirming it is in flight', async ({
+        mount,
+        page,
+    }) => {
+        await mount(heldBackStrip({ catalogueSequence: [catalogue, withRetired] }));
+        await saveOwnFilter(page);
+        await page.getByTestId('next-catalogue').click();
+        await expect(page.getByTestId('view-tabs-returned')).toHaveCount(0);
+        await page.getByTestId('next-catalogue').click();
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('Retired is available again');
+
+        await page.getByTestId('simulate-update-success').click();
+
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('Retired is available again');
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+        expect((await appliedSlice(page)).filters).toEqual([]);
+    });
+
     test('puts a confirmed column on the table when its save succeeds after an unrelated read failed', async ({ mount, page }) => {
         await mount(heldBackStrip());
         await saveOwnFilter(page);

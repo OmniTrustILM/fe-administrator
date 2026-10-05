@@ -1424,7 +1424,11 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
     const dormant = recorded.dormantFields?.[resource] ?? [];
 
     if (a.type === 'listViews/markFieldsDormant') {
-        return { ...recorded, dormantFields: { ...recorded.dormantFields, [resource]: [...new Set([...dormant, ...keys])] } };
+        const marked = { ...recorded, dormantFields: { ...recorded.dormantFields, [resource]: [...new Set([...dormant, ...keys])] } };
+        const held = recorded.byResource[resource];
+        if (!held?.confirming) return marked;
+        const confirming = held.confirming.filter((key) => !keys.includes(key));
+        return { ...marked, byResource: { ...recorded.byResource, [resource]: { ...held, confirming } } };
     }
 
     if (a.type === 'listViews/releaseDormantFields') {

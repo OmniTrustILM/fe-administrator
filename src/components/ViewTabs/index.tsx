@@ -138,6 +138,7 @@ export default function ViewTabs({
     const isStale = useSelector(listViewSelectors.isStale(resource));
     const createdUuid = useSelector(listViewSelectors.createdUuid(resource));
     const dormantFields = useSelector(listViewSelectors.dormantFields(resource));
+    const confirmingFields = useSelector(listViewSelectors.confirming(resource));
 
     const [activeId, setActiveId] = useState(STANDARD_VIEW_ID);
     const [dialog, setDialog] = useState<PendingDialog | undefined>(undefined);
@@ -337,7 +338,9 @@ export default function ViewTabs({
         const wasHeld = previousHeldKeys.current;
         previousHeldKeys.current = heldKeys;
 
-        const gone = isReady ? goneAttributeKeys(views, catalogue).filter((key) => !dormant.has(key)) : [];
+        const gone = isReady
+            ? goneAttributeKeys(views, catalogue).filter((key) => !dormant.has(key) || confirmingFields.includes(key))
+            : [];
         if (gone.length > 0) dispatch(listViewActions.markFieldsDormant({ resource, keys: gone }));
         if (!activeView) return;
 
@@ -347,7 +350,21 @@ export default function ViewTabs({
         if (keptColumns.length < columns.length || keptFilters.length < filters.length) {
             applyRef.current({ columns: keptColumns.length > 0 ? keptColumns : [...standardColumns], filters: keptFilters, sort });
         }
-    }, [dispatch, resource, isReady, views, catalogue, dormant, activeView, heldKeysOf, columns, filters, sort, standardColumns]);
+    }, [
+        dispatch,
+        resource,
+        isReady,
+        views,
+        catalogue,
+        dormant,
+        confirmingFields,
+        activeView,
+        heldKeysOf,
+        columns,
+        filters,
+        sort,
+        standardColumns,
+    ]);
 
     /** `live` with the stored filters and ordering on the confirmed column keys put back, unless the user ordered it otherwise. */
     const withConfirmed = useCallback(

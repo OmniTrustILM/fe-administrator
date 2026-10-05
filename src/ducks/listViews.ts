@@ -243,10 +243,14 @@ export const slice = createSlice({
             rollBack(state, action.payload.resource, action.payload.error);
         },
 
+        // A field seen gone again while a save confirming it is out is not the field the user confirmed.
         markFieldsDormant: (state, action: PayloadAction<{ resource: Resource; keys: string[] }>) => {
             const held = new Set(state.dormantFields[action.payload.resource] ?? []);
             for (const key of action.payload.keys) held.add(key);
             state.dormantFields[action.payload.resource] = [...held];
+
+            const entry = state.byResource[action.payload.resource];
+            if (entry?.confirming) entry.confirming = entry.confirming.filter((key) => !action.payload.keys.includes(key));
         },
 
         releaseDormantFields: (state, action: PayloadAction<{ resource: Resource; keys: string[] }>) => {
@@ -284,6 +288,7 @@ const isStale = (resource: Resource) => createSelector(resourceViews(resource), 
 const createdUuid = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.createdUuid);
 const error = createSelector(state, (state) => state?.error);
 const dormantFields = (resource: Resource) => createSelector(state, (state) => state?.dormantFields?.[resource] ?? NO_DORMANT_FIELDS);
+const confirming = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.confirming ?? NO_DORMANT_FIELDS);
 
 export const selectors = {
     state,
@@ -296,6 +301,7 @@ export const selectors = {
     createdUuid,
     error,
     dormantFields,
+    confirming,
 };
 
 export const actions = slice.actions;
