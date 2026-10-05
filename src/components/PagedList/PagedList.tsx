@@ -86,6 +86,8 @@ type Props<TRow extends object> = {
     hasDetails?: boolean;
     columnForDetail?: string;
     extraFilterComponent?: React.ReactNode;
+    /** Shown inside the widget, above the table. */
+    notice?: React.ReactNode;
     /**
      * Bumped by the page to make the host re-run its own request. A request the page assembled would
      * omit the applied columns and ordering, blanking every attribute column and ignoring the sort.
@@ -124,6 +126,7 @@ function PagedList<TRow extends object>({
     hasDetails = false,
     columnForDetail,
     extraFilterComponent,
+    notice,
     refreshToken,
     backgroundRefreshToken,
 }: Readonly<Props<TRow>>) {
@@ -728,6 +731,7 @@ function PagedList<TRow extends object>({
                 titleSize="large"
                 hideWidgetButtons={hideWidgetButtons}
             >
+                {notice}
                 <CustomTable
                     headers={columnHeaders}
                     data={columnRows}

@@ -1,4 +1,4 @@
-import type { AppEpic } from 'ducks';
+import type { AppEpic, EpicDependencies } from 'ducks';
 import { concat, from, iif, of } from 'rxjs';
 import { catchError, concatMap, exhaustMap, filter, map, mergeMap, switchMap, toArray } from 'rxjs/operators';
 import { bulkDeleteFailureMessage, deleteSequentially } from 'utils/bulk-delete';
@@ -157,12 +157,23 @@ const bulkDeleteSchedulerJobs: AppEpic = (action$, state$, deps) => {
     );
 };
 
+type ToggleSuccess = typeof slice.actions.enableSchedulerJobSuccess | typeof slice.actions.disableSchedulerJobSuccess;
+
+// A toggle answers 204, and the schedule state that follows it is the scheduler's to report, so the detail is read again.
+const rereadAfterToggle = (deps: EpicDependencies, uuid: string, toggleSuccess: ToggleSuccess) =>
+    deps.apiClients.scheduler.getScheduledJobDetail({ uuid }).pipe(
+        map((response) => toggleSuccess({ uuid, schedulerJob: transformSchedulerJobDetailDtoToModel(response) })),
+        catchError((err) =>
+            of(toggleSuccess({ uuid }), appRedirectActions.fetchError({ error: err, message: 'Failed to refresh Scheduled Job detail' })),
+        ),
+    );
+
 const enableSchedulerJob: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.enableSchedulerJob.match),
         switchMap((action) =>
             deps.apiClients.scheduler.enableScheduledJob({ uuid: action.payload.uuid }).pipe(
-                map(() => slice.actions.enableSchedulerJobSuccess({ uuid: action.payload.uuid })),
+                switchMap(() => rereadAfterToggle(deps, action.payload.uuid, slice.actions.enableSchedulerJobSuccess)),
 
                 catchError((err) =>
                     of(
@@ -212,7 +223,7 @@ const disableSchedulerJob: AppEpic = (action$, state$, deps) => {
         filter(slice.actions.disableSchedulerJob.match),
         switchMap((action) =>
             deps.apiClients.scheduler.disableScheduledJob({ uuid: action.payload.uuid }).pipe(
-                map(() => slice.actions.disableSchedulerJobSuccess({ uuid: action.payload.uuid })),
+                switchMap(() => rereadAfterToggle(deps, action.payload.uuid, slice.actions.disableSchedulerJobSuccess)),
 
                 catchError((err) =>
                     of(
@@ -273,7 +284,7 @@ const updateSchedulerJobCron: AppEpic = (action$, state$, deps) => {
                         of(
                             slice.actions.updateSchedulerJobCronSuccess({
                                 uuid: action.payload.uuid,
-                                updateScheduledJob: response,
+                                schedulerJob: transformSchedulerJobDetailDtoToModel(response),
                             }),
                         ),
                     ),

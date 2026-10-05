@@ -118,136 +118,99 @@ describe('scheduler slice', () => {
         expect(next.schedulerJob).toBeUndefined();
     });
 
-    test('bulkEnableSchedulerJobs / success marks uuids enabled / failure', () => {
-        const pre = {
-            ...initialState,
-            schedulerJobs: [{ uuid: 'j-1', enabled: false } as any, { uuid: 'j-2', enabled: false } as any],
-        };
+    describe.each([
+        {
+            name: 'enable',
+            bulkRequest: actions.bulkEnableSchedulerJobs,
+            bulkSuccess: actions.bulkEnableSchedulerJobsSuccess,
+            bulkFailure: actions.bulkEnableSchedulerJobsFailure,
+            request: actions.enableSchedulerJob,
+            success: actions.enableSchedulerJobSuccess,
+            failure: actions.enableSchedulerJobFailure,
+        },
+        {
+            name: 'disable',
+            bulkRequest: actions.bulkDisableSchedulerJobs,
+            bulkSuccess: actions.bulkDisableSchedulerJobsSuccess,
+            bulkFailure: actions.bulkDisableSchedulerJobsFailure,
+            request: actions.disableSchedulerJob,
+            success: actions.disableSchedulerJobSuccess,
+            failure: actions.disableSchedulerJobFailure,
+        },
+    ])('$name', ({ bulkRequest, bulkSuccess, bulkFailure, request, success, failure }) => {
+        const stale = { uuid: 'j-1', enabled: false, scheduleState: 'paused' } as any;
+        const fresh = { uuid: 'j-1', enabled: true, scheduleState: 'scheduled' } as any;
 
-        let next = reducer(pre, actions.bulkEnableSchedulerJobs({ uuids: ['j-1'] }));
-        expect(next.isEnabling).toBe(true);
+        test('bulk success asks for the list to be re-read and patches no row', () => {
+            const pre = { ...initialState, schedulerJobs: [stale, { uuid: 'j-2' } as any] };
 
-        next = reducer(next, actions.bulkEnableSchedulerJobsSuccess({ uuids: ['j-1'] }));
-        expect(next.isEnabling).toBe(false);
-        expect(next.schedulerJobs[0].enabled).toBe(true);
-        expect(next.schedulerJobs[1].enabled).toBe(false);
+            let next = reducer(pre, bulkRequest({ uuids: ['j-1'] }));
+            expect(next.isEnabling).toBe(true);
 
-        next = reducer({ ...next, isEnabling: true }, actions.bulkEnableSchedulerJobsFailure({ error: 'err' }));
-        expect(next.isEnabling).toBe(false);
+            next = reducer(next, bulkSuccess({ uuids: ['j-1'] }));
+            expect(next.isEnabling).toBe(false);
+            expect(next.listRefreshToken).toBe(pre.listRefreshToken + 1);
+            expect(next.schedulerJobs).toEqual(pre.schedulerJobs);
+
+            next = reducer({ ...next, isEnabling: true }, bulkFailure({ error: 'err' }));
+            expect(next.isEnabling).toBe(false);
+        });
+
+        test('success replaces the detail and its list row with the re-read job', () => {
+            const pre = { ...initialState, schedulerJobs: [stale, { uuid: 'j-2' } as any], schedulerJob: stale };
+
+            let next = reducer(pre, request({ uuid: 'j-1' }));
+            expect(next.isEnabling).toBe(true);
+
+            next = reducer(next, success({ uuid: 'j-1', schedulerJob: fresh }));
+            expect(next.isEnabling).toBe(false);
+            expect(next.schedulerJob).toEqual(fresh);
+            expect(next.schedulerJobs).toEqual([fresh, { uuid: 'j-2' }]);
+
+            next = reducer({ ...next, isEnabling: true }, failure({ error: 'err' }));
+            expect(next.isEnabling).toBe(false);
+        });
+
+        test('success leaves another job open in the detail alone', () => {
+            const other = { uuid: 'j-2', enabled: false } as any;
+            const next = reducer({ ...initialState, schedulerJob: other }, success({ uuid: 'j-1', schedulerJob: fresh }));
+            expect(next.schedulerJob).toEqual(other);
+            expect(next.schedulerJobs).toEqual([]);
+        });
+
+        test('success without a re-read job drops the stale detail and keeps the list row', () => {
+            const pre = { ...initialState, isEnabling: true, schedulerJobs: [stale], schedulerJob: stale };
+            const next = reducer(pre, success({ uuid: 'j-1' }));
+            expect(next.isEnabling).toBe(false);
+            expect(next.schedulerJob).toBeUndefined();
+            expect(next.schedulerJobs).toEqual([stale]);
+        });
     });
 
-    test('enableSchedulerJob / success updates list and detail / failure', () => {
-        const pre = {
-            ...initialState,
-            schedulerJobs: [{ uuid: 'j-1', enabled: false } as any],
-            schedulerJob: { uuid: 'j-1', enabled: false } as any,
-        };
-
-        let next = reducer(pre, actions.enableSchedulerJob({ uuid: 'j-1' }));
-        expect(next.isEnabling).toBe(true);
-
-        next = reducer(next, actions.enableSchedulerJobSuccess({ uuid: 'j-1' }));
-        expect(next.isEnabling).toBe(false);
-        expect(next.schedulerJobs[0].enabled).toBe(true);
-        expect(next.schedulerJob?.enabled).toBe(true);
-
-        next = reducer({ ...next, isEnabling: true }, actions.enableSchedulerJobFailure({ error: 'err' }));
-        expect(next.isEnabling).toBe(false);
-    });
-
-    test('enableSchedulerJobSuccess does not update schedulerJob when uuid differs', () => {
-        const pre = {
-            ...initialState,
-            schedulerJobs: [{ uuid: 'j-1', enabled: false } as any],
-            schedulerJob: { uuid: 'j-2', enabled: false } as any,
-        };
-        const next = reducer(pre, actions.enableSchedulerJobSuccess({ uuid: 'j-1' }));
-        expect(next.schedulerJob?.enabled).toBe(false);
-    });
-
-    test('bulkDisableSchedulerJobs / success marks uuids disabled / failure', () => {
-        const pre = {
-            ...initialState,
-            schedulerJobs: [{ uuid: 'j-1', enabled: true } as any, { uuid: 'j-2', enabled: true } as any],
-        };
-
-        let next = reducer(pre, actions.bulkDisableSchedulerJobs({ uuids: ['j-1'] }));
-        expect(next.isEnabling).toBe(true);
-
-        next = reducer(next, actions.bulkDisableSchedulerJobsSuccess({ uuids: ['j-1'] }));
-        expect(next.isEnabling).toBe(false);
-        expect(next.schedulerJobs[0].enabled).toBe(false);
-        expect(next.schedulerJobs[1].enabled).toBe(true);
-
-        next = reducer({ ...next, isEnabling: true }, actions.bulkDisableSchedulerJobsFailure({ error: 'err' }));
-        expect(next.isEnabling).toBe(false);
-    });
-
-    test('disableSchedulerJob / success updates list and detail / failure', () => {
-        const pre = {
-            ...initialState,
-            schedulerJobs: [{ uuid: 'j-1', enabled: true } as any],
-            schedulerJob: { uuid: 'j-1', enabled: true } as any,
-        };
-
-        let next = reducer(pre, actions.disableSchedulerJob({ uuid: 'j-1' }));
-        expect(next.isEnabling).toBe(true);
-
-        next = reducer(next, actions.disableSchedulerJobSuccess({ uuid: 'j-1' }));
-        expect(next.isEnabling).toBe(false);
-        expect(next.schedulerJobs[0].enabled).toBe(false);
-        expect(next.schedulerJob?.enabled).toBe(false);
-
-        next = reducer({ ...next, isEnabling: true }, actions.disableSchedulerJobFailure({ error: 'err' }));
-        expect(next.isEnabling).toBe(false);
-    });
-
-    test('disableSchedulerJobSuccess does not update schedulerJob when uuid differs', () => {
-        const pre = {
-            ...initialState,
-            schedulerJobs: [{ uuid: 'j-1', enabled: true } as any],
-            schedulerJob: { uuid: 'j-2', enabled: true } as any,
-        };
-        const next = reducer(pre, actions.disableSchedulerJobSuccess({ uuid: 'j-1' }));
-        expect(next.schedulerJob?.enabled).toBe(true);
-    });
-
-    test('updateSchedulerJobCron / success updates cronExpression / failure', () => {
-        const pre = {
-            ...initialState,
-            schedulerJob: { uuid: 'j-1', cronExpression: '0 * * * *' } as any,
-        };
+    test('updateSchedulerJobCron / success takes the whole job from the response / failure', () => {
+        const stale = { uuid: 'j-1', cronExpression: '0 * * * *', nextFireTime: '2026-10-05T10:00:00Z' } as any;
+        const fresh = { uuid: 'j-1', cronExpression: '0 0 * * *', nextFireTime: '2026-10-06T00:00:00Z' } as any;
+        const pre = { ...initialState, schedulerJobs: [stale], schedulerJob: stale };
 
         let next = reducer(pre, actions.updateSchedulerJobCron({ uuid: 'j-1', cronExpression: '0 0 * * *' }));
         expect(next.isUpdatingCron).toBe(true);
 
-        next = reducer(next, actions.updateSchedulerJobCronSuccess({ uuid: 'j-1', updateScheduledJob: { cronExpression: '0 0 * * *' } }));
+        next = reducer(next, actions.updateSchedulerJobCronSuccess({ uuid: 'j-1', schedulerJob: fresh }));
         expect(next.isUpdatingCron).toBe(false);
-        expect(next.schedulerJob?.cronExpression).toBe('0 0 * * *');
+        expect(next.schedulerJob).toEqual(fresh);
+        expect(next.schedulerJobs).toEqual([fresh]);
 
         next = reducer({ ...next, isUpdatingCron: true }, actions.updateSchedulerJobCronFailure({ error: 'err' }));
         expect(next.isUpdatingCron).toBe(false);
     });
 
     test('updateSchedulerJobCronSuccess does not change schedulerJob when uuid differs', () => {
-        const pre = {
-            ...initialState,
-            schedulerJob: { uuid: 'j-2', cronExpression: '0 * * * *' } as any,
-        };
+        const other = { uuid: 'j-2', cronExpression: '0 * * * *' } as any;
         const next = reducer(
-            pre,
-            actions.updateSchedulerJobCronSuccess({ uuid: 'j-1', updateScheduledJob: { cronExpression: '0 0 * * *' } }),
+            { ...initialState, schedulerJob: other },
+            actions.updateSchedulerJobCronSuccess({ uuid: 'j-1', schedulerJob: { uuid: 'j-1', cronExpression: '0 0 * * *' } as any }),
         );
-        expect(next.schedulerJob?.cronExpression).toBe('0 * * * *');
-    });
-
-    test('updateSchedulerJobCronSuccess uses empty string when cronExpression is missing', () => {
-        const pre = {
-            ...initialState,
-            schedulerJob: { uuid: 'j-1', cronExpression: '0 * * * *' } as any,
-        };
-        const next = reducer(pre, actions.updateSchedulerJobCronSuccess({ uuid: 'j-1', updateScheduledJob: {} }));
-        expect(next.schedulerJob?.cronExpression).toBe('');
+        expect(next.schedulerJob).toEqual(other);
     });
 });
 
@@ -262,6 +225,7 @@ describe('scheduler selectors', () => {
             isDeleting: true,
             isEnabling: true,
             isUpdatingCron: true,
+            listRefreshToken: 3,
         } as any;
 
         const state = { scheduler: featureState } as any;
@@ -273,6 +237,7 @@ describe('scheduler selectors', () => {
         expect(selectors.isDeleting(state)).toBe(true);
         expect(selectors.isEnabling(state)).toBe(true);
         expect(selectors.isUpdatingCron(state)).toBe(true);
+        expect(selectors.listRefreshToken(state)).toBe(3);
         expect(selectors.state(state)).toBe(featureState);
     });
 });

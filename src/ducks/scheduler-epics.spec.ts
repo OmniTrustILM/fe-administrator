@@ -45,6 +45,86 @@ async function runBulkDeleteEpic(
     return firstValueFrom((epics[4] as any)(of(action), state as any, deps as any).pipe(take(takeCount), toArray())) as Promise<any[]>;
 }
 
+async function runEpic(index: number, action: any, scheduler: any): Promise<any[]> {
+    const deps = { apiClients: { scheduler } };
+    return firstValueFrom((epics[index] as any)(of(action), makeState() as any, deps as any).pipe(toArray())) as Promise<any[]>;
+}
+
+const freshJob = { uuid: 'j-1', jobName: 'Job 1', enabled: true, scheduleState: 'scheduled' };
+
+describe.each([
+    {
+        name: 'enableSchedulerJob',
+        index: 5,
+        apiCall: 'enableScheduledJob',
+        request: slice.actions.enableSchedulerJob,
+        success: slice.actions.enableSchedulerJobSuccess,
+        failure: slice.actions.enableSchedulerJobFailure,
+        message: 'Failed to enable Scheduled Job',
+    },
+    {
+        name: 'disableSchedulerJob',
+        index: 6,
+        apiCall: 'disableScheduledJob',
+        request: slice.actions.disableSchedulerJob,
+        success: slice.actions.disableSchedulerJobSuccess,
+        failure: slice.actions.disableSchedulerJobFailure,
+        message: 'Failed to disable Scheduled Job',
+    },
+])('$name epic', ({ index, apiCall, request, success, failure, message }) => {
+    test('re-reads the detail after the toggle and carries it in the success', async () => {
+        const calls: string[] = [];
+        const emitted = await runEpic(index, request({ uuid: 'j-1' }), {
+            [apiCall]: () => {
+                calls.push('toggle');
+                return of(undefined);
+            },
+            getScheduledJobDetail: ({ uuid }: { uuid: string }) => {
+                calls.push(`read ${uuid}`);
+                return of(freshJob);
+            },
+        });
+
+        expect(calls).toEqual(['toggle', 'read j-1']);
+        expect(emitted).toEqual([success({ uuid: 'j-1', schedulerJob: freshJob as any })]);
+    });
+
+    test('a failed re-read still settles the toggle, without a job, and reports the read', async () => {
+        const err = new Error('read failed');
+        const emitted = await runEpic(index, request({ uuid: 'j-1' }), {
+            [apiCall]: () => of(undefined),
+            getScheduledJobDetail: () => throwError(() => err),
+        });
+
+        expect(emitted).toEqual([
+            success({ uuid: 'j-1' }),
+            appRedirectActions.fetchError({ error: err, message: 'Failed to refresh Scheduled Job detail' }),
+        ]);
+    });
+
+    test('a failed toggle reads nothing', async () => {
+        const err = new Error('toggle failed');
+        const getScheduledJobDetail = vi.fn();
+        const emitted = await runEpic(index, request({ uuid: 'j-1' }), {
+            [apiCall]: () => throwError(() => err),
+            getScheduledJobDetail,
+        });
+
+        expect(getScheduledJobDetail).not.toHaveBeenCalled();
+        expect(emitted).toEqual([failure({ error: `${message}. toggle failed` }), appRedirectActions.fetchError({ error: err, message })]);
+    });
+});
+
+describe('updateSchedulerJobCron epic', () => {
+    test('success carries the job the update answered with', async () => {
+        const emitted = await runEpic(9, slice.actions.updateSchedulerJobCron({ uuid: 'j-1', cronExpression: '0 0 * * * ?' }), {
+            updateScheduledJob: () => of(freshJob),
+        });
+
+        expect(emitted).toEqual([slice.actions.updateSchedulerJobCronSuccess({ uuid: 'j-1', schedulerJob: freshJob as any })]);
+    });
+});
+
 describe('scheduler epics', () => {
     test('bulkDeleteSchedulerJobs success emits bulkDeleteSchedulerJobsSuccess', async () => {
         const calls: string[] = [];

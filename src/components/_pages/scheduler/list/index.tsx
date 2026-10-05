@@ -17,6 +17,8 @@ import type { SearchRequestModel } from 'types/certificate';
 import { PlatformEnum, SchedulerJobExecutionStatus } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { describeCronSchedule } from 'utils/cronSchedule';
+import { dateFormatter } from 'utils/dateUtil';
+import { getScheduleStateBadgeColor } from 'utils/scheduler';
 
 function SchedulerJobsList() {
     const dispatch = useDispatch();
@@ -25,8 +27,10 @@ function SchedulerJobsList() {
     const isDeleting = useSelector(selectors.isDeleting);
     const isEnabling = useSelector(selectors.isEnabling);
     const isBusy = isDeleting || isEnabling;
+    const listRefreshToken = useSelector(selectors.listRefreshToken);
 
     const schedulerJobExecutionStatusEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.SchedulerJobExecutionStatus));
+    const scheduleStateEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ScheduledJobScheduleState));
 
     const checkedRows = useSelector(pagingSelectors.checkedRows(EntityType.SCHEDULER));
 
@@ -82,6 +86,17 @@ function SchedulerJobsList() {
                 width: '60%',
             },
             {
+                content: 'Schedule',
+                info: <EnumColumnDescription platformEnum={PlatformEnum.ScheduledJobScheduleState} title="Schedule" />,
+                id: 'schedule',
+                width: 'auto',
+            },
+            {
+                content: 'Last Fired',
+                id: 'lastFired',
+                width: 'auto',
+            },
+            {
                 content: 'Last Execution Status',
                 info: <EnumColumnDescription platformEnum={PlatformEnum.SchedulerJobExecutionStatus} title="Last Execution Status" />,
                 sortable: true,
@@ -126,6 +141,10 @@ function SchedulerJobsList() {
                     <span key="cron" title={describeCronSchedule(schedulerJob.cronExpression)}>
                         {schedulerJob.cronExpression}
                     </span>,
+                    <Badge key="schedule" color={getScheduleStateBadgeColor(schedulerJob.scheduleState, schedulerJob.oneTime)}>
+                        {getEnumLabel(scheduleStateEnum, schedulerJob.scheduleState)}
+                    </Badge>,
+                    schedulerJob.previousFireTime ? dateFormatter(schedulerJob.previousFireTime) : '',
                     <Badge
                         key="status"
                         color={(() => {
@@ -140,7 +159,7 @@ function SchedulerJobsList() {
                     <BooleanBadge key="enabled" value={schedulerJob.enabled} />,
                 ],
             })),
-        [schedulerJobs, schedulerJobExecutionStatusEnum],
+        [schedulerJobs, schedulerJobExecutionStatusEnum, scheduleStateEnum],
     );
 
     const onListCallback = useCallback((pagination: SearchRequestModel) => dispatch(actions.listSchedulerJobs(pagination)), [dispatch]);
@@ -159,6 +178,7 @@ function SchedulerJobsList() {
             entityNamePlural="Scheduled Jobs"
             pageWidgetLockName={LockWidgetNameEnum.ListOfScheduler}
             additionalButtons={buttons}
+            refreshToken={listRefreshToken}
         />
     );
 }

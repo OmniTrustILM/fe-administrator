@@ -7,6 +7,7 @@ import { actions, selectors } from 'ducks/scheduler';
 
 import type { TableDataRow, TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
+import InfoNote from 'components/InfoNote';
 import PagedList from 'components/PagedList/PagedList';
 import { EntityType } from 'ducks/filters';
 import { useNavigate } from 'react-router';
@@ -26,6 +27,7 @@ function SchedulerJobHistory({ uuid }: Props) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
 
+    const schedulerJob = useSelector(selectors.schedulerJob);
     const schedulerJobHistory = useSelector(selectors.schedulerJobHistory);
     const schedulerJobExecutionStatusEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.SchedulerJobExecutionStatus));
 
@@ -124,6 +126,14 @@ function SchedulerJobHistory({ uuid }: Props) {
         [dispatch, uuid],
     );
 
+    const lastSkip = schedulerJob?.uuid === uuid && schedulerJob.lastSkippedAt ? schedulerJob : undefined;
+    const skipNotice = lastSkip ? (
+        <InfoNote className="mb-3">
+            Runs with nothing to do are not kept in this history. Last skipped at {dateFormatter(lastSkip.lastSkippedAt)}
+            {lastSkip.lastSkipReason ? `: ${lastSkip.lastSkipReason}` : ''}
+        </InfoNote>
+    ) : undefined;
+
     return (
         <>
             <PagedList
@@ -132,6 +142,7 @@ function SchedulerJobHistory({ uuid }: Props) {
                 headers={schedulerJobHistoryRowHeaders}
                 data={schedulerJobHistoryData}
                 title="Scheduled Job History"
+                notice={skipNotice}
                 pageWidgetLockName={LockWidgetNameEnum.ListOfSchedulerHistory}
                 hideWidgetButtons={true}
                 hasCheckboxes={false}
