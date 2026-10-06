@@ -161,7 +161,7 @@ const buildComponentRows = (
             (value): value is string => typeof value === 'string' && value.trim().length > 0,
         );
         const primitive = primitiveValues.length > 0 ? primitiveValues.join(', ') : '-';
-        const nameColumn = <CbomAssetName key="name" name={assetName} link={resolveAssetLink(c)} />;
+        const nameColumn = <CbomAssetName key="name" name={toCellValue(assetName)} link={resolveAssetLink(c)} />;
 
         return {
             id: c?.bomRef ?? c?.['bom-ref'] ?? (view === 'overview' ? `overview-${i}` : i),
