@@ -2,7 +2,7 @@ import Widget from 'components/Widget';
 import { useTheme } from 'components/ThemeProvider';
 import { type EntityType, actions as filterActions } from 'ducks/filters';
 import { useDispatch } from 'react-redux';
-import { useNavigate } from 'react-router';
+import { useNavigate, useResolvedPath } from 'react-router';
 import { Area, AreaChart, CartesianGrid, ResponsiveContainer, Tooltip, XAxis, YAxis } from 'recharts';
 import { SigningRecordStatisticsPeriod } from 'types/openapi';
 import type { SearchFilterModel } from 'types/certificate';
@@ -46,6 +46,7 @@ function TimeSeriesChart({
 }: Props) {
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const destination = useResolvedPath(redirect).pathname;
     const { resolvedTheme } = useTheme();
     const colors = CHART_COLORS[resolvedTheme];
 
@@ -71,7 +72,7 @@ function TimeSeriesChart({
     const handleBucketClick = (index: number) => {
         if (index < 0 || index >= isoKeys.length) return;
         const filters = onSetFilter(isoKeys[index], bucketEndIso(index));
-        dispatch(filterActions.setCurrentFilters({ entity, currentFilters: filters }));
+        dispatch(filterActions.setDrillDownFilters({ entity, filters, path: destination }));
         navigate(redirect);
     };
 
