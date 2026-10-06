@@ -37,6 +37,7 @@ import { Link, useParams } from 'react-router';
 import { actions as raProfilesActions, selectors as raProfilesSelectors } from 'ducks/ra-profiles';
 import Button from 'components/Button';
 import type { AttributeDescriptorModel, AttributeResponseModel } from 'types/attributes';
+import type { CertificateListResponseModel } from 'types/certificate';
 import { PlatformEnum, Resource } from 'types/openapi';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { collectFormAttributes } from 'utils/attributes/attributes';
@@ -177,7 +178,6 @@ export default function CertificateDetail() {
     const { id } = useParams();
 
     const certificate = useSelector(selectors.certificateDetail);
-    const certificates = useSelector(selectors.certificates);
     const certificateRelations = useSelector(selectors.certificateRelations);
     const certificateChain = useSelector(selectors.certificateChain);
     const certificateChainDownloadContent = useSelector(selectors.certificateChainDownloadContent);
@@ -237,7 +237,7 @@ export default function CertificateDetail() {
     const [confirmRemove, setConfirmRemove] = useState<boolean>(false);
 
     const [isAddingRelatedCertificate, setIsAddingRelatedCertificate] = useState<boolean>(false);
-    const [selectedCertificate, setSelectedCertificate] = useState<string | undefined>();
+    const [selectedCertificate, setSelectedCertificate] = useState<CertificateListResponseModel | undefined>();
     const [confirmDeleteRelatedCertificate, setConfirmDeleteRelatedCertificate] = useState<boolean>(false);
     const [relatedCertificateCheckedRows, setRelatedCertificateCheckedRows] = useState<string[]>([]);
     const [isAlreadyRelatedError, setIsAlreadyRelatedError] = useState<boolean>(false);
@@ -717,11 +717,10 @@ export default function CertificateDetail() {
         [relatedCertificates],
     );
 
-    const relatedCertificateResolution = useMemo(() => {
-        const selected = certificates.find((c) => c.uuid === selectedCertificate);
-        if (!certificate || !selected) return undefined;
-        return resolveRelatedCertificateRelation(certificate, selected);
-    }, [certificate, certificates, selectedCertificate]);
+    const relatedCertificateResolution = useMemo(
+        () => (certificate && selectedCertificate ? resolveRelatedCertificateRelation(certificate, selectedCertificate) : undefined),
+        [certificate, selectedCertificate],
+    );
 
     const relatedCertificateNote = useMemo(() => {
         if (isAlreadyRelatedError) return <span className="text-danger">Certificate is already related</span>;
@@ -902,7 +901,7 @@ export default function CertificateDetail() {
         if (!selectedCertificate) {
             setIsAlreadyRelatedError(false);
         }
-        const isAlreadyRelated = getCertificateIsAlreadyRelated(selectedCertificate);
+        const isAlreadyRelated = getCertificateIsAlreadyRelated(selectedCertificate?.uuid);
 
         setIsAlreadyRelatedError(isAlreadyRelated);
     }, [selectedCertificate, getCertificateIsAlreadyRelated]);
@@ -1459,7 +1458,7 @@ export default function CertificateDetail() {
                                 type="button"
                                 onClick={() => {
                                     if (selectedCertificate && relatedCertificateResolution?.relation) {
-                                        onCertificateAssociate(id, selectedCertificate, relatedCertificateResolution.relation);
+                                        onCertificateAssociate(id, selectedCertificate.uuid, relatedCertificateResolution.relation);
                                     }
                                 }}
                             />
