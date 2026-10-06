@@ -105,6 +105,28 @@ describe('cbom slice', () => {
         expect(next.isFetchingVersions).toBe(false);
     });
 
+    test('listCbomContributedAssets resets to the requested record, and only that record settles it', () => {
+        const loaded = { cbomUuid: 'old', status: 'loaded' as const, assets: [{ assetUuid: 'a-0', bomRefs: ['ref-0'] }] };
+
+        let next = reducer({ ...initialState, contributedAssets: loaded }, actions.listCbomContributedAssets({ uuid: 'u-1' }));
+        expect(next.contributedAssets).toEqual({ cbomUuid: 'u-1', status: 'fetching', assets: [] });
+
+        const assets = [{ assetUuid: 'a-1', bomRefs: ['ref-1', 'ref-2'] }];
+        expect(reducer(next, actions.listCbomContributedAssetsSuccess({ uuid: 'other', assets })).contributedAssets).toEqual(
+            next.contributedAssets,
+        );
+        expect(
+            reducer(next, actions.listCbomContributedAssetsFailure({ uuid: 'other', error: 'err', statusCode: 500 })).contributedAssets,
+        ).toEqual(next.contributedAssets);
+
+        const failed = reducer(next, actions.listCbomContributedAssetsFailure({ uuid: 'u-1', error: 'err', statusCode: 403 }));
+        expect(failed.contributedAssets).toEqual({ cbomUuid: 'u-1', status: 'failed', assets: [], error: 'err', errorStatusCode: 403 });
+
+        next = reducer(next, actions.listCbomContributedAssetsSuccess({ uuid: 'u-1', assets }));
+        expect(next.contributedAssets).toEqual({ cbomUuid: 'u-1', status: 'loaded', assets });
+        expect(selectors.selectContributedAssets({ cbom: next } as any)).toEqual(next.contributedAssets);
+    });
+
     test('getSearchableFields / success / failure updates fields and flags', () => {
         let next = reducer({ ...initialState, searchableFields: [{ group: 'old', fields: [] }] as any }, actions.getSearchableFields());
         expect(next.searchableFields).toEqual([]);

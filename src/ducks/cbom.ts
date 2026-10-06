@@ -8,6 +8,7 @@ import type {
     SearchFieldDataByGroupDto,
     SearchRequestDto,
 } from 'types/openapi';
+import type { ContributedAssetRefs, ContributedAssets } from 'utils/cbom-asset-links';
 import { resetSliceState } from './reducerUtils';
 
 export type State = {
@@ -16,6 +17,7 @@ export type State = {
     cbomDetailError?: string;
     cbomDetailErrorStatusCode?: number;
     cbomVersions: CbomDto[];
+    contributedAssets: ContributedAssets;
     searchableFields: SearchFieldDataByGroupDto[];
 
     isFetchingList: boolean;
@@ -35,6 +37,7 @@ export type State = {
 
 export const initialState: State = {
     cbomVersions: [],
+    contributedAssets: { status: 'idle', assets: [] },
     searchableFields: [],
 
     isFetchingList: false,
@@ -116,6 +119,30 @@ export const slice = createSlice({
 
         listCbomVersionsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isFetchingVersions = false;
+        },
+
+        // List the inventory assets a CBOM contributed
+        listCbomContributedAssets: (state, action: PayloadAction<{ uuid: string }>) => {
+            state.contributedAssets = { cbomUuid: action.payload.uuid, status: 'fetching', assets: [] };
+        },
+
+        listCbomContributedAssetsSuccess: (state, action: PayloadAction<{ uuid: string; assets: ContributedAssetRefs[] }>) => {
+            if (state.contributedAssets.cbomUuid !== action.payload.uuid) return;
+            state.contributedAssets = { cbomUuid: action.payload.uuid, status: 'loaded', assets: action.payload.assets };
+        },
+
+        listCbomContributedAssetsFailure: (
+            state,
+            action: PayloadAction<{ uuid: string; error: string | undefined; statusCode?: number }>,
+        ) => {
+            if (state.contributedAssets.cbomUuid !== action.payload.uuid) return;
+            state.contributedAssets = {
+                cbomUuid: action.payload.uuid,
+                status: 'failed',
+                assets: [],
+                error: action.payload.error,
+                errorStatusCode: action.payload.statusCode,
+            };
         },
 
         // Get Searchable Fields
@@ -214,6 +241,7 @@ export const selectCbomDetail = createSelector(featureSelector, (state) => state
 export const selectCbomDetailError = createSelector(featureSelector, (state) => state.cbomDetailError);
 export const selectCbomDetailErrorStatusCode = createSelector(featureSelector, (state) => state.cbomDetailErrorStatusCode);
 export const selectCbomVersions = createSelector(featureSelector, (state) => state.cbomVersions);
+export const selectContributedAssets = createSelector(featureSelector, (state) => state.contributedAssets);
 export const selectSearchableFields = createSelector(featureSelector, (state) => state.searchableFields);
 
 export const selectIsFetchingList = createSelector(featureSelector, (state) => state.isFetchingList);
@@ -235,6 +263,7 @@ export const selectors = {
     selectCbomDetailError,
     selectCbomDetailErrorStatusCode,
     selectCbomVersions,
+    selectContributedAssets,
     selectSearchableFields,
     selectIsFetchingList,
     selectIsFetchingDetail,

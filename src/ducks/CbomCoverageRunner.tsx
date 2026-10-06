@@ -40,6 +40,13 @@ function runReducerAndSelectors() {
     state = reducer(state, actions.listCbomVersionsSuccess({ versions: [{ uuid: 'v-1' } as CbomDto] }));
     state = reducer(state, actions.listCbomVersionsFailure({ error: 'err' }));
 
+    state = reducer(state, actions.listCbomContributedAssets({ uuid: 'detail-1' }));
+    state = reducer(
+        state,
+        actions.listCbomContributedAssetsSuccess({ uuid: 'detail-1', assets: [{ assetUuid: 'asset-1', bomRefs: ['ref-1'] }] }),
+    );
+    state = reducer(state, actions.listCbomContributedAssetsFailure({ uuid: 'detail-1', error: 'err' }));
+
     state = reducer(state, actions.getSearchableFields());
     state = reducer(state, actions.getSearchableFieldsSuccess({ fields: [{} as SearchFieldDataByGroupDto] }));
     state = reducer(state, actions.getSearchableFieldsFailure({ error: 'err' }));
@@ -67,6 +74,7 @@ function runReducerAndSelectors() {
     selectors.selectCbomList(rootState);
     selectors.selectCbomDetail(rootState);
     selectors.selectCbomVersions(rootState);
+    selectors.selectContributedAssets(rootState);
     selectors.selectSearchableFields(rootState);
     selectors.selectIsFetchingList(rootState);
     selectors.selectIsFetchingDetail(rootState);
@@ -125,6 +133,14 @@ export function runEpicsForCoverage() {
                     } as PaginationResponseDtoCbomDto),
                 getCbomDetail: () => of({ uuid: 'detail-1', version: 1 } as CbomDetailDto),
                 listCbomVersions: () => of([{ uuid: 'v-1', version: 1 } as CbomDto]),
+                listCbomCryptographicAssets: () =>
+                    of({
+                        items: [{ uuid: 'asset-1', bomRefs: ['ref-1'] }],
+                        totalItems: 1,
+                        pageNumber: 1,
+                        itemsPerPage: 1000,
+                        totalPages: 1,
+                    }),
                 getCbomSearchableFields: () => of([{} as SearchFieldDataByGroupDto]),
                 uploadCbom: () => of({ uuid: 'created-1' } as CbomDto),
                 deleteCbom: () => of(undefined),
@@ -140,6 +156,7 @@ export function runEpicsForCoverage() {
                 listCboms: () => throwError(() => new Error('list failed')),
                 getCbomDetail: () => throwError(() => new Error('detail failed')),
                 listCbomVersions: () => throwError(() => new Error('versions failed')),
+                listCbomCryptographicAssets: () => throwError(() => new Error('contributed assets failed')),
                 getCbomSearchableFields: () => throwError(() => new Error('search fields failed')),
                 uploadCbom: () => throwError(() => new Error('upload failed')),
                 deleteCbom: () => throwError(() => new Error('delete failed')),
@@ -172,6 +189,9 @@ export function runEpicsForCoverage() {
 
     cbomEpics[7](of(actions.syncCboms()), emptyState$, successDeps).subscribe();
     cbomEpics[7](of(actions.syncCboms()), emptyState$, failureDeps).subscribe();
+
+    cbomEpics[8](of(actions.listCbomContributedAssets({ uuid: 'detail-1' })), emptyState$, successDeps).subscribe();
+    cbomEpics[8](of(actions.listCbomContributedAssets({ uuid: 'detail-1' })), emptyState$, failureDeps).subscribe();
 }
 
 export default function CbomCoverageRunner() {

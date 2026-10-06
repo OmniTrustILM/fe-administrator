@@ -16,6 +16,7 @@ type EpicDeps = {
             listCboms: (args: any) => any;
             getCbomDetail: (args: any) => any;
             listCbomVersions: (args: any) => any;
+            listCbomCryptographicAssets: (args: any) => any;
             getCbomSearchableFields: () => any;
             uploadCbom: (args: any) => any;
             deleteCbom: (args: any) => any;
@@ -32,6 +33,7 @@ function createDeps(overrides: Partial<EpicDeps['apiClients']['cbomManagement']>
                 listCboms: () => of({ items: [], totalItems: 0, pageNumber: 1, itemsPerPage: 10, totalPages: 0 }),
                 getCbomDetail: () => of({ uuid: 'detail-default' }),
                 listCbomVersions: () => of([]),
+                listCbomCryptographicAssets: () => of({ items: [], totalItems: 0, pageNumber: 1, itemsPerPage: 1000, totalPages: 0 }),
                 getCbomSearchableFields: () => of([]),
                 uploadCbom: () => of({ uuid: 'uploaded-default' }),
                 deleteCbom: () => of(undefined),
@@ -432,5 +434,84 @@ describe('cbom epics', () => {
 
         expect(emitted[0]).toEqual(slice.actions.syncCbomsFailure({ error: 'Failed to sync CBOMs. sync failed' }));
         expect(emitted[1]).toEqual(alertsSlice.actions.error('Failed to sync CBOMs. sync failed'));
+    });
+
+    test('listCbomContributedAssets walks every page and settles once with the refs of all of them', async () => {
+        const requests: any[] = [];
+        const pages: Record<number, any> = {
+            1: { items: [{ uuid: 'asset-1', bomRefs: ['ref-1', 'ref-2'] }], pageNumber: 1, totalPages: 3 },
+            2: { items: [{ uuid: 'asset-2', bomRefs: [] }], pageNumber: 2, totalPages: 3 },
+            3: { items: [{ uuid: 'asset-3', bomRefs: ['ref-3'] }], pageNumber: 3, totalPages: 3 },
+        };
+        const deps = createDeps({
+            listCbomCryptographicAssets: (request) => {
+                requests.push(request);
+                return of(pages[request.searchRequestDto.pageNumber]);
+            },
+        });
+
+        const output$ = (cbomEpics[8] as any)(of(slice.actions.listCbomContributedAssets({ uuid: 'cbom-1' })), of({}) as any, deps as any);
+        const emitted = await firstValueFrom(output$.pipe(toArray()));
+
+        expect(requests).toEqual([
+            { uuid: 'cbom-1', searchRequestDto: { pageNumber: 1, itemsPerPage: 1000 } },
+            { uuid: 'cbom-1', searchRequestDto: { pageNumber: 2, itemsPerPage: 1000 } },
+            { uuid: 'cbom-1', searchRequestDto: { pageNumber: 3, itemsPerPage: 1000 } },
+        ]);
+        expect(emitted).toEqual([
+            slice.actions.listCbomContributedAssetsSuccess({
+                uuid: 'cbom-1',
+                assets: [
+                    { assetUuid: 'asset-1', bomRefs: ['ref-1', 'ref-2'] },
+                    { assetUuid: 'asset-2', bomRefs: [] },
+                    { assetUuid: 'asset-3', bomRefs: ['ref-3'] },
+                ],
+            }),
+        ]);
+    });
+
+    test('listCbomContributedAssets reads a row served without bomRefs as one with none', async () => {
+        const deps = createDeps({
+            listCbomCryptographicAssets: () => of({ items: [{ uuid: 'asset-1' }], pageNumber: 1, totalPages: 1 }),
+        });
+
+        const output$ = (cbomEpics[8] as any)(of(slice.actions.listCbomContributedAssets({ uuid: 'cbom-1' })), of({}) as any, deps as any);
+        const emitted = await firstValueFrom(output$.pipe(toArray()));
+
+        expect(emitted).toEqual([
+            slice.actions.listCbomContributedAssetsSuccess({ uuid: 'cbom-1', assets: [{ assetUuid: 'asset-1', bomRefs: [] }] }),
+        ]);
+    });
+
+    test('listCbomContributedAssets stops at an empty page, whatever page count it reports', async () => {
+        let requestCount = 0;
+        const deps = createDeps({
+            listCbomCryptographicAssets: () => {
+                requestCount += 1;
+                return of({ items: [], pageNumber: 1, totalPages: 5 });
+            },
+        });
+
+        const output$ = (cbomEpics[8] as any)(of(slice.actions.listCbomContributedAssets({ uuid: 'cbom-1' })), of({}) as any, deps as any);
+        const emitted = await firstValueFrom(output$.pipe(toArray()));
+
+        expect(requestCount).toBe(1);
+        expect(emitted).toEqual([slice.actions.listCbomContributedAssetsSuccess({ uuid: 'cbom-1', assets: [] })]);
+    });
+
+    test('listCbomContributedAssets failure carries the status code and raises no alert or lock', async () => {
+        const deps = createDeps({
+            listCbomCryptographicAssets: ({ searchRequestDto }) =>
+                searchRequestDto.pageNumber === 1
+                    ? of({ items: [{ uuid: 'asset-1', bomRefs: ['ref-1'] }], pageNumber: 1, totalPages: 2 })
+                    : throwError(() => ({ status: 403, message: 'Forbidden' })),
+        });
+
+        const output$ = (cbomEpics[8] as any)(of(slice.actions.listCbomContributedAssets({ uuid: 'cbom-1' })), of({}) as any, deps as any);
+        const emitted = await firstValueFrom(output$.pipe(toArray()));
+
+        expect(emitted).toHaveLength(1);
+        expect(emitted[0].type).toBe(slice.actions.listCbomContributedAssetsFailure.type);
+        expect(emitted[0].payload).toMatchObject({ uuid: 'cbom-1', statusCode: 403 });
     });
 });

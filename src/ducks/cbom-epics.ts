@@ -1,6 +1,7 @@
 import type { AppEpic } from 'ducks';
-import { concat, of } from 'rxjs';
-import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
+import { concat, EMPTY, of } from 'rxjs';
+import { catchError, expand, filter, map, mergeMap, reduce, switchMap } from 'rxjs/operators';
+import type { ContributedAssetRefs } from 'utils/cbom-asset-links';
 import { extractError } from 'utils/net';
 import { alertsSlice } from './alert-slice';
 import { actions as appRedirectActions } from './app-redirect';
@@ -119,6 +120,41 @@ const listCbomVersions: AppEpic = (action$, state, deps) => {
                 ),
             ),
         ),
+    );
+};
+
+// The listing has no bom-ref filter and clamps a page at this size, so the whole map means walking every page.
+const CONTRIBUTED_ASSETS_PAGE_SIZE = 1000;
+
+const listCbomContributedAssets: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.listCbomContributedAssets.match),
+        switchMap((action) => {
+            const { uuid } = action.payload;
+            const fetchPage = (pageNumber: number) =>
+                deps.apiClients.cbomManagement.listCbomCryptographicAssets({
+                    uuid,
+                    searchRequestDto: { pageNumber, itemsPerPage: CONTRIBUTED_ASSETS_PAGE_SIZE },
+                });
+
+            return fetchPage(1).pipe(
+                expand((page, index) => (page.items.length > 0 && index + 1 < page.totalPages ? fetchPage(index + 2) : EMPTY)),
+                reduce(
+                    (assets, page) => assets.concat(page.items.map((item) => ({ assetUuid: item.uuid, bomRefs: item.bomRefs ?? [] }))),
+                    [] as ContributedAssetRefs[],
+                ),
+                map((assets) => slice.actions.listCbomContributedAssetsSuccess({ uuid, assets })),
+                catchError((err) =>
+                    of(
+                        slice.actions.listCbomContributedAssetsFailure({
+                            uuid,
+                            error: extractError(err, 'Failed to fetch the crypto assets this CBOM contributed'),
+                            statusCode: typeof err?.status === 'number' ? err.status : undefined,
+                        }),
+                    ),
+                ),
+            );
+        }),
     );
 };
 
@@ -249,4 +285,14 @@ const syncCboms: AppEpic = (action$, state, deps) => {
     );
 };
 
-export default [listCboms, getCbomDetail, listCbomVersions, getSearchableFields, uploadCbom, deleteCbom, bulkDeleteCbom, syncCboms];
+export default [
+    listCboms,
+    getCbomDetail,
+    listCbomVersions,
+    getSearchableFields,
+    uploadCbom,
+    deleteCbom,
+    bulkDeleteCbom,
+    syncCboms,
+    listCbomContributedAssets,
+];
