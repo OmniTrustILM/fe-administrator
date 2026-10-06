@@ -6,6 +6,7 @@ import { useSelector } from 'react-redux';
 import { HashRouter, Navigate, Route, Routes } from 'react-router';
 
 import AppRedirect from './AppRedirect';
+import ListReturnTracker from './PagedList/ListReturnTracker';
 import Layout from './Layout';
 import Spinner from './Spinner';
 
@@ -505,6 +506,7 @@ export default function AppRouter() {
     return (
         <HashRouter>
             <AppRedirect />
+            <ListReturnTracker />
 
             <Suspense fallback={<RouteFallback />}>
                 <Routes>

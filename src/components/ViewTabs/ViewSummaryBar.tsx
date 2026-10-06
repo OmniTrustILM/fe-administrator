@@ -13,8 +13,15 @@ type Props = Readonly<{
     isBusy: boolean;
     onRevert: () => void;
     onSave: () => void;
+    /** Whether Standard is listing under the filters a Dashboard drill-down opened it on. */
+    isDrillDown?: boolean;
     dataTestId: string;
 }>;
+
+function unsavedMessage(isStandard: boolean, isDrillDown: boolean): string {
+    if (!isStandard) return 'Unsaved changes to this view';
+    return isDrillDown ? 'Filtered from the Dashboard — Standard cannot hold these filters' : 'Unsaved changes — Standard cannot hold them';
+}
 
 /**
  * The row under the tab strip: what the view is showing, and — once it has drifted — the offer to
@@ -23,7 +30,17 @@ type Props = Readonly<{
  * The sort is named here as well as on its own header because the active sort has to stay legible
  * after that header has scrolled out of a wide table.
  */
-export default function ViewSummaryBar({ columns, sort, isDirty, isStandard, isBusy, onRevert, onSave, dataTestId }: Props) {
+export default function ViewSummaryBar({
+    columns,
+    sort,
+    isDirty,
+    isStandard,
+    isBusy,
+    onRevert,
+    onSave,
+    isDrillDown = false,
+    dataTestId,
+}: Props) {
     const sorted = sort ? columns.find((column) => getSortKey(sort) === `${column.fieldSource}:${column.fieldIdentifier}`) : undefined;
     const SortGlyph = sort?.direction === 'desc' ? ArrowDown : ArrowUp;
 
@@ -41,7 +58,7 @@ export default function ViewSummaryBar({ columns, sort, isDirty, isStandard, isB
             {isDirty && (
                 <div className="ml-auto flex items-center gap-x-3">
                     <span className="text-content" data-testid={`${dataTestId}-unsaved`}>
-                        {isStandard ? 'Unsaved changes — Standard cannot hold them' : 'Unsaved changes to this view'}
+                        {unsavedMessage(isStandard, isDrillDown)}
                     </span>
                     <Button variant="transparent" color="secondary" onClick={onRevert} data-testid={`${dataTestId}-revert`}>
                         Revert
