@@ -138,7 +138,9 @@ const listCbomContributedAssets: AppEpic = (action$, state, deps) => {
                 });
 
             return fetchPage(1).pipe(
-                expand((page, index) => (page.items.length > 0 && index + 1 < page.totalPages ? fetchPage(index + 2) : EMPTY)),
+                // Every page up to totalPages is read, a sparse one included: a row withdrawn while the page was read is left out
+                // of it, so a short or empty page says nothing about the pages after it.
+                expand((page, index) => (index + 1 < page.totalPages ? fetchPage(index + 2) : EMPTY)),
                 reduce(
                     (assets, page) => assets.concat(page.items.map((item) => ({ assetUuid: item.uuid, bomRefs: item.bomRefs ?? [] }))),
                     [] as ContributedAssetRefs[],

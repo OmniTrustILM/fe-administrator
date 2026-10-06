@@ -483,19 +483,42 @@ describe('cbom epics', () => {
         ]);
     });
 
-    test('listCbomContributedAssets stops at an empty page, whatever page count it reports', async () => {
-        let requestCount = 0;
+    test('listCbomContributedAssets reads on past an empty page as long as totalPages says more exist', async () => {
+        const requested: number[] = [];
+        const pages: Record<number, any> = {
+            1: { items: [], pageNumber: 1, totalPages: 3 },
+            2: { items: [], pageNumber: 2, totalPages: 3 },
+            3: { items: [{ uuid: 'asset-3', bomRefs: ['ref-3'] }], pageNumber: 3, totalPages: 3 },
+        };
         const deps = createDeps({
-            listCbomCryptographicAssets: () => {
-                requestCount += 1;
-                return of({ items: [], pageNumber: 1, totalPages: 5 });
+            listCbomCryptographicAssets: ({ searchRequestDto }) => {
+                requested.push(searchRequestDto.pageNumber);
+                return of(pages[searchRequestDto.pageNumber]);
             },
         });
 
         const output$ = (cbomEpics[8] as any)(of(slice.actions.listCbomContributedAssets({ uuid: 'cbom-1' })), of({}) as any, deps as any);
         const emitted = await firstValueFrom(output$.pipe(toArray()));
 
-        expect(requestCount).toBe(1);
+        expect(requested).toEqual([1, 2, 3]);
+        expect(emitted).toEqual([
+            slice.actions.listCbomContributedAssetsSuccess({ uuid: 'cbom-1', assets: [{ assetUuid: 'asset-3', bomRefs: ['ref-3'] }] }),
+        ]);
+    });
+
+    test('listCbomContributedAssets stops after the last page, and after a first page that reports none', async () => {
+        const requested: number[] = [];
+        const deps = createDeps({
+            listCbomCryptographicAssets: ({ searchRequestDto }) => {
+                requested.push(searchRequestDto.pageNumber);
+                return of({ items: [], pageNumber: 1, totalPages: 0 });
+            },
+        });
+
+        const output$ = (cbomEpics[8] as any)(of(slice.actions.listCbomContributedAssets({ uuid: 'cbom-1' })), of({}) as any, deps as any);
+        const emitted = await firstValueFrom(output$.pipe(toArray()));
+
+        expect(requested).toEqual([1]);
         expect(emitted).toEqual([slice.actions.listCbomContributedAssetsSuccess({ uuid: 'cbom-1', assets: [] })]);
     });
 
