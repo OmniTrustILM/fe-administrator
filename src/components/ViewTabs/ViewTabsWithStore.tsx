@@ -109,6 +109,14 @@ export default function ViewTabsWithStore({
     const liveCatalogue = catalogueStep > 0 ? catalogueSequence[Math.min(catalogueStep, catalogueSequence.length) - 1] : swappedCatalogue;
     const gate = useMemo(() => (renderableProperties ? new Set(renderableProperties) : undefined), [renderableProperties]);
 
+    const answerUpdate = () => {
+        const { listViews } = store.getState();
+        const update = listViews.dispatched.filter((each) => each.type === 'listViews/updateView').at(-1);
+        const uuid = (update?.payload as { uuid?: string } | undefined)?.uuid;
+        const row = listViews.byResource[resource]?.views.find((each) => each.uuid === uuid);
+        if (row) store.dispatch({ type: 'listViews/updateViewSuccess', payload: { resource, view: row } });
+    };
+
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/certificates']}>
@@ -191,18 +199,19 @@ export default function ViewTabsWithStore({
                     fail the create
                 </button>
 
+                <button type="button" data-testid="simulate-update-success" onClick={answerUpdate}>
+                    answer the update
+                </button>
+
                 <button
                     type="button"
-                    data-testid="simulate-update-success"
+                    data-testid="simulate-update-success-with-next-catalogue"
                     onClick={() => {
-                        const { listViews } = store.getState();
-                        const update = listViews.dispatched.filter((each) => each.type === 'listViews/updateView').at(-1);
-                        const uuid = (update?.payload as { uuid?: string } | undefined)?.uuid;
-                        const row = listViews.byResource[resource]?.views.find((each) => each.uuid === uuid);
-                        if (row) store.dispatch({ type: 'listViews/updateViewSuccess', payload: { resource, view: row } });
+                        answerUpdate();
+                        setCatalogueStep((current) => current + 1);
                     }}
                 >
-                    answer the update
+                    answer the update and the next catalogue read together
                 </button>
 
                 <button

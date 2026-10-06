@@ -1652,6 +1652,115 @@ test.describe('ViewTabs', () => {
         expect(reverted.filters).toEqual([]);
     });
 
+    test('keeps the filter of the user over the stored one on the same field when the held-back column is shown', async ({
+        mount,
+        page,
+    }) => {
+        await mount(heldBackStrip());
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+        await page.getByTestId('drift-filter').click();
+
+        await page.getByTestId('view-tabs-returned-show').click();
+
+        await expect
+            .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
+            .toEqual(['COMMON_NAME', 'retired']);
+        expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
+    });
+
+    test('keeps the filter of the user over the stored one on the same field when the column menu adds the held-back column', async ({
+        mount,
+        page,
+    }) => {
+        await mount(heldBackStrip({ driftColumn: column('retired', 'Retired', FilterFieldSource.Custom) }));
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+        await page.getByTestId('drift-filter').click();
+
+        await page.getByTestId('drift-columns').click();
+        await expect(page.getByTestId('view-tabs-returned')).toHaveCount(0);
+        await settle(page);
+
+        expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
+    });
+
+    test('keeps a filter the user sets on the confirmed field after reopening the view while the save is in flight', async ({
+        mount,
+        page,
+    }) => {
+        const otherFilter: SearchFilterModel = { ...retiredFilter, value: 'unknown' };
+        await mount(heldBackStrip({ driftAddedFilter: otherFilter }));
+        await saveOwnFilter(page);
+        await page.getByTestId('view-tabs-tab-standard').click();
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await expect.poll(async () => (await appliedSlice(page)).filters).toEqual([]);
+        await page.getByTestId('drift-add-filter').click();
+
+        await page.getByTestId('simulate-update-success').click();
+
+        await expect
+            .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
+            .toEqual(['COMMON_NAME', 'retired']);
+        expect((await appliedSlice(page)).filters).toEqual([otherFilter]);
+    });
+
+    test('keeps a column off the table whose field goes in the same update that a save confirming another succeeds', async ({
+        mount,
+        page,
+    }) => {
+        const withoutEnvironment = [
+            catalogue[0],
+            { filterFieldSource: FilterFieldSource.Custom, searchFieldData: [field('retired', 'Retired')] },
+        ] as unknown as SearchFieldDataByGroupDto[];
+        const view = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('environment', FilterFieldSource.Custom), stored('retired', FilterFieldSource.Custom)],
+            filters: [retiredFilter],
+            sort: undefined,
+        });
+        await mount(heldBackStrip({ views: [view], catalogueSequence: [withoutEnvironment] }));
+        await expect
+            .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
+            .toEqual(['COMMON_NAME', 'environment']);
+        await saveOwnFilter(page);
+
+        await page.getByTestId('simulate-update-success-with-next-catalogue').click();
+
+        await expect
+            .poll(async () => (await appliedSlice(page)).columns.map((each) => each.fieldIdentifier))
+            .toEqual(['COMMON_NAME', 'retired']);
+        await settle(page);
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'retired']);
+    });
+
+    for (const [state, fields] of [
+        ['still missing', catalogue],
+        ['back as one the listing cannot display', hiddenRetired],
+    ] as const) {
+        test(`keeps the stored ordering on a held-back column that is ${state}`, async ({ mount, page }) => {
+            const sorted = expiryWatch({
+                defaultView: true,
+                columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+                filters: [],
+                sort: { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', direction: SortDirection.Desc },
+            });
+            await mount(strip({ views: [sorted], fields, dormantFields: [retiredKey], dropsUnshownSort: true, driftFilter: stateFilter }));
+            await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+            await settle(page);
+            await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+
+            await page.getByTestId('drift-filter').click();
+            await page.getByTestId('view-tabs-summary-save').click();
+
+            await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+            const update = await lastDispatched(page, 'listViews/updateView');
+            expect(update?.payload?.view).toHaveProperty('sort', {
+                fieldSource: FilterFieldSource.Custom,
+                fieldIdentifier: 'retired',
+                direction: SortDirection.Desc,
+            });
+        });
+    }
+
     test('saves a view whose every column is held back as the table showed it, filter of the user included', async ({ mount, page }) => {
         const only = expiryWatch({
             defaultView: true,
