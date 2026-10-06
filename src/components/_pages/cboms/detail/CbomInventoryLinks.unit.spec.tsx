@@ -113,7 +113,7 @@ describe('CBOM inventory links', () => {
 
     describe('CbomInventoryStatus', () => {
         const renderStatus = (state: CbomInventoryState, harness = makeStore(), onRetry = () => {}) =>
-            render(<CbomInventoryStatus state={state} serialNumber="urn:uuid:alpha" onRetry={onRetry} />, harness);
+            render(<CbomInventoryStatus state={state} onRetry={onRetry} />, harness);
 
         test('says nothing when the platform reports no asset sync', async () => {
             await renderStatus({ kind: 'unavailable' });
@@ -177,7 +177,7 @@ describe('CBOM inventory links', () => {
 
         test('links a contributing record to the inventory, handing in its serial number as the source filter', async () => {
             const harness = makeStore();
-            await renderStatus({ kind: 'contributing', assetUuidByBomRef: new Map() }, harness);
+            await renderStatus({ kind: 'contributing', serialNumber: 'urn:uuid:alpha', assetUuidByBomRef: new Map() }, harness);
 
             expect(one('cbom-inventory-link')?.getAttribute('href')).toBe('/cryptoassets');
 

@@ -19,7 +19,7 @@ import { EntityType } from 'ducks/filters';
 import { actions, selectors } from 'ducks/cbom';
 import { CbomAssetName, CbomInventoryStatus, useCbomInventory } from './CbomInventoryLinks';
 import type { DashboardDict } from 'types/statisticsDashboard';
-import { type ComponentAssetLink, resolveComponentAssetLink } from 'utils/cbom-asset-links';
+import type { ComponentAssetLink } from 'utils/cbom-asset-links';
 import { dateFormatter } from 'utils/dateUtil';
 import { getDonutChartColorsByRandomNumberOfOptions } from 'utils/dashboard';
 
@@ -209,13 +209,7 @@ export default function CbomDetail() {
         dispatch(actions.listCbomVersions({ uuid: id }));
     }, [dispatch, id]);
 
-    const { state: inventoryState, reload: reloadInventory } = useCbomInventory(detail);
-
-    const resolveAssetLink = useCallback(
-        (component: CbomComponent) =>
-            inventoryState.kind === 'contributing' ? resolveComponentAssetLink(component, inventoryState.assetUuidByBomRef) : undefined,
-        [inventoryState],
-    );
+    const { state: inventoryState, reload: reloadInventory, resolveLink: resolveAssetLink } = useCbomInventory(detail);
 
     const components = useMemo(() => {
         const content = detail?.content;
@@ -629,9 +623,7 @@ export default function CbomDetail() {
         return <DetailPageSkeleton layout="tabs" tabCount={3} />;
     }
 
-    const inventoryStatus = detail && (
-        <CbomInventoryStatus state={inventoryState} serialNumber={detail.serialNumber} onRetry={reloadInventory} />
-    );
+    const inventoryStatus = <CbomInventoryStatus state={inventoryState} onRetry={reloadInventory} />;
 
     const tabSwitchLoadingContent = (
         <Container>

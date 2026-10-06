@@ -7,7 +7,13 @@ import { type ReactNode, useCallback, useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useResolvedPath } from 'react-router';
 import { CbomAssetSyncState, type CbomDetailDto, Resource } from 'types/openapi';
-import { type CbomInventoryState, type ComponentAssetLink, describeCbomInventoryState, UNLINKED_REASON_TEXT } from 'utils/cbom-asset-links';
+import {
+    type CbomInventoryState,
+    type ComponentAssetLink,
+    describeCbomInventoryState,
+    resolveComponentAssetLink,
+    UNLINKED_REASON_TEXT,
+} from 'utils/cbom-asset-links';
 import { buildEqualsFilter, CRYPTO_ASSET_FILTER_FIELDS } from 'utils/cryptoAssetsDashboard';
 import { onSameTabClick } from 'utils/link-click';
 
@@ -15,8 +21,15 @@ const CRYPTO_ASSETS_PATH = `/${Resource.CryptoAssets.toLowerCase()}`;
 const CBOMS_PATH = `/${Resource.Cboms.toLowerCase()}`;
 const LINK_CLASS = 'text-brand hover:underline';
 
+type CbomInventory = {
+    state: CbomInventoryState;
+    reload: () => void;
+    /** The link a document component resolves to, or nothing while the record has no inventory links to speak of. */
+    resolveLink: (component: unknown) => ComponentAssetLink | undefined;
+};
+
 /** Reads the inventory side of the CBOM on screen, loading the assets it contributed once per loaded record. */
-export function useCbomInventory(detail: CbomDetailDto | undefined): { state: CbomInventoryState; reload: () => void } {
+export function useCbomInventory(detail: CbomDetailDto | undefined): CbomInventory {
     const dispatch = useDispatch();
 
     const profile = useSelector(authSelectors.profile);
@@ -46,7 +59,12 @@ export function useCbomInventory(detail: CbomDetailDto | undefined): { state: Cb
         [detail, versions, isFetchingVersions, canListCryptoAssets, contributed],
     );
 
-    return { state, reload };
+    const resolveLink = useCallback(
+        (component: unknown) => (state.kind === 'contributing' ? resolveComponentAssetLink(component, state.assetUuidByBomRef) : undefined),
+        [state],
+    );
+
+    return { state, reload, resolveLink };
 }
 
 type AssetNameProps = Readonly<{
@@ -74,20 +92,19 @@ export function CbomAssetName({ name, link }: AssetNameProps) {
 
 function Notice({ children, dataTestId }: Readonly<{ children: ReactNode; dataTestId: string }>) {
     return (
-        <div className="mb-4 rounded-md border border-divider bg-surface-sunken p-4 text-sm" role="status" data-testid={dataTestId}>
+        <output className="mb-4 block rounded-md border border-divider bg-surface-sunken p-4 text-sm" data-testid={dataTestId}>
             {children}
-        </div>
+        </output>
     );
 }
 
 type StatusProps = Readonly<{
     state: CbomInventoryState;
-    serialNumber: string;
     onRetry: () => void;
 }>;
 
 /** Says, above the asset table, where its rows stand against the crypto asset inventory. */
-export function CbomInventoryStatus({ state, serialNumber, onRetry }: StatusProps) {
+export function CbomInventoryStatus({ state, onRetry }: StatusProps) {
     const dispatch = useDispatch();
     const cryptoAssetsPath = useResolvedPath(CRYPTO_ASSETS_PATH).pathname;
 
@@ -97,9 +114,9 @@ export function CbomInventoryStatus({ state, serialNumber, onRetry }: StatusProp
 
         case 'loading':
             return (
-                <p className="mb-4 text-sm text-content-subtle" role="status" data-testid="cbom-inventory-loading">
+                <output className="mb-4 block text-sm text-content-subtle" data-testid="cbom-inventory-loading">
                     Loading the links to the crypto asset inventory...
-                </p>
+                </output>
             );
 
         case 'syncPending':
@@ -165,7 +182,7 @@ export function CbomInventoryStatus({ state, serialNumber, onRetry }: StatusProp
                             dispatch(
                                 filterActions.setDrillDownFilters({
                                     entity: EntityType.CRYPTO_ASSET,
-                                    filters: buildEqualsFilter(CRYPTO_ASSET_FILTER_FIELDS.sourceCbom, serialNumber),
+                                    filters: buildEqualsFilter(CRYPTO_ASSET_FILTER_FIELDS.sourceCbom, state.serialNumber),
                                     path: cryptoAssetsPath,
                                 }),
                             ),

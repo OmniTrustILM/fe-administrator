@@ -28,13 +28,13 @@ export const UNLINKED_REASON_TEXT: Record<UnlinkedReason, string> = {
     noInventoryAsset: 'Not linked: no crypto asset you can list holds the bom-ref of this component.',
 };
 
-const isSurrogate = (codeUnit: number): boolean => codeUnit >= 0xd800 && codeUnit <= 0xdfff;
+const isSurrogate = (codePoint: number): boolean => codePoint >= 0xd800 && codePoint <= 0xdfff;
 
-// Iterating a string yields whole code points, so a single unit in the surrogate range is one without its pair.
+// Iterating a string yields whole code points, so a value in the surrogate range is a surrogate without its pair.
 const isWellFormedWithinLimit = (value: string): boolean => {
     let codePoints = 0;
     for (const codePoint of value) {
-        if (codePoint.length === 1 && isSurrogate(codePoint.charCodeAt(0))) return false;
+        if (isSurrogate(codePoint.codePointAt(0) ?? 0)) return false;
         codePoints += 1;
         if (codePoints > MAX_STORED_BOM_REF_CODE_POINTS) return false;
     }
@@ -65,7 +65,7 @@ export function resolveComponentAssetLink(component: unknown, assetUuidByBomRef:
     return assetUuid === undefined ? { unlinked: 'noInventoryAsset' } : { assetUuid };
 }
 
-type InventoryRecord = Pick<CbomDto, 'uuid' | 'version' | 'assetSyncState' | 'assetSyncError'>;
+type InventoryRecord = Pick<CbomDto, 'uuid' | 'serialNumber' | 'version' | 'assetSyncState' | 'assetSyncError'>;
 
 export type CbomInventoryState =
     /** The platform reports no asset sync for this record, so the page has nothing to say about the inventory. */
@@ -77,7 +77,7 @@ export type CbomInventoryState =
     | { kind: 'loadFailed'; error?: string }
     | { kind: 'superseded'; holder: CbomDto }
     | { kind: 'noContribution' }
-    | { kind: 'contributing'; assetUuidByBomRef: Map<string, string> };
+    | { kind: 'contributing'; serialNumber: string; assetUuidByBomRef: Map<string, string> };
 
 /**
  * The version a superseded record's contributions moved to. Core withdraws an earlier version's links once a later
@@ -120,7 +120,7 @@ export function describeCbomInventoryState({
     }
 
     if (contributed.assets.length > 0) {
-        return { kind: 'contributing', assetUuidByBomRef: buildAssetUuidByBomRef(contributed.assets) };
+        return { kind: 'contributing', serialNumber: record.serialNumber, assetUuidByBomRef: buildAssetUuidByBomRef(contributed.assets) };
     }
 
     // An empty listing is read against the versions, so it waits for them rather than naming a cause it may take back.

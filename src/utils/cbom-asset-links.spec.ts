@@ -19,7 +19,7 @@ describe('isStorableBomRef', () => {
 
     test('counts the limit in code points, so 1024 astral characters still fit', () => {
         const astral = '\u{1F512}';
-        expect(astral.length).toBe(2);
+        expect(astral).toHaveLength(2);
         expect(isStorableBomRef(astral.repeat(1024))).toBe(true);
         expect(isStorableBomRef(astral.repeat(1025))).toBe(false);
     });
@@ -113,7 +113,7 @@ describe('findContributionHolder', () => {
 });
 
 describe('describeCbomInventoryState', () => {
-    const record = { uuid: 'cbom-1', version: 2, assetSyncState: CbomAssetSyncState.Synced };
+    const record = { uuid: 'cbom-1', serialNumber: 'urn:uuid:alpha', version: 2, assetSyncState: CbomAssetSyncState.Synced };
     const idle: ContributedAssets = { status: 'idle', assets: [] };
     const loaded = (assets: ContributedAssets['assets']): ContributedAssets => ({ cbomUuid: 'cbom-1', status: 'loaded', assets });
     const describeState = (overrides: Partial<Parameters<typeof describeCbomInventoryState>[0]> = {}) =>
@@ -177,8 +177,10 @@ describe('describeCbomInventoryState', () => {
         expect(state.kind).toBe('contributing');
     });
 
-    test('maps the refs of a contributing record to their assets', () => {
+    test('maps the refs of a contributing record to their assets, and carries its serial number for the inventory link', () => {
         const state = describeState({ contributed: loaded([{ assetUuid: 'asset-1', bomRefs: ['ref-1', 'ref-2'] }]) });
+
+        expect(state.kind === 'contributing' && state.serialNumber).toBe('urn:uuid:alpha');
 
         expect(state.kind === 'contributing' && [...state.assetUuidByBomRef]).toEqual([
             ['ref-1', 'asset-1'],
