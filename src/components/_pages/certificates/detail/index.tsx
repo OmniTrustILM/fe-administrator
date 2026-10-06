@@ -54,7 +54,7 @@ import type { Edge } from 'reactflow';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { DeviceType, useDeviceType } from 'utils/common-hooks';
 import CertificateStatus from '../CertificateStatus';
-import CertificateList from 'components/_pages/certificates/list';
+import RelatedCertificatePicker from './RelatedCertificatePicker';
 import { capitalize } from 'utils/common-utils';
 import ComplianceCheckResultWidget from 'components/_pages/certificates/ComplianceCheckResultWidget/ComplianceCheckResultWidget';
 import Badge from 'components/Badge';
@@ -1446,16 +1446,7 @@ export default function CertificateDetail() {
                 buttons={[]}
                 body={
                     <>
-                        <CertificateList
-                            hideAdditionalButtons={true}
-                            hideWidgetButtons={true}
-                            multiSelect={false}
-                            isLinkDisabled={true}
-                            onCheckedRowsChanged={(rows) => {
-                                setSelectedCertificate(rows[0] as string);
-                            }}
-                            withPreservedFilters={false}
-                        />
+                        <RelatedCertificatePicker onSelect={setSelectedCertificate} />
                         <Container className="flex-row items-center justify-end modal-footer" gap={4}>
                             <div className="mr-auto" aria-live="polite">
                                 {relatedCertificateNote}

@@ -22,7 +22,6 @@ function buildCertificateRowColumns(
 
 const mockDateFormatter = (d: Date) => d.toISOString().slice(0, 10);
 const mockGetEnumLabel = (_e: any, key: string) => key;
-const mockDispatch = () => {};
 
 function buildListCertificate(overrides: Partial<CertificateListResponseModel> = {}): CertificateListResponseModel {
     return {
@@ -61,8 +60,6 @@ test.describe('certificateTableHelpers', () => {
         const baseOpts = {
             isLinkDisabled: true,
             selectCertsOnly: false,
-            currentFilters: [],
-            dispatch: mockDispatch,
             dateFormatter: mockDateFormatter,
             certificateTypeEnum: {},
             getEnumLabel: mockGetEnumLabel,
