@@ -1436,6 +1436,29 @@ test.describe('ViewTabs', () => {
         expect(update?.payload?.view).not.toHaveProperty('filters', [retiredFilter]);
     });
 
+    for (const [state, fields] of [
+        ['still missing', catalogue],
+        ['back as one the listing cannot display', hiddenRetired],
+    ] as const) {
+        test(`drops the stored ordering on a held-back column that is ${state} when the user removes it`, async ({ mount, page }) => {
+            const sorted = expiryWatch({
+                defaultView: true,
+                columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+                filters: [],
+                sort: { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', direction: SortDirection.Desc },
+            });
+            await mount(strip({ views: [sorted], fields, dormantFields: [retiredKey], dropsUnshownSort: true }));
+            await expect(page.getByTestId('view-tabs-notice')).toContainText('retired cannot be shown');
+
+            await page.getByTestId('view-tabs-notice-remove').click();
+
+            await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+            const update = await lastDispatched(page, 'listViews/updateView');
+            expect(update?.payload).toMatchObject({ view: { columns: [stored('COMMON_NAME')] } });
+            expect(update?.payload?.view).not.toHaveProperty('sort');
+        });
+    }
+
     test('stops saying the view is not filtering by a held-back column once the user filters by it', async ({ mount, page }) => {
         const filtered = expiryWatch({
             defaultView: true,

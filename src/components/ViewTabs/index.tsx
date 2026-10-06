@@ -797,8 +797,9 @@ export default function ViewTabs({
         patchActive({
             columns: toStoredColumns(resolved.columns.filter((column) => !removed.has(getColumnKey(column)))),
             ...(refused.size > 0 ? { filters: activeView?.filters?.filter((filter) => !refused.has(getColumnKey(filter))) } : {}),
+            ...(heldSort && removed.has(getSortKey(heldSort)) ? { sort: undefined } : {}),
         });
-    }, [patchActive, resolved, unavailable, heldKeysOf, activeView]);
+    }, [patchActive, resolved, unavailable, heldKeysOf, activeView, heldSort]);
 
     const takenNames = useMemo(() => [STANDARD_VIEW_NAME, ...views.map((view) => view.name)], [views]);
 
