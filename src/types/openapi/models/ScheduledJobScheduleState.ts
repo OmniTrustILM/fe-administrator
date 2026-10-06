@@ -12,13 +12,16 @@
  */
 
 /**
- * Post-quantum readiness verdict computed by the platform rule set
+ *
  * @export
  * @enum {string}
  */
-export enum PqcVerdict {
-    Ready = 'ready',
-    NotReady = 'notReady',
-    NotApplicable = 'notApplicable',
+export enum ScheduledJobScheduleState {
+    Scheduled = 'scheduled',
+    Paused = 'paused',
+    Blocked = 'blocked',
+    Error = 'error',
+    Complete = 'complete',
+    NotScheduled = 'notScheduled',
     Unknown = 'unknown',
 }

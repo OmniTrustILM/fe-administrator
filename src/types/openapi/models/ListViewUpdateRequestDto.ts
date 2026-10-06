@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { ListViewColumnDto, SearchFilterRequestDto, SearchSortRequestDto } from './';
+import type { ListViewColumnDto, ListViewFilterDto, ListViewSortRequestDto } from './';
 
 /**
  * @export
@@ -25,7 +25,7 @@ export interface ListViewUpdateRequestDto {
      */
     name: string;
     /**
-     * Columns of the view, in display order
+     * Columns of the view, in display order. A column whose field the resource no longer defines, such as a deleted attribute, or can no longer show as a column is accepted only when editing a view that already holds it; a new view may name only fields the resource defines and can show. A column the view already holds is never bound to a replacement definition unless it is sent with `rebind`; see the column\'s `rebind` for how its binding is carried over.
      * @type {Array<ListViewColumnDto>}
      * @memberof ListViewUpdateRequestDto
      */
@@ -37,15 +37,15 @@ export interface ListViewUpdateRequestDto {
      */
     defaultView?: boolean;
     /**
-     * Filters the view applies. Absent or empty means the view applies no filter of its own and shows the whole inventory.
-     * @type {Array<SearchFilterRequestDto>}
+     * Filters the view applies. Absent or empty means the view applies no filter of its own and shows the whole inventory. A filter on a field the resource no longer defines is accepted only when editing a view that already holds that exact filter. A filter the view already holds is never bound to a replacement definition unless it is sent with `rebind`; see the filter\'s `rebind` for how its binding is carried over.
+     * @type {Array<ListViewFilterDto>}
      * @memberof ListViewUpdateRequestDto
      */
-    filters?: Array<SearchFilterRequestDto>;
+    filters?: Array<ListViewFilterDto>;
     /**
-     * Ordering the view applies. Absent means the view falls back to the endpoint\'s own default ordering.
-     * @type {SearchSortRequestDto}
+     * Ordering the view applies. Absent means the view falls back to the endpoint\'s own default ordering. An ordering the view already holds is never bound to a replacement definition unless it is sent with `rebind`; see the ordering\'s `rebind` for how its binding is carried over. Unlike a column or a filter, an ordering is refused once the listing no longer offers its field or can no longer order by it, even one the view already holds, so a client drops an ordering the view no longer returns rather than sending it back.
+     * @type {ListViewSortRequestDto}
      * @memberof ListViewUpdateRequestDto
      */
-    sort?: SearchSortRequestDto;
+    sort?: ListViewSortRequestDto;
 }

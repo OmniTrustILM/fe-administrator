@@ -15,55 +15,61 @@ import type { BaseAttributeContentDtoV3, CryptographicAssetType, PqcVerdict } fr
 
 /**
  * @export
- * @interface CryptographicAssetDto
+ * @interface CbomContributedAssetDto
  */
-export interface CryptographicAssetDto {
+export interface CbomContributedAssetDto {
     /**
      * UUID of the inventory asset
      * @type {string}
-     * @memberof CryptographicAssetDto
+     * @memberof CbomContributedAssetDto
      */
     uuid: string;
     /**
      * Normalized display name of the asset: the producers\' name, else the recorded OID. Absent when neither exists to serve, because a refuted OID is never presented as the name
      * @type {string}
-     * @memberof CryptographicAssetDto
+     * @memberof CbomContributedAssetDto
      */
     name?: string;
     /**
      * Type of the asset, as the producer declared it in CycloneDX cryptoProperties.assetType. Absent when the producer declared none of the CycloneDX asset types
      * @type {CryptographicAssetType}
-     * @memberof CryptographicAssetDto
+     * @memberof CbomContributedAssetDto
      */
     type?: CryptographicAssetType;
     /**
      * Post-quantum readiness verdict computed by the platform rule set
      * @type {PqcVerdict}
-     * @memberof CryptographicAssetDto
+     * @memberof CbomContributedAssetDto
      */
     pqcVerdict: PqcVerdict;
     /**
      * Number of CBOM documents that reference this asset
      * @type {number}
-     * @memberof CryptographicAssetDto
+     * @memberof CbomContributedAssetDto
      */
     sourceCbomCount: number;
     /**
      * Number of occurrences of the asset, summed over its source CBOMs. A source that recorded where it found the asset contributes one occurrence per evidence.occurrences entry, counted in full, including entries beyond the cap on the detail\'s per-source evidence list; a source that recorded no location counts as one occurrence, the report itself. Never lower than sourceCbomCount, and 0 only when sourceCbomCount is 0. Related crypto material with no digest, value or identifier is keyed on its occurrence entries (location, line and offset), so such a row stands for one set of entries and its occurrences count how often sources reported them, not how many keys or locations exist
      * @type {number}
-     * @memberof CryptographicAssetDto
+     * @memberof CbomContributedAssetDto
      */
     occurrenceCount: number;
     /**
      * True when sources make contradicting claims about this asset that are quarantined pending reconciliation
      * @type {boolean}
-     * @memberof CryptographicAssetDto
+     * @memberof CbomContributedAssetDto
      */
     quarantined: boolean;
     /**
      * Values of the attribute-sourced fields requested as columns, keyed by field source and then by field identifier. Present only when the listing request asked for attribute-sourced columns; a field the object has no value for is absent rather than empty, and a multi-valued attribute arrives in its stored item_order.
      * @type {{ [key: string]: { [key: string]: Array<BaseAttributeContentDtoV3>; }; }}
-     * @memberof CryptographicAssetDto
+     * @memberof CbomContributedAssetDto
      */
     attributeValues?: { [key: string]: { [key: string]: Array<BaseAttributeContentDtoV3> } };
+    /**
+     * The bom-ref values of this document\'s components folded into this asset, in document order, at most 256. A value that is empty, not a string, not well-formed Unicode, contains NUL or is longer than 1024 characters is left out, and the asset is still listed. A document that repeats a bom-ref is not synced.
+     * @type {Array<string>}
+     * @memberof CbomContributedAssetDto
+     */
+    bomRefs: Array<string>;
 }

@@ -12,7 +12,7 @@
  */
 
 /**
- *
+ * Type of an asset in the cryptographic asset inventory: the CycloneDX cryptoProperties.assetType vocabulary. An asset that declares none of these types is served with no type
  * @export
  * @enum {string}
  */

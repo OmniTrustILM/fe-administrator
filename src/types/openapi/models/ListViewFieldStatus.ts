@@ -12,13 +12,12 @@
  */
 
 /**
- * Post-quantum readiness verdict computed by the platform rule set
+ *
  * @export
  * @enum {string}
  */
-export enum PqcVerdict {
-    Ready = 'ready',
-    NotReady = 'notReady',
-    NotApplicable = 'notApplicable',
-    Unknown = 'unknown',
+export enum ListViewFieldStatus {
+    Available = 'available',
+    Unavailable = 'unavailable',
+    Replaced = 'replaced',
 }

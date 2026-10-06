@@ -18,6 +18,7 @@ import type { OperationOpts, HttpHeaders } from '../runtime';
 import type {
     AuthenticationServiceExceptionDto,
     CryptographicAssetDetailDto,
+    CryptographicAssetPqcExplanationDto,
     ErrorMessageDto,
     PaginationResponseDtoCryptographicAssetDto,
     SearchFieldDataByGroupDto,
@@ -25,6 +26,10 @@ import type {
 } from '../models';
 
 export interface GetCryptographicAssetRequest {
+    uuid: string;
+}
+
+export interface GetCryptographicAssetPqcExplanationRequest {
     uuid: string;
 }
 
@@ -54,6 +59,32 @@ export class CryptographicAssetInventoryApi extends BaseAPI {
         return this.request<CryptographicAssetDetailDto>(
             {
                 url: '/v1/cryptoAssets/{uuid}'.replace('{uuid}', encodeURI(uuid)),
+                method: 'GET',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Recomputes the post-quantum readiness verdict of the asset from its stored properties and returns every rule the evaluation walked, in order, with what each rule did and the properties it read. Nothing is written back: GET /v1/cryptoAssets/{uuid} keeps serving the stored verdict, and matchesStored says whether the two agree. The rule set is fixed by the platform and cannot be configured. Stored verdicts are re-evaluated by the CryptoAssetPqcSweepTask scheduled job, hourly by default and not while the job is disabled in the Scheduler. It re-evaluates an asset whose recorded properties changed, whose referenced assets\' verdicts changed, or whose rules changed with a platform upgrade; an asset the rule set could not evaluate keeps that verdict until one of those changes. There is no per-asset re-run of the stored verdict: calling this operation re-runs the evaluation on demand and shows what the next re-evaluation will store.
+     * Explain a cryptographic asset\'s PQC verdict
+     */
+    getCryptographicAssetPqcExplanation({
+        uuid,
+    }: GetCryptographicAssetPqcExplanationRequest): Observable<CryptographicAssetPqcExplanationDto>;
+    getCryptographicAssetPqcExplanation(
+        { uuid }: GetCryptographicAssetPqcExplanationRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<CryptographicAssetPqcExplanationDto>>;
+    getCryptographicAssetPqcExplanation(
+        { uuid }: GetCryptographicAssetPqcExplanationRequest,
+        opts?: OperationOpts,
+    ): Observable<CryptographicAssetPqcExplanationDto | AjaxResponse<CryptographicAssetPqcExplanationDto>> {
+        throwIfNullOrUndefined(uuid, 'uuid', 'getCryptographicAssetPqcExplanation');
+
+        return this.request<CryptographicAssetPqcExplanationDto>(
+            {
+                url: '/v1/cryptoAssets/{uuid}/pqcExplanation'.replace('{uuid}', encodeURI(uuid)),
                 method: 'GET',
             },
             opts?.responseOpts,
