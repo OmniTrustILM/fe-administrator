@@ -6,6 +6,8 @@ import { take, toArray } from 'rxjs/operators';
 import epics from './scheduler-epics';
 import { slice } from './scheduler';
 import { actions as appRedirectActions } from './app-redirect';
+import { actions as userInterfaceActions } from './user-interface';
+import { LockWidgetNameEnum } from 'types/user-interface';
 
 vi.mock('../App', () => ({
     store: {
@@ -45,10 +47,16 @@ async function runBulkDeleteEpic(
     return firstValueFrom((epics[4] as any)(of(action), state as any, deps as any).pipe(take(takeCount), toArray())) as Promise<any[]>;
 }
 
-async function runEpic(index: number, action: any, scheduler: any): Promise<any[]> {
+async function runEpic(index: number, action: any, scheduler: any, state: any = makeState()): Promise<any[]> {
     const deps = { apiClients: { scheduler } };
-    return firstValueFrom((epics[index] as any)(of(action), makeState() as any, deps as any).pipe(toArray())) as Promise<any[]>;
+    return firstValueFrom((epics[index] as any)(of(action), state as any, deps as any).pipe(toArray())) as Promise<any[]>;
 }
+
+const withOpenDetail = (uuid: string) => {
+    const state = makeState() as any;
+    state.value.scheduler.schedulerJob = { uuid };
+    return state;
+};
 
 const freshJob = { uuid: 'j-1', jobName: 'Job 1', enabled: true, scheduleState: 'scheduled' };
 
@@ -89,12 +97,29 @@ describe.each([
         expect(emitted).toEqual([success({ uuid: 'j-1', schedulerJob: freshJob as any })]);
     });
 
-    test('a failed re-read still settles the toggle, without a job, and reports the read', async () => {
+    test('a failed re-read settles the toggle without a job and locks the detail widget still showing the job', async () => {
         const err = new Error('read failed');
-        const emitted = await runEpic(index, request({ uuid: 'j-1' }), {
-            [apiCall]: () => of(undefined),
-            getScheduledJobDetail: () => throwError(() => err),
-        });
+        const emitted = await runEpic(
+            index,
+            request({ uuid: 'j-1' }),
+            { [apiCall]: () => of(undefined), getScheduledJobDetail: () => throwError(() => err) },
+            withOpenDetail('j-1'),
+        );
+
+        expect(emitted).toEqual([
+            success({ uuid: 'j-1' }),
+            userInterfaceActions.insertWidgetLock(err, LockWidgetNameEnum.SchedulerJobDetail),
+        ]);
+    });
+
+    test('a failed re-read only reports when the detail has moved on to another job', async () => {
+        const err = new Error('read failed');
+        const emitted = await runEpic(
+            index,
+            request({ uuid: 'j-1' }),
+            { [apiCall]: () => of(undefined), getScheduledJobDetail: () => throwError(() => err) },
+            withOpenDetail('j-2'),
+        );
 
         expect(emitted).toEqual([
             success({ uuid: 'j-1' }),

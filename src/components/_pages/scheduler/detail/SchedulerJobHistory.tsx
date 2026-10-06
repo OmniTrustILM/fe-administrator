@@ -129,7 +129,7 @@ function SchedulerJobHistory({ uuid }: Props) {
     const lastSkip = schedulerJob?.uuid === uuid && schedulerJob.lastSkippedAt ? schedulerJob : undefined;
     const skipNotice = lastSkip ? (
         <InfoNote className="mb-3">
-            Runs with nothing to do are not kept in this history. Last skipped at {dateFormatter(lastSkip.lastSkippedAt)}
+            Skipped runs are not kept in this history. Last skipped at {dateFormatter(lastSkip.lastSkippedAt)}
             {lastSkip.lastSkipReason ? `: ${lastSkip.lastSkipReason}` : ''}
         </InfoNote>
     ) : undefined;

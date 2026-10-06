@@ -272,7 +272,7 @@ export default function SchedulerJobDetail() {
                       {
                           id: 'cron',
                           columns: [
-                              'Cron Expression',
+                              'Cron Expression (UTC)',
                               <>
                                   {schedulerJob.cronExpression}&nbsp;
                                   <Tooltip

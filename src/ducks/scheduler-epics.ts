@@ -1,4 +1,5 @@
-import type { AppEpic, EpicDependencies } from 'ducks';
+import type { AppEpic, AppState, EpicDependencies } from 'ducks';
+import type { StateObservable } from 'redux-observable';
 import { concat, from, iif, of } from 'rxjs';
 import { catchError, concatMap, exhaustMap, filter, map, mergeMap, switchMap, toArray } from 'rxjs/operators';
 import { bulkDeleteFailureMessage, deleteSequentially } from 'utils/bulk-delete';
@@ -160,11 +161,17 @@ const bulkDeleteSchedulerJobs: AppEpic = (action$, state$, deps) => {
 type ToggleSuccess = typeof slice.actions.enableSchedulerJobSuccess | typeof slice.actions.disableSchedulerJobSuccess;
 
 // A toggle answers 204, and the schedule state that follows it is the scheduler's to report, so the detail is read again.
-const rereadAfterToggle = (deps: EpicDependencies, uuid: string, toggleSuccess: ToggleSuccess) =>
+// A failed re-read locks the detail widget like a failed detail fetch does, but only while the detail still shows this job.
+const rereadAfterToggle = (deps: EpicDependencies, state$: StateObservable<AppState>, uuid: string, toggleSuccess: ToggleSuccess) =>
     deps.apiClients.scheduler.getScheduledJobDetail({ uuid }).pipe(
         map((response) => toggleSuccess({ uuid, schedulerJob: transformSchedulerJobDetailDtoToModel(response) })),
         catchError((err) =>
-            of(toggleSuccess({ uuid }), appRedirectActions.fetchError({ error: err, message: 'Failed to refresh Scheduled Job detail' })),
+            of(
+                toggleSuccess({ uuid }),
+                selectors.schedulerJob(state$.value)?.uuid === uuid
+                    ? userInterfaceActions.insertWidgetLock(err, LockWidgetNameEnum.SchedulerJobDetail)
+                    : appRedirectActions.fetchError({ error: err, message: 'Failed to refresh Scheduled Job detail' }),
+            ),
         ),
     );
 
@@ -173,7 +180,7 @@ const enableSchedulerJob: AppEpic = (action$, state$, deps) => {
         filter(slice.actions.enableSchedulerJob.match),
         switchMap((action) =>
             deps.apiClients.scheduler.enableScheduledJob({ uuid: action.payload.uuid }).pipe(
-                switchMap(() => rereadAfterToggle(deps, action.payload.uuid, slice.actions.enableSchedulerJobSuccess)),
+                switchMap(() => rereadAfterToggle(deps, state$, action.payload.uuid, slice.actions.enableSchedulerJobSuccess)),
 
                 catchError((err) =>
                     of(
@@ -223,7 +230,7 @@ const disableSchedulerJob: AppEpic = (action$, state$, deps) => {
         filter(slice.actions.disableSchedulerJob.match),
         switchMap((action) =>
             deps.apiClients.scheduler.disableScheduledJob({ uuid: action.payload.uuid }).pipe(
-                switchMap(() => rereadAfterToggle(deps, action.payload.uuid, slice.actions.disableSchedulerJobSuccess)),
+                switchMap(() => rereadAfterToggle(deps, state$, action.payload.uuid, slice.actions.disableSchedulerJobSuccess)),
 
                 catchError((err) =>
                     of(
