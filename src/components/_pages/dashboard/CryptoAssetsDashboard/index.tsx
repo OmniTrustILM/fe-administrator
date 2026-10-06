@@ -3,7 +3,7 @@ import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
 import { EntityType, actions as filterActions } from 'ducks/filters';
 import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Link } from 'react-router';
+import { Link, useResolvedPath } from 'react-router';
 import { FilterConditionOperator, FilterFieldSource, PlatformEnum, PqcVerdict } from 'types/openapi';
 import { LockTypeEnum } from 'types/user-interface';
 import {
@@ -16,6 +16,7 @@ import {
 } from 'utils/cryptoAssetsDashboard';
 import { getDonutChartColorsByRandomNumberOfOptions } from 'utils/dashboard';
 import { dateFormatter } from 'utils/dateUtil';
+import { onSameTabClick } from 'utils/link-click';
 import CountBadge from '../DashboardItem/CountBadge';
 import DashboardSkeleton from '../DashboardItem/DashboardSkeleton';
 import DonutChart from '../DashboardItem/DonutChart';
@@ -39,6 +40,8 @@ function labelled(stat: { [key: string]: number } | undefined, toLabel: (code: s
 
 function CryptoAssetsDashboard() {
     const dispatch = useDispatch();
+    const assetsPath = useResolvedPath(LINK).pathname;
+    const cbomsPath = useResolvedPath(CBOMS_LINK).pathname;
 
     const statistics = useSelector(selectors.statistics);
     const isFetching = useSelector(selectors.isFetching);
@@ -124,14 +127,15 @@ function CryptoAssetsDashboard() {
                                 <Link
                                     to={LINK}
                                     className="text-sm text-brand hover:underline"
-                                    onClick={() =>
+                                    onClick={onSameTabClick(() =>
                                         dispatch(
-                                            filterActions.setCurrentFilters({
+                                            filterActions.setDrillDownFilters({
                                                 entity: EntityType.CRYPTO_ASSET,
-                                                currentFilters: buildEmptyFilter(CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily),
+                                                filters: buildEmptyFilter(CRYPTO_ASSET_FILTER_FIELDS.algorithmFamily),
+                                                path: assetsPath,
                                             }),
-                                        )
-                                    }
+                                        ),
+                                    )}
                                 >
                                     {unassignedCaption}
                                 </Link>
@@ -171,14 +175,15 @@ function CryptoAssetsDashboard() {
                                     <Link
                                         to={CBOMS_LINK}
                                         className="text-brand hover:underline"
-                                        onClick={() =>
+                                        onClick={onSameTabClick(() =>
                                             dispatch(
-                                                filterActions.setCurrentFilters({
+                                                filterActions.setDrillDownFilters({
                                                     entity: EntityType.CBOM,
-                                                    currentFilters: buildEqualsFilter('CBOM_ASSET_SYNC_STATE', state.code),
+                                                    filters: buildEqualsFilter('CBOM_ASSET_SYNC_STATE', state.code),
+                                                    path: cbomsPath,
                                                 }),
-                                            )
-                                        }
+                                            ),
+                                        )}
                                     >
                                         {getEnumLabel(syncStateEnum, state.code)}
                                     </Link>

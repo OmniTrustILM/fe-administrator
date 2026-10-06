@@ -24,7 +24,7 @@ type Props = {
     id?: string;
     title?: string;
     titleLink?: string;
-    onTitleLinkClick?: () => void;
+    onTitleLinkClick?: (event: React.MouseEvent<HTMLAnchorElement>) => void;
     titleSize?: 'small' | 'medium' | 'large' | 'larger';
     titleBoldness?: 'normal' | 'bold' | 'semi-bold';
     titleColor?: string;

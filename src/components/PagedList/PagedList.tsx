@@ -1,4 +1,4 @@
-import { type EntityType, actions as filterActions, selectors as filterSelectors } from 'ducks/filters';
+import { type EntityType, type ViewPosition, actions as filterActions, selectors as filterSelectors, toListScope } from 'ducks/filters';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router';
@@ -158,6 +158,16 @@ function PagedList<TRow extends object>({
     // Taken apart rather than depended on whole: an unmemoised config would rebuild `getFreshData`
     // every render, and the effect watching it would refetch forever.
     const isColumnDriven = configurableColumns !== undefined;
+
+    // Only a list with a view strip records and takes a return: a picker over the same entity never takes one.
+    useEffect(() => {
+        if (!isColumnDriven) return;
+        const path = location.pathname;
+        dispatch(filterActions.returnToList({ entity, path }));
+        return () => {
+            dispatch(filterActions.leaveList({ entity, path, scope: toListScope(path) }));
+        };
+    }, [dispatch, entity, isColumnDriven, location.pathname]);
     const {
         resource: columnsResource,
         standardColumns,
@@ -396,30 +406,29 @@ function PagedList<TRow extends object>({
     }, [checkedRows, onDeleteCallback, currentFilters, onCheckedRowsChanged, getFreshData]);
 
     /**
-     * Applies a view's columns, filters and ordering together. The first application leaves filters
-     * already in the duck alone: the strip opens its pinned view after a deep link has put its own
-     * filters there, and would replace them a moment after they were asked for.
+     * Applies a view's columns, filters and ordering together. The strip opens on handed-in filters by
+     * handing them back, and this is where they are taken, so the next visit opens on the view's filters
+     * instead of on whatever the duck still holds.
      *
      * The ordering is put through the same sieve as `applyColumns`: this is the path the column
      * dialog comes back on, and it hands back the ordering the table was listing under before it.
      */
-    const hasAppliedView = useRef(false);
+    const handedIn = useSelector(filterSelectors.handedInFilters(entity));
     const onApplyView = useCallback(
         (slice: ViewSlice) => {
-            const isInitialApplication = !hasAppliedView.current;
-
-            hasAppliedView.current = true;
             setColumnSelection(slice.columns);
             setSortSelection(toDisplayableSort(slice.sort, slice.columns));
-
-            if (!isInitialApplication || currentFilters.length === 0) {
-                dispatch(filterActions.setCurrentFilters({ entity, currentFilters: slice.filters }));
-            }
+            dispatch(filterActions.setCurrentFilters({ entity, currentFilters: slice.filters }));
 
             dispatch(actions.setPagination({ entity, pageSize, pageNumber: 1 }));
             onCheckedRowsChanged([]);
         },
-        [dispatch, entity, pageSize, onCheckedRowsChanged, currentFilters.length],
+        [dispatch, entity, pageSize, onCheckedRowsChanged],
+    );
+
+    const onViewPositionChange = useCallback(
+        (position: ViewPosition) => dispatch(filterActions.setViewPosition({ entity, position })),
+        [dispatch, entity],
     );
 
     const onSortChanged = useCallback(
@@ -650,7 +659,6 @@ function PagedList<TRow extends object>({
 
     const onResetView = useCallback(() => {
         dispatch(filterActions.setCurrentFilters({ entity, currentFilters: [] }));
-        dispatch(filterActions.setPreservedFilters({ entity, preservedFilters: [] }));
         dispatch(actions.resetPaging({ entity }));
         // The columns stay: they belong to the tab the strip is on, and the strip offers Revert.
         setSortSelection(defaultSort);
@@ -706,6 +714,8 @@ function PagedList<TRow extends object>({
                     columns={appliedColumns}
                     filters={currentFilters}
                     sort={appliedSort}
+                    handedIn={handedIn}
+                    onPositionChange={onViewPositionChange}
                     onApply={onApplyView}
                 />
             )}

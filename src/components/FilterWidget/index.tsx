@@ -418,12 +418,7 @@ export default function FilterWidget({
     const onRemoveFilterClick = useCallback(
         (index: number) => {
             const newFilters = currentFilters.filter((_, i) => i !== index);
-            if (newFilters.length === 0) {
-                dispatch(actions.setCurrentFilters({ entity, currentFilters: [] }));
-                dispatch(actions.setPreservedFilters({ entity, preservedFilters: [] }));
-            } else {
-                dispatch(actions.setCurrentFilters({ entity, currentFilters: newFilters }));
-            }
+            dispatch(actions.setCurrentFilters({ entity, currentFilters: newFilters }));
             setSelectedFilter(-1);
             if (onFilterUpdate) {
                 onFilterUpdate(newFilters.map(mapFilterToRequestDto));

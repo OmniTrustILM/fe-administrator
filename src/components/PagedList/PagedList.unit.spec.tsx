@@ -160,7 +160,6 @@ describe('PagedList unit coverage', () => {
                         filter: {
                             currentFilters: [],
                             availableFilters: [],
-                            preservedFilters: [],
                             isFetchingFilters: false,
                             hasLoadedFilters: true,
                         },
@@ -217,9 +216,6 @@ describe('PagedList unit coverage', () => {
 
         expect(dispatch).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'filters/setCurrentFilters', payload: { entity: EntityType.CBOM, currentFilters: [] } }),
-        );
-        expect(dispatch).toHaveBeenCalledWith(
-            expect.objectContaining({ type: 'filters/setPreservedFilters', payload: { entity: EntityType.CBOM, preservedFilters: [] } }),
         );
         expect(dispatch).toHaveBeenCalledWith(
             expect.objectContaining({ type: 'pagings/resetPaging', payload: { entity: EntityType.CBOM } }),
