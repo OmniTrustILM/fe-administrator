@@ -257,7 +257,7 @@ describe('crypto asset detail sections', () => {
         const renderVerdict = (overrides: Partial<CryptographicAssetDetailDto> = {}) =>
             render(<CryptoAssetVerdict detail={detail(overrides)} verdictLabel="Not PQC ready" typeEnum={enums.assetType} />);
 
-        test('shows the deciding rule, its reason and the labelled fields it read, and no rule-set version', async () => {
+        test('shows the deciding rule, its reason and the labelled properties it read, and no rule-set version', async () => {
             await renderVerdict();
 
             expect(one('[data-testid="row-ruleSet"]')).toBeNull();

@@ -271,7 +271,7 @@ export function CryptoAssetVerdict({
         { id: 'evaluatedAt', columns: ['Last evaluated', dateFormatter(verdict.evaluatedAt)] },
         {
             id: 'evaluatedFields',
-            columns: ['Fields the rule read', <PqcFieldList key="fields" fields={verdict.evaluatedFields} typeEnum={typeEnum} />],
+            columns: ['Properties the rule read', <PqcFieldList key="fields" fields={verdict.evaluatedFields} typeEnum={typeEnum} />],
         },
     ];
     return (
