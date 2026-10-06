@@ -2,6 +2,7 @@ import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
+import { dateFormatter } from 'utils/dateUtil';
 import SchedulerJobHistory from './SchedulerJobHistory';
 
 (globalThis as any).IS_REACT_ACT_ENVIRONMENT = true;
@@ -23,9 +24,12 @@ vi.mock('components/PagedList/PagedList', () => ({
 
 const JOB = 'job-1';
 
+const SKIPPED_AT = '2026-10-05T11:30:00Z';
+const SKIPPED_AT_TEXT = `Last skipped at ${dateFormatter(SKIPPED_AT)}`;
+
 const job = (overrides: Record<string, unknown> = {}) => ({
     uuid: JOB,
-    lastSkippedAt: '2026-10-05T11:30:00Z',
+    lastSkippedAt: SKIPPED_AT,
     lastSkipReason: 'No stale cryptographic asset to re-evaluate',
     ...overrides,
 });
@@ -58,13 +62,12 @@ describe('SchedulerJobHistory skip notice', () => {
     it('states that skipped runs are not kept and shows the last skip with its reason', async () => {
         const text = await render(job());
         expect(text).toContain('Skipped runs are not kept in this history.');
-        expect(text).toContain('Last skipped at 2026-10-05');
-        expect(text).toContain(': No stale cryptographic asset to re-evaluate');
+        expect(text).toContain(`${SKIPPED_AT_TEXT}: No stale cryptographic asset to re-evaluate`);
     });
 
     it('shows the skip time alone when no reason came with it', async () => {
         const text = await render(job({ lastSkipReason: undefined }));
-        expect(text).toMatch(/Last skipped at 2026-10-05 \d\d:\d\d:\d\d$/);
+        expect(text.endsWith(SKIPPED_AT_TEXT)).toBe(true);
     });
 
     it('stays silent while the job has never skipped a run', async () => {
