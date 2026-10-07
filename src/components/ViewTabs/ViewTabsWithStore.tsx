@@ -1,3 +1,4 @@
+import type { HandedInFilters } from 'ducks/filters';
 import type { ListViewsTestState } from 'ducks/test-reducers';
 import { useMemo, useState } from 'react';
 import { Provider, useSelector } from 'react-redux';
@@ -44,6 +45,8 @@ type Props = Readonly<{
     driftFilter?: SearchFilterModel;
     /** Added beside the filters already applied, where `driftFilter` replaces them. */
     driftAddedFilter?: SearchFilterModel;
+    /** Opens as a return from a detail page to this view, with the filters the list held when it was left. */
+    returnTo?: { viewId: string; filters: SearchFilterModel[] };
 }>;
 
 const withShownSort = (slice: ViewSlice): ViewSlice => {
@@ -89,6 +92,7 @@ export default function ViewTabsWithStore({
     driftSort,
     driftFilter,
     driftAddedFilter,
+    returnTo,
 }: Props) {
     const [store] = useState(() =>
         createMockStore({
@@ -100,7 +104,10 @@ export default function ViewTabsWithStore({
         }),
     );
 
-    const [slice, setSlice] = useState<ViewSlice>({ columns: standardColumns, filters: [], sort: undefined });
+    const [slice, setSlice] = useState<ViewSlice>({ columns: standardColumns, filters: returnTo?.filters ?? [], sort: undefined });
+    const [handedIn] = useState<HandedInFilters | undefined>(() =>
+        returnTo ? { source: 'return', position: { viewId: returnTo.viewId, isDrillDown: false } } : undefined,
+    );
     const [isCatalogueReleased, setIsCatalogueReleased] = useState(!withheldCatalogue);
     const [isCatalogueSwapped, setIsCatalogueSwapped] = useState(false);
     const [mountKey, setMountKey] = useState(0);
@@ -130,6 +137,7 @@ export default function ViewTabsWithStore({
                     columns={slice.columns}
                     filters={slice.filters}
                     sort={slice.sort}
+                    handedIn={handedIn}
                     onApply={(next) => setSlice(dropsUnshownSort ? withShownSort(next) : next)}
                 />
 

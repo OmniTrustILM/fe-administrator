@@ -15,6 +15,7 @@ import {
     MAX_VISIBLE_TABS,
     STANDARD_VIEW_ID,
     STANDARD_VIEW_NAME,
+    canOrderBy,
     duplicateName,
     goneAttributeKeys,
     toDormantKey,
@@ -974,5 +975,33 @@ describe('goneAttributeKeys', () => {
 
     it('names every attribute column against a settled empty catalogue', () => {
         expect(goneAttributeKeys([view('a', 'One', { columns: [retired] })], [])).toEqual([toDormantKey('a', retired)]);
+    });
+});
+
+describe('canOrderBy', () => {
+    const catalogue: SearchFieldDataByGroupDto[] = [
+        { filterFieldSource: FilterFieldSource.Custom, searchFieldData: [] },
+        {
+            filterFieldSource: FilterFieldSource.Custom,
+            searchFieldData: [
+                { fieldIdentifier: 'cost_centre', fieldLabel: 'Cost centre', type: FilterFieldType.String, conditions: [], sortable: true },
+                { fieldIdentifier: 'notes', fieldLabel: 'Notes', type: FilterFieldType.String, conditions: [], sortable: false },
+            ],
+        },
+    ];
+    const by = (fieldIdentifier: string, fieldSource = FilterFieldSource.Custom) => ({
+        fieldSource,
+        fieldIdentifier,
+        direction: 'asc' as const,
+    });
+
+    it('accepts a field published as sortable in any group of its source', () => {
+        expect(canOrderBy(catalogue, by('cost_centre'))).toBe(true);
+    });
+
+    it('refuses a field published as unsortable, one not published, and one under another source', () => {
+        expect(canOrderBy(catalogue, by('notes'))).toBe(false);
+        expect(canOrderBy(catalogue, by('retired'))).toBe(false);
+        expect(canOrderBy(catalogue, by('cost_centre', FilterFieldSource.Meta))).toBe(false);
     });
 });

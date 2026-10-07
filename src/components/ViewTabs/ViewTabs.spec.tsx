@@ -146,6 +146,7 @@ type MountOptions = {
     driftSort?: { fieldSource: FilterFieldSource; fieldIdentifier: string; direction: 'asc' | 'desc' };
     driftFilter?: SearchFilterModel;
     driftAddedFilter?: SearchFilterModel;
+    returnTo?: { viewId: string; filters: SearchFilterModel[] };
 };
 
 const strip = ({
@@ -167,6 +168,7 @@ const strip = ({
     driftSort,
     driftFilter,
     driftAddedFilter,
+    returnTo,
 }: MountOptions = {}) => (
     <ViewTabsWithStore
         resource={Resource.Certificates}
@@ -188,6 +190,7 @@ const strip = ({
         driftSort={driftSort}
         driftFilter={driftFilter}
         driftAddedFilter={driftAddedFilter}
+        returnTo={returnTo}
     />
 );
 
@@ -1755,11 +1758,20 @@ test.describe('ViewTabs', () => {
         expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'retired']);
     });
 
-    for (const [state, fields] of [
-        ['still missing', catalogue],
-        ['back as one the listing cannot display', hiddenRetired],
+    const unsortableRetired = [
+        ...catalogue,
+        { filterFieldSource: FilterFieldSource.Custom, searchFieldData: [field('retired', 'Retired', { sortable: false })] },
+    ] as unknown as SearchFieldDataByGroupDto[];
+
+    for (const [state, fields, kept] of [
+        ['back as one the listing cannot display', hiddenRetired, true],
+        ['still missing', catalogue, false],
+        ['back as one the list cannot be ordered by', unsortableRetired, false],
     ] as const) {
-        test(`keeps the stored ordering on a held-back column that is ${state}`, async ({ mount, page }) => {
+        test(`${kept ? 'keeps' : 'drops'} the stored ordering on a held-back column that is ${state} when the view is saved`, async ({
+            mount,
+            page,
+        }) => {
             const sorted = expiryWatch({
                 defaultView: true,
                 columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
@@ -1776,13 +1788,20 @@ test.describe('ViewTabs', () => {
 
             await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
             const update = await lastDispatched(page, 'listViews/updateView');
-            expect(update?.payload?.view).toHaveProperty('sort', {
-                fieldSource: FilterFieldSource.Custom,
-                fieldIdentifier: 'retired',
-                direction: SortDirection.Desc,
-            });
+            const view = update?.payload?.view as { sort?: unknown } | undefined;
+            expect(view?.sort).toEqual(
+                kept ? { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', direction: SortDirection.Desc } : undefined,
+            );
         });
     }
+
+    test('keeps the filter of the user on a held-back field when the list comes back from a detail page', async ({ mount, page }) => {
+        await mount(heldBackStrip({ returnTo: { viewId: 'view-1', filters: [ownFilter] } }));
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await settle(page);
+
+        expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
+    });
 
     test('saves a view whose every column is held back as the table showed it, filter of the user included', async ({ mount, page }) => {
         const only = expiryWatch({

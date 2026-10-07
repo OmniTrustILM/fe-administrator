@@ -289,6 +289,15 @@ export function catalogueKeys(catalogue: readonly SearchFieldDataByGroupDto[]): 
     return keys;
 }
 
+/** Whether the catalogue publishes the ordering's field as sortable, which Core requires of every view it stores. */
+export function canOrderBy(catalogue: readonly SearchFieldDataByGroupDto[], sort: ColumnSort): boolean {
+    return catalogue.some(
+        (group) =>
+            group.filterFieldSource === sort.fieldSource &&
+            (group.searchFieldData ?? []).some((field) => field.fieldIdentifier === sort.fieldIdentifier && field.sortable === true),
+    );
+}
+
 /** A column of one stored view, so confirming an attribute in one view does not confirm it in another. */
 export function toDormantKey(viewUuid: string, column: Pick<ColumnDefinition, 'fieldSource' | 'fieldIdentifier'>): string {
     return `${viewUuid}|${getColumnKey(column)}`;

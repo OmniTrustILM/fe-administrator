@@ -12,6 +12,7 @@ import type { Resource, SearchFieldDataByGroupDto } from 'types/openapi';
 import type { ColumnDefinition, PickerColumn } from 'types/tableColumns';
 import { toCatalogueFields } from 'utils/columnPicker';
 import {
+    canOrderBy,
     catalogueKeys,
     STANDARD_VIEW_ID,
     STANDARD_VIEW_NAME,
@@ -407,13 +408,14 @@ export default function ViewTabs({
     /**
      * Keeps the open view's table off fields it has not confirmed. A column whose field goes while it is on the table comes
      * off it, or the table would keep it through the field's return and show whatever attribute answers under that key.
-     * A filter comes off when its field turns held, as a freshly applied view would leave it out.
+     * A filter comes off when its field turns held, as a freshly applied view would leave it out. A view arriving on the
+     * table already leaves its held filters out, so one it arrives with is the user's own, handed back from a detail page.
      */
-    const previousHeldKeys = useRef<ReadonlySet<string>>(NO_KEYS);
+    const previousHeld = useRef<{ uuid?: string; keys: ReadonlySet<string> }>({ keys: NO_KEYS });
     useEffect(() => {
         const heldKeys = heldKeysOf(activeView);
-        const wasHeld = previousHeldKeys.current;
-        previousHeldKeys.current = heldKeys;
+        const wasHeld = previousHeld.current.uuid === activeView?.uuid ? previousHeld.current.keys : heldKeys;
+        previousHeld.current = { uuid: activeView?.uuid, keys: heldKeys };
 
         const gone = isReady
             ? goneAttributeKeys(views, catalogue).filter((key) => !dormant.has(key) || confirmingFields.includes(key))
@@ -745,6 +747,8 @@ export default function ViewTabs({
         const confirmedKeys = new Set([...heldKeysOf(activeView)].filter((key) => filtered.has(key)));
         const confirmed = activeView.columns.filter((column) => confirmedKeys.has(getColumnKey(column)));
         const stillHeld = heldFilters.filter((filter) => !confirmedKeys.has(getColumnKey(filter)));
+        // Core refuses the whole save over an ordering it cannot apply, so a held one on a field gone or unsortable is let go.
+        const keptSort = heldSort && canOrderBy(catalogue, heldSort) ? heldSort : undefined;
 
         // The stored columns this table cannot render go back in: the user never saw them, so saving a
         // filter or an ordering is not the moment to drop them.
@@ -753,16 +757,16 @@ export default function ViewTabs({
             {
                 columns: toStoredColumnsKeepingUnavailable(columns, resolved?.columns ?? []),
                 filters: reinsert(storableFilters, stillHeld, activeView.filters ?? [], getFilterKey),
-                sort: toStoredSort(sort ?? heldSort),
+                sort: toStoredSort(sort ?? keptSort),
             },
             confirmed.map((column) => toDormantKey(activeView.uuid, column)),
         );
 
         if (confirmed.length > 0) {
-            const confirmedSort = heldSort && confirmedKeys.has(getSortKey(heldSort)) ? heldSort : undefined;
+            const confirmedSort = keptSort && confirmedKeys.has(getSortKey(keptSort)) ? keptSort : undefined;
             pendingConfirmation.current = { uuid: activeView.uuid, confirmed, sort: confirmedSort };
         }
-    }, [activeView, patchView, columns, resolved, storableFilters, heldKeysOf, heldFilters, sort, heldSort]);
+    }, [activeView, patchView, columns, resolved, storableFilters, heldKeysOf, heldFilters, catalogue, sort, heldSort]);
 
     const onShowReturned = useCallback(() => {
         const slice = confirmedSlice(returned);
