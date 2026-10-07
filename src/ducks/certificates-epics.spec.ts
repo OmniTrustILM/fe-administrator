@@ -857,116 +857,53 @@ describe('certificates epics', () => {
         expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
     });
 
-    describe('bulkUpdateRaProfile verification after refetch', () => {
-        type BulkUpdateRunOptions = {
-            certificateUuids: string[];
-            requestedRaProfileUuid: string;
-            refetchedCertificates: Array<{ uuid: string; raProfile?: { uuid: string } }>;
-            patchResponse?: () => any;
-        };
-
-        async function runBulkUpdateRaProfileEpic({
-            certificateUuids,
-            requestedRaProfileUuid,
-            refetchedCertificates,
-            patchResponse = () => of(undefined),
-        }: BulkUpdateRunOptions): Promise<UnknownAction[]> {
+    describe('bulkUpdateRaProfile', () => {
+        function runBulkUpdateRaProfileEpic(certificateUuids: string[]): { action$: Subject<UnknownAction>; emitted: UnknownAction[] } {
             const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
             const action$ = new Subject<UnknownAction>();
             const deps = {
                 apiClients: {
-                    certificates: { bulkUpdateCertificateObjects: patchResponse },
+                    certificates: { bulkUpdateCertificateObjects: () => of(undefined) },
                 },
             };
-            const output$ = epics[BULK_UPDATE_RA_PROFILE_EPIC_INDEX](action$, of({}) as any, deps as any);
-            const collected = firstValueFrom(output$.pipe(take(2), toArray()));
+            const emitted: UnknownAction[] = [];
+            epics[BULK_UPDATE_RA_PROFILE_EPIC_INDEX](action$, of({}) as any, deps as any).subscribe((action) => emitted.push(action));
 
             action$.next(
                 certificatesActions.bulkUpdateRaProfile({
                     authorityUuid: 'auth-1',
-                    raProfileRequest: { certificateUuids, raProfileUuid: requestedRaProfileUuid, filters: [] } as any,
+                    raProfileRequest: { certificateUuids, raProfileUuid: 'ra-new', filters: [] } as any,
                 }),
             );
-            await new Promise((resolve) => setTimeout(resolve, 0));
-            action$.next(certificatesActions.listCertificatesSuccess(refetchedCertificates as any));
-            return collected;
+            return { action$, emitted };
         }
 
-        test('emits success alert when all requested certificates received the requested RA profile', async () => {
-            const emitted = await runBulkUpdateRaProfileEpic({
-                certificateUuids: ['c1', 'c2'],
-                requestedRaProfileUuid: 'ra-new',
-                refetchedCertificates: [
-                    { uuid: 'c1', raProfile: { uuid: 'ra-new' } },
-                    { uuid: 'c2', raProfile: { uuid: 'ra-new' } },
-                ],
-            });
+        test('reports the update as initiated once the backend accepts it, without waiting for a listing', () => {
+            const { emitted } = runBulkUpdateRaProfileEpic(['c1', 'c2']);
 
-            expect(emitted[0].type).toBe(certificatesActions.bulkUpdateRaProfileSuccess.type);
-            expect(emitted[1].type).toBe(alertActions.success.type);
-            expect((emitted[1] as any).payload).toContain('completed');
+            expect(emitted.map((action) => action.type)).toEqual([
+                certificatesActions.bulkUpdateRaProfileSuccess.type,
+                alertActions.success.type,
+            ]);
+            expect((emitted[0] as any).payload.uuids).toEqual(['c1', 'c2']);
+            expect((emitted[1] as any).payload).toContain('initiated');
+            expect((emitted[1] as any).payload).toContain('notifications');
         });
 
-        test('leaves the refetch to the page rather than replaying a captured request', async () => {
-            const emitted = await runBulkUpdateRaProfileEpic({
-                certificateUuids: ['c1'],
-                requestedRaProfileUuid: 'ra-new',
-                refetchedCertificates: [{ uuid: 'c1', raProfile: { uuid: 'ra-new' } }],
-            });
+        test('does not judge the outcome from a listing read before the background update committed', () => {
+            const { action$, emitted } = runBulkUpdateRaProfileEpic(['c1']);
+            const emittedBeforeListing = emitted.length;
+
+            action$.next(certificatesActions.listCertificatesSuccess([{ uuid: 'c1', raProfile: { uuid: 'ra-old' } }] as any));
+
+            expect(emitted).toHaveLength(emittedBeforeListing);
+            expect(emitted.map((action) => action.type)).not.toContain(alertActions.error.type);
+        });
+
+        test('leaves the refetch to the page rather than replaying a captured request', () => {
+            const { emitted } = runBulkUpdateRaProfileEpic(['c1']);
 
             expect(emitted.map((action) => action.type)).not.toContain(certificatesActions.listCertificates.type);
-        });
-
-        test('emits error alert when none of the certificates received the requested RA profile', async () => {
-            const emitted = await runBulkUpdateRaProfileEpic({
-                certificateUuids: ['c1', 'c2'],
-                requestedRaProfileUuid: 'ra-new',
-                refetchedCertificates: [
-                    { uuid: 'c1', raProfile: { uuid: 'ra-old' } },
-                    { uuid: 'c2', raProfile: undefined },
-                ],
-            });
-
-            expect(emitted[1].type).toBe(alertActions.error.type);
-            expect((emitted[1] as any).payload).toContain('No certificates were updated');
-        });
-
-        test('emits info alert when only some certificates received the requested RA profile', async () => {
-            const emitted = await runBulkUpdateRaProfileEpic({
-                certificateUuids: ['c1', 'c2', 'c3'],
-                requestedRaProfileUuid: 'ra-new',
-                refetchedCertificates: [
-                    { uuid: 'c1', raProfile: { uuid: 'ra-new' } },
-                    { uuid: 'c2', raProfile: { uuid: 'ra-old' } },
-                    { uuid: 'c3', raProfile: { uuid: 'ra-new' } },
-                ],
-            });
-
-            expect(emitted[1].type).toBe(alertActions.info.type);
-            expect((emitted[1] as any).payload).toContain('2 of 3');
-        });
-
-        test('emits info alert when some selected certificates are not on the current page', async () => {
-            const emitted = await runBulkUpdateRaProfileEpic({
-                certificateUuids: ['c1', 'c2', 'c3'],
-                requestedRaProfileUuid: 'ra-new',
-                refetchedCertificates: [{ uuid: 'c1', raProfile: { uuid: 'ra-new' } }],
-            });
-
-            expect(emitted[1].type).toBe(alertActions.info.type);
-            expect((emitted[1] as any).payload).toContain('1 of 1');
-            expect((emitted[1] as any).payload).toContain('2 not on the current page');
-        });
-
-        test('emits info alert when none of the selected certificates are on the current page', async () => {
-            const emitted = await runBulkUpdateRaProfileEpic({
-                certificateUuids: ['c1', 'c2'],
-                requestedRaProfileUuid: 'ra-new',
-                refetchedCertificates: [{ uuid: 'c-other', raProfile: { uuid: 'ra-new' } }],
-            });
-
-            expect(emitted[1].type).toBe(alertActions.info.type);
-            expect((emitted[1] as any).payload).toContain('could not be verified');
         });
 
         test('emits failure action when PATCH itself fails', async () => {
