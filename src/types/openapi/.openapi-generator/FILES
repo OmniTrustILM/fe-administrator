@@ -153,6 +153,7 @@ models/BulkOperationResponse.ts
 models/BulkTokenProfileKeyUsageRequestDto.ts
 models/CancelPendingCertificateRequestDto.ts
 models/CbomAssetSyncState.ts
+models/CbomContributedAssetDto.ts
 models/CbomDetailDto.ts
 models/CbomDto.ts
 models/CbomSyncSkipDto.ts
@@ -500,6 +501,7 @@ models/Operation.ts
 models/OperationResult.ts
 models/OperationSupport.ts
 models/PaginationRequestDto.ts
+models/PaginationResponseDtoCbomContributedAssetDto.ts
 models/PaginationResponseDtoCbomDto.ts
 models/PaginationResponseDtoCbomSyncSkipDto.ts
 models/PaginationResponseDtoConnectorDtoV2.ts

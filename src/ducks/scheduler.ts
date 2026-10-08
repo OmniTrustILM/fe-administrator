@@ -13,6 +13,20 @@ export type State = {
     isDeleting: boolean;
     isEnabling: boolean;
     isUpdatingCron: boolean;
+
+    /** Bumped whenever a mutation needs the listing re-read; the page forwards it as `refreshToken`. */
+    listRefreshToken: number;
+};
+
+type FreshSchedulerJob = { uuid: string; schedulerJob?: SchedulerJobDetailModel };
+
+// Without a job the re-read failed: the stale detail goes rather than keep showing the state the mutation just changed.
+const applyFreshSchedulerJob = (state: State, { uuid, schedulerJob }: FreshSchedulerJob) => {
+    if (state.schedulerJob?.uuid === uuid) state.schedulerJob = schedulerJob;
+    if (!schedulerJob) return;
+
+    const index = state.schedulerJobs.findIndex((job) => job.uuid === uuid);
+    if (index !== -1) state.schedulerJobs[index] = schedulerJob;
 };
 
 export const initialState: State = {
@@ -23,6 +37,8 @@ export const initialState: State = {
     isDeleting: false,
     isEnabling: false,
     isUpdatingCron: false,
+
+    listRefreshToken: 0,
 };
 
 export const slice = createSlice({
@@ -116,10 +132,7 @@ export const slice = createSlice({
 
         bulkEnableSchedulerJobsSuccess: (state, action: PayloadAction<{ uuids: string[] }>) => {
             state.isEnabling = false;
-
-            state.schedulerJobs.forEach((schedulerJob) => {
-                if (action.payload.uuids.includes(schedulerJob.uuid)) schedulerJob.enabled = true;
-            });
+            state.listRefreshToken += 1;
         },
 
         bulkEnableSchedulerJobsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -130,14 +143,9 @@ export const slice = createSlice({
             state.isEnabling = true;
         },
 
-        enableSchedulerJobSuccess: (state, action: PayloadAction<{ uuid: string }>) => {
+        enableSchedulerJobSuccess: (state, action: PayloadAction<FreshSchedulerJob>) => {
             state.isEnabling = false;
-
-            const index = state.schedulerJobs.findIndex((a) => a.uuid === action.payload.uuid);
-
-            if (index !== -1) state.schedulerJobs[index].enabled = true;
-
-            if (state.schedulerJob?.uuid === action.payload.uuid) state.schedulerJob.enabled = true;
+            applyFreshSchedulerJob(state, action.payload);
         },
 
         enableSchedulerJobFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -150,10 +158,7 @@ export const slice = createSlice({
 
         bulkDisableSchedulerJobsSuccess: (state, action: PayloadAction<{ uuids: string[] }>) => {
             state.isEnabling = false;
-
-            state.schedulerJobs.forEach((schedulerJob) => {
-                if (action.payload.uuids.includes(schedulerJob.uuid)) schedulerJob.enabled = false;
-            });
+            state.listRefreshToken += 1;
         },
 
         bulkDisableSchedulerJobsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -164,14 +169,9 @@ export const slice = createSlice({
             state.isEnabling = true;
         },
 
-        disableSchedulerJobSuccess: (state, action: PayloadAction<{ uuid: string }>) => {
+        disableSchedulerJobSuccess: (state, action: PayloadAction<FreshSchedulerJob>) => {
             state.isEnabling = false;
-
-            const index = state.schedulerJobs.findIndex((a) => a.uuid === action.payload.uuid);
-
-            if (index !== -1) state.schedulerJobs[index].enabled = false;
-
-            if (state.schedulerJob?.uuid === action.payload.uuid) state.schedulerJob.enabled = false;
+            applyFreshSchedulerJob(state, action.payload);
         },
 
         disableSchedulerJobFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -181,15 +181,9 @@ export const slice = createSlice({
             state.isUpdatingCron = true;
         },
 
-        updateSchedulerJobCronSuccess: (
-            state,
-            action: PayloadAction<{ uuid: string; updateScheduledJob: Partial<SchedulerJobDetailModel> }>,
-        ) => {
+        updateSchedulerJobCronSuccess: (state, action: PayloadAction<{ uuid: string; schedulerJob: SchedulerJobDetailModel }>) => {
             state.isUpdatingCron = false;
-            state.schedulerJob =
-                state.schedulerJob?.uuid === action.payload.uuid
-                    ? { ...state.schedulerJob, cronExpression: action.payload.updateScheduledJob.cronExpression || '' }
-                    : state.schedulerJob;
+            applyFreshSchedulerJob(state, action.payload);
         },
 
         updateSchedulerJobCronFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -208,6 +202,7 @@ const isFetchingDetail = createSelector(state, (state) => state.isFetchingDetail
 const isDeleting = createSelector(state, (state) => state.isDeleting);
 const isEnabling = createSelector(state, (state) => state.isEnabling);
 const isUpdatingCron = createSelector(state, (state) => state.isUpdatingCron);
+const listRefreshToken = createSelector(state, (state) => state.listRefreshToken);
 
 export const selectors = {
     state,
@@ -220,6 +215,7 @@ export const selectors = {
     isDeleting,
     isEnabling,
     isUpdatingCron,
+    listRefreshToken,
 };
 
 export const actions = slice.actions;
