@@ -58,7 +58,7 @@ export const slice = createSlice({
             state.isFetchingList = false;
         },
 
-        // The explanation is re-requested once the detail has loaded, so a reload starts it from nothing as well.
+        // The explanation belongs to the asset as loaded, so a reload starts it from nothing as well.
         getCryptoAssetDetail: (state, action: PayloadAction<{ uuid: string }>) => {
             state.assetDetail = undefined;
             state.assetDetailError = undefined;

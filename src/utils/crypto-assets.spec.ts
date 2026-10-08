@@ -1,8 +1,9 @@
 import { describe, expect, test } from 'vitest';
 import { PqcVerdict } from 'types/openapi';
 import {
-    describeEvidenceCoverage,
+    describeLocationCoverage,
     diffPayloads,
+    cryptoAssetDetailPath,
     formatPqcFieldValue,
     getCryptoAssetFieldLabel,
     getPqcVerdictBadgeColor,
@@ -111,17 +112,17 @@ describe('diffPayloads', () => {
     });
 });
 
-describe('describeEvidenceCoverage', () => {
-    test('a capped list names the sample and the true total', () => {
-        expect(describeEvidenceCoverage(50, 1284)).toBe('50 shown of 1,284 recorded');
+describe('describeLocationCoverage', () => {
+    test('a capped sample names what was kept and the true total', () => {
+        expect(describeLocationCoverage(50, 1284)).toBe(`50 of ${(1284).toLocaleString()}`);
     });
 
-    test('a list that fits says it is complete', () => {
-        expect(describeEvidenceCoverage(37, 37)).toBe('all 37');
+    test('a complete list is just its count', () => {
+        expect(describeLocationCoverage(37, 37)).toBe('37');
     });
 
-    test('a source with no occurrences says so', () => {
-        expect(describeEvidenceCoverage(0, 0)).toBe('none recorded');
+    test('a source that recorded no location says so', () => {
+        expect(describeLocationCoverage(0, 0)).toBe('none recorded');
     });
 });
 
@@ -151,10 +152,19 @@ describe('formatPqcFieldValue', () => {
         [false, 'false'],
         [['ML-KEM-768', 'X25519'], 'ML-KEM-768, X25519'],
         [[], 'none'],
-        [null, '-'],
-        ['', '-'],
+        [['', 'X25519'], 'X25519'],
+        [[''], 'none'],
+        [null, undefined],
+        ['', undefined],
         [{ unexpected: true }, '{"unexpected":true}'],
     ])('%j renders as %s', (value, expected) => {
         expect(formatPqcFieldValue(value)).toBe(expected);
+    });
+});
+
+describe('cryptoAssetDetailPath', () => {
+    test('points at the detail, on the tab asked for', () => {
+        expect(cryptoAssetDetailPath('asset-1')).toBe('/cryptoassets/detail/asset-1');
+        expect(cryptoAssetDetailPath('asset-1', 'pqc-readiness')).toBe('/cryptoassets/detail/asset-1?tab=pqc-readiness');
     });
 });

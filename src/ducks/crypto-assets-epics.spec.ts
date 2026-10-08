@@ -158,7 +158,7 @@ describe('crypto asset epics', () => {
         expect(emitted[3]).toEqual(userInterfaceActions.insertWidgetLock(error as never, LockWidgetNameEnum.ListOfCryptoAssets));
     });
 
-    test('getCryptoAssetDetail fetches the requested uuid, then asks for the explanation of the asset it loaded', async () => {
+    test('getCryptoAssetDetail fetches the requested uuid', async () => {
         const deps = createDeps({
             getCryptographicAsset: ({ uuid }) => {
                 expect(uuid).toBe('asset-1');
@@ -166,16 +166,13 @@ describe('crypto asset epics', () => {
             },
         });
 
-        const emitted = await run(getCryptoAssetDetail, slice.actions.getCryptoAssetDetail({ uuid: 'asset-1' }), deps, 2);
+        const emitted = await all(getCryptoAssetDetail, slice.actions.getCryptoAssetDetail({ uuid: 'asset-1' }), deps);
 
-        expect(emitted).toEqual([
-            slice.actions.getCryptoAssetDetailSuccess({ detail: assetDetail as never }),
-            slice.actions.getCryptoAssetPqcExplanation({ uuid: 'asset-1' }),
-        ]);
+        expect(emitted).toEqual([slice.actions.getCryptoAssetDetailSuccess({ detail: assetDetail as never })]);
     });
 
     // The page's own error card owns the failed load, so a lock here would be written where nothing renders it.
-    test('getCryptoAssetDetail failure keeps the status code, locks no widget and asks for no explanation', async () => {
+    test('getCryptoAssetDetail failure keeps the status code and locks no widget', async () => {
         const error = { status: 403 };
         const deps = createDeps({ getCryptographicAsset: () => throwError(() => error) });
 
@@ -204,7 +201,7 @@ const ajaxError = (status: number): AjaxError => {
 };
 
 describe('leaving the detail page', () => {
-    test('cancels a detail still in flight, so it neither lands nor asks for an explanation', () => {
+    test('cancels a detail still in flight, so it does not land', () => {
         const response = new Subject<unknown>();
         const { action$, emitted } = runLive(getCryptoAssetDetail, { getCryptographicAsset: () => response });
 

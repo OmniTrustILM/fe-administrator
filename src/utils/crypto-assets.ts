@@ -1,6 +1,13 @@
 import type { BadgeColor } from 'components/Badge';
 import { PqcVerdict } from 'types/openapi';
 
+export const PQC_READINESS_TAB = 'pqc-readiness';
+
+export function cryptoAssetDetailPath(uuid: string, tab?: string): string {
+    const path = `/cryptoassets/detail/${uuid}`;
+    return tab ? `${path}?tab=${tab}` : path;
+}
+
 // `unknown` is amber, not neutral: the rule set could not classify the asset, which is a call to fix the producer's data.
 // A verdict this build does not know takes the same amber, so a value core adds later never reads as settled.
 export function getPqcVerdictBadgeColor(verdict: PqcVerdict): BadgeColor {
@@ -71,10 +78,11 @@ export function isSamePayload(elected: unknown, source: unknown): boolean {
     return diffPayloads(elected, source).length === 0;
 }
 
-export function describeEvidenceCoverage(shown: number, total: number): string {
+// What a source recorded about where it found the asset: nothing, all of it, or the sample Core kept of a larger total.
+export function describeLocationCoverage(shown: number, total: number): string {
     if (total <= 0) return 'none recorded';
-    if (shown >= total) return `all ${total.toLocaleString()}`;
-    return `${shown.toLocaleString()} shown of ${total.toLocaleString()} recorded`;
+    if (shown >= total) return total.toLocaleString();
+    return `${shown.toLocaleString()} of ${total.toLocaleString()}`;
 }
 
 const FIELD_LABELS = new Map<string, string>([
@@ -106,10 +114,14 @@ export function getCryptoAssetFieldLabel(key: string): string {
     return FIELD_LABELS.get(key) ?? key;
 }
 
-export function formatPqcFieldValue(value: unknown): string {
-    if (Array.isArray(value)) return value.length === 0 ? 'none' : value.map(formatPqcFieldValue).join(', ');
-    if (typeof value === 'string') return value === '' ? '-' : value;
+// Undefined for a value with nothing to show, so the caller paints its own empty marker.
+export function formatPqcFieldValue(value: unknown): string | undefined {
+    if (Array.isArray(value)) {
+        const items = value.map(formatPqcFieldValue).filter((item) => item !== undefined);
+        return items.length === 0 ? 'none' : items.join(', ');
+    }
+    if (typeof value === 'string') return value || undefined;
     if (typeof value === 'number' || typeof value === 'boolean') return String(value);
-    if (value === null || value === undefined) return '-';
+    if (value === null || value === undefined) return undefined;
     return JSON.stringify(value);
 }

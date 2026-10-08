@@ -1,8 +1,8 @@
 import { isAnyOf } from '@reduxjs/toolkit';
 import type { AppEpic } from 'ducks';
-import { concat, EMPTY, of } from 'rxjs';
+import { concat, of } from 'rxjs';
 import { AjaxError } from 'rxjs/ajax';
-import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
+import { catchError, filter, map, mergeMap, switchMap, takeUntil } from 'rxjs/operators';
 import { LockTypeEnum, LockWidgetNameEnum, type WidgetLockErrorModel } from 'types/user-interface';
 import { extractError, getLockWidgetObject } from 'utils/net';
 import { slice } from './crypto-assets';
@@ -47,18 +47,15 @@ const listCryptoAssets: AppEpic = (action$, state, deps) => {
     );
 };
 
-// Leaving the page cancels whichever request is still in flight, so nothing lands in the state the page has just cleared.
-// A loaded detail asks for its explanation, so an asset that fails to load never has one computed for it.
+// Leaving the page cancels a request still in flight, so nothing lands in the state the page has just cleared.
+const leavingThePage = (action$: Parameters<AppEpic>[0]) => action$.pipe(filter(slice.actions.clearCryptoAssetDetail.match));
+
 const getCryptoAssetDetail: AppEpic = (action$, state, deps) => {
     return action$.pipe(
-        filter(isAnyOf(slice.actions.getCryptoAssetDetail, slice.actions.clearCryptoAssetDetail)),
-        switchMap((action) => {
-            if (!slice.actions.getCryptoAssetDetail.match(action)) return EMPTY;
-            const { uuid } = action.payload;
-            return deps.apiClients.cryptographicAssets.getCryptographicAsset({ uuid }).pipe(
-                mergeMap((detail) =>
-                    of(slice.actions.getCryptoAssetDetailSuccess({ detail }), slice.actions.getCryptoAssetPqcExplanation({ uuid })),
-                ),
+        filter(slice.actions.getCryptoAssetDetail.match),
+        switchMap((action) =>
+            deps.apiClients.cryptographicAssets.getCryptographicAsset({ uuid: action.payload.uuid }).pipe(
+                map((detail) => slice.actions.getCryptoAssetDetailSuccess({ detail })),
                 // No widget lock: the request clears the asset, so the page's own error card is what renders.
                 catchError((err) =>
                     of(
@@ -68,8 +65,9 @@ const getCryptoAssetDetail: AppEpic = (action$, state, deps) => {
                         }),
                     ),
                 ),
-            );
-        }),
+                takeUntil(leavingThePage(action$)),
+            ),
+        ),
     );
 };
 
@@ -79,15 +77,12 @@ const UNEXPLAINED_LOCK: WidgetLockErrorModel = {
     lockType: LockTypeEnum.NETWORK,
 };
 
-// A reload of the detail cancels an explanation in flight as well: the reload resets it and asks for it again.
+// A reload of the detail cancels an explanation in flight as well: the reload resets it, and the page asks again.
 const getCryptoAssetPqcExplanation: AppEpic = (action$, state, deps) => {
     return action$.pipe(
-        filter(
-            isAnyOf(slice.actions.getCryptoAssetPqcExplanation, slice.actions.getCryptoAssetDetail, slice.actions.clearCryptoAssetDetail),
-        ),
-        switchMap((action) => {
-            if (!slice.actions.getCryptoAssetPqcExplanation.match(action)) return EMPTY;
-            return deps.apiClients.cryptographicAssets.getCryptographicAssetPqcExplanation({ uuid: action.payload.uuid }).pipe(
+        filter(slice.actions.getCryptoAssetPqcExplanation.match),
+        switchMap((action) =>
+            deps.apiClients.cryptographicAssets.getCryptographicAssetPqcExplanation({ uuid: action.payload.uuid }).pipe(
                 map((explanation) => slice.actions.getCryptoAssetPqcExplanationSuccess({ explanation })),
                 catchError((err) =>
                     of(
@@ -96,8 +91,9 @@ const getCryptoAssetPqcExplanation: AppEpic = (action$, state, deps) => {
                         }),
                     ),
                 ),
-            );
-        }),
+                takeUntil(action$.pipe(filter(isAnyOf(slice.actions.getCryptoAssetDetail, slice.actions.clearCryptoAssetDetail)))),
+            ),
+        ),
     );
 };
 
