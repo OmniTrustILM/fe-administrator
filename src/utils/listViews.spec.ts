@@ -15,7 +15,10 @@ import {
     MAX_VISIBLE_TABS,
     STANDARD_VIEW_ID,
     STANDARD_VIEW_NAME,
+    canOrderBy,
     duplicateName,
+    goneAttributeKeys,
+    toDormantKey,
     isSliceDirty,
     newViewName,
     resolveInitialViewId,
@@ -79,7 +82,9 @@ const standardCatalogue: SearchFieldDataByGroupDto[] = [
 const secretCatalogue = [
     {
         filterFieldSource: FilterFieldSource.Property,
-        searchFieldData: [{ fieldIdentifier: 'COMMON_NAME', fieldLabel: 'Common Name', type: FilterFieldType.String, conditions: [] }],
+        searchFieldData: [
+            { fieldIdentifier: 'COMMON_NAME', fieldLabel: 'Common Name', type: FilterFieldType.String, conditions: [], sortable: true },
+        ],
     },
     {
         filterFieldSource: FilterFieldSource.Custom,
@@ -602,6 +607,17 @@ describe('toUpdateRequest', () => {
         });
     });
 
+    it.each([
+        ['a field the catalogue no longer publishes', 'retired'],
+        ['a field the catalogue publishes as unsortable', 'vaultToken'],
+    ])('drops a stored ordering on %s, which Core refuses the whole update over', (_, fieldIdentifier) => {
+        const stored = view('a', 'Expiry watch', {
+            sort: { fieldSource: FilterFieldSource.Custom, fieldIdentifier, direction: SortDirection.Asc },
+        });
+
+        expect(toUpdateRequest(stored, schema, { name: 'Expiry' }).sort).toBeUndefined();
+    });
+
     it('applies the patch over the stored row, so a rename keeps the columns', () => {
         const stored = view('a', 'Expiry watch');
         const renamed = toUpdateRequest(stored, schema, { name: 'Expiry' });
@@ -926,9 +942,79 @@ describe('toStoredColumnsKeepingUnavailable', () => {
         ]);
     });
 
+    it('does not put back an unavailable column the table is rendering again', () => {
+        const withReturned = [
+            ...rendered,
+            { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', catalogueLabel: 'Retired' },
+        ];
+        const resolved = [
+            { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', catalogueLabel: 'retired', available: false },
+            ...rendered.map((column) => ({ ...column, available: true })),
+        ];
+
+        expect(toStoredColumnsKeepingUnavailable(withReturned, resolved)).toEqual(toStoredColumns(withReturned));
+    });
+
     it('is the plain stored shape when everything resolved', () => {
         const resolved = rendered.map((column) => ({ ...column, available: true }));
 
         expect(toStoredColumnsKeepingUnavailable(rendered, resolved)).toEqual(toStoredColumns(rendered));
+    });
+});
+
+describe('goneAttributeKeys', () => {
+    const catalogue: SearchFieldDataByGroupDto[] = [
+        ...standardCatalogue,
+        {
+            filterFieldSource: FilterFieldSource.Custom,
+            searchFieldData: [{ fieldIdentifier: 'cost_centre', fieldLabel: 'Cost centre', type: FilterFieldType.String, conditions: [] }],
+        },
+    ];
+
+    it('names each attribute column a stored view holds whose field the catalogue no longer publishes, per view', () => {
+        const views = [
+            view('a', 'One', { columns: [retired, { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'cost_centre' }] }),
+            view('b', 'Two', { columns: [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }, retired] }),
+        ];
+
+        expect(goneAttributeKeys(views, catalogue)).toEqual([toDormantKey('a', retired), toDormantKey('b', retired)]);
+    });
+
+    it('leaves out a platform column the catalogue does not publish, which is not an attribute', () => {
+        const views = [view('a', 'One', { columns: [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CERTIFICATE_TYPE' }] })];
+
+        expect(goneAttributeKeys(views, catalogue)).toEqual([]);
+    });
+
+    it('names every attribute column against a settled empty catalogue', () => {
+        expect(goneAttributeKeys([view('a', 'One', { columns: [retired] })], [])).toEqual([toDormantKey('a', retired)]);
+    });
+});
+
+describe('canOrderBy', () => {
+    const catalogue: SearchFieldDataByGroupDto[] = [
+        { filterFieldSource: FilterFieldSource.Custom, searchFieldData: [] },
+        {
+            filterFieldSource: FilterFieldSource.Custom,
+            searchFieldData: [
+                { fieldIdentifier: 'cost_centre', fieldLabel: 'Cost centre', type: FilterFieldType.String, conditions: [], sortable: true },
+                { fieldIdentifier: 'notes', fieldLabel: 'Notes', type: FilterFieldType.String, conditions: [], sortable: false },
+            ],
+        },
+    ];
+    const by = (fieldIdentifier: string, fieldSource = FilterFieldSource.Custom) => ({
+        fieldSource,
+        fieldIdentifier,
+        direction: 'asc' as const,
+    });
+
+    it('accepts a field published as sortable in any group of its source', () => {
+        expect(canOrderBy(catalogue, by('cost_centre'))).toBe(true);
+    });
+
+    it('refuses a field published as unsortable, one not published, and one under another source', () => {
+        expect(canOrderBy(catalogue, by('notes'))).toBe(false);
+        expect(canOrderBy(catalogue, by('retired'))).toBe(false);
+        expect(canOrderBy(catalogue, by('cost_centre', FilterFieldSource.Meta))).toBe(false);
     });
 });

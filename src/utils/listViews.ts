@@ -276,7 +276,8 @@ export function getFilterKey(filter: SearchFilterModel): string {
  */
 export type StoredField = Pick<ListViewColumnModel, 'fieldSource' | 'fieldIdentifier'>;
 
-function catalogueKeys(catalogue: readonly SearchFieldDataByGroupDto[]): Set<string> {
+/** The column key of every field the catalogue publishes, whether or not the listing can display it. */
+export function catalogueKeys(catalogue: readonly SearchFieldDataByGroupDto[]): Set<string> {
     const keys = new Set<string>();
 
     for (const group of catalogue) {
@@ -286,6 +287,45 @@ function catalogueKeys(catalogue: readonly SearchFieldDataByGroupDto[]): Set<str
     }
 
     return keys;
+}
+
+/** Whether the catalogue publishes the ordering's field as sortable, which Core requires of every view it stores. */
+export function canOrderBy(
+    catalogue: readonly SearchFieldDataByGroupDto[],
+    sort: Pick<ColumnSort, 'fieldSource' | 'fieldIdentifier'>,
+): boolean {
+    return catalogue.some(
+        (group) =>
+            group.filterFieldSource === sort.fieldSource &&
+            (group.searchFieldData ?? []).some((field) => field.fieldIdentifier === sort.fieldIdentifier && field.sortable === true),
+    );
+}
+
+/** A column of one stored view, so confirming an attribute in one view does not confirm it in another. */
+export function toDormantKey(viewUuid: string, column: Pick<ColumnDefinition, 'fieldSource' | 'fieldIdentifier'>): string {
+    return `${viewUuid}|${getColumnKey(column)}`;
+}
+
+/**
+ * The {@link toDormantKey} of each attribute column a stored view holds whose field the catalogue no longer
+ * publishes.
+ *
+ * A column names its attribute only by name and content type, so a later attribute under the same pair may be
+ * a different one; these keys are what gets held back for the user to confirm. Call it only once the catalogue
+ * has settled: an empty one then means every attribute is gone, not that it has not arrived.
+ */
+export function goneAttributeKeys(views: readonly ListViewModel[], catalogue: readonly SearchFieldDataByGroupDto[]): string[] {
+    const published = catalogueKeys(catalogue);
+    const gone = new Set<string>();
+    for (const view of views) {
+        for (const column of view.columns) {
+            if (column.fieldSource !== FilterFieldSource.Property && !published.has(getColumnKey(column))) {
+                gone.add(toDormantKey(view.uuid, column));
+            }
+        }
+    }
+
+    return [...gone];
 }
 
 /** What a write is checked against: the live column catalogue and the page's own platform column set. */
@@ -462,9 +502,10 @@ export function toStoredColumnsKeepingUnavailable(
     resolved: readonly PickerColumn[],
 ): ListViewColumnModel[] {
     const stored = toStoredColumns(rendered);
+    const renderedKeys = new Set(rendered.map(getColumnKey));
 
     resolved.forEach((column, index) => {
-        if (column.available) return;
+        if (column.available || renderedKeys.has(getColumnKey(column))) return;
         stored.splice(Math.min(index, stored.length), 0, ...toStoredColumns([column]));
     });
 
@@ -525,5 +566,7 @@ export function toUpdateRequest(
         ...row,
         columns: toStorableColumns(row.columns ?? [], schema, view.columns),
         filters: toStorableFilters(row.filters ?? [], schema.catalogue, view.filters ?? []),
+        // Core refuses the whole update over an ordering it cannot apply, which a stored one becomes once its field goes.
+        sort: row.sort && canOrderBy(schema.catalogue, row.sort) ? row.sort : undefined,
     };
 }
