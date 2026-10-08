@@ -98,27 +98,6 @@ export const useComplianceProfileResourceOptions = () => {
     return { resourceOptionsWithComplianceProfile, isFetchingResourcesList };
 };
 
-export const useHasEventsResourceOptions = () => {
-    const resourceList = useSelector(resourceSelectors.resourcesList);
-    const resourceTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
-    const isFetchingResourcesList = useSelector(resourceSelectors.isFetchingResourcesList);
-    const dispatch = useDispatch();
-
-    useEffect(() => {
-        dispatch(resourceActions.listResources());
-    }, [dispatch]);
-
-    const resourceOptionsWithEvents = useMemo(() => {
-        if (!resourceList.length) return [];
-        const resourceListWithEvents = resourceList.filter((resource) => resource.hasEvents);
-        return resourceListWithEvents.map((resource) => {
-            return { value: resource.resource, label: getEnumLabel(resourceTypeEnum, resource.resource) };
-        });
-    }, [resourceList, resourceTypeEnum]);
-
-    return { resourceOptionsWithEvents, isFetchingResourcesList };
-};
-
 type ResourceFilter = 'hasEvents' | 'hasRuleEvaluator';
 
 export const useResourceOptionsFromListWithFilters = (resourceList: ResourceModel[], resourceFilter?: ResourceFilter) => {

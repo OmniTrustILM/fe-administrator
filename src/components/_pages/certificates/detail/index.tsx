@@ -5,7 +5,6 @@ import AttributeViewer, { ATTRIBUTE_VIEWER_TYPE } from 'components/Attributes/At
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
 import ProgressButton from 'components/ProgressButton';
-import Select from 'components/Select';
 import Spinner from 'components/Spinner';
 import StatusBadge from 'components/StatusBadge';
 import { actions as utilsActuatorActions } from 'ducks/utilsActuator';
@@ -38,10 +37,12 @@ import { Link, useParams } from 'react-router';
 import { actions as raProfilesActions, selectors as raProfilesSelectors } from 'ducks/ra-profiles';
 import Button from 'components/Button';
 import type { AttributeDescriptorModel, AttributeResponseModel } from 'types/attributes';
+import type { CertificateListResponseModel } from 'types/certificate';
 import { PlatformEnum, Resource } from 'types/openapi';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { downloadFile, getCertificateStatusColor } from 'utils/certificate';
+import { resolveRelatedCertificateRelation } from 'utils/certificate-relation';
 
 import { dateFormatter } from 'utils/dateUtil';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
@@ -54,7 +55,7 @@ import type { Edge } from 'reactflow';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { DeviceType, useDeviceType } from 'utils/common-hooks';
 import CertificateStatus from '../CertificateStatus';
-import CertificateList from 'components/_pages/certificates/list';
+import RelatedCertificatePicker from './RelatedCertificatePicker';
 import { capitalize } from 'utils/common-utils';
 import ComplianceCheckResultWidget from 'components/_pages/certificates/ComplianceCheckResultWidget/ComplianceCheckResultWidget';
 import Badge from 'components/Badge';
@@ -236,8 +237,7 @@ export default function CertificateDetail() {
     const [confirmRemove, setConfirmRemove] = useState<boolean>(false);
 
     const [isAddingRelatedCertificate, setIsAddingRelatedCertificate] = useState<boolean>(false);
-    const [selectedCertificate, setSelectedCertificate] = useState<string | undefined>();
-    const [relatedCertificateRelation, setRelatedCertificateRelation] = useState<'predecessor' | 'successor'>('successor');
+    const [selectedCertificate, setSelectedCertificate] = useState<CertificateListResponseModel | undefined>();
     const [confirmDeleteRelatedCertificate, setConfirmDeleteRelatedCertificate] = useState<boolean>(false);
     const [relatedCertificateCheckedRows, setRelatedCertificateCheckedRows] = useState<string[]>([]);
     const [isAlreadyRelatedError, setIsAlreadyRelatedError] = useState<boolean>(false);
@@ -717,6 +717,24 @@ export default function CertificateDetail() {
         [relatedCertificates],
     );
 
+    const relatedCertificateResolution = useMemo(
+        () => (certificate && selectedCertificate ? resolveRelatedCertificateRelation(certificate, selectedCertificate) : undefined),
+        [certificate, selectedCertificate],
+    );
+
+    const relatedCertificateNote = useMemo(() => {
+        if (isAlreadyRelatedError) return <span className="text-danger">Certificate is already related</span>;
+        if (relatedCertificateResolution?.relation) {
+            return (
+                <span className="text-content-muted">
+                    Selected certificate will be added as a {relatedCertificateResolution.relation} of this certificate.
+                </span>
+            );
+        }
+        if (relatedCertificateResolution) return <span className="text-danger">{relatedCertificateResolution.reason}</span>;
+        return null;
+    }, [isAlreadyRelatedError, relatedCertificateResolution]);
+
     const getRelatedCertificateName = useCallback(
         (uuid: string) => {
             if (!relatedCertificates) return '';
@@ -837,7 +855,6 @@ export default function CertificateDetail() {
         setRelatedCertificatesFilters();
         setRelatedCertificateCheckedRows([]);
         setIsAlreadyRelatedError(false);
-        setRelatedCertificateRelation('successor');
         setIsAddingRelatedCertificate(true);
     }, [cloneCertificateFilters, currentFilters, setRelatedCertificatesFilters]);
 
@@ -884,7 +901,7 @@ export default function CertificateDetail() {
         if (!selectedCertificate) {
             setIsAlreadyRelatedError(false);
         }
-        const isAlreadyRelated = getCertificateIsAlreadyRelated(selectedCertificate);
+        const isAlreadyRelated = getCertificateIsAlreadyRelated(selectedCertificate?.uuid);
 
         setIsAlreadyRelatedError(isAlreadyRelated);
     }, [selectedCertificate, getCertificateIsAlreadyRelated]);
@@ -1428,47 +1445,20 @@ export default function CertificateDetail() {
                 buttons={[]}
                 body={
                     <>
-                        <div className="mb-4">
-                            <Select
-                                id="relatedCertificateRelation"
-                                label="Relation"
-                                value={relatedCertificateRelation}
-                                onChange={(value) => setRelatedCertificateRelation(value as 'predecessor' | 'successor')}
-                                options={[
-                                    {
-                                        value: 'successor',
-                                        label: 'Successor',
-                                        description: 'Selected certificate is issued after this one',
-                                    },
-                                    {
-                                        value: 'predecessor',
-                                        label: 'Predecessor',
-                                        description: 'Selected certificate is issued before this one',
-                                    },
-                                ]}
-                                showOptionDescriptionInDropdown={true}
-                            />
-                        </div>
-                        <CertificateList
-                            hideAdditionalButtons={true}
-                            hideWidgetButtons={true}
-                            multiSelect={false}
-                            isLinkDisabled={true}
-                            onCheckedRowsChanged={(rows) => {
-                                setSelectedCertificate(rows[0] as string);
-                            }}
-                            withPreservedFilters={false}
-                        />
-                        <Container className="flex-row justify-end modal-footer" gap={4}>
+                        <RelatedCertificatePicker onSelect={setSelectedCertificate} />
+                        <Container className="flex-row items-center justify-end modal-footer" gap={4}>
+                            <div className="mr-auto" aria-live="polite">
+                                {relatedCertificateNote}
+                            </div>
                             <ProgressButton
                                 title="Add"
                                 inProgressTitle="Adding..."
                                 inProgress={false}
-                                disabled={!selectedCertificate || isAlreadyRelatedError}
+                                disabled={!relatedCertificateResolution?.relation || isAlreadyRelatedError}
                                 type="button"
                                 onClick={() => {
-                                    if (selectedCertificate) {
-                                        onCertificateAssociate(id, selectedCertificate, relatedCertificateRelation);
+                                    if (selectedCertificate && relatedCertificateResolution?.relation) {
+                                        onCertificateAssociate(id, selectedCertificate.uuid, relatedCertificateResolution.relation);
                                     }
                                 }}
                             />
@@ -1477,7 +1467,6 @@ export default function CertificateDetail() {
                                 Cancel
                             </Button>
                         </Container>
-                        {isAlreadyRelatedError ? <span className="text-danger">Certificate is already related</span> : null}
                     </>
                 }
             />

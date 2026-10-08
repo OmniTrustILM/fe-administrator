@@ -2,7 +2,6 @@ import React from 'react';
 import { Link } from 'react-router';
 import Badge from 'components/Badge';
 import { KeyRound } from 'lucide-react';
-import { actions as filterActions, EntityType } from 'ducks/filters';
 import {
     CertificateProtocol,
     type CertificateProtocolDto,
@@ -15,9 +14,8 @@ import {
     FilterFieldType,
     PlatformEnum,
 } from 'types/openapi';
-import type { CertificateListResponseModel, CertificateDetailResponseModel, SearchFilterModel } from 'types/certificate';
+import type { CertificateListResponseModel, CertificateDetailResponseModel } from 'types/certificate';
 import type { EnumItemModel } from 'types/enums';
-import type { Dispatch } from 'redux';
 import type { TableDataRow } from 'components/CustomTable';
 import type { CellRegistry } from 'components/CustomTable/columns';
 import BooleanCell from 'components/CustomTable/columns/BooleanCell';
@@ -36,8 +34,6 @@ type PlatformEnumMap = { [key: string]: EnumItemModel } | undefined;
 export interface BuildCertificateRowColumnsOpts {
     isLinkDisabled: boolean;
     selectCertsOnly: boolean;
-    currentFilters: SearchFilterModel[];
-    dispatch: Dispatch;
     dateFormatter: (d: Date) => string;
     /** Enum map from platform enum selector (e.g. EnumItemDto / EnumItemModel) */
     certificateTypeEnum: PlatformEnumMap;
@@ -46,19 +42,10 @@ export interface BuildCertificateRowColumnsOpts {
 }
 
 function buildCommonNameCell(certificate: CertificateListResponseModel, opts: BuildCertificateRowColumnsOpts) {
-    const { selectCertsOnly, isLinkDisabled, dispatch, currentFilters } = opts;
+    const { selectCertsOnly, isLinkDisabled } = opts;
     const label = certificate.commonName || '(empty)';
     if (selectCertsOnly || isLinkDisabled) return label;
-    return (
-        <Link
-            onClick={() =>
-                dispatch(filterActions.setPreservedFilters({ entity: EntityType.CERTIFICATE, preservedFilters: currentFilters }))
-            }
-            to={`./detail/${certificate.uuid}`}
-        >
-            {label}
-        </Link>
-    );
+    return <Link to={`./detail/${certificate.uuid}`}>{label}</Link>;
 }
 
 function buildRaProfileCell(certificate: CertificateListResponseModel, isLinkDisabled: boolean) {

@@ -65,7 +65,6 @@ export function FilterWidgetRuleActionTestWrapper({
                 filter: {
                     availableFilters,
                     currentFilters: [],
-                    preservedFilters: [],
                     isFetchingFilters: false,
                     hasLoadedFilters: true,
                     hasFailedFilters: false,
@@ -78,7 +77,6 @@ export function FilterWidgetRuleActionTestWrapper({
                 filter: {
                     availableFilters: sourceAvailableFilters,
                     currentFilters: [],
-                    preservedFilters: [],
                     isFetchingFilters: false,
                     hasLoadedFilters: true,
                     hasFailedFilters: false,

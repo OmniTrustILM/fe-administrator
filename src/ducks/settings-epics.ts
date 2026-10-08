@@ -1,6 +1,6 @@
 import type { UnknownAction } from '@reduxjs/toolkit';
 import type { AppEpic } from 'ducks';
-import { iif, of } from 'rxjs';
+import { of } from 'rxjs';
 import { catchError, filter, mergeMap, switchMap } from 'rxjs/operators';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
@@ -92,17 +92,9 @@ const updateEventSettings: AppEpic = (action$, state$, deps) => {
         switchMap((action) =>
             deps.apiClients.settings.updateEventSettings({ eventSettingsDto: action.payload.eventSettings }).pipe(
                 mergeMap(() =>
-                    iif(
-                        () => !!action.payload.redirect,
-                        of(
-                            slice.actions.updateEventSettingsSuccess(action.payload),
-                            alertActions.success('Event settings updated successfully.'),
-                            appRedirectActions.redirect({ url: action.payload.redirect! }),
-                        ),
-                        of(
-                            slice.actions.updateEventSettingsSuccess(action.payload),
-                            alertActions.success('Event settings updated successfully.'),
-                        ),
+                    of(
+                        slice.actions.updateEventSettingsSuccess(action.payload),
+                        alertActions.success('Event settings updated successfully.'),
                     ),
                 ),
                 catchError((err) =>
