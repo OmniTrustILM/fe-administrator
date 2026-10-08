@@ -3,9 +3,11 @@ import type { AppState } from 'ducks';
 import type {
     CryptographicAssetDetailDto,
     CryptographicAssetDto,
+    CryptographicAssetPqcExplanationDto,
     PaginationResponseDtoCryptographicAssetDto,
     SearchRequestDto,
 } from 'types/openapi';
+import type { WidgetLockErrorModel } from 'types/user-interface';
 import { resetSliceState } from './reducerUtils';
 
 // No searchable-fields state here: the filter widget reads the catalogue through the `filters` duck.
@@ -17,11 +19,17 @@ export type State = {
     assetDetailError?: string;
     assetDetailErrorStatusCode?: number;
     isFetchingDetail: boolean;
+
+    pqcExplanation?: CryptographicAssetPqcExplanationDto;
+    /** Set when the explanation fails to load; rendered through its widget's own lock, so the widget's Refresh retries it. */
+    pqcExplanationLock?: WidgetLockErrorModel;
+    isFetchingPqcExplanation: boolean;
 };
 
 export const initialState: State = {
     isFetchingList: false,
     isFetchingDetail: false,
+    isFetchingPqcExplanation: false,
 };
 
 const NO_ASSETS: CryptographicAssetDto[] = [];
@@ -50,11 +58,15 @@ export const slice = createSlice({
             state.isFetchingList = false;
         },
 
+        // The explanation belongs to the asset as loaded, so a reload starts it from nothing as well.
         getCryptoAssetDetail: (state, action: PayloadAction<{ uuid: string }>) => {
             state.assetDetail = undefined;
             state.assetDetailError = undefined;
             state.assetDetailErrorStatusCode = undefined;
             state.isFetchingDetail = true;
+            state.pqcExplanation = undefined;
+            state.pqcExplanationLock = undefined;
+            state.isFetchingPqcExplanation = false;
         },
 
         getCryptoAssetDetailSuccess: (state, action: PayloadAction<{ detail: CryptographicAssetDetailDto }>) => {
@@ -73,6 +85,26 @@ export const slice = createSlice({
             state.assetDetailError = undefined;
             state.assetDetailErrorStatusCode = undefined;
             state.isFetchingDetail = false;
+            state.pqcExplanation = undefined;
+            state.pqcExplanationLock = undefined;
+            state.isFetchingPqcExplanation = false;
+        },
+
+        // A refresh keeps the explanation on screen under the busy spinner.
+        getCryptoAssetPqcExplanation: (state, action: PayloadAction<{ uuid: string }>) => {
+            state.pqcExplanationLock = undefined;
+            state.isFetchingPqcExplanation = true;
+        },
+
+        getCryptoAssetPqcExplanationSuccess: (state, action: PayloadAction<{ explanation: CryptographicAssetPqcExplanationDto }>) => {
+            state.pqcExplanation = action.payload.explanation;
+            state.isFetchingPqcExplanation = false;
+        },
+
+        getCryptoAssetPqcExplanationFailure: (state, action: PayloadAction<{ lock: WidgetLockErrorModel }>) => {
+            state.pqcExplanation = undefined;
+            state.pqcExplanationLock = action.payload.lock;
+            state.isFetchingPqcExplanation = false;
         },
     },
 });
@@ -87,6 +119,10 @@ export const selectCryptoAssetDetailError = createSelector(featureSelector, (sta
 export const selectCryptoAssetDetailErrorStatusCode = createSelector(featureSelector, (state) => state.assetDetailErrorStatusCode);
 export const selectIsFetchingDetail = createSelector(featureSelector, (state) => state.isFetchingDetail);
 
+export const selectPqcExplanation = createSelector(featureSelector, (state) => state.pqcExplanation);
+export const selectPqcExplanationLock = createSelector(featureSelector, (state) => state.pqcExplanationLock);
+export const selectIsFetchingPqcExplanation = createSelector(featureSelector, (state) => state.isFetchingPqcExplanation);
+
 export const selectors = {
     selectCryptoAssetList,
     selectIsFetchingList,
@@ -94,6 +130,9 @@ export const selectors = {
     selectCryptoAssetDetailError,
     selectCryptoAssetDetailErrorStatusCode,
     selectIsFetchingDetail,
+    selectPqcExplanation,
+    selectPqcExplanationLock,
+    selectIsFetchingPqcExplanation,
 };
 
 export const { actions } = slice;

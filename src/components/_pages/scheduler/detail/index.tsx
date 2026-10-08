@@ -15,6 +15,8 @@ import Switch from 'components/Switch';
 import { PlatformEnum, Resource, SchedulerJobExecutionStatus } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { describeCronSchedule } from 'utils/cronSchedule';
+import { dateFormatter } from 'utils/dateUtil';
+import { getScheduleStateBadgeColor } from 'utils/scheduler';
 import CronBuilder from 'components/CronBuilder';
 import CronScheduleHint from 'components/CronScheduleHint';
 import { validateQuartzCronExpression, validateRequired } from 'utils/validators';
@@ -32,6 +34,8 @@ import Button from 'components/Button';
 interface EditFormValues {
     cronExpression: string | undefined;
 }
+
+const formatTime = (time: string | undefined) => (time ? dateFormatter(time) : '');
 
 const CronExpressionForm = ({
     newCronExpression,
@@ -114,6 +118,7 @@ export default function SchedulerJobDetail() {
     const isUpdatingCron = useSelector(selectors.isUpdatingCron);
     const [originalCronExpression, setOriginalCronExpression] = useState<string>('');
     const schedulerJobExecutionStatusEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.SchedulerJobExecutionStatus));
+    const scheduleStateEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ScheduledJobScheduleState));
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
     const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
     const [editCronOpen, setEditCronOpen] = useState(false);
@@ -193,7 +198,7 @@ export default function SchedulerJobDetail() {
         () => [
             {
                 icon: 'trash',
-                disabled: schedulerJob?.system ?? true,
+                disabled: isBusy || (schedulerJob?.system ?? true),
                 tooltip: 'Delete',
                 onClick: () => {
                     setConfirmDelete(true);
@@ -201,7 +206,7 @@ export default function SchedulerJobDetail() {
             },
             {
                 icon: 'check',
-                disabled: schedulerJob?.enabled ?? true,
+                disabled: isBusy || (schedulerJob?.enabled ?? true),
                 tooltip: 'Enable',
                 onClick: () => {
                     dispatch(actions.enableSchedulerJob({ uuid: schedulerJob!.uuid }));
@@ -209,7 +214,7 @@ export default function SchedulerJobDetail() {
             },
             {
                 icon: 'times',
-                disabled: !schedulerJob?.enabled,
+                disabled: isBusy || !schedulerJob?.enabled,
                 tooltip: 'Disable',
                 onClick: () => {
                     dispatch(actions.disableSchedulerJob({ uuid: schedulerJob!.uuid }));
@@ -217,12 +222,12 @@ export default function SchedulerJobDetail() {
             },
             {
                 icon: 'pencil',
-                disabled: !schedulerJob,
+                disabled: isBusy || !schedulerJob,
                 tooltip: 'Edit CRON Expression',
                 onClick: openEditCronModal,
             },
         ],
-        [dispatch, schedulerJob, openEditCronModal],
+        [dispatch, schedulerJob, openEditCronModal, isBusy],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -265,6 +270,44 @@ export default function SchedulerJobDetail() {
                           ],
                       },
                       {
+                          id: 'cron',
+                          columns: [
+                              'Cron Expression (UTC)',
+                              <>
+                                  {schedulerJob.cronExpression}&nbsp;
+                                  <Tooltip
+                                      content={describeCronSchedule(schedulerJob.cronExpression)}
+                                      contentClassName="whitespace-pre-line"
+                                  >
+                                      <Info size={16} className="inline-block" />
+                                  </Tooltip>
+                              </>,
+                          ],
+                      },
+                      {
+                          id: 'scheduleState',
+                          columns: [
+                              'Schedule State',
+                              <span key="scheduleState" className="inline-flex items-center gap-1">
+                                  <Badge color={getScheduleStateBadgeColor(schedulerJob.scheduleState, schedulerJob.oneTime)}>
+                                      {getEnumLabel(scheduleStateEnum, schedulerJob.scheduleState)}
+                                  </Badge>
+                                  <EnumValueDescription
+                                      platformEnum={PlatformEnum.ScheduledJobScheduleState}
+                                      value={schedulerJob.scheduleState}
+                                  />
+                              </span>,
+                          ],
+                      },
+                      {
+                          id: 'nextFireTime',
+                          columns: ['Next Fire Time', formatTime(schedulerJob.nextFireTime)],
+                      },
+                      {
+                          id: 'previousFireTime',
+                          columns: ['Previous Fire Time', formatTime(schedulerJob.previousFireTime)],
+                      },
+                      {
                           id: 'status',
                           columns: [
                               'Last Execution Status',
@@ -287,23 +330,20 @@ export default function SchedulerJobDetail() {
                           ],
                       },
                       {
-                          id: 'cron',
-                          columns: [
-                              'Cron Expression',
-                              <>
-                                  {schedulerJob.cronExpression}&nbsp;
-                                  <Tooltip
-                                      content={describeCronSchedule(schedulerJob.cronExpression)}
-                                      contentClassName="whitespace-pre-line"
-                                  >
-                                      <Info size={16} className="inline-block" />
-                                  </Tooltip>
-                              </>,
-                          ],
+                          id: 'lastExecutionStartTime',
+                          columns: ['Last Execution Start', formatTime(schedulerJob.lastExecutionStartTime)],
+                      },
+                      {
+                          id: 'lastSkippedAt',
+                          columns: ['Last Skipped At', formatTime(schedulerJob.lastSkippedAt)],
+                      },
+                      {
+                          id: 'lastSkipReason',
+                          columns: ['Last Skip Reason', schedulerJob.lastSkipReason ?? ''],
                       },
                   ]
                 : [],
-        [schedulerJob, schedulerJobExecutionStatusEnum],
+        [schedulerJob, schedulerJobExecutionStatusEnum, scheduleStateEnum],
     );
 
     if (isFetching) {
@@ -325,6 +365,7 @@ export default function SchedulerJobDetail() {
                         widgetButtons={buttons}
                         titleSize="large"
                         refreshAction={getFreshSchedulerJobDetails}
+                        disableRefresh={isBusy}
                     >
                         <CustomTable headers={detailHeaders} data={detailData} />
                     </Widget>

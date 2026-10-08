@@ -454,10 +454,7 @@ models/KeyUsageMappedField.ts
 models/KeyValueSecretContent.ts
 models/ListViewColumnDto.ts
 models/ListViewDto.ts
-models/ListViewFieldStatus.ts
-models/ListViewFilterDto.ts
 models/ListViewRequestDto.ts
-models/ListViewSortRequestDto.ts
 models/ListViewUpdateRequestDto.ts
 models/LocationDto.ts
 models/LocationsResponseDto.ts

@@ -9,17 +9,22 @@ import { useDispatch, useSelector } from 'react-redux';
 import type { SearchFilterModel } from 'types/certificate';
 import type { ListViewModel, ListViewRequestModel, ViewSlice } from 'types/listViews';
 import type { Resource, SearchFieldDataByGroupDto } from 'types/openapi';
-import type { ColumnDefinition } from 'types/tableColumns';
+import type { ColumnDefinition, PickerColumn } from 'types/tableColumns';
 import { toCatalogueFields } from 'utils/columnPicker';
 import {
+    canOrderBy,
+    catalogueKeys,
     STANDARD_VIEW_ID,
     STANDARD_VIEW_NAME,
     duplicateName,
+    goneAttributeKeys,
+    toDormantKey,
     isSliceDirty,
     newViewName,
     resolveInitialViewId,
     resolveView,
     splitTabs,
+    toColumnSort,
     toCreateRequest,
     toStandardSlice,
     toStorableFilters,
@@ -29,14 +34,16 @@ import {
     toTabs,
     toUpdateRequest,
     toViewSlice,
+    type StoredField,
     type ViewSchema,
     withoutMissingFieldFilters,
     getFilterKey,
     type ViewTab as ViewTabModel,
 } from 'utils/listViews';
-import { type ColumnSort, getColumnKey } from 'utils/tableColumns';
+import { type ColumnSort, getColumnKey, getSortKey } from 'utils/tableColumns';
 import NameViewDialog from './NameViewDialog';
 import OverflowViewsMenu from './OverflowViewsMenu';
+import ReturnedColumnsNotice from './ReturnedColumnsNotice';
 import UnresolvedColumnsNotice from './UnresolvedColumnsNotice';
 import ViewSummaryBar from './ViewSummaryBar';
 import ViewTab from './ViewTab';
@@ -83,13 +90,16 @@ export type ViewTabsProps = Readonly<{
     /**
      * Applies a view: its columns, its filters and its ordering, together. The caller is expected to
      * return to page 1 and clear its row selection — the filters change which rows exist, so a
-     * carried-over selection would span rows the user can no longer see.
+     * carried-over selection would span rows the user can no longer see. `reopensLeftPosition` is set
+     * only when a return reopens the very tab the strip was left on, the one case a page may be kept.
      */
-    onApply: (slice: ViewSlice) => void;
+    onApply: (slice: ViewSlice, reopensLeftPosition?: boolean) => void;
     dataTestId?: string;
 }>;
 
 type PendingDialog = 'rename' | 'create' | 'new' | 'delete';
+
+const NO_KEYS: ReadonlySet<string> = new Set();
 
 /**
  * Whether the strip is up, given a settled view list and a settled catalogue. A host withholding its
@@ -112,6 +122,24 @@ function reinsert<T>(live: readonly T[], dropped: readonly T[], original: readon
         result.splice(Math.min(original.indexOf(item), result.length), 0, item);
     }
     return result;
+}
+
+/**
+ * `live` with the `stored` filters put back, except on a field `live` already filters by. The user's filter replaces
+ * the stored ones there: Core combines filters with AND, so keeping both would list under two values of one field.
+ */
+function reinsertStoredFilters(
+    live: readonly SearchFilterModel[],
+    stored: readonly SearchFilterModel[],
+    original: readonly SearchFilterModel[],
+): SearchFilterModel[] {
+    const ownKeys = new Set(live.map(getColumnKey));
+    return reinsert(
+        live,
+        stored.filter((filter) => !ownKeys.has(getColumnKey(filter))),
+        original,
+        getFilterKey,
+    );
 }
 
 /**
@@ -145,6 +173,8 @@ export default function ViewTabs({
     const isMutating = useSelector(listViewSelectors.isMutating(resource));
     const isStale = useSelector(listViewSelectors.isStale(resource));
     const createdUuid = useSelector(listViewSelectors.createdUuid(resource));
+    const dormantFields = useSelector(listViewSelectors.dormantFields(resource));
+    const confirmingFields = useSelector(listViewSelectors.confirming(resource));
 
     const [activeId, setActiveId] = useState(STANDARD_VIEW_ID);
     // The filters a drill-down opened Standard on, kept to tell the Dashboard's filters from the user's own edits.
@@ -154,7 +184,45 @@ export default function ViewTabs({
     const [dismissedNotices, setDismissedNotices] = useState<ReadonlySet<string>>(() => new Set());
     const [targetId, setTargetId] = useState<string | undefined>(undefined);
 
-    const fields = useMemo(() => toCatalogueFields(catalogue, renderableProperties), [catalogue, renderableProperties]);
+    const catalogueFields = useMemo(() => toCatalogueFields(catalogue, renderableProperties), [catalogue, renderableProperties]);
+    const dormant = useMemo<ReadonlySet<string>>(() => new Set(dormantFields), [dormantFields]);
+
+    // A field seen gone from a view and published again resolves no column of that view until the user confirms it.
+    const fieldsFor = useCallback(
+        (view: ListViewModel | undefined) =>
+            !view || dormant.size === 0 ? catalogueFields : catalogueFields.filter((field) => !dormant.has(toDormantKey(view.uuid, field))),
+        [catalogueFields, dormant],
+    );
+
+    /**
+     * The column keys of a view's held-back fields, published again and not yet confirmed. Judged against every
+     * published field, not only the displayable ones: a filter on a field the listing cannot show still narrows it.
+     */
+    const heldKeysOf = useCallback(
+        (view: ListViewModel | undefined): ReadonlySet<string> => {
+            if (!view || dormant.size === 0) return NO_KEYS;
+            const published = catalogueKeys(catalogue);
+            return new Set(
+                view.columns
+                    .filter((column) => published.has(getColumnKey(column)) && dormant.has(toDormantKey(view.uuid, column)))
+                    .map(getColumnKey),
+            );
+        },
+        [catalogue, dormant],
+    );
+
+    // A filter on a held-back field is withheld with its column, or it would narrow the list by an attribute nobody confirmed.
+    const sliceOf = useCallback(
+        (view: ListViewModel): ViewSlice => {
+            const slice = toViewSlice(view, fieldsFor(view), standardColumns);
+            const heldKeys = heldKeysOf(view);
+            return heldKeys.size === 0
+                ? slice
+                : { ...slice, filters: slice.filters.filter((filter) => !heldKeys.has(getColumnKey(filter))) };
+        },
+        [fieldsFor, heldKeysOf, standardColumns],
+    );
+
     const schema = useMemo<ViewSchema>(() => ({ catalogue, standardColumns }), [catalogue, standardColumns]);
 
     /**
@@ -186,9 +254,30 @@ export default function ViewTabs({
     const activeTab = useMemo(() => tabs.find((tab) => tab.id === activeId) ?? tabs[0], [tabs, activeId]);
 
     const resolved = useMemo(
-        () => (activeView ? resolveView(activeView.columns, fields, standardColumns) : undefined),
-        [activeView, fields, standardColumns],
+        () => (activeView ? resolveView(activeView.columns, fieldsFor(activeView), standardColumns) : undefined),
+        [activeView, fieldsFor, standardColumns],
     );
+
+    const held = useMemo(() => {
+        if (!activeView || dormant.size === 0) return [];
+        return resolveView(activeView.columns, catalogueFields, standardColumns).columns.filter(
+            (column) => column.available && dormant.has(toDormantKey(activeView.uuid, column)),
+        );
+    }, [activeView, dormant, catalogueFields, standardColumns]);
+
+    /**
+     * The active view's stored ordering when it is on a held-back column, published again or not. The table drops an
+     * ordering on a column it is not showing, so this one is not an unsaved edit, and a save or a confirmation keeps it.
+     */
+    const heldSort = useMemo(() => {
+        const stored = toColumnSort(activeView?.sort);
+        return activeView && stored && dormant.has(toDormantKey(activeView.uuid, stored)) ? stored : undefined;
+    }, [activeView, dormant]);
+
+    const heldFilters = useMemo(() => {
+        const heldKeys = heldKeysOf(activeView);
+        return activeView?.filters?.filter((filter) => heldKeys.has(getColumnKey(filter))) ?? [];
+    }, [activeView, heldKeysOf]);
 
     /**
      * The slice behind the active tab, which drift is measured against.
@@ -201,12 +290,31 @@ export default function ViewTabs({
     const storedSlice = useMemo(() => {
         if (!activeView) return toStandardSlice(standardColumns, standardSort);
 
-        const slice = toViewSlice(activeView, fields, standardColumns);
-        return { ...slice, filters: toStorableFilters(slice.filters, catalogue, activeView.filters ?? []) };
-    }, [activeView, fields, standardColumns, standardSort, catalogue]);
+        const slice = sliceOf(activeView);
+        return {
+            ...slice,
+            filters: toStorableFilters(slice.filters, catalogue, activeView.filters ?? []),
+            sort: heldSort ? undefined : slice.sort,
+        };
+    }, [activeView, sliceOf, standardColumns, standardSort, catalogue, heldSort]);
+
+    const returned = useMemo(() => {
+        const shown = new Set(columns.map(getColumnKey));
+        return held.filter((column) => !shown.has(getColumnKey(column)));
+    }, [held, columns]);
+
+    // Not one the user has filtered by themselves since: the list is then filtered by that field.
+    const unfiltered = useMemo(() => {
+        const heldKeys = new Set(heldFilters.map(getColumnKey));
+        const userKeys = new Set(filters.map(getColumnKey));
+        return returned.filter((column) => heldKeys.has(getColumnKey(column)) && !userKeys.has(getColumnKey(column)));
+    }, [returned, heldFilters, filters]);
 
     /** The stored columns this table cannot render, which the notice names. */
-    const unavailable = useMemo(() => resolved?.columns.filter((column) => !column.available) ?? [], [resolved]);
+    const unavailable = useMemo(() => {
+        const heldKeys = new Set(held.map(getColumnKey));
+        return resolved?.columns.filter((column) => !column.available && !heldKeys.has(getColumnKey(column))) ?? [];
+    }, [resolved, held]);
 
     // A dismissal holds for the view and the columns it named, so a column that goes missing later is reported again.
     const noticeKey = useMemo(
@@ -241,11 +349,43 @@ export default function ViewTabs({
     const applyRef = useRef(onApply);
     applyRef.current = onApply;
 
+    /**
+     * The table's slice, moved on by every apply an effect makes. Effects of one commit share a render's props, and an
+     * apply replaces the whole slice, so a second one built from those props would put back what the first took off.
+     */
+    const liveSlice = useRef<ViewSlice>({ columns, filters, sort });
+    liveSlice.current = { columns, filters, sort };
+    const applyFromEffect = useCallback((slice: ViewSlice) => {
+        liveSlice.current = slice;
+        applyRef.current(slice);
+    }, []);
+
+    /**
+     * A save that confirms held-back columns puts them on the table only once it succeeds: the duck releases them then,
+     * and one put on the table earlier would stay there unconfirmed if the save failed.
+     *
+     * They go into the table as it is by then, not as it was at Save, so an edit made while the save was out stays. The
+     * rest of the table is left as the user had it, which is what the save stored, except for the `suppressed` filters on
+     * them that reopening the view withheld while the save was out.
+     */
+    const pendingConfirmation = useRef<{ uuid: string; confirmed: StoredField[]; sort?: ColumnSort; suppressed?: string[] } | undefined>(
+        undefined,
+    );
+
     const apply = useCallback(
         (view: ListViewModel | undefined) => {
-            applyRef.current(view ? toViewSlice(view, fields, standardColumns) : toStandardSlice(standardColumns, standardSort));
+            const slice = view ? sliceOf(view) : toStandardSlice(standardColumns, standardSort);
+            const pending = pendingConfirmation.current;
+            if (pending) {
+                const keys = new Set(pending.confirmed.map(getColumnKey));
+                const withheld = (view?.uuid === pending.uuid ? (view.filters ?? []) : []).filter(
+                    (filter) => keys.has(getColumnKey(filter)) && !slice.filters.includes(filter),
+                );
+                pending.suppressed = withheld.map(getFilterKey);
+            }
+            applyRef.current(slice);
         },
-        [fields, standardColumns, standardSort],
+        [sliceOf, standardColumns, standardSort],
     );
 
     const select = useCallback(
@@ -266,8 +406,113 @@ export default function ViewTabs({
         if (requestedFor === resource && isStale && !isMutating) dispatch(listViewActions.listViews({ resource }));
     }, [dispatch, resource, requestedFor, isStale, isMutating]);
 
-    const liveSlice = useRef<ViewSlice>({ columns, filters, sort });
-    liveSlice.current = { columns, filters, sort };
+    /**
+     * Keeps the open view's table off fields it has not confirmed. A column whose field goes while it is on the table comes
+     * off it, or the table would keep it through the field's return and show whatever attribute answers under that key.
+     * A filter comes off when its field turns held, as a freshly applied view would leave it out. A view arriving on the
+     * table with a filter on a held field was handed back from a detail page: the user's own stays, the stored one goes.
+     */
+    const previousHeld = useRef<{ uuid?: string; keys: ReadonlySet<string> }>({ keys: NO_KEYS });
+    useEffect(() => {
+        const heldKeys = heldKeysOf(activeView);
+        const isArriving = previousHeld.current.uuid !== activeView?.uuid;
+        const wasHeld = isArriving ? NO_KEYS : previousHeld.current.keys;
+        previousHeld.current = { uuid: activeView?.uuid, keys: heldKeys };
+
+        const gone = isReady
+            ? goneAttributeKeys(views, catalogue).filter((key) => !dormant.has(key) || confirmingFields.includes(key))
+            : [];
+        if (gone.length > 0) dispatch(listViewActions.markFieldsDormant({ resource, keys: gone }));
+        if (!activeView) return;
+
+        const goneHere = new Set(gone);
+        const keptColumns = columns.filter((column) => !goneHere.has(toDormantKey(activeView.uuid, column)));
+        const storedFilters = new Set((activeView.filters ?? []).map(getFilterKey));
+        const keptFilters = filters.filter(
+            (filter) =>
+                !heldKeys.has(getColumnKey(filter)) ||
+                wasHeld.has(getColumnKey(filter)) ||
+                (isArriving && !storedFilters.has(getFilterKey(filter))),
+        );
+        if (keptColumns.length < columns.length || keptFilters.length < filters.length) {
+            applyFromEffect({ columns: keptColumns.length > 0 ? keptColumns : [...standardColumns], filters: keptFilters, sort });
+        }
+    }, [
+        dispatch,
+        resource,
+        isReady,
+        views,
+        catalogue,
+        dormant,
+        confirmingFields,
+        activeView,
+        heldKeysOf,
+        columns,
+        filters,
+        sort,
+        standardColumns,
+        applyFromEffect,
+    ]);
+
+    // A column the user confirms directly is theirs from then on, so the save must not put it back after they remove it.
+    const forgetDirectlyConfirmed = useCallback((uuid: string, keys: ReadonlySet<string>) => {
+        const pending = pendingConfirmation.current;
+        if (pending?.uuid !== uuid) return;
+
+        const confirmed = pending.confirmed.filter((column) => !keys.has(getColumnKey(column)));
+        const sort = pending.sort && !keys.has(getSortKey(pending.sort)) ? pending.sort : undefined;
+        pendingConfirmation.current = confirmed.length > 0 ? { ...pending, confirmed, sort } : undefined;
+    }, []);
+
+    /** `live` with the stored filters and ordering on the confirmed column keys put back, unless the user set their own. */
+    const withConfirmed = useCallback(
+        (keys: ReadonlySet<string>, live: ViewSlice): ViewSlice => ({
+            ...live,
+            filters: reinsertStoredFilters(
+                live.filters,
+                heldFilters.filter((filter) => keys.has(getColumnKey(filter))),
+                activeView?.filters ?? [],
+            ),
+            sort: live.sort ?? (heldSort && keys.has(getSortKey(heldSort)) ? heldSort : undefined),
+        }),
+        [heldFilters, heldSort, activeView],
+    );
+
+    // Putting a held-back field on the table of its view, from the column menu or otherwise, is the user's confirmation
+    // of it. Only a column that arrives on the table counts: one that was already there was never chosen.
+    const previousColumns = useRef(columns);
+    useEffect(() => {
+        const before = new Set(previousColumns.current.map(getColumnKey));
+        previousColumns.current = columns;
+        if (!isReady || !activeView || dormant.size === 0) return;
+
+        const published = new Set(catalogueFields.map(getColumnKey));
+        const arrived = columns.filter(
+            (column) =>
+                !before.has(getColumnKey(column)) &&
+                published.has(getColumnKey(column)) &&
+                dormant.has(toDormantKey(activeView.uuid, column)),
+        );
+        if (arrived.length === 0) return;
+
+        dispatch(listViewActions.releaseDormantFields({ resource, keys: arrived.map((column) => toDormantKey(activeView.uuid, column)) }));
+        const arrivedKeys = new Set(arrived.map(getColumnKey));
+        forgetDirectlyConfirmed(activeView.uuid, arrivedKeys);
+        const live = liveSlice.current;
+        const confirmed = withConfirmed(arrivedKeys, live);
+        if (confirmed.filters.length !== live.filters.length || confirmed.sort !== live.sort) applyFromEffect(confirmed);
+    }, [
+        dispatch,
+        resource,
+        isReady,
+        activeView,
+        dormant,
+        catalogueFields,
+        columns,
+        withConfirmed,
+        forgetDirectlyConfirmed,
+        applyFromEffect,
+    ]);
 
     // The pinned view opens on load, and Standard when none is pinned. Once only: a later list read —
     // after a rename, say — must not throw the user back to the tab they started on.
@@ -285,11 +530,11 @@ export default function ViewTabs({
         const opening =
             initial === STANDARD_VIEW_ID
                 ? toStandardSlice(standardColumns, standardSort)
-                : toViewSlice(views.find((view) => view.uuid === initial) as ListViewModel, fields, standardColumns);
+                : sliceOf(views.find((view) => view.uuid === initial) as ListViewModel);
         setActiveId(initial);
         setDrillDownFilters(isDrillDown ? liveSlice.current.filters : undefined);
-        applyRef.current(handedIn ? { ...opening, filters: liveSlice.current.filters } : opening);
-    }, [resource, isReady, views, fields, standardColumns, standardSort, handedIn]);
+        applyRef.current(handedIn ? { ...opening, filters: liveSlice.current.filters } : opening, initial === position?.viewId);
+    }, [resource, isReady, views, sliceOf, standardColumns, standardSort, handedIn]);
 
     const positionRef = useRef(onPositionChange);
     positionRef.current = onPositionChange;
@@ -373,14 +618,14 @@ export default function ViewTabs({
             const view = toCreateRequest(name, resource, slice, schema);
             // The failure goes back to the tab the create started from, so that tab's slice is what comes back.
             create(view, () => ({ columns, filters, sort }));
-            applyRef.current({ ...slice, columns: resolveView(view.columns, fields, standardColumns).renderable });
+            applyRef.current({ ...slice, columns: resolveView(view.columns, catalogueFields, standardColumns).renderable });
         },
-        [create, resource, schema, standardColumns, fields, columns, filters, sort],
+        [create, resource, schema, standardColumns, catalogueFields, columns, filters, sort],
     );
 
     const patchView = useCallback(
-        (view: ListViewModel, patch: Parameters<typeof toUpdateRequest>[2]) => {
-            dispatch(listViewActions.updateView({ resource, uuid: view.uuid, view: toUpdateRequest(view, schema, patch) }));
+        (view: ListViewModel, patch: Parameters<typeof toUpdateRequest>[2], confirms?: string[]) => {
+            dispatch(listViewActions.updateView({ resource, uuid: view.uuid, view: toUpdateRequest(view, schema, patch), confirms }));
         },
         [dispatch, resource, schema],
     );
@@ -423,8 +668,8 @@ export default function ViewTabs({
         if (activeId !== pending.fallbackId) return;
 
         setActiveId(restored.uuid);
-        applyRef.current(toViewSlice(restored, fields, standardColumns));
-    }, [views, activeId, isMutating, fields, standardColumns]);
+        applyRef.current(sliceOf(restored));
+    }, [views, activeId, isMutating, sliceOf]);
 
     const onDelete = useCallback(() => {
         if (!targetView) return;
@@ -443,6 +688,60 @@ export default function ViewTabs({
         apply(remaining.find((view) => view.uuid === fallback));
     }, [dispatch, resource, targetView, activeId, views, apply]);
 
+    /** The table with held-back columns of the active view put on it, with their stored filters and ordering. */
+    const confirmedSlice = useCallback(
+        (confirmed: readonly PickerColumn[]): ViewSlice | undefined => {
+            if (!activeView || confirmed.length === 0) return undefined;
+
+            const keys = new Set(confirmed.map(getColumnKey));
+            const released = resolveView(
+                activeView.columns,
+                catalogueFields.filter((field) => keys.has(getColumnKey(field)) || !dormant.has(toDormantKey(activeView.uuid, field))),
+                standardColumns,
+            ).renderable;
+            // A table on the platform fallback gives it up for the view, keeping only what the user added to it.
+            const fallback = new Set(resolved?.fellBackToStandard ? resolved.renderable.map(getColumnKey) : []);
+            const shown = reinsert(
+                columns.filter((column) => !fallback.has(getColumnKey(column))),
+                resolved?.fellBackToStandard ? released : released.filter((column) => keys.has(getColumnKey(column))),
+                released,
+                getColumnKey,
+            );
+            return withConfirmed(keys, { columns: shown, filters, sort });
+        },
+        [activeView, catalogueFields, dormant, standardColumns, resolved, columns, filters, sort, withConfirmed],
+    );
+
+    useEffect(() => {
+        const pending = pendingConfirmation.current;
+        if (!pending || isMutating) return;
+
+        pendingConfirmation.current = undefined;
+        if (activeView?.uuid !== pending.uuid) return;
+        // Judged by the keys rather than the slice's error, which any read or write of any resource can set: only a
+        // successful save releases them, and one seen gone again during the save stays held.
+        const released = pending.confirmed.filter((column) => !dormant.has(toDormantKey(pending.uuid, column)));
+        if (released.length === 0) return;
+
+        const keys = new Set(released.map(getColumnKey));
+        const { columns, filters, sort } = liveSlice.current;
+        const stored = resolveView(activeView.columns, fieldsFor(activeView), standardColumns).renderable;
+        const shown = reinsert(
+            columns,
+            stored.filter((column) => keys.has(getColumnKey(column))),
+            stored,
+            getColumnKey,
+        );
+        const suppressed = new Set(pending.suppressed);
+        const storedFilters = activeView.filters ?? [];
+        const restored = storedFilters.filter((filter) => keys.has(getColumnKey(filter)) && suppressed.has(getFilterKey(filter)));
+        const releasedSort = pending.sort && keys.has(getSortKey(pending.sort)) ? pending.sort : undefined;
+        const confirmed = { columns: shown, filters: reinsertStoredFilters(filters, restored, storedFilters), sort: sort ?? releasedSort };
+        // A field the listing cannot display has no column to put on the table, and an apply would reset the page for nothing.
+        if (shown.length !== columns.length || confirmed.filters.length !== filters.length || confirmed.sort !== sort)
+            applyFromEffect(confirmed);
+    }, [isMutating, dormant, activeView, fieldsFor, standardColumns, applyFromEffect]);
+
     const onSaveDrift = useCallback(() => {
         if (!activeView) {
             // Standard has nothing to save into, so the offer is to keep the change as a new view.
@@ -450,14 +749,69 @@ export default function ViewTabs({
             return;
         }
 
+        // Saving a filter of the user's own on a held-back field confirms the field, as adding its column would: held, the
+        // view would withhold the filter just saved. The user's filters on it replace the stored ones they never saw apply.
+        const filtered = new Set(storableFilters.map(getColumnKey));
+        const confirmedKeys = new Set([...heldKeysOf(activeView)].filter((key) => filtered.has(key)));
+        const confirmed = activeView.columns.filter((column) => confirmedKeys.has(getColumnKey(column)));
+        const stillHeld = heldFilters.filter((filter) => !confirmedKeys.has(getColumnKey(filter)));
+        // Mirrors toUpdateRequest, which drops an ordering Core cannot apply, so the table takes back only one the save keeps.
+        const keptSort = heldSort && canOrderBy(catalogue, heldSort) ? heldSort : undefined;
+
         // The stored columns this table cannot render go back in: the user never saw them, so saving a
         // filter or an ordering is not the moment to drop them.
+        patchView(
+            activeView,
+            {
+                columns: toStoredColumnsKeepingUnavailable(columns, resolved?.columns ?? []),
+                filters: reinsert(storableFilters, stillHeld, activeView.filters ?? [], getFilterKey),
+                sort: toStoredSort(sort ?? keptSort),
+            },
+            confirmed.map((column) => toDormantKey(activeView.uuid, column)),
+        );
+
+        if (confirmed.length > 0) {
+            const confirmedSort = !sort && keptSort && confirmedKeys.has(getSortKey(keptSort)) ? keptSort : undefined;
+            pendingConfirmation.current = { uuid: activeView.uuid, confirmed, sort: confirmedSort };
+        }
+    }, [activeView, patchView, columns, resolved, storableFilters, heldKeysOf, heldFilters, catalogue, sort, heldSort]);
+
+    const onShowReturned = useCallback(() => {
+        const slice = confirmedSlice(returned);
+        if (!activeView || !slice) return;
+
+        dispatch(listViewActions.releaseDormantFields({ resource, keys: returned.map((column) => toDormantKey(activeView.uuid, column)) }));
+        forgetDirectlyConfirmed(activeView.uuid, new Set(returned.map(getColumnKey)));
+        applyRef.current(slice);
+    }, [confirmedSlice, returned, activeView, dispatch, resource, forgetDirectlyConfirmed]);
+
+    // Withheld when every stored column is held back: Core refuses a view with no columns.
+    const remainingAfterReturned = useMemo(() => {
+        const keys = new Set(returned.map(getColumnKey));
+        return activeView?.columns.filter((column) => !keys.has(getColumnKey(column))) ?? [];
+    }, [returned, activeView]);
+
+    // The filters and ordering on a removed column go with it: kept, they would act on the attribute the user just refused.
+    const onRemoveReturned = useCallback(() => {
+        const keys = new Set(returned.map(getColumnKey));
         patchActive({
-            columns: toStoredColumnsKeepingUnavailable(columns, resolved?.columns ?? []),
-            filters: storableFilters,
-            sort: toStoredSort(sort),
+            columns: remainingAfterReturned,
+            filters: activeView?.filters?.filter((filter) => !keys.has(getColumnKey(filter))),
+            ...(heldSort && keys.has(getSortKey(heldSort)) ? { sort: undefined } : {}),
         });
-    }, [activeView, patchActive, columns, resolved, storableFilters, sort]);
+    }, [patchActive, remainingAfterReturned, returned, activeView, heldSort]);
+
+    // A held-back field the listing cannot display is named only here, so its filters go with it as they do there.
+    const onRemoveUnavailable = useCallback(() => {
+        if (!resolved) return;
+        const removed = new Set(unavailable.map(getColumnKey));
+        const refused = new Set([...heldKeysOf(activeView)].filter((key) => removed.has(key)));
+        patchActive({
+            columns: toStoredColumns(resolved.columns.filter((column) => !removed.has(getColumnKey(column)))),
+            ...(refused.size > 0 ? { filters: activeView?.filters?.filter((filter) => !refused.has(getColumnKey(filter))) } : {}),
+            ...(heldSort && removed.has(getSortKey(heldSort)) ? { sort: undefined } : {}),
+        });
+    }, [patchActive, resolved, unavailable, heldKeysOf, activeView, heldSort]);
 
     const takenNames = useMemo(() => [STANDARD_VIEW_NAME, ...views.map((view) => view.name)], [views]);
 
@@ -601,20 +955,27 @@ export default function ViewTabs({
                 </div>
             </SimpleBar>
 
-            {resolved && !(noticeKey && dismissedNotices.has(noticeKey)) && (
+            <ReturnedColumnsNotice
+                returned={returned}
+                unfiltered={unfiltered}
+                onShow={onShowReturned}
+                onRemove={remainingAfterReturned.length > 0 ? onRemoveReturned : undefined}
+                isBusy={isMutating}
+                dataTestId={`${dataTestId}-returned`}
+            />
+
+            {/* A view whose only missing columns are held back is described by the returned-columns notice alone. */}
+            {resolved && (unavailable.length > 0 || held.length === 0) && !(noticeKey && dismissedNotices.has(noticeKey)) && (
                 <UnresolvedColumnsNotice
                     unavailable={unavailable}
                     storedCount={resolved.columns.length}
+                    withheld={held.length}
                     fellBackToStandard={resolved.fellBackToStandard}
                     // Written from the stored side, not from the table: the table is showing the platform
                     // fallback when nothing resolved, and carries unsaved changes besides, so saving it
-                    // here would overwrite the view with columns the user never chose. Withheld entirely
-                    // on a fallback, where nothing resolved and there is no column list left to write.
-                    onRemove={
-                        activeView && !resolved.fellBackToStandard
-                            ? () => patchActive({ columns: toStoredColumns(resolved.columns.filter((column) => column.available)) })
-                            : undefined
-                    }
+                    // here would overwrite the view with columns the user never chose. Withheld on a
+                    // fallback with nothing held back either, where there is no column list left to write.
+                    onRemove={activeView && (!resolved.fellBackToStandard || held.length > 0) ? onRemoveUnavailable : undefined}
                     onDismiss={() => {
                         if (noticeKey) setDismissedNotices((dismissed) => new Set(dismissed).add(noticeKey));
                     }}

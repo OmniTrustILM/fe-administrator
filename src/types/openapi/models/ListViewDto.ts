@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { ListViewColumnDto, ListViewFilterDto, Resource, SearchSortRequestDto } from './';
+import type { ListViewColumnDto, Resource, SearchFilterRequestDto, SearchSortRequestDto } from './';
 
 /**
  * @export
@@ -37,7 +37,7 @@ export interface ListViewDto {
      */
     resource: Resource;
     /**
-     * Columns of the view, in display order. A column whose field the resource no longer defines, such as a deleted attribute, or whose attribute identifier is now backed by a different definition, is still returned with its `status` saying so, so a client can show it as dormant and offer to remove or rebind it.
+     * Columns of the view, in display order. A column whose field the resource no longer defines, such as a deleted attribute, is still returned, so a client can show it as unavailable and offer to remove it.
      * @type {Array<ListViewColumnDto>}
      * @memberof ListViewDto
      */
@@ -49,13 +49,13 @@ export interface ListViewDto {
      */
     defaultView: boolean;
     /**
-     * Filters the view applies. Absent or empty means the view shows the whole inventory. Only a filter whose `status` is `available` is meant to be applied to the listing.
-     * @type {Array<ListViewFilterDto>}
+     * Filters the view applies. Absent or empty means the view shows the whole inventory.
+     * @type {Array<SearchFilterRequestDto>}
      * @memberof ListViewDto
      */
-    filters?: Array<ListViewFilterDto>;
+    filters?: Array<SearchFilterRequestDto>;
     /**
-     * Ordering the view applies. Absent means the endpoint\'s own default ordering, which is also what a stored ordering reads back as once the listing cannot order by its field, or once that field is an attribute no longer backed by the definitions the ordering was bound to when it was saved.
+     * Ordering the view applies. Absent means the endpoint\'s own default ordering.
      * @type {SearchSortRequestDto}
      * @memberof ListViewDto
      */

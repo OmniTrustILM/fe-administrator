@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { FilterFieldSource, ListViewFieldStatus } from './';
+import type { FilterFieldSource } from './';
 
 /**
  * @export
@@ -36,22 +36,4 @@ export interface ListViewColumnDto {
      * @memberof ListViewColumnDto
      */
     label?: string;
-    /**
-     * Attribute definitions the column is bound to, set by the server when the column is added or rebound. Absent for a property column. Only definitions of the view\'s resource count. Empty for an attribute column whose definition was already gone when stored views were first bound. A value sent in a request is ignored.
-     * @type {Array<string>}
-     * @memberof ListViewColumnDto
-     */
-    attributeDefinitionUuids?: Array<string>;
-    /**
-     * How the column resolves for the caller when the view is read. A client shows only an `available` column as its field; an `unavailable` or `replaced` one is dormant and offered for removal, and a `replaced` one also for rebinding. Returned on every read and write response; a value sent in a request is ignored.
-     * @type {ListViewFieldStatus}
-     * @memberof ListViewColumnDto
-     */
-    readonly status?: ListViewFieldStatus;
-    /**
-     * Set to true to bind an attribute column the view already holds to the attribute definitions now behind its identifier, which is how a client accepts a `replaced` column. Absent or false carries a column the view already holds over: while it still resolves it follows the definitions currently behind its identifier, and once it no longer does it keeps the binding it had, so a replacement never takes it over. Any other column is bound to the current definitions. Any column sent with rebind is held to the catalogue as a newly added one, property columns included, but only an attribute column has a binding to change. The flag is not stored.
-     * @type {boolean}
-     * @memberof ListViewColumnDto
-     */
-    rebind?: boolean;
 }
