@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import type { SearchFieldListModel, SearchRequestModel } from 'types/certificate';
 import type { ListViewModel } from 'types/listViews';
-import { FilterConditionOperator, FilterFieldSource, FilterFieldType, Resource } from 'types/openapi';
+import { FilterConditionOperator, FilterFieldSource, FilterFieldType, Resource, SortDirection } from 'types/openapi';
 import { expect, test } from '../../../playwright/ct-test';
 import PagedListReturnWithStore from './PagedListReturnWithStore';
 
@@ -50,6 +50,16 @@ const unfiltered: ListViewModel = {
     defaultView: false,
 };
 
+const byName: ListViewModel = {
+    uuid: 'view-3',
+    name: 'By name',
+    resource: Resource.Secrets,
+    columns: [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }],
+    filters: [],
+    sort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: SortDirection.Desc },
+    defaultView: false,
+};
+
 const typed = [nameContains('typed-by-the-user')];
 
 const props = {
@@ -94,6 +104,32 @@ test.describe('PagedList · coming back from a detail page', () => {
 
         await expect(page.getByRole('tab', { name: 'Everything' })).toHaveAttribute('aria-selected', 'true');
         await expect.poll(async () => await lastRequest(page)).toMatchObject({ pageNumber: 2, itemsPerPage: 20, filters: typed });
+    });
+
+    test('keeps the page of a sorted view it comes back to under the same ordering', async ({ mount, page }) => {
+        await mount(<PagedListReturnWithStore {...props} views={[pinned, byName]} totalItems={60} />);
+        await page.getByRole('tab', { name: 'By name' }).click();
+        await page.getByTestId('turn-page').click();
+        await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(2);
+
+        await openSecretAndComeBack(page);
+
+        await expect(page.getByRole('tab', { name: 'By name' })).toHaveAttribute('aria-selected', 'true');
+        await expect.poll(async () => await lastRequest(page)).toMatchObject({ pageNumber: 2, sort: { direction: SortDirection.Desc } });
+    });
+
+    test('opens on the first page when the sorted view it was left on has gone', async ({ mount, page }) => {
+        await mount(<PagedListReturnWithStore {...props} views={[pinned, byName]} viewsOnDetail={[pinned]} totalItems={60} />);
+        await page.getByRole('tab', { name: 'By name' }).click();
+        await page.getByTestId('turn-page').click();
+        await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(2);
+
+        await page.getByTestId('open-secret').click();
+        await page.getByTestId('replace-views').click();
+        await page.getByTestId('back-to-list').click();
+
+        await expect(page.getByRole('tab', { name: 'Standard' })).toHaveAttribute('aria-selected', 'true');
+        await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(1);
     });
 
     test('opens on the first page once the list is left for elsewhere', async ({ mount, page }) => {

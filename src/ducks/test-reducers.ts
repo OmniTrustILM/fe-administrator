@@ -126,13 +126,16 @@ export type FiltersTestState = {
             isFetchingFilters: boolean;
             hasLoadedFilters: boolean;
             hasFailedFilters?: boolean;
-            handedIn?: { source: 'drill-down'; scope: string } | { source: 'return'; position?: { viewId: string; isDrillDown: boolean } };
+            handedIn?:
+                | { source: 'drill-down'; scope: string }
+                | { source: 'return'; position?: { viewId: string; isDrillDown: boolean }; sort?: unknown };
             viewPosition?: { viewId: string; isDrillDown: boolean };
             leftList?: {
                 path: string;
                 scope: string;
                 filters: unknown[];
                 position?: { viewId: string; isDrillDown: boolean };
+                sort?: unknown;
                 hasGoneAway: boolean;
             };
         };
@@ -156,6 +159,7 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
             position?: { viewId: string; isDrillDown: boolean };
             path?: string;
             scope?: string;
+            sort?: unknown;
         };
     };
     if (a.type === 'filters/getAvailableFilters') {
@@ -241,6 +245,7 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
                 scope: (payload.scope ?? '').replace(/(.)\/+$/, '$1'),
                 filters: filter.currentFilters,
                 position: filter.viewPosition,
+                sort: payload.sort,
                 hasGoneAway: false,
             },
         }));
@@ -275,7 +280,7 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
                 ...filter,
                 leftList: undefined,
                 currentFilters: left.filters,
-                handedIn: { source: 'return', position: left.position },
+                handedIn: { source: 'return', position: left.position, sort: left.sort },
             };
         });
     }

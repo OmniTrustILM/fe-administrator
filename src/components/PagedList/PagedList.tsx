@@ -156,13 +156,16 @@ function PagedList<TRow extends object>({
     // every render, and the effect watching it would refetch forever.
     const isColumnDriven = configurableColumns !== undefined;
 
+    // Read when the list unmounts, which the effect below cannot depend on without recording a leave on every re-sort.
+    const appliedSortRef = useRef<ColumnSort | undefined>(undefined);
+
     // Only a list with a view strip records and takes a return: a picker over the same entity never takes one.
     useEffect(() => {
         if (!isColumnDriven) return;
         const path = location.pathname;
         dispatch(filterActions.returnToList({ entity, path }));
         return () => {
-            dispatch(filterActions.leaveList({ entity, path, scope: toListScope(path) }));
+            dispatch(filterActions.leaveList({ entity, path, scope: toListScope(path), sort: appliedSortRef.current }));
         };
     }, [dispatch, entity, isColumnDriven, location.pathname]);
     const {
@@ -208,6 +211,7 @@ function PagedList<TRow extends object>({
     );
 
     const appliedSort = useMemo(() => toDisplayableSort(sortSelection, appliedColumns), [sortSelection, appliedColumns]);
+    appliedSortRef.current = appliedSort;
 
     const catalogueFields = useMemo(() => toCatalogueFields(catalogue, renderableProperties), [catalogue, renderableProperties]);
 
@@ -410,21 +414,24 @@ function PagedList<TRow extends object>({
      * The ordering is put through the same sieve as `applyColumns`: this is the path the column
      * dialog comes back on, and it hands back the ordering the table was listing under before it.
      *
-     * Any other view lists from its first page, except the one a return from a detail page opens on:
-     * that puts the list back where it was left, so it keeps the page it was left on as well.
+     * Any other view lists from its first page, except the one a return from a detail page opens on
+     * under the ordering the list was left listing: that puts the list back where it was left, page
+     * included. A return that cannot reopen that ordering starts from the first page like any view.
      */
     const handedIn = useSelector(filterSelectors.handedInFilters(entity));
-    const isReturning = handedIn?.source === 'return';
     const onApplyView = useCallback(
         (slice: ViewSlice) => {
+            const nextSort = toDisplayableSort(slice.sort, slice.columns);
             setColumnSelection(slice.columns);
-            setSortSelection(toDisplayableSort(slice.sort, slice.columns));
+            setSortSelection(nextSort);
             dispatch(filterActions.setCurrentFilters({ entity, currentFilters: slice.filters }));
 
-            if (!isReturning) dispatch(actions.setPagination({ entity, pageSize, pageNumber: 1 }));
+            if (handedIn?.source !== 'return' || !isSameSort(nextSort, handedIn.sort)) {
+                dispatch(actions.setPagination({ entity, pageSize, pageNumber: 1 }));
+            }
             onCheckedRowsChanged([]);
         },
-        [dispatch, entity, pageSize, isReturning, onCheckedRowsChanged],
+        [dispatch, entity, pageSize, handedIn, onCheckedRowsChanged],
     );
 
     const onViewPositionChange = useCallback(
