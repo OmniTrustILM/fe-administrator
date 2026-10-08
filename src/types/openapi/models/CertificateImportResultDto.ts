@@ -44,7 +44,7 @@ export interface CertificateImportResultDto {
      */
     certificateOutcome?: ImportOutcome;
     /**
-     * UUID of the certificate the entry produced, when it carried one
+     * UUID of the entry\'s certificate, withheld when the caller may not see it in detail
      * @type {string}
      * @memberof CertificateImportResultDto
      */
@@ -56,7 +56,7 @@ export interface CertificateImportResultDto {
      */
     keyOutcome?: ImportOutcome;
     /**
-     * UUID of the key the entry produced, when it carried key material
+     * UUID of the entry\'s key, withheld for a key already in the inventory that the caller may not see in detail
      * @type {string}
      * @memberof CertificateImportResultDto
      */

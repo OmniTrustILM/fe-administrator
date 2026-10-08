@@ -37,7 +37,7 @@ export interface CryptographicAssetSourceDto {
      */
     version: number;
     /**
-     * Number of occurrences this source recorded for the asset, counted before the served evidence list is capped
+     * Number of evidence.occurrences entries this source recorded for the asset, counted before the served evidence list is capped. 0 when the source did not record where it found the asset; the source still counts as one occurrence of the asset on the row
      * @type {number}
      * @memberof CryptographicAssetSourceDto
      */

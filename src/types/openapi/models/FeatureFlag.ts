@@ -33,6 +33,5 @@ export enum FeatureFlag {
     CertificateStatusPolling = 'certificateStatusPolling',
     CertificateRequestStructured = 'certificateRequestStructured',
     CertificateIdentityOverride = 'certificateIdentityOverride',
-    DiscoveryStreaming = 'discoveryStreaming',
     DiscoveryStopResume = 'discoveryStopResume',
 }

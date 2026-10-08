@@ -74,6 +74,7 @@ export enum PlatformEnum {
     AttributeVersion = 'AttributeVersion',
     ProtectionLevel = 'ProtectionLevel',
     SchedulerJobExecutionStatus = 'SchedulerJobExecutionStatus',
+    ScheduledJobScheduleState = 'ScheduledJobScheduleState',
     RecipientType = 'RecipientType',
     NotificationDataCategory = 'NotificationDataCategory',
     TriggerType = 'TriggerType',
@@ -102,4 +103,5 @@ export enum PlatformEnum {
     CbomSyncSkipState = 'CbomSyncSkipState',
     CryptographicAssetType = 'CryptographicAssetType',
     PqcVerdict = 'PqcVerdict',
+    PqcExplanationStepOutcome = 'PqcExplanationStepOutcome',
 }

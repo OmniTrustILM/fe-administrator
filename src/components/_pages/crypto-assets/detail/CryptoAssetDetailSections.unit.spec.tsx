@@ -69,7 +69,6 @@ const detail = (overrides: Partial<CryptographicAssetDetailDto> = {}): Cryptogra
     occurrenceCount: 1321,
     quarantined: false,
     verdict: {
-        ruleSetVersion: 4,
         ruleId: 'CLASSICAL-SHOR',
         reason: 'Security rests on factorisation or a discrete logarithm',
         evaluatedFields: { algorithmFamily: 'RSA', parameterSet: '2048' },
@@ -183,10 +182,9 @@ describe('crypto asset detail sections', () => {
     });
 
     describe('verdict', () => {
-        test('shows the deciding rule, its reason, the fields it read and the rule-set version', async () => {
+        test('shows the deciding rule, its reason and the fields it read', async () => {
             await render(<CryptoAssetVerdict detail={detail()} verdictLabel="Not PQC ready" />);
 
-            expect(text('[data-testid="row-ruleSet"]')).toBe('Rule setv4');
             expect(text('[data-testid="row-rule"]')).toContain('CLASSICAL-SHOR');
             expect(text('[data-testid="row-reason"]')).toContain('Security rests on factorisation');
             expect(text('[data-testid="row-evaluatedFields"]')).toContain('algorithmFamily = RSA');
