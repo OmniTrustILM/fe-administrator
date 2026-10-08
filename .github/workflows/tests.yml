@@ -81,13 +81,13 @@ jobs:
         with:
           name: blob-chromium-${{ matrix.shard }}
           path: blob-report/
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: error
       - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: coverage-raw-${{ matrix.shard }}
           path: coverage-playwright/raw/
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: error
 
   # The job name is a required status check; renaming it blocks PR merges.
@@ -130,6 +130,17 @@ jobs:
         with:
           pattern: coverage-raw-*
           path: coverage-raw
+      # A shard re-run on its own finds the other shards' artifacts gone once
+      # they expire, while their earlier results still read as success.
+      - name: Check every shard reported
+        if: needs.chromium.result == 'success'
+        run: |
+          blobs=$(find blob-report -maxdepth 1 -name '*.zip' 2>/dev/null | wc -l || true)
+          raws=$(find coverage-raw -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l || true)
+          if [ "$blobs" -ne 4 ] || [ "$raws" -ne 4 ]; then
+            echo "::error::Expected 4 shard reports and 4 raw coverage sets, found $blobs and $raws. Shard artifacts expire after 7 days; re-run all jobs."
+            exit 1
+          fi
       - name: Merge coverage
         if: needs.chromium.result == 'success'
         run: |
@@ -180,7 +191,7 @@ jobs:
         with:
           name: blob-${{ matrix.browser }}-${{ matrix.shard }}
           path: blob-report/
-          retention-days: 1
+          retention-days: 7
           if-no-files-found: error
 
   # `needs` sees both browsers' shards at once, so each job judges its own

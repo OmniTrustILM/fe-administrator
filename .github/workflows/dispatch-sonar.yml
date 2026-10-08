@@ -7,6 +7,7 @@ on:
 permissions:
   actions: write # download artifact + create workflow dispatch
   contents: read
+  pull-requests: read # resolve the PR named in the artifact
 
 jobs:
   dispatch:
