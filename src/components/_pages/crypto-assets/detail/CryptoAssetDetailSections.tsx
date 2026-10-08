@@ -398,8 +398,8 @@ export function CryptoAssetEvaluatedProperties({
                 <CustomTable headers={KEY_VALUE_HEADERS} data={rows} />
             )}
             <p className="text-xs text-content-subtle" data-testid="pqc-explanation-withheld-note">
-                Properties taken from a CBOM you may not read are left out of the rules and of this list, so an absent property does not
-                mean the asset lacks it.
+                Properties taken from a CBOM you may not read are not shown here or on the rules, although the rules still read them, so an
+                absent property does not mean the asset lacks it.
             </p>
         </div>
     );

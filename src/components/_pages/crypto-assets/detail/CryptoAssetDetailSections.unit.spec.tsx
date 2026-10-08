@@ -547,7 +547,7 @@ describe('crypto asset detail sections', () => {
             expect(panel).not.toContain('Subject public key reference');
             expect(panel).not.toMatch(/not recorded|nothing recorded/i);
             expect(text('[data-testid="pqc-explanation-withheld-note"]')).toContain(
-                'left out of the rules and of this list, so an absent property does not mean the asset lacks it',
+                'not shown here or on the rules, although the rules still read them, so an absent property does not mean the asset lacks it',
             );
         });
 
