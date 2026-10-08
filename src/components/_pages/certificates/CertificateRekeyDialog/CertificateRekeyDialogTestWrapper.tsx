@@ -3,8 +3,8 @@ import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 
 import certificatesReducer, { actions as certificateActions } from 'ducks/certificates';
-import type { testReducers } from 'ducks/test-reducers';
-import type { CertificateDetailResponseModel } from 'types/certificate';
+import { testInitialState, type testReducers } from 'ducks/test-reducers';
+import type { CertificateDetailResponseModel, CertificateRegistrationRequestModel } from 'types/certificate';
 import { type CertificateRegistrationState, CertificateState } from 'types/openapi';
 import { overlaySliceReducer, useRecordingStore } from 'utils/test-helpers';
 
@@ -16,6 +16,7 @@ export type CertificateRekeyDialogTestWrapperProps = Readonly<{
     /** State of the certificate's registration authorization; omitted means the certificate has none. */
     registrationState?: CertificateRegistrationState;
     preloadedState?: Partial<ReturnType<typeof testReducers>>;
+    onRegister?: (request: CertificateRegistrationRequestModel) => void;
     onCancel?: () => void;
 }>;
 
@@ -23,20 +24,29 @@ const testCertificate = (registrationState: CertificateRegistrationState | undef
     ({
         uuid: 'certificate-uuid',
         commonName: 'test-certificate',
+        subjectDn: 'CN=test-certificate',
+        subjectAlternativeNames: { dNSName: ['test.example'] },
         state: CertificateState.Issued,
         privateKeyAvailability: false,
         raProfile: { uuid: 'ra-profile-uuid', name: 'Test RA Profile', authorityInstanceUuid: 'authority-uuid' },
         registration: registrationState ? { state: registrationState, failedAttempts: 0 } : undefined,
     }) as unknown as CertificateDetailResponseModel;
 
-// The rekey transitions the dialog reacts to run through the real certificates reducer; everything else stays
-// a no-op on the stubbed slice.
+// The rekey/register transitions the dialog reacts to run through the real certificates reducer; everything else
+// stays a no-op on the stubbed slice.
 const dialogActions = [
     certificateActions.rekeyCertificate,
     certificateActions.rekeyCertificateSuccess,
     certificateActions.rekeyCertificateFailure,
     certificateActions.clearRekeyErrors,
+    certificateActions.registerCertificate,
+    certificateActions.registerCertificateSuccess,
+    certificateActions.registerCertificateFailure,
+    certificateActions.clearRegisterErrors,
 ];
+
+// Register waits for the RA profile's register schema; stand in a loaded, empty one unless a test brings its own.
+const loadedRegisterSchema = { certificates: { ...testInitialState.certificates, registerAttributes: { 'ra-profile-uuid': [] } } };
 
 const rootReducer = overlaySliceReducer('certificates', certificatesReducer, dialogActions);
 
@@ -45,11 +55,12 @@ export function CertificateRekeyDialogTestWrapper({
     certificate: certificateOverride,
     registrationState,
     preloadedState,
+    onRegister,
     onCancel,
 }: CertificateRekeyDialogTestWrapperProps) {
     const certificate = useMemo(() => certificateOverride ?? testCertificate(registrationState), [certificateOverride, registrationState]);
 
-    const { store, dispatched } = useRecordingStore(preloadedState, 'certificates/', rootReducer);
+    const { store, dispatched } = useRecordingStore(preloadedState ?? loadedRegisterSchema, 'certificates/', rootReducer);
 
     const [open, setOpen] = useState(true);
 
@@ -62,6 +73,17 @@ export function CertificateRekeyDialogTestWrapper({
                         onCancel={() => {
                             setOpen(false);
                             onCancel?.();
+                        }}
+                        onRegister={(request) => {
+                            onRegister?.(request);
+                            store.dispatch(
+                                certificateActions.registerCertificate({
+                                    authorityUuid: 'authority-uuid',
+                                    raProfileUuid: 'ra-profile-uuid',
+                                    registerRequest: request,
+                                    inlineErrors: true,
+                                }),
+                            );
                         }}
                         onDone={() => setOpen(false)}
                     />
@@ -88,6 +110,26 @@ export function CertificateRekeyDialogTestWrapper({
                     onClick={() => store.dispatch(certificateActions.rekeyCertificateSuccess({ uuid: 'successor-uuid' }))}
                 >
                     rekey success
+                </button>
+                <button
+                    type="button"
+                    data-testid="simulate-register-failure"
+                    onClick={() =>
+                        store.dispatch(
+                            certificateActions.registerCertificateFailure({
+                                error: 'Failed to register certificate (422): Cannot register a successor of an archived certificate.',
+                            }),
+                        )
+                    }
+                >
+                    register failure
+                </button>
+                <button
+                    type="button"
+                    data-testid="simulate-register-success"
+                    onClick={() => store.dispatch(certificateActions.registerCertificateSuccess({ uuid: 'placeholder-uuid' }))}
+                >
+                    register success
                 </button>
                 <div data-testid="dispatched">{JSON.stringify(dispatched)}</div>
             </MemoryRouter>
