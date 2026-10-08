@@ -394,7 +394,11 @@ export default function ViewTabs({
 
         const storedFilters = new Set((activeView.filters ?? []).map(getFilterKey));
         const keptColumns = isArriving ? columns : columns.filter((column) => !turned.has(getColumnKey(column)));
-        const keptFilters = filters.filter((filter) => !turned.has(getColumnKey(filter)) || !storedFilters.has(getFilterKey(filter)));
+        // A field whose column is on the table was chosen there, so its filters came back with it and stay.
+        const shown = new Set(keptColumns.map(getColumnKey));
+        const keptFilters = filters.filter(
+            (filter) => !turned.has(getColumnKey(filter)) || !storedFilters.has(getFilterKey(filter)) || shown.has(getColumnKey(filter)),
+        );
         const keptSort = !isArriving && sort && turned.has(getColumnKey(sort)) ? undefined : sort;
         if (keptColumns.length < columns.length || keptFilters.length < filters.length || keptSort !== sort) {
             applyFromEffect({ columns: keptColumns.length > 0 ? keptColumns : [...standardColumns], filters: keptFilters, sort: keptSort });

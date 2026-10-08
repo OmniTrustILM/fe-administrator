@@ -36,10 +36,10 @@ export default function HeldFiltersNotice({ fields, onApply, onRemove, isBusy = 
             <TriangleAlert className="size-4 shrink-0 text-warning" aria-hidden="true" />
             <span>{message}</span>
             <Button variant="transparent" color="secondary" onClick={onApply} disabled={isBusy} data-testid={`${dataTestId}-apply`}>
-                Apply filter
+                {fields.length === 1 ? 'Apply filter' : 'Apply filters'}
             </Button>
             <Button variant="transparent" color="secondary" onClick={onRemove} disabled={isBusy} data-testid={`${dataTestId}-remove`}>
-                Remove filter
+                {fields.length === 1 ? 'Remove filter' : 'Remove filters'}
             </Button>
         </output>
     );

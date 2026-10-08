@@ -1417,6 +1417,26 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
     });
 
+    test('keeps the stored filter of a held-back column the user added when a duplicate fails and the strip returns', async ({
+        mount,
+        page,
+    }) => {
+        await mount(heldBackStrip({ driftColumn: column('retired', 'Retired', FilterFieldSource.Custom) }));
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+        await page.getByTestId('drift-columns').click();
+        await expect.poll(async () => (await appliedSlice(page)).filters).toEqual([retiredFilter]);
+
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+        await page.getByTestId('simulate-create-failure').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await settle(page);
+        const slice = await appliedSlice(page);
+        expect(slice.columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME', 'retired']);
+        expect(slice.filters).toEqual([retiredFilter]);
+    });
+
     test('keeps the filter of the user over the stored one on the same field when the column menu adds the held-back column', async ({
         mount,
         page,
