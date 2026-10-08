@@ -115,12 +115,15 @@ export function describeCbomInventoryState({
     record,
     versions,
     isFetchingVersions,
+    versionsError,
     canListCryptoAssets,
     contributed,
 }: {
     record: InventoryRecord | undefined;
     versions: CbomDto[];
     isFetchingVersions: boolean;
+    /** Set when the versions could not be read; nothing that needs them is then decided from the empty list. */
+    versionsError?: string;
     canListCryptoAssets: boolean;
     contributed: ContributedAssets;
 }): CbomInventoryState {
@@ -132,6 +135,7 @@ export function describeCbomInventoryState({
         // Core settles a version a later one has already ingested without reading it, so its sync adds nothing: the
         // versions decide whether waiting for it promises anything.
         if (isFetchingVersions) return { kind: 'loading' };
+        if (versionsError !== undefined) return { kind: 'loadFailed', error: versionsError };
         return supersededState(record, versions) ?? { kind: 'syncPending', syncState: record.assetSyncState };
     }
 
@@ -155,6 +159,7 @@ export function describeCbomInventoryState({
 
     // An empty listing is read against the versions, so it waits for them rather than naming a cause it may take back.
     if (isFetchingVersions) return { kind: 'loading' };
+    if (versionsError !== undefined) return { kind: 'loadFailed', error: versionsError };
 
     return supersededState(record, versions) ?? { kind: 'noContribution' };
 }

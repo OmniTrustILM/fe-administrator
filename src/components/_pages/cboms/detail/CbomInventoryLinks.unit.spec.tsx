@@ -230,6 +230,7 @@ describe('CBOM inventory links', () => {
 
     describe('useCbomInventory', () => {
         const listings = (dispatched: UnknownAction[]) => dispatched.filter(actions.listCbomContributedAssets.match);
+        const versionReads = (dispatched: UnknownAction[]) => dispatched.filter(actions.listCbomVersions.match);
 
         test('loads the contributed assets once for a loaded record, however often the page re-renders', async () => {
             const harness = makeStore();
@@ -304,6 +305,35 @@ describe('CBOM inventory links', () => {
 
             expect(listings(harness.dispatched)).toHaveLength(2);
             expect(container.textContent).toBe('loading');
+        });
+
+        test('reports a failed versions read instead of a verdict, and re-reads the versions on reload only', async () => {
+            const harness = makeStore();
+            await render(<InventoryProbe detail={undefined} />, harness);
+            await render(<InventoryProbe detail={syncedDetail()} />, harness);
+            await act(async () => {
+                harness.store.dispatch(actions.listCbomContributedAssetsSuccess({ uuid: 'cbom-1', assets: [] }));
+                harness.store.dispatch(actions.listCbomVersionsFailure({ error: 'Failed to fetch CBOM versions. Timeout' }));
+            });
+            expect(container.textContent).toBe('loadFailed');
+            expect(versionReads(harness.dispatched)).toEqual([]);
+
+            await clickByText(container, 'loadFailed');
+
+            expect(versionReads(harness.dispatched)).toEqual([actions.listCbomVersions({ uuid: 'cbom-1' })]);
+            expect(listings(harness.dispatched)).toHaveLength(2);
+            expect(container.textContent).toBe('loading');
+        });
+
+        test('does not re-read the versions on reload while they loaded fine', async () => {
+            const harness = makeStore();
+            await render(<InventoryProbe detail={undefined} />, harness);
+            await render(<InventoryProbe detail={syncedDetail()} />, harness);
+
+            await clickByText(container, 'loading');
+
+            expect(versionReads(harness.dispatched)).toEqual([]);
+            expect(listings(harness.dispatched)).toHaveLength(2);
         });
 
         test('resolves a row only while the record contributes, and names the ref limit once an asset has reached it', async () => {

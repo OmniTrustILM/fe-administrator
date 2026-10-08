@@ -17,6 +17,8 @@ export type State = {
     cbomDetailError?: string;
     cbomDetailErrorStatusCode?: number;
     cbomVersions: CbomDto[];
+    /** Why the last versions read failed; the inventory status reads it, since an empty list and a failed read must not look alike. */
+    cbomVersionsError?: string;
     contributedAssets: ContributedAssets;
     searchableFields: SearchFieldDataByGroupDto[];
 
@@ -109,6 +111,7 @@ export const slice = createSlice({
         // List CBOM Versions
         listCbomVersions: (state, action: PayloadAction<{ uuid: string }>) => {
             state.cbomVersions = [];
+            state.cbomVersionsError = undefined;
             state.isFetchingVersions = true;
         },
 
@@ -118,6 +121,7 @@ export const slice = createSlice({
         },
 
         listCbomVersionsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.cbomVersionsError = action.payload.error ?? 'Failed to fetch CBOM versions';
             state.isFetchingVersions = false;
         },
 
@@ -241,6 +245,7 @@ export const selectCbomDetail = createSelector(featureSelector, (state) => state
 export const selectCbomDetailError = createSelector(featureSelector, (state) => state.cbomDetailError);
 export const selectCbomDetailErrorStatusCode = createSelector(featureSelector, (state) => state.cbomDetailErrorStatusCode);
 export const selectCbomVersions = createSelector(featureSelector, (state) => state.cbomVersions);
+export const selectCbomVersionsError = createSelector(featureSelector, (state) => state.cbomVersionsError);
 export const selectContributedAssets = createSelector(featureSelector, (state) => state.contributedAssets);
 export const selectSearchableFields = createSelector(featureSelector, (state) => state.searchableFields);
 
@@ -263,6 +268,7 @@ export const selectors = {
     selectCbomDetailError,
     selectCbomDetailErrorStatusCode,
     selectCbomVersions,
+    selectCbomVersionsError,
     selectContributedAssets,
     selectSearchableFields,
     selectIsFetchingList,

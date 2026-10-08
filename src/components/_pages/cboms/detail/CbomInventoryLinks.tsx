@@ -35,6 +35,7 @@ export function useCbomInventory(detail: CbomDetailDto | undefined): CbomInvento
     const profile = useSelector(authSelectors.profile);
     const versions = useSelector(selectors.selectCbomVersions);
     const isFetchingVersions = useSelector(selectors.selectIsFetchingVersions);
+    const versionsError = useSelector(selectors.selectCbomVersionsError);
     const contributed = useSelector(selectors.selectContributedAssets);
 
     const canListCryptoAssets = profile?.permissions.allowedListings.includes(Resource.CryptoAssets) ?? false;
@@ -43,7 +44,7 @@ export function useCbomInventory(detail: CbomDetailDto | undefined): CbomInvento
     // one found at mount would fetch for a record that is about to be read again, or for another CBOM altogether.
     const detailAtMount = useRef(detail);
 
-    const reload = useCallback(() => {
+    const loadContributedAssets = useCallback(() => {
         if (!detail || !canListCryptoAssets || detail.assetSyncState !== CbomAssetSyncState.Synced) return;
         dispatch(actions.listCbomContributedAssets({ uuid: detail.uuid }));
     }, [dispatch, detail, canListCryptoAssets]);
@@ -51,12 +52,19 @@ export function useCbomInventory(detail: CbomDetailDto | undefined): CbomInvento
     useEffect(() => {
         if (detail === detailAtMount.current) return;
         detailAtMount.current = undefined;
-        reload();
-    }, [detail, reload]);
+        loadContributedAssets();
+    }, [detail, loadContributedAssets]);
+
+    // A user's retry, apart from the load the effect runs: a failed versions read is re-read here only, so that its
+    // failure does not trigger another read of itself.
+    const reload = useCallback(() => {
+        if (detail && versionsError !== undefined) dispatch(actions.listCbomVersions({ uuid: detail.uuid }));
+        loadContributedAssets();
+    }, [dispatch, detail, versionsError, loadContributedAssets]);
 
     const state = useMemo(
-        () => describeCbomInventoryState({ record: detail, versions, isFetchingVersions, canListCryptoAssets, contributed }),
-        [detail, versions, isFetchingVersions, canListCryptoAssets, contributed],
+        () => describeCbomInventoryState({ record: detail, versions, isFetchingVersions, versionsError, canListCryptoAssets, contributed }),
+        [detail, versions, isFetchingVersions, versionsError, canListCryptoAssets, contributed],
     );
 
     const resolveLink = useCallback(

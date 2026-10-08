@@ -103,6 +103,13 @@ describe('cbom slice', () => {
 
         next = reducer({ ...next, isFetchingVersions: true }, actions.listCbomVersionsFailure({ error: 'err' }));
         expect(next.isFetchingVersions).toBe(false);
+        expect(next.cbomVersionsError).toBe('err');
+        expect(selectors.selectCbomVersionsError({ cbom: next } as any)).toBe('err');
+
+        expect(reducer(next, actions.listCbomVersionsFailure({ error: undefined })).cbomVersionsError).toBe(
+            'Failed to fetch CBOM versions',
+        );
+        expect(reducer(next, actions.listCbomVersions({ uuid: 'u-1' })).cbomVersionsError).toBeUndefined();
     });
 
     test('listCbomContributedAssets resets to the requested record, and only that record settles it', () => {

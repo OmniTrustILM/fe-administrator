@@ -276,6 +276,21 @@ describe('describeCbomInventoryState', () => {
         expect(describeState({ contributed: loaded([]), isFetchingVersions: true })).toEqual({ kind: 'loading' });
     });
 
+    test('decides nothing from the versions while their read has failed, and names that failure instead', () => {
+        const versionsError = 'Failed to fetch CBOM versions. Service unavailable';
+
+        expect(describeState({ contributed: loaded([]), versionsError })).toEqual({ kind: 'loadFailed', error: versionsError });
+        expect(describeState({ record: { ...record, assetSyncState: CbomAssetSyncState.Pending }, versionsError })).toEqual({
+            kind: 'loadFailed',
+            error: versionsError,
+        });
+        // A listing with assets needs no versions, and a read in flight has already cleared the failure.
+        expect(describeState({ contributed: loaded([{ assetUuid: 'asset-1', bomRefs: ['ref-1'] }]), versionsError }).kind).toBe(
+            'contributing',
+        );
+        expect(describeState({ contributed: loaded([]), versionsError, isFetchingVersions: true })).toEqual({ kind: 'loading' });
+    });
+
     test('reads an empty listing with no later synced version as no contribution', () => {
         expect(describeState({ contributed: loaded([]), versions: [version({ uuid: 'cbom-1', version: 2 })] })).toEqual({
             kind: 'noContribution',

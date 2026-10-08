@@ -75,6 +75,7 @@ function runReducerAndSelectors() {
     selectors.selectCbomDetail(rootState);
     selectors.selectCbomVersions(rootState);
     selectors.selectContributedAssets(rootState);
+    selectors.selectCbomVersionsError(rootState);
     selectors.selectSearchableFields(rootState);
     selectors.selectIsFetchingList(rootState);
     selectors.selectIsFetchingDetail(rootState);
