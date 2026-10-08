@@ -409,12 +409,13 @@ export default function ViewTabs({
      * Keeps the open view's table off fields it has not confirmed. A column whose field goes while it is on the table comes
      * off it, or the table would keep it through the field's return and show whatever attribute answers under that key.
      * A filter comes off when its field turns held, as a freshly applied view would leave it out. A view arriving on the
-     * table already leaves its held filters out, so one it arrives with is the user's own, handed back from a detail page.
+     * table with a filter on a held field was handed back from a detail page: the user's own stays, the stored one goes.
      */
     const previousHeld = useRef<{ uuid?: string; keys: ReadonlySet<string> }>({ keys: NO_KEYS });
     useEffect(() => {
         const heldKeys = heldKeysOf(activeView);
-        const wasHeld = previousHeld.current.uuid === activeView?.uuid ? previousHeld.current.keys : heldKeys;
+        const isArriving = previousHeld.current.uuid !== activeView?.uuid;
+        const wasHeld = isArriving ? NO_KEYS : previousHeld.current.keys;
         previousHeld.current = { uuid: activeView?.uuid, keys: heldKeys };
 
         const gone = isReady
@@ -425,7 +426,13 @@ export default function ViewTabs({
 
         const goneHere = new Set(gone);
         const keptColumns = columns.filter((column) => !goneHere.has(toDormantKey(activeView.uuid, column)));
-        const keptFilters = filters.filter((filter) => !heldKeys.has(getColumnKey(filter)) || wasHeld.has(getColumnKey(filter)));
+        const storedFilters = new Set((activeView.filters ?? []).map(getFilterKey));
+        const keptFilters = filters.filter(
+            (filter) =>
+                !heldKeys.has(getColumnKey(filter)) ||
+                wasHeld.has(getColumnKey(filter)) ||
+                (isArriving && !storedFilters.has(getFilterKey(filter))),
+        );
         if (keptColumns.length < columns.length || keptFilters.length < filters.length) {
             applyFromEffect({ columns: keptColumns.length > 0 ? keptColumns : [...standardColumns], filters: keptFilters, sort });
         }
@@ -747,7 +754,7 @@ export default function ViewTabs({
         const confirmedKeys = new Set([...heldKeysOf(activeView)].filter((key) => filtered.has(key)));
         const confirmed = activeView.columns.filter((column) => confirmedKeys.has(getColumnKey(column)));
         const stillHeld = heldFilters.filter((filter) => !confirmedKeys.has(getColumnKey(filter)));
-        // Core refuses the whole save over an ordering it cannot apply, so a held one on a field gone or unsortable is let go.
+        // Mirrors toUpdateRequest, which drops an ordering Core cannot apply, so the table takes back only one the save keeps.
         const keptSort = heldSort && canOrderBy(catalogue, heldSort) ? heldSort : undefined;
 
         // The stored columns this table cannot render go back in: the user never saw them, so saving a

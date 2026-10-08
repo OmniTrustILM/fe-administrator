@@ -82,7 +82,9 @@ const standardCatalogue: SearchFieldDataByGroupDto[] = [
 const secretCatalogue = [
     {
         filterFieldSource: FilterFieldSource.Property,
-        searchFieldData: [{ fieldIdentifier: 'COMMON_NAME', fieldLabel: 'Common Name', type: FilterFieldType.String, conditions: [] }],
+        searchFieldData: [
+            { fieldIdentifier: 'COMMON_NAME', fieldLabel: 'Common Name', type: FilterFieldType.String, conditions: [], sortable: true },
+        ],
     },
     {
         filterFieldSource: FilterFieldSource.Custom,
@@ -603,6 +605,17 @@ describe('toUpdateRequest', () => {
             sort: stored.sort,
             defaultView: true,
         });
+    });
+
+    it.each([
+        ['a field the catalogue no longer publishes', 'retired'],
+        ['a field the catalogue publishes as unsortable', 'vaultToken'],
+    ])('drops a stored ordering on %s, which Core refuses the whole update over', (_, fieldIdentifier) => {
+        const stored = view('a', 'Expiry watch', {
+            sort: { fieldSource: FilterFieldSource.Custom, fieldIdentifier, direction: SortDirection.Asc },
+        });
+
+        expect(toUpdateRequest(stored, schema, { name: 'Expiry' }).sort).toBeUndefined();
     });
 
     it('applies the patch over the stored row, so a rename keeps the columns', () => {

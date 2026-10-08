@@ -290,7 +290,10 @@ export function catalogueKeys(catalogue: readonly SearchFieldDataByGroupDto[]): 
 }
 
 /** Whether the catalogue publishes the ordering's field as sortable, which Core requires of every view it stores. */
-export function canOrderBy(catalogue: readonly SearchFieldDataByGroupDto[], sort: ColumnSort): boolean {
+export function canOrderBy(
+    catalogue: readonly SearchFieldDataByGroupDto[],
+    sort: Pick<ColumnSort, 'fieldSource' | 'fieldIdentifier'>,
+): boolean {
     return catalogue.some(
         (group) =>
             group.filterFieldSource === sort.fieldSource &&
@@ -563,5 +566,7 @@ export function toUpdateRequest(
         ...row,
         columns: toStorableColumns(row.columns ?? [], schema, view.columns),
         filters: toStorableFilters(row.filters ?? [], schema.catalogue, view.filters ?? []),
+        // Core refuses the whole update over an ordering it cannot apply, which a stored one becomes once its field goes.
+        sort: row.sort && canOrderBy(schema.catalogue, row.sort) ? row.sort : undefined,
     };
 }

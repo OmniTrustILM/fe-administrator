@@ -1795,6 +1795,13 @@ test.describe('ViewTabs', () => {
         });
     }
 
+    test('drops the stored filter on a held-back field when the list comes back from a detail page with it', async ({ mount, page }) => {
+        await mount(heldBackStrip({ returnTo: { viewId: 'view-1', filters: [retiredFilter] } }));
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await expect.poll(async () => (await appliedSlice(page)).filters).toEqual([]);
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('not showing or filtering by it');
+    });
+
     test('keeps the filter of the user on a held-back field when the list comes back from a detail page', async ({ mount, page }) => {
         await mount(heldBackStrip({ returnTo: { viewId: 'view-1', filters: [ownFilter] } }));
         await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
@@ -1900,6 +1907,29 @@ test.describe('ViewTabs', () => {
         await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
         const action = await lastDispatched(page, 'listViews/updateView');
         expect(action?.payload).toMatchObject({ view: { columns: [stored('COMMON_NAME')], filters: [stateFilter] } });
+        expect(action?.payload?.view).not.toHaveProperty('sort');
+    });
+
+    test('drops a stored ordering on a column still missing when the held-back column beside it is removed', async ({ mount, page }) => {
+        const sorted = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom), stored('gone', FilterFieldSource.Custom)],
+            filters: [],
+            sort: { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'gone', direction: SortDirection.Desc },
+        });
+        await mount(
+            strip({
+                views: [sorted],
+                fields: withRetired,
+                dormantFields: [retiredKey, `view-1|${FilterFieldSource.Custom}:gone`],
+                dropsUnshownSort: true,
+            }),
+        );
+
+        await page.getByTestId('view-tabs-returned-remove').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const action = await lastDispatched(page, 'listViews/updateView');
         expect(action?.payload?.view).not.toHaveProperty('sort');
     });
 
