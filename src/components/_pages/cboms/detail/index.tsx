@@ -119,7 +119,7 @@ const getPathValue = (obj: unknown, path: string): unknown => {
 type HandleAssetDetailClick = (assetName: string, assetData: unknown) => void;
 type ResolveAssetLink = (component: CbomComponent) => ComponentAssetLink | undefined;
 
-const buildComponentRows = (
+export const buildComponentRows = (
     components: CbomComponent[],
     handleAssetDetailClick: HandleAssetDetailClick,
     resolveAssetLink: ResolveAssetLink,

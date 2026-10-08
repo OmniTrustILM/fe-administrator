@@ -60,7 +60,10 @@ export function useCbomInventory(detail: CbomDetailDto | undefined): CbomInvento
     );
 
     const resolveLink = useCallback(
-        (component: unknown) => (state.kind === 'contributing' ? resolveComponentAssetLink(component, state.assetUuidByBomRef) : undefined),
+        (component: unknown) =>
+            state.kind === 'contributing'
+                ? resolveComponentAssetLink(component, state.assetUuidByBomRef, state.refLimitReached)
+                : undefined,
         [state],
     );
 
@@ -156,8 +159,9 @@ export function CbomInventoryStatus({ state, onRetry }: StatusProps) {
         case 'superseded':
             return (
                 <Notice dataTestId="cbom-inventory-superseded">
-                    The assets of this CBOM are no longer in the crypto asset inventory under this version: a later version has synced since
-                    and holds them now.{' '}
+                    {state.contributedBefore
+                        ? 'The assets of this CBOM are no longer in the crypto asset inventory under this version: a later version has synced since and holds them now.'
+                        : 'The assets of this CBOM were never added to the crypto asset inventory under this version: a later version had already synced and holds them.'}{' '}
                     <Link className={LINK_CLASS} to={`${CBOMS_PATH}/detail/${state.holder.uuid}`}>
                         Open version {state.holder.version}
                     </Link>

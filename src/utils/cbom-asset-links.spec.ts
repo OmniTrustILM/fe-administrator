@@ -5,6 +5,7 @@ import {
     type ContributedAssets,
     describeCbomInventoryState,
     findContributionHolder,
+    hasAssetAtRefLimit,
     isStorableBomRef,
     resolveComponentAssetLink,
 } from './cbom-asset-links';
@@ -75,6 +76,30 @@ describe('resolveComponentAssetLink', () => {
     test('gives a storable ref no asset carries the shared reason', () => {
         expect(resolveComponentAssetLink({ 'bom-ref': 'unknown' }, assetUuidByBomRef)).toEqual({ unlinked: 'noInventoryAsset' });
     });
+
+    test('adds the ref limit to the shared reason only when an asset of the record has reached it', () => {
+        expect(resolveComponentAssetLink({ 'bom-ref': 'unknown' }, assetUuidByBomRef, true)).toEqual({
+            unlinked: 'noInventoryAssetAtRefLimit',
+        });
+        expect(resolveComponentAssetLink({ 'bom-ref': 'aes' }, assetUuidByBomRef, true)).toEqual({ assetUuid: 'asset-aes' });
+        expect(resolveComponentAssetLink({ name: 'RSA' }, assetUuidByBomRef, true)).toEqual({ unlinked: 'missingBomRef' });
+        expect(resolveComponentAssetLink({ 'bom-ref': '' }, assetUuidByBomRef, true)).toEqual({ unlinked: 'unstorableBomRef' });
+    });
+});
+
+describe('hasAssetAtRefLimit', () => {
+    const refs = (count: number) => Array.from({ length: count }, (_, index) => `ref-${index}`);
+
+    test('is reached once an asset carries 256 bom-refs of the document', () => {
+        expect(hasAssetAtRefLimit([{ assetUuid: 'a', bomRefs: refs(255) }])).toBe(false);
+        expect(
+            hasAssetAtRefLimit([
+                { assetUuid: 'a', bomRefs: refs(3) },
+                { assetUuid: 'b', bomRefs: refs(256) },
+            ]),
+        ).toBe(true);
+        expect(hasAssetAtRefLimit([])).toBe(false);
+    });
 });
 
 describe('findContributionHolder', () => {
@@ -92,13 +117,13 @@ describe('findContributionHolder', () => {
         expect(findContributionHolder({ version: 3 }, versions)?.uuid).toBe('v7');
     });
 
-    test('falls back to the highest later synced version when none carries a stamp', () => {
+    test('finds none when no later version carries a stamp: one settled without it never held anything', () => {
         const versions = [
             version({ uuid: 'v2', version: 2, assetSyncState: synced }),
             version({ uuid: 'v4', version: 4, assetSyncState: synced }),
         ];
 
-        expect(findContributionHolder({ version: 1 }, versions)?.uuid).toBe('v4');
+        expect(findContributionHolder({ version: 1 }, versions)).toBeUndefined();
     });
 
     test('finds none among earlier versions, the record itself, or later versions that have not synced', () => {
@@ -186,6 +211,14 @@ describe('describeCbomInventoryState', () => {
             ['ref-1', 'asset-1'],
             ['ref-2', 'asset-1'],
         ]);
+        expect(state.kind === 'contributing' && state.refLimitReached).toBe(false);
+    });
+
+    test('notes that an asset of a contributing record has reached the ref limit', () => {
+        const atLimit = Array.from({ length: 256 }, (_, index) => `ref-${index}`);
+        const state = describeState({ contributed: loaded([{ assetUuid: 'asset-1', bomRefs: atLimit }]) });
+
+        expect(state.kind === 'contributing' && state.refLimitReached).toBe(true);
     });
 
     test('reads an empty listing as superseded when a later version has synced', () => {
@@ -196,9 +229,46 @@ describe('describeCbomInventoryState', () => {
             assetSyncedAt: '2026-09-30T08:00:00Z',
         });
 
-        expect(describeState({ contributed: loaded([]), versions: [version({ uuid: 'cbom-1', version: 2 }), holder] })).toEqual({
+        const versions = [version({ uuid: 'cbom-1', version: 2 }), holder];
+
+        expect(describeState({ contributed: loaded([]), versions })).toEqual({ kind: 'superseded', holder, contributedBefore: false });
+        expect(describeState({ record: { ...record, assetSyncedAt: '2026-09-22T10:00:00Z' }, contributed: loaded([]), versions })).toEqual({
             kind: 'superseded',
             holder,
+            contributedBefore: true,
+        });
+    });
+
+    test('reads a pending record a later version has already ingested as superseded, since its sync will add nothing', () => {
+        const holder = version({
+            uuid: 'cbom-3',
+            version: 3,
+            assetSyncState: CbomAssetSyncState.Synced,
+            assetSyncedAt: '2026-09-30T08:00:00Z',
+        });
+
+        for (const assetSyncState of [CbomAssetSyncState.Pending, CbomAssetSyncState.InProgress]) {
+            expect(describeState({ record: { ...record, assetSyncState }, versions: [holder], canListCryptoAssets: false })).toEqual({
+                kind: 'superseded',
+                holder,
+                contributedBefore: false,
+            });
+        }
+    });
+
+    test('waits for the versions before it promises anything about a pending record', () => {
+        expect(describeState({ record: { ...record, assetSyncState: CbomAssetSyncState.Pending }, isFetchingVersions: true })).toEqual({
+            kind: 'loading',
+        });
+    });
+
+    test('does not read a later version that was settled without a stamp as the holder', () => {
+        const writtenOff = version({ uuid: 'cbom-3', version: 3, assetSyncState: CbomAssetSyncState.Synced });
+
+        expect(describeState({ contributed: loaded([]), versions: [writtenOff] })).toEqual({ kind: 'noContribution' });
+        expect(describeState({ record: { ...record, assetSyncState: CbomAssetSyncState.Pending }, versions: [writtenOff] })).toEqual({
+            kind: 'syncPending',
+            syncState: CbomAssetSyncState.Pending,
         });
     });
 

@@ -2,6 +2,8 @@ import { CbomAssetSyncState, type CbomDto } from 'types/openapi';
 
 // The limit Core applies before it stores a bom-ref, counted in code points rather than UTF-16 units.
 const MAX_STORED_BOM_REF_CODE_POINTS = 1024;
+// How many bom-refs of one document Core keeps on an asset; a component folded in past it links to nothing.
+const MAX_STORED_BOM_REFS_PER_ASSET = 256;
 
 export type ContributedAssetRefs = {
     assetUuid: string;
@@ -18,14 +20,15 @@ export type ContributedAssets = {
     errorStatusCode?: number;
 };
 
-export type UnlinkedReason = 'missingBomRef' | 'unstorableBomRef' | 'noInventoryAsset';
+export type UnlinkedReason = 'missingBomRef' | 'unstorableBomRef' | 'noInventoryAsset' | 'noInventoryAssetAtRefLimit';
 
 export type ComponentAssetLink = { assetUuid: string } | { unlinked: UnlinkedReason };
 
 export const UNLINKED_REASON_TEXT: Record<UnlinkedReason, string> = {
     missingBomRef: 'Not linked: this component has no bom-ref in the document.',
     unstorableBomRef: 'Not linked: the bom-ref of this component cannot be stored as written.',
-    noInventoryAsset: 'Not linked: no crypto asset you can list holds the bom-ref of this component.',
+    noInventoryAsset: 'Not linked: no crypto asset listed for this CBOM carries the bom-ref of this component.',
+    noInventoryAssetAtRefLimit: `Not linked: no crypto asset listed for this CBOM carries the bom-ref of this component. An asset keeps at most ${MAX_STORED_BOM_REFS_PER_ASSET} bom-refs per document and one here holds that many, so this component may be past the limit.`,
 };
 
 const isSurrogate = (codePoint: number): boolean => codePoint >= 0xd800 && codePoint <= 0xdfff;
@@ -56,16 +59,24 @@ export function buildAssetUuidByBomRef(assets: ContributedAssetRefs[]): Map<stri
     return assetUuidByBomRef;
 }
 
-export function resolveComponentAssetLink(component: unknown, assetUuidByBomRef: Map<string, string>): ComponentAssetLink {
+export const hasAssetAtRefLimit = (assets: ContributedAssetRefs[]): boolean =>
+    assets.some((asset) => asset.bomRefs.length >= MAX_STORED_BOM_REFS_PER_ASSET);
+
+export function resolveComponentAssetLink(
+    component: unknown,
+    assetUuidByBomRef: Map<string, string>,
+    refLimitReached = false,
+): ComponentAssetLink {
     const bomRef = typeof component === 'object' && component !== null ? (component as Record<string, unknown>)['bom-ref'] : undefined;
     if (bomRef === undefined) return { unlinked: 'missingBomRef' };
     if (!isStorableBomRef(bomRef)) return { unlinked: 'unstorableBomRef' };
 
     const assetUuid = assetUuidByBomRef.get(bomRef);
-    return assetUuid === undefined ? { unlinked: 'noInventoryAsset' } : { assetUuid };
+    if (assetUuid !== undefined) return { assetUuid };
+    return { unlinked: refLimitReached ? 'noInventoryAssetAtRefLimit' : 'noInventoryAsset' };
 }
 
-type InventoryRecord = Pick<CbomDto, 'uuid' | 'serialNumber' | 'version' | 'assetSyncState' | 'assetSyncError'>;
+type InventoryRecord = Pick<CbomDto, 'uuid' | 'serialNumber' | 'version' | 'assetSyncState' | 'assetSyncedAt' | 'assetSyncError'>;
 
 export type CbomInventoryState =
     /** The platform reports no asset sync for this record, so the page has nothing to say about the inventory. */
@@ -75,21 +86,29 @@ export type CbomInventoryState =
     | { kind: 'noPermission' }
     | { kind: 'loading' }
     | { kind: 'loadFailed'; error?: string }
-    | { kind: 'superseded'; holder: CbomDto }
+    /** `contributedBefore` tells a version whose assets moved on from one that arrived superseded and never added any. */
+    | { kind: 'superseded'; holder: CbomDto; contributedBefore: boolean }
     | { kind: 'noContribution' }
-    | { kind: 'contributing'; serialNumber: string; assetUuidByBomRef: Map<string, string> };
+    | { kind: 'contributing'; serialNumber: string; assetUuidByBomRef: Map<string, string>; refLimitReached: boolean };
 
 /**
  * The version a superseded record's contributions moved to. Core withdraws an earlier version's links once a later
  * one has synced, and settles a version that arrives already superseded as synced without stamping `assetSyncedAt`,
- * so the stamp is what tells the version that ingested from the ones that were only written off.
+ * so the stamp is what tells the version that ingested from the ones that were only written off. A later version
+ * without it never held anything, so it is no holder even when it is the only one left.
  */
 export function findContributionHolder(record: Pick<CbomDto, 'version'>, versions: CbomDto[]): CbomDto | undefined {
-    const laterSynced = versions
-        .filter((version) => version.version > record.version && version.assetSyncState === CbomAssetSyncState.Synced)
-        .sort((a, b) => b.version - a.version);
+    return versions
+        .filter(
+            (version) =>
+                version.version > record.version && version.assetSyncState === CbomAssetSyncState.Synced && Boolean(version.assetSyncedAt),
+        )
+        .sort((a, b) => b.version - a.version)[0];
+}
 
-    return laterSynced.find((version) => Boolean(version.assetSyncedAt)) ?? laterSynced[0];
+function supersededState(record: InventoryRecord, versions: CbomDto[]): CbomInventoryState | undefined {
+    const holder = findContributionHolder(record, versions);
+    return holder && { kind: 'superseded', holder, contributedBefore: Boolean(record.assetSyncedAt) };
 }
 
 export function describeCbomInventoryState({
@@ -108,7 +127,13 @@ export function describeCbomInventoryState({
     if (!record?.assetSyncState) return { kind: 'unavailable' };
 
     if (record.assetSyncState === CbomAssetSyncState.Failed) return { kind: 'syncFailed', error: record.assetSyncError };
-    if (record.assetSyncState !== CbomAssetSyncState.Synced) return { kind: 'syncPending', syncState: record.assetSyncState };
+
+    if (record.assetSyncState !== CbomAssetSyncState.Synced) {
+        // Core settles a version a later one has already ingested without reading it, so its sync adds nothing: the
+        // versions decide whether waiting for it promises anything.
+        if (isFetchingVersions) return { kind: 'loading' };
+        return supersededState(record, versions) ?? { kind: 'syncPending', syncState: record.assetSyncState };
+    }
 
     if (!canListCryptoAssets) return { kind: 'noPermission' };
 
@@ -120,12 +145,16 @@ export function describeCbomInventoryState({
     }
 
     if (contributed.assets.length > 0) {
-        return { kind: 'contributing', serialNumber: record.serialNumber, assetUuidByBomRef: buildAssetUuidByBomRef(contributed.assets) };
+        return {
+            kind: 'contributing',
+            serialNumber: record.serialNumber,
+            assetUuidByBomRef: buildAssetUuidByBomRef(contributed.assets),
+            refLimitReached: hasAssetAtRefLimit(contributed.assets),
+        };
     }
 
     // An empty listing is read against the versions, so it waits for them rather than naming a cause it may take back.
     if (isFetchingVersions) return { kind: 'loading' };
 
-    const holder = findContributionHolder(record, versions);
-    return holder ? { kind: 'superseded', holder } : { kind: 'noContribution' };
+    return supersededState(record, versions) ?? { kind: 'noContribution' };
 }

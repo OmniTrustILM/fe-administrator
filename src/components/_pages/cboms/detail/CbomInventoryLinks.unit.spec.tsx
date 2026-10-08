@@ -53,6 +53,11 @@ function InventoryProbe({ detail }: Readonly<{ detail: CbomDetailDto | undefined
     );
 }
 
+function LinkProbe({ detail, component }: Readonly<{ detail: CbomDetailDto | undefined; component: unknown }>) {
+    const { resolveLink } = useCbomInventory(detail);
+    return <span data-testid="resolved-link">{JSON.stringify(resolveLink(component) ?? null)}</span>;
+}
+
 describe('CBOM inventory links', () => {
     let container: HTMLDivElement;
     let root: Root;
@@ -101,7 +106,8 @@ describe('CBOM inventory links', () => {
         test.each([
             ['missingBomRef', 'has no bom-ref in the document'],
             ['unstorableBomRef', 'cannot be stored as written'],
-            ['noInventoryAsset', 'no crypto asset you can list holds the bom-ref'],
+            ['noInventoryAsset', 'no crypto asset listed for this CBOM carries the bom-ref'],
+            ['noInventoryAssetAtRefLimit', 'An asset keeps at most 256 bom-refs per document'],
         ] as const)('stays unlinked and states the reason for %s', async (unlinked, reason) => {
             await render(<CbomAssetName name="RSA-2048" link={{ unlinked }} />);
 
@@ -162,11 +168,23 @@ describe('CBOM inventory links', () => {
         });
 
         test('points a superseded record at the version that holds the contribution now', async () => {
-            await renderStatus({ kind: 'superseded', holder: { uuid: 'cbom-7', version: 7 } as CbomDto });
+            await renderStatus({ kind: 'superseded', holder: { uuid: 'cbom-7', version: 7 } as CbomDto, contributedBefore: true });
 
             const link = one('cbom-inventory-superseded')?.querySelector('a');
             expect(link?.getAttribute('href')).toBe('/cboms/detail/cbom-7');
             expect(link?.textContent).toBe('Open version 7');
+            expect(one('cbom-inventory-superseded')?.textContent).toContain(
+                'are no longer in the crypto asset inventory under this version',
+            );
+        });
+
+        test('does not say the assets left a version that never added any', async () => {
+            await renderStatus({ kind: 'superseded', holder: { uuid: 'cbom-7', version: 7 } as CbomDto, contributedBefore: false });
+
+            const text = one('cbom-inventory-superseded')?.textContent;
+            expect(text).toContain('were never added to the crypto asset inventory under this version');
+            expect(text).not.toContain('no longer');
+            expect(one('cbom-inventory-superseded')?.querySelector('a')?.getAttribute('href')).toBe('/cboms/detail/cbom-7');
         });
 
         test('says so when nothing the caller can list comes from the record', async () => {
@@ -177,7 +195,10 @@ describe('CBOM inventory links', () => {
 
         test('links a contributing record to the inventory, handing in its serial number as the source filter', async () => {
             const harness = makeStore();
-            await renderStatus({ kind: 'contributing', serialNumber: 'urn:uuid:alpha', assetUuidByBomRef: new Map() }, harness);
+            await renderStatus(
+                { kind: 'contributing', serialNumber: 'urn:uuid:alpha', assetUuidByBomRef: new Map(), refLimitReached: false },
+                harness,
+            );
 
             expect(one('cbom-inventory-link')?.getAttribute('href')).toBe('/cryptoassets');
 
@@ -283,6 +304,31 @@ describe('CBOM inventory links', () => {
 
             expect(listings(harness.dispatched)).toHaveLength(2);
             expect(container.textContent).toBe('loading');
+        });
+
+        test('resolves a row only while the record contributes, and names the ref limit once an asset has reached it', async () => {
+            const harness = makeStore();
+            const detail = syncedDetail();
+            const settle = (bomRefs: string[]) =>
+                act(async () => {
+                    harness.store.dispatch(
+                        actions.listCbomContributedAssetsSuccess({ uuid: 'cbom-1', assets: [{ assetUuid: 'asset-1', bomRefs }] }),
+                    );
+                });
+            const resolved = () => JSON.parse(one('resolved-link')?.textContent ?? 'null');
+
+            await render(<LinkProbe detail={undefined} component={{ 'bom-ref': 'ref-1' }} />, harness);
+            await render(<LinkProbe detail={detail} component={{ 'bom-ref': 'ref-1' }} />, harness);
+            expect(resolved()).toBeNull();
+
+            await settle(['ref-1']);
+            expect(resolved()).toEqual({ assetUuid: 'asset-1' });
+
+            await render(<LinkProbe detail={detail} component={{ 'bom-ref': 'past-the-limit' }} />, harness);
+            expect(resolved()).toEqual({ unlinked: 'noInventoryAsset' });
+
+            await settle(Array.from({ length: 256 }, (_, index) => `ref-${index}`));
+            expect(resolved()).toEqual({ unlinked: 'noInventoryAssetAtRefLimit' });
         });
     });
 });
