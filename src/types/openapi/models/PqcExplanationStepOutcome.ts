@@ -12,13 +12,14 @@
  */
 
 /**
- * Post-quantum readiness verdict computed by the platform rule set
+ * What one rule of the PQC rule set did while the verdict was explained
  * @export
  * @enum {string}
  */
-export enum PqcVerdict {
-    Ready = 'ready',
-    NotReady = 'notReady',
-    NotApplicable = 'notApplicable',
-    Unknown = 'unknown',
+export enum PqcExplanationStepOutcome {
+    NotMatched = 'notMatched',
+    Decided = 'decided',
+    NotReached = 'notReached',
+    Resolved = 'resolved',
+    Failed = 'failed',
 }
