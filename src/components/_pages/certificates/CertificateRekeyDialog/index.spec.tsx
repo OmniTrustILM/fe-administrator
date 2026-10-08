@@ -296,6 +296,19 @@ test.describe('CertificateRekeyDialog — Register switch', () => {
         await expect(page.getByTestId('dialog-closed')).toHaveCount(0);
     });
 
+    test('a past issuance window is named as the reason Register is disabled', async ({ mount, page }) => {
+        await mount(<CertificateRekeyDialogTestWrapper />);
+        await switchToRegister(page);
+
+        await page.locator('#successorAuthorizationSecret').fill('successor-challenge');
+        await page.locator('#successorExpiresAt').dispatchEvent('click');
+        await page.getByRole('button', { name: 'Previous' }).click();
+        await page.getByRole('button', { name: '15', exact: true }).click();
+
+        await expect(page.getByText('Issuance window must be a future date')).toBeVisible();
+        await expect(page.getByTestId('progress-button')).toBeDisabled();
+    });
+
     test('switching back to rekey clears the registration error and restores the key source', async ({ mount, page }) => {
         await mount(<CertificateRekeyDialogTestWrapper />);
         await switchToRegister(page);

@@ -82,7 +82,7 @@ export default function SuccessorRegistrationFields({ successor }: Readonly<Prop
                 rules={{
                     validate: (value) => !value || new Date(value) > new Date() || 'Issuance window must be a future date',
                 }}
-                render={({ field: { value, onChange }, fieldState }) => (
+                render={({ field: { value, onChange, onBlur }, fieldState }) => (
                     <TextInput
                         id="successorExpiresAt"
                         type="date"
@@ -91,6 +91,7 @@ export default function SuccessorRegistrationFields({ successor }: Readonly<Prop
                         disabled={!hasChallenge}
                         value={value ?? ''}
                         onChange={onChange}
+                        onBlur={onBlur}
                         invalid={!!fieldState.error}
                         error={fieldState.error?.message}
                     />
