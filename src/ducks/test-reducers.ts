@@ -1,7 +1,8 @@
 import { combineReducers, type UnknownAction } from '@reduxjs/toolkit';
 import type { AttributeDescriptorModel } from 'types/attributes';
-import type { ConnectInfoDto, ListViewDto } from 'types/openapi';
+import type { ConnectInfoDto, ListViewDto, ListViewUpdateRequestDto } from 'types/openapi';
 import type { EventTriggerAssociationModel, TriggerModel } from 'types/rules';
+import { withWrittenStatuses } from 'utils/listViews';
 
 // IMPORTANT: This file is used ONLY in component tests (Playwright CT).
 // It must NOT import the real duck modules
@@ -1464,10 +1465,8 @@ export type ListViewsTestState = {
             isStale?: boolean;
             createdUuid?: string;
             rollback?: ListViewDto[];
-            confirming?: string[];
         }
     >;
-    dormantFields?: Record<string, string[]>;
     error?: string;
     dispatched: Array<{ type: string; payload?: unknown }>;
 };
@@ -1489,21 +1488,6 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
 
     const resource = a.payload?.resource;
     if (!resource) return recorded;
-
-    const keys = (a.payload as { keys?: string[] }).keys ?? [];
-    const dormant = recorded.dormantFields?.[resource] ?? [];
-
-    if (a.type === 'listViews/markFieldsDormant') {
-        const marked = { ...recorded, dormantFields: { ...recorded.dormantFields, [resource]: [...new Set([...dormant, ...keys])] } };
-        const held = recorded.byResource[resource];
-        if (!held?.confirming) return marked;
-        const confirming = held.confirming.filter((key) => !keys.includes(key));
-        return { ...marked, byResource: { ...recorded.byResource, [resource]: { ...held, confirming } } };
-    }
-
-    if (a.type === 'listViews/releaseDormantFields') {
-        return { ...recorded, dormantFields: { ...recorded.dormantFields, [resource]: dormant.filter((key) => !keys.includes(key)) } };
-    }
 
     const view = a.payload?.view;
     const entry = recorded.byResource[resource] ?? { views: [], isFetching: false, hasLoaded: false, isMutating: false };
@@ -1562,27 +1546,24 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
         return withEntry({ isMutating: false, views: entry.rollback ?? entry.views, rollback: undefined });
     }
 
-    // An update is applied optimistically and held in flight until a test answers it, as the real reducer does, and
-    // releases the dormant fields it confirms only on success.
+    // An update is applied optimistically and held in flight until a test answers it, as the real reducer does.
     if (a.type === 'listViews/updateView' && uuid && view) {
         const updated = withEntry({
             isMutating: true,
             rollback: entry.views,
-            confirming: (a.payload as { confirms?: string[] }).confirms,
-            views: entry.views.map((each) => (each.uuid === uuid ? ({ ...each, ...view } as ListViewDto) : each)),
+            views: entry.views.map((each) =>
+                each.uuid === uuid ? ({ ...each, ...withWrittenStatuses(each, view as ListViewUpdateRequestDto) } as ListViewDto) : each,
+            ),
         });
         return { ...updated, error: undefined };
     }
 
     if (a.type === 'listViews/updateViewSuccess' && view) {
-        const confirmed = entry.confirming ?? [];
-        const saved = withEntry({
+        return withEntry({
             isMutating: false,
             rollback: undefined,
-            confirming: undefined,
             views: entry.views.map((each) => (each.uuid === view.uuid ? (view as ListViewDto) : each)),
         });
-        return { ...saved, dormantFields: { ...saved.dormantFields, [resource]: dormant.filter((key) => !confirmed.includes(key)) } };
     }
 
     // The real slice keeps one error for every resource, so a failed read of another resource sets it too.
@@ -1591,7 +1572,7 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
     }
 
     if (a.type === 'listViews/updateViewFailure') {
-        const failed = withEntry({ isMutating: false, views: entry.rollback ?? entry.views, rollback: undefined, confirming: undefined });
+        const failed = withEntry({ isMutating: false, views: entry.rollback ?? entry.views, rollback: undefined });
         return { ...failed, error: (a.payload as { error?: string }).error };
     }
 

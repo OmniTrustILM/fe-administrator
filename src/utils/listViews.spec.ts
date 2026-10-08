@@ -6,6 +6,7 @@ import {
     FilterConditionOperator,
     FilterFieldSource,
     FilterFieldType,
+    ListViewFieldStatus,
     Resource,
     type SearchFieldDataByGroupDto,
 } from 'types/openapi';
@@ -17,8 +18,8 @@ import {
     STANDARD_VIEW_NAME,
     canOrderBy,
     duplicateName,
-    goneAttributeKeys,
-    toDormantKey,
+    heldKeys,
+    withWrittenStatuses,
     isSliceDirty,
     newViewName,
     resolveInitialViewId,
@@ -38,6 +39,7 @@ import {
     toViewSlice,
     withoutMissingFieldFilters,
 } from './listViews';
+import { getColumnKey } from './tableColumns';
 
 const view = (uuid: string, name: string, overrides: Partial<ListViewModel> = {}): ListViewModel => ({
     uuid,
@@ -618,6 +620,16 @@ describe('toUpdateRequest', () => {
         expect(toUpdateRequest(stored, schema, { name: 'Expiry' }).sort).toBeUndefined();
     });
 
+    it('rebinds only the columns and filters on the confirmed keys', () => {
+        const retiredFilter = { ...retired, condition: FilterConditionOperator.Equals, value: 'true' };
+        const stored = view('a', 'Expiry watch', { columns: [...view('a', '').columns, retired], filters: [retiredFilter] });
+
+        const request = toUpdateRequest(stored, schemaOf([]), {}, new Set([getColumnKey(retired)]));
+
+        expect(request.columns.map((column) => column.rebind)).toEqual([...stored.columns.slice(0, -1).map(() => undefined), true]);
+        expect(request.filters).toEqual([{ ...retiredFilter, rebind: true }]);
+    });
+
     it('applies the patch over the stored row, so a rename keeps the columns', () => {
         const stored = view('a', 'Expiry watch');
         const renamed = toUpdateRequest(stored, schema, { name: 'Expiry' });
@@ -962,32 +974,43 @@ describe('toStoredColumnsKeepingUnavailable', () => {
     });
 });
 
-describe('goneAttributeKeys', () => {
-    const catalogue: SearchFieldDataByGroupDto[] = [
-        ...standardCatalogue,
-        {
-            filterFieldSource: FilterFieldSource.Custom,
-            searchFieldData: [{ fieldIdentifier: 'cost_centre', fieldLabel: 'Cost centre', type: FilterFieldType.String, conditions: [] }],
-        },
-    ];
+describe('heldKeys', () => {
+    it('names the columns and filters Core reports as replaced, and nothing it reports otherwise', () => {
+        const replaced = { ...retired, status: ListViewFieldStatus.Replaced };
+        const costCentre = { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'cost_centre' };
+        const held = view('a', 'One', {
+            columns: [replaced, { ...costCentre, status: ListViewFieldStatus.Unavailable }],
+            filters: [{ ...costCentre, condition: FilterConditionOperator.Equals, value: 'x', status: ListViewFieldStatus.Replaced }],
+        });
 
-    it('names each attribute column a stored view holds whose field the catalogue no longer publishes, per view', () => {
-        const views = [
-            view('a', 'One', { columns: [retired, { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'cost_centre' }] }),
-            view('b', 'Two', { columns: [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' }, retired] }),
-        ];
+        expect([...heldKeys(held)]).toEqual([getColumnKey(retired), getColumnKey(costCentre)]);
+        expect(heldKeys(view('b', 'Two', { columns: [{ ...retired, status: ListViewFieldStatus.Available }] })).size).toBe(0);
+    });
+});
 
-        expect(goneAttributeKeys(views, catalogue)).toEqual([toDormantKey('a', retired), toDormantKey('b', retired)]);
+describe('withWrittenStatuses', () => {
+    const replaced = { ...retired, status: ListViewFieldStatus.Replaced };
+
+    it('carries the status of each written column over from the row, so a held column stays held', () => {
+        const written = withWrittenStatuses({ columns: [replaced] }, { name: 'One', columns: [retired] });
+
+        expect(written.columns).toEqual([replaced]);
     });
 
-    it('leaves out a platform column the catalogue does not publish, which is not an attribute', () => {
-        const views = [view('a', 'One', { columns: [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CERTIFICATE_TYPE' }] })];
+    it('reads a column sent with rebind as available and drops the flag', () => {
+        const written = withWrittenStatuses({ columns: [replaced] }, { name: 'One', columns: [{ ...retired, rebind: true }] });
 
-        expect(goneAttributeKeys(views, catalogue)).toEqual([]);
+        expect(written.columns).toEqual([{ ...retired, status: ListViewFieldStatus.Available }]);
     });
 
-    it('names every attribute column against a settled empty catalogue', () => {
-        expect(goneAttributeKeys([view('a', 'One', { columns: [retired] })], [])).toEqual([toDormantKey('a', retired)]);
+    it('matches filters by their whole condition, so another value on the same field takes no status', () => {
+        const stored = { ...retired, condition: FilterConditionOperator.Equals, value: 'true', status: ListViewFieldStatus.Replaced };
+        const written = withWrittenStatuses(
+            { columns: [], filters: [stored] },
+            { name: 'One', columns: [], filters: [{ ...retired, condition: FilterConditionOperator.Equals, value: 'false' }] },
+        );
+
+        expect(written.filters?.[0].status).toBeUndefined();
     });
 });
 
