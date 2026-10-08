@@ -291,7 +291,7 @@ test.describe('CertificateRekeyDialog — Register switch', () => {
         await switchToRegister(page);
         await page.getByTestId('progress-button').click();
 
-        await expect(page.getByText('Register Field')).toBeVisible();
+        await expect(page.getByText('Required Field')).toBeVisible();
         expect(registrations).toHaveLength(0);
         await expect(page.getByTestId('dialog-closed')).toHaveCount(0);
     });
