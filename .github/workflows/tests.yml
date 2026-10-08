@@ -18,7 +18,8 @@ permissions:
 
 # The Playwright suite runs sharded per browser. Each shard writes a blob
 # report and, on chromium, raw coverage (PW_SHARDED in playwright-ct.config.ts);
-# the `test (<browser>)` jobs merge them into one report and one lcov file.
+# `test (chromium)` and `test cross-browser` merge them into one report per
+# browser, and one lcov file for chromium.
 # PRs run chromium only, for fast feedback; main and manual runs add firefox
 # and webkit.
 #
@@ -49,7 +50,7 @@ jobs:
         with:
           name: coverage-vitest
           path: coverage-vitest/lcov.info
-          retention-days: 7
+          retention-days: 30
           if-no-files-found: error
 
   chromium:
@@ -139,7 +140,7 @@ jobs:
         with:
           name: coverage-playwright
           path: coverage-playwright/lcov.info
-          retention-days: 7
+          retention-days: 30
           if-no-files-found: error
       - name: Fail when a shard failed
         if: needs.chromium.result != 'success'
@@ -150,7 +151,9 @@ jobs:
           exit 1
 
   cross-browser:
-    name: Playwright ${{ matrix.browser }} (${{ matrix.shard }}/4)
+    # No matrix values in the name: on a PR the job is skipped before the matrix
+    # expands, and GitHub appends the values itself when the job runs.
+    name: Playwright cross-browser
     if: github.event_name != 'pull_request'
     timeout-minutes: 30
     runs-on: ubuntu-latest
@@ -184,7 +187,7 @@ jobs:
   # browser: merge-reports fails on a failed test, and the count catches a
   # shard that ended without a report.
   test-cross-browser:
-    name: test (${{ matrix.browser }})
+    name: test cross-browser
     needs: cross-browser
     if: ${{ !cancelled() && github.event_name != 'pull_request' }}
     timeout-minutes: 15

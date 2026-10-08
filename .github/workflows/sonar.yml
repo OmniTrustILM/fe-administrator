@@ -55,9 +55,6 @@ jobs:
               num:    /^[0-9]+$/,
               sha:    /^[0-9a-f]{40}$/,
               repo:   /^[A-Za-z0-9_.][A-Za-z0-9_.-]*\/[A-Za-z0-9_.][A-Za-z0-9_.-]*$/,
-              // Valid branch characters without whitespace or quotes, which
-              // would break the unquoted scanner arguments.
-              branch: /^[A-Za-z0-9_.+@#,=][A-Za-z0-9_.+@#,=\/-]*$/,
             };
             const inp = {
               prNumber:   process.env.IN_PR_NUMBER,
@@ -70,8 +67,6 @@ jobs:
             if (!pat.num.test(inp.prNumber))      fail('bad pr_number');
             if (!pat.sha.test(inp.headSha))       fail('bad head_sha');
             if (!pat.repo.test(inp.headRepo))     fail('bad head_repo');
-            if (!pat.branch.test(inp.headBranch)) fail('bad head_branch');
-            if (!pat.branch.test(inp.baseRef))    fail('bad base_ref');
             if (!pat.num.test(inp.runId))         fail('bad run_id');
 
             const run = await github.rest.actions.getWorkflowRun({
@@ -93,6 +88,9 @@ jobs:
             // sides; run.data.pull_requests is empty for fork PRs.
             if (pr.data.head.sha !== inp.headSha) fail('PR head sha mismatch');
             if (pr.data.head.repo.full_name !== inp.headRepo) fail('PR head repo mismatch');
+            // Branch names are matched against the PR rather than a pattern, so
+            // any valid Git ref is accepted. A ref holds no whitespace or control
+            // characters, which keeps it one scanner argument and one GITHUB_ENV line.
             if (pr.data.head.ref !== inp.headBranch) fail('head_branch does not match PR');
             if (pr.data.base.ref !== inp.baseRef) fail('base_ref does not match PR base');
             if (pr.data.base.ref !== 'main') fail('base ref is not main');

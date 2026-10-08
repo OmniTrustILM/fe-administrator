@@ -295,11 +295,11 @@ digests in the registry — but no `pr-<number>-<sha>` tag or multiarch manifest
 
 `tests.yml` (`Tests`) runs Vitest and the Playwright component tests. The Playwright suite runs in
 shards: with `PW_SHARDED=1`, `playwright-ct.config.ts` writes a blob report and raw V8 coverage
-instead of its usual reports. `test (<browser>)` merges the shards into one report and, for
-chromium, merges the raw coverage with `scripts/merge-playwright-coverage.js`, which applies the
-same coverage options (`scripts/playwright-coverage.js`) as an unsharded run. `test (chromium)` is a
-required status check, so its job name must not change. PRs run chromium only; main adds firefox
-and webkit.
+instead of its usual reports. `test (chromium)` and `test cross-browser` merge the shards into one
+report per browser. For chromium, `scripts/merge-playwright-coverage.js` also merges the raw
+coverage, applying the same coverage options (`scripts/playwright-coverage.js`) as an unsharded
+run. `test (chromium)` is a required status check, so its job name must not change. PRs run
+chromium only; main adds firefox and webkit.
 
 Sonar never runs the tests. For a PR, `dispatch-sonar.yml` (`workflow_run` on `Tests`) takes only
 the PR number from that run's `pr-context.json`, binds the PR to the run through the API, and
