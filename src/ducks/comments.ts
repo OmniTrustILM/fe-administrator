@@ -2,7 +2,7 @@ import { createAction, createSelector, createSlice, type PayloadAction } from '@
 import type { AppState } from 'ducks';
 import type { CommentDto, CommentResponseDto, Resource, SortDirection } from 'types/openapi';
 import type { WidgetLockErrorModel } from 'types/user-interface';
-import { readStoredCommentSort } from 'utils/comment-sort';
+import { DEFAULT_COMMENT_SORT, readStoredCommentSorts } from 'utils/comment-sort';
 
 /**
  * One panel per (resource, object). Everything is keyed so that two panels on one page, or the same panel across a
@@ -51,16 +51,20 @@ export type State = {
     replies: Record<string, RepliesState>;
     /** Comment UUIDs with a resolve, unresolve or delete in flight. */
     busy: Record<string, boolean>;
-    /** The user's choice; a list that is not loaded yet starts in it. */
-    sortDirection: SortDirection;
+    /** The user's choice per object, keyed like `threads`; a list of that object that is not loaded yet starts in it. */
+    sortDirections: Record<string, SortDirection>;
 };
 
 export const initialState: State = {
     threads: {},
     replies: {},
     busy: {},
-    sortDirection: readStoredCommentSort(),
+    sortDirections: readStoredCommentSorts(),
 };
+
+/** The direction the user picked for the object, newest-first until they pick otherwise. */
+export const preferredSortDirection = (state: State | undefined, key: string): SortDirection =>
+    state?.sortDirections[key] ?? DEFAULT_COMMENT_SORT;
 
 const emptyPage = (itemsPerPage: number): PagedComments => ({
     comments: [],
@@ -74,7 +78,7 @@ const emptyPage = (itemsPerPage: number): PagedComments => ({
 const threadsOf = (state: State, key: string): ThreadsState => {
     state.threads[key] ??= {
         ...emptyPage(THREADS_PAGE_SIZE),
-        sortDirection: state.sortDirection,
+        sortDirection: preferredSortDirection(state, key),
         isFetching: false,
         isPosting: false,
         postSucceeded: false,
@@ -90,10 +94,11 @@ const belongsTo = (replies: RepliesState, resource: Resource, objectUuid: string
     return reply?.resource === resource && reply.objectUuid === objectUuid;
 };
 
-const repliesOf = (state: State, rootUuid: string): RepliesState => {
+/** `sortDirection` is only what a thread that is not loaded yet starts in; a page that lands sets the one it was read in. */
+const repliesOf = (state: State, rootUuid: string, sortDirection: SortDirection = DEFAULT_COMMENT_SORT): RepliesState => {
     state.replies[rootUuid] ??= {
         ...emptyPage(REPLIES_PAGE_SIZE),
-        sortDirection: state.sortDirection,
+        sortDirection,
         isFetching: false,
         isPosting: false,
         postSucceeded: false,
@@ -137,8 +142,11 @@ export type ListThreadsPayload = ObjectRef & {
     sortDirection?: SortDirection;
     anchorUuid?: string;
 };
-/** `anchorUuid` is a reply, whose page is read in place of `pageNumber`. */
-export type ListRepliesPayload = {
+/**
+ * `anchorUuid` is a reply, whose page is read in place of `pageNumber`. The object is carried along because the
+ * direction is chosen per object, and a thread that is not loaded yet starts in the one chosen for its object.
+ */
+export type ListRepliesPayload = ObjectRef & {
     rootUuid: string;
     pageNumber: number;
     itemsPerPage?: number;
@@ -163,8 +171,9 @@ export const slice = createSlice({
         /** The epic re-reads the threads the roots list holds; one it no longer holds is dropped, so expanding it reads afresh. */
         changeSortDirection: (state, action: PayloadAction<ChangeSortDirectionPayload>) => {
             const { resource, objectUuid, sortDirection } = action.payload;
-            state.sortDirection = sortDirection;
-            const roots = rootsOf(state, panelKey(resource, objectUuid));
+            const key = panelKey(resource, objectUuid);
+            state.sortDirections[key] = sortDirection;
+            const roots = rootsOf(state, key);
             for (const [rootUuid, replies] of Object.entries(state.replies)) {
                 if (!roots.has(rootUuid) && belongsTo(replies, resource, objectUuid)) delete state.replies[rootUuid];
             }
@@ -207,14 +216,15 @@ export const slice = createSlice({
         },
 
         listReplies: (state, action: PayloadAction<ListRepliesPayload>) => {
-            const replies = repliesOf(state, action.payload.rootUuid);
+            const { resource, objectUuid, rootUuid } = action.payload;
+            const replies = repliesOf(state, rootUuid, preferredSortDirection(state, panelKey(resource, objectUuid)));
             replies.isFetching = true;
             replies.missingAnchor = undefined;
         },
 
         listRepliesSuccess: (state, action: PayloadAction<RepliesPagePayload>) => {
-            const replies = repliesOf(state, action.payload.rootUuid);
-            const { page, sortDirection, anchorUuid } = action.payload;
+            const { rootUuid, page, sortDirection, anchorUuid } = action.payload;
+            const replies = repliesOf(state, rootUuid, sortDirection);
             const append = page.pageNumber > 1 && anchorUuid === undefined && sortDirection === replies.sortDirection;
             applyPage(replies, page, append, anchorUuid);
             replies.sortDirection = sortDirection;
@@ -230,7 +240,8 @@ export const slice = createSlice({
 
         createComment: (state, action: PayloadAction<CreateCommentPayload>) => {
             const { resource, objectUuid, parentUuid } = action.payload;
-            const target = parentUuid ? repliesOf(state, parentUuid) : threadsOf(state, panelKey(resource, objectUuid));
+            const key = panelKey(resource, objectUuid);
+            const target = parentUuid ? repliesOf(state, parentUuid, preferredSortDirection(state, key)) : threadsOf(state, key);
             target.isPosting = true;
             target.postingDenied = undefined;
             target.postSucceeded = false;
@@ -239,7 +250,7 @@ export const slice = createSlice({
         createCommentSuccess: (state, action: PayloadAction<{ key: string; comment: CommentDto; parentUuid?: string }>) => {
             const { key, parentUuid } = action.payload;
             if (parentUuid) {
-                const replies = repliesOf(state, parentUuid);
+                const replies = repliesOf(state, parentUuid, preferredSortDirection(state, key));
                 replies.isPosting = false;
                 replies.postSucceeded = true;
                 const root = threadsOf(state, key).comments.find((comment) => comment.uuid === parentUuid);
@@ -253,7 +264,7 @@ export const slice = createSlice({
 
         createCommentFailure: (state, action: PayloadAction<{ key: string; parentUuid?: string; denied?: string }>) => {
             const { key, parentUuid, denied } = action.payload;
-            const target = parentUuid ? repliesOf(state, parentUuid) : threadsOf(state, key);
+            const target = parentUuid ? repliesOf(state, parentUuid, preferredSortDirection(state, key)) : threadsOf(state, key);
             target.isPosting = false;
             target.postingDenied = denied;
         },
@@ -302,7 +313,7 @@ const state = (reduxStore: AppState): State => reduxStore?.[slice.name] ?? initi
 const threads = (key: string) => createSelector(state, (s) => s.threads[key]);
 const replies = (rootUuid: string) => createSelector(state, (s) => s.replies[rootUuid]);
 const busy = createSelector(state, (s) => s.busy);
-const sortDirection = createSelector(state, (s) => s.sortDirection);
+const sortDirection = (key: string) => createSelector(state, (s) => preferredSortDirection(s, key));
 
 export const selectors = {
     state,

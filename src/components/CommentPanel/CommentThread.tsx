@@ -42,9 +42,9 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
     const expand = useCallback(() => {
         setExpanded(true);
         if (!replies || (!replies.isFetching && replies.comments.length === 0)) {
-            dispatch(actions.listReplies({ rootUuid: uuid, pageNumber: 1 }));
+            dispatch(actions.listReplies({ resource, objectUuid, rootUuid: uuid, pageNumber: 1 }));
         }
-    }, [dispatch, replies, uuid]);
+    }, [dispatch, resource, objectUuid, replies, uuid]);
 
     // The reply box stays open until the post has committed, so a rejection keeps the draft on screen.
     const isPosting = !!replies?.isPosting;
@@ -64,13 +64,21 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
     // Everything up to the page shown is re-read as one first page, the same window a refresh uses.
     const onLoadEarlier = useCallback(() => {
         if (!replies) return;
-        dispatch(actions.listReplies({ rootUuid: uuid, pageNumber: 1, itemsPerPage: loadedWindow(replies) }));
-    }, [dispatch, uuid, replies]);
+        dispatch(actions.listReplies({ resource, objectUuid, rootUuid: uuid, pageNumber: 1, itemsPerPage: loadedWindow(replies) }));
+    }, [dispatch, resource, objectUuid, uuid, replies]);
 
     const onLoadMore = useCallback(() => {
         if (!replies) return;
-        dispatch(actions.listReplies({ rootUuid: uuid, pageNumber: replies.pageNumber + 1, itemsPerPage: replies.itemsPerPage }));
-    }, [dispatch, uuid, replies]);
+        dispatch(
+            actions.listReplies({
+                resource,
+                objectUuid,
+                rootUuid: uuid,
+                pageNumber: replies.pageNumber + 1,
+                itemsPerPage: replies.itemsPerPage,
+            }),
+        );
+    }, [dispatch, resource, objectUuid, uuid, replies]);
 
     const onReplySubmit = useCallback(
         (body: string) => {

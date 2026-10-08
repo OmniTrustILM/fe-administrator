@@ -375,7 +375,10 @@ test.describe('CommentPanel', () => {
 
         await page.getByTestId('thread-r1-toggle-replies').click();
 
-        expect((await dispatched(page)).at(-1)).toEqual({ type: 'comments/listReplies', payload: { rootUuid: 'r1', pageNumber: 1 } });
+        expect((await dispatched(page)).at(-1)).toEqual({
+            type: 'comments/listReplies',
+            payload: { resource: 'certificates', objectUuid: 'obj-1', rootUuid: 'r1', pageNumber: 1 },
+        });
     });
 
     test('replies load incrementally with a Load more button', async ({ mount, page }) => {
@@ -397,7 +400,7 @@ test.describe('CommentPanel', () => {
 
         expect((await dispatched(page)).at(-1)).toEqual({
             type: 'comments/listReplies',
-            payload: { rootUuid: 'r1', pageNumber: 3, itemsPerPage: 20 },
+            payload: { resource: 'certificates', objectUuid: 'obj-1', rootUuid: 'r1', pageNumber: 3, itemsPerPage: 20 },
         });
     });
 
@@ -636,7 +639,10 @@ test.describe('CommentPanel', () => {
             type: 'comments/listThreads',
             payload: { resource: 'certificates', objectUuid: 'obj-1', pageNumber: 1, anchorUuid: 'r1' },
         });
-        expect(first).toContainEqual({ type: 'comments/listReplies', payload: { rootUuid: 'r1', pageNumber: 1, anchorUuid: 'c41' } });
+        expect(first).toContainEqual({
+            type: 'comments/listReplies',
+            payload: { resource: 'certificates', objectUuid: 'obj-1', rootUuid: 'r1', pageNumber: 1, anchorUuid: 'c41' },
+        });
 
         await expect(page.getByTestId('thread-r1-replies')).toBeVisible();
         await expect(page.getByTestId('comment-c41')).toHaveAttribute('data-highlighted', 'true');
@@ -649,7 +655,7 @@ test.describe('CommentPanel', () => {
         await earlier.click();
         expect((await dispatched(page)).at(-1)).toEqual({
             type: 'comments/listReplies',
-            payload: { rootUuid: 'r1', pageNumber: 1, itemsPerPage: 60 },
+            payload: { resource: 'certificates', objectUuid: 'obj-1', rootUuid: 'r1', pageNumber: 1, itemsPerPage: 60 },
         });
     });
 
@@ -705,7 +711,10 @@ test.describe('CommentPanel', () => {
             type: 'comments/listThreads',
             payload: { resource: 'certificates', objectUuid: 'obj-1', pageNumber: 1, anchorUuid: 'r1' },
         });
-        expect(latest).toContainEqual({ type: 'comments/listReplies', payload: { rootUuid: 'r1', pageNumber: 1, anchorUuid: 'c1' } });
+        expect(latest).toContainEqual({
+            type: 'comments/listReplies',
+            payload: { resource: 'certificates', objectUuid: 'obj-1', rootUuid: 'r1', pageNumber: 1, anchorUuid: 'c1' },
+        });
 
         // A query change that leaves the anchor alone does not list again.
         const before = (await dispatched(page)).length;
@@ -801,5 +810,42 @@ test.describe('CommentPanel', () => {
 
         const lists = (await dispatched(page)).filter((action) => action.type === 'comments/listThreads');
         expect(lists.map((action) => action.payload?.objectUuid).sort()).toEqual(['obj-1', 'obj-2']);
+    });
+
+    test('the direction is remembered per object: a choice on one panel changes no other', async ({ mount, page }) => {
+        // Neither list has landed in a direction yet, so each panel shows the one chosen for its own object.
+        await mount(
+            <CommentPanelWithStore
+                secondObjectUuid="obj-2"
+                comments={{
+                    sortDirections: { 'certificates/obj-2': 'asc' },
+                    threads: {
+                        [KEY]: threadsPage([comment('r1', 'first object')], { sortDirection: undefined }),
+                        'certificates/obj-2': threadsPage([comment('r2', 'second object')], { sortDirection: undefined }),
+                    },
+                }}
+            />,
+        );
+
+        const first = page.getByTestId('comment-panel-obj-1-sort');
+        const second = page.getByTestId('comment-panel-obj-2-sort');
+        await expect(first).toHaveText('Newest first');
+        await expect(second).toHaveText('Oldest first');
+
+        await first.click();
+        expect((await dispatched(page)).at(-1)).toEqual({
+            type: 'comments/changeSortDirection',
+            payload: { resource: 'certificates', objectUuid: 'obj-1', sortDirection: 'asc' },
+        });
+        await expect(first).toHaveText('Oldest first');
+        await expect(second).toHaveText('Oldest first');
+
+        await second.click();
+        expect((await dispatched(page)).at(-1)).toEqual({
+            type: 'comments/changeSortDirection',
+            payload: { resource: 'certificates', objectUuid: 'obj-2', sortDirection: 'desc' },
+        });
+        await expect(second).toHaveText('Newest first');
+        await expect(first).toHaveText('Oldest first');
     });
 });
