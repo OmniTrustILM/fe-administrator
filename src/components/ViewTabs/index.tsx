@@ -268,12 +268,12 @@ export default function ViewTabs({
         return { ...slice, filters: toStorableFilters(slice.filters, catalogue, activeView.filters ?? []) };
     }, [activeView, sliceOf, standardColumns, standardSort, catalogue]);
 
-    // Held filters on a field the view has no column for, which the returned-columns notice cannot name. One the user now
-    // filters by themselves is theirs, and saving confirms it.
+    // Held filters on a field the returned-columns notice does not name: one the view has no column for, or one whose
+    // column this page cannot display. One the user now filters by themselves is theirs, and saving confirms it.
     const heldFilterKeys = useMemo(() => {
-        const named = new Set([...(activeView?.columns ?? []), ...filters].map(getColumnKey));
+        const named = new Set([...held, ...columns, ...filters].map(getColumnKey));
         return [...new Set(heldFilters.map(getColumnKey))].filter((key) => !named.has(key));
-    }, [activeView, filters, heldFilters]);
+    }, [held, columns, filters, heldFilters]);
 
     const heldFilterLabels = useMemo(() => {
         const labels = new Map(

@@ -1776,6 +1776,20 @@ test.describe('ViewTabs', () => {
         });
     });
 
+    test('names a held filter whose column this page cannot display', async ({ mount, page }) => {
+        await mount(heldBackStrip({ fields: hiddenRetired }));
+
+        await expect(page.getByTestId('view-tabs-held-filters')).toContainText('Retired may be a different attribute');
+        expect((await appliedSlice(page)).filters).toEqual([]);
+
+        await page.getByTestId('view-tabs-held-filters-apply').click();
+
+        await expect.poll(async () => (await appliedSlice(page)).filters).toEqual([retiredFilter]);
+        expect((await lastDispatched(page, 'listViews/updateView'))?.payload).toMatchObject({
+            view: { filters: [{ ...retiredFilter, rebind: true }] },
+        });
+    });
+
     test('takes a held filter on a field the view shows no column for out of the view', async ({ mount, page }) => {
         const view = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME')], filters: [stateFilter, replaced(retiredFilter)] });
         await mount(strip({ views: [view], fields: withRetired }));
