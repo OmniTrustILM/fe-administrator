@@ -134,6 +134,22 @@ describe('paging slice', () => {
         expect(next.pagings.find((p) => p.entity === EntityType.CBOM)?.paging.filtersSnapshot).toBeUndefined();
         expect(next.pagings.find((p) => p.entity === EntityType.CERTIFICATE)?.paging.filtersSnapshot).toBe('[{"a":1}]');
     });
+
+    test('restorePaging puts back the page, its size, its total and the filters it was read under', () => {
+        let next = reducer(initialState, actions.setPagination({ entity: EntityType.CERTIFICATE, pageNumber: 2, pageSize: 50 }));
+        next = reducer(next, actions.listSuccess({ entity: EntityType.CERTIFICATE, totalItems: 3 }));
+        next = reducer(
+            next,
+            actions.restorePaging({ entity: EntityType.CERTIFICATE, pageNumber: 3, pageSize: 20, totalItems: 80, filtersSnapshot: '[]' }),
+        );
+
+        expect(next.pagings.find((p) => p.entity === EntityType.CERTIFICATE)?.paging).toMatchObject({
+            pageNumber: 3,
+            pageSize: 20,
+            totalItems: 80,
+            filtersSnapshot: '[]',
+        });
+    });
 });
 
 describe('paging selectors', () => {

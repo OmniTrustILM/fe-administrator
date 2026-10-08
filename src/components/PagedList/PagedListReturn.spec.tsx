@@ -106,17 +106,19 @@ test.describe('PagedList · coming back from a detail page', () => {
         await expect.poll(async () => await lastRequest(page)).toMatchObject({ pageNumber: 2, itemsPerPage: 20, filters: typed });
     });
 
-    test('keeps the page it was left on when a picker over the same entity turned the live one', async ({ mount, page }) => {
+    test('keeps the page it was left on when a picker listed the same entity meanwhile', async ({ mount, page }) => {
         await mount(<PagedListReturnWithStore {...props} totalItems={60} />);
         await page.getByRole('tab', { name: 'Everything' }).click();
-        await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(1);
+        await page.getByTestId('type-filters').click();
+        await page.getByTestId('turn-page').click();
+        await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(2);
 
         await page.getByTestId('open-secret').click();
-        await page.getByTestId('turn-picker-page').click();
+        await page.getByTestId('list-as-picker').click();
         await page.getByTestId('back-to-list').click();
 
         await expect(page.getByRole('tab', { name: 'Everything' })).toHaveAttribute('aria-selected', 'true');
-        await expect.poll(async () => await lastRequest(page)).toMatchObject({ pageNumber: 1, itemsPerPage: 10 });
+        await expect.poll(async () => await lastRequest(page)).toMatchObject({ pageNumber: 2, itemsPerPage: 20, filters: typed });
     });
 
     test('keeps the page of a sorted view it comes back to under the same ordering', async ({ mount, page }) => {

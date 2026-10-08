@@ -253,7 +253,7 @@ function PagedList<TRow extends object>({
     const isFetchingList = useSelector(selectors.isFetchingList(entity));
     const pageNumber = useSelector(selectors.pageNumber(entity));
     const pageSize = useSelector(selectors.pageSize(entity));
-    pagingRef.current = { pageNumber, pageSize };
+    pagingRef.current = { pageNumber, pageSize, totalItems };
     const listedFiltersSnapshot = useSelector(selectors.filtersSnapshot(entity));
 
     /**
@@ -447,13 +447,12 @@ function PagedList<TRow extends object>({
             const left = handedIn?.source === 'return' ? handedIn : undefined;
             const leftPaging = left?.paging;
             const keepsPage = reopensLeftPosition === true && leftPaging !== undefined && isSameSort(nextSort, left?.sort);
-            dispatch(
-                actions.setPagination({
-                    entity,
-                    pageSize: leftPaging?.pageSize ?? pageSize,
-                    pageNumber: keepsPage ? leftPaging.pageNumber : 1,
-                }),
-            );
+            if (keepsPage) {
+                // The total and snapshot too: a picker's narrower ones would clamp the page or reset it to the first.
+                dispatch(actions.restorePaging({ entity, ...leftPaging, filtersSnapshot: JSON.stringify(slice.filters) }));
+            } else {
+                dispatch(actions.setPagination({ entity, pageSize: leftPaging?.pageSize ?? pageSize, pageNumber: 1 }));
+            }
             onCheckedRowsChanged([]);
         },
         [dispatch, entity, pageSize, handedIn, onCheckedRowsChanged],
@@ -598,21 +597,25 @@ function PagedList<TRow extends object>({
     // catalogue and lists again, and the page would never settle.
     if (!isFetchingList && (columnRows.length > 0 || hasFetchStarted.current)) hasLoadedOnce.current = true;
 
+    // Read from the store, not the render: a view the strip applied earlier in this commit may have restored the paging already.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: the selected snapshot is only the trigger; its value is read from the store.
     useEffect(() => {
-        if (listedFiltersSnapshot === currentFiltersSnapshot) return;
+        const latest = store.getState();
+        const latestSnapshot = selectors.filtersSnapshot(entity)(latest);
+        if (latestSnapshot === currentFiltersSnapshot) return;
 
-        if (listedFiltersSnapshot !== undefined) {
+        if (latestSnapshot !== undefined) {
             dispatch(
                 actions.setPagination({
                     entity,
-                    pageSize,
+                    pageSize: selectors.pageSize(entity)(latest),
                     pageNumber: 1,
                 }),
             );
         }
 
         dispatch(actions.setFiltersSnapshot({ entity, filtersSnapshot: currentFiltersSnapshot }));
-    }, [currentFiltersSnapshot, listedFiltersSnapshot, dispatch, entity, pageSize]);
+    }, [currentFiltersSnapshot, listedFiltersSnapshot, dispatch, entity, store]);
 
     /**
      * A list that shrank under the current page -- a row the action just taken filtered out of the set, a bulk delete

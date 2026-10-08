@@ -45,6 +45,7 @@ export type ViewPosition = {
 export type ListPaging = {
     pageNumber: number;
     pageSize: number;
+    totalItems: number;
 };
 
 /**

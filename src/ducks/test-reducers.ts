@@ -768,6 +768,14 @@ function pagingsTestReducer(state: PagingsTestState = pagingsTestInitialState, a
         }));
     if (a.type === 'pagings/setFiltersSnapshot')
         return updatePaging(state, data.entity, (p) => ({ ...p, filtersSnapshot: data.filtersSnapshot }));
+    if (a.type === 'pagings/restorePaging')
+        return updatePaging(state, data.entity, (p) => ({
+            ...p,
+            pageNumber: data.pageNumber ?? p.pageNumber,
+            pageSize: data.pageSize ?? p.pageSize,
+            totalItems: data.totalItems ?? p.totalItems,
+            filtersSnapshot: data.filtersSnapshot,
+        }));
     if (a.type === 'pagings/resetPaging')
         return updatePaging(state, data.entity, (p) => ({
             ...p,

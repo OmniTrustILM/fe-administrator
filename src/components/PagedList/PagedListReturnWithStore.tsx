@@ -71,6 +71,29 @@ function TurnPage({ pageNumber, pageSize, testId }: Readonly<{ pageNumber: numbe
     );
 }
 
+/** Lists the same entity under other filters, page and size, as the related-certificate picker does. */
+function ListAsPicker() {
+    const dispatch = useDispatch();
+    const pickerFilters = [{ fieldSource: 'property', fieldIdentifier: 'SUBJECT_TYPE', condition: 'EQUALS', value: 'picker' }];
+
+    return (
+        <button
+            type="button"
+            data-testid="list-as-picker"
+            onClick={() => {
+                dispatch(
+                    filterActions.setCurrentFilters({ entity: EntityType.SECRET, currentFilters: pickerFilters as SearchFilterModel[] }),
+                );
+                dispatch(pagingActions.setFiltersSnapshot({ entity: EntityType.SECRET, filtersSnapshot: JSON.stringify(pickerFilters) }));
+                dispatch(pagingActions.listSuccess({ entity: EntityType.SECRET, totalItems: 3 }));
+                dispatch(pagingActions.setPagination({ entity: EntityType.SECRET, pageNumber: 1, pageSize: 50 }));
+            }}
+        >
+            List as picker
+        </button>
+    );
+}
+
 function ReplaceViews({ views }: Readonly<{ views: ListViewModel[] }>) {
     const dispatch = useDispatch();
 
@@ -184,7 +207,7 @@ export default function PagedListReturnWithStore({
                                     Back
                                 </Link>
                                 {viewsOnDetail && <ReplaceViews views={viewsOnDetail} />}
-                                <TurnPage pageNumber={2} pageSize={50} testId="turn-picker-page" />
+                                <ListAsPicker />
                             </>
                         }
                     />

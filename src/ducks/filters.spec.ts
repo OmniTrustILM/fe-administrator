@@ -242,7 +242,7 @@ describe('handed-in filters', () => {
 
     test('a return hands back the ordering and the page the list was left listing', () => {
         const byName = { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' as const };
-        const paging = { pageNumber: 3, pageSize: 20 };
+        const paging = { pageNumber: 3, pageSize: 20, totalItems: 60 };
         const left = reducer(
             narrowedSecrets(initialState),
             actions.leaveList({ entity: EntityType.SECRET, path: '/secrets', scope: '/secrets', sort: byName, paging }),
