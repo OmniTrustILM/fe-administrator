@@ -1,7 +1,7 @@
 name: Dispatch Sonar
 on:
   workflow_run:
-    workflows: [ "Check PR" ]
+    workflows: [ "Tests" ]
     types: [ completed ]
 
 permissions:
@@ -10,7 +10,8 @@ permissions:
 
 jobs:
   dispatch:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Tests also runs on main, which sonar-main in tests.yml analyses itself.
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - name: Download PR context artifact from upstream run
@@ -22,21 +23,33 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract inputs
+      # The artifact is PR-produced and untrusted: never cat or echo it, since
+      # Actions interprets ::command:: sequences in step output. Values are read
+      # with jq and validated against strict patterns before anything uses them.
+      - name: Extract and validate inputs
         id: ctx
         run: |
-          cat pr_context/pr-context.json
+          PR_NUMBER=$(jq -r '.pr_number' pr_context/pr-context.json)
+          HEAD_SHA=$(jq -r '.head_sha' pr_context/pr-context.json)
+          HEAD_REPO=$(jq -r '.head_repo' pr_context/pr-context.json)
+          HEAD_BRANCH=$(jq -r '.head_branch' pr_context/pr-context.json)
+          BASE_REF=$(jq -r '.base_ref' pr_context/pr-context.json)
+          [[ "$PR_NUMBER"   =~ ^[0-9]+$ ]]                          || { echo "::error::bad pr_number";   exit 1; }
+          [[ "$HEAD_SHA"    =~ ^[0-9a-f]{40}$ ]]                    || { echo "::error::bad head_sha";    exit 1; }
+          [[ "$HEAD_REPO"   =~ ^[A-Za-z0-9_.][A-Za-z0-9_.-]*/[A-Za-z0-9_.][A-Za-z0-9_.-]*$ ]] || { echo "::error::bad head_repo";   exit 1; }
+          [[ "$HEAD_BRANCH" =~ ^[A-Za-z0-9_.][A-Za-z0-9_./-]*$ ]]   || { echo "::error::bad head_branch"; exit 1; }
+          [[ "$BASE_REF"    =~ ^[A-Za-z0-9_.][A-Za-z0-9_./-]*$ ]]   || { echo "::error::bad base_ref";    exit 1; }
           {
-            echo "pr_number=$(jq -r '.pr_number' pr_context/pr-context.json)"
-            echo "head_sha=$(jq -r '.head_sha' pr_context/pr-context.json)"
-            echo "head_repo=$(jq -r '.head_repo' pr_context/pr-context.json)"
-            echo "head_branch=$(jq -r '.head_branch' pr_context/pr-context.json)"
-            echo "base_ref=$(jq -r '.base_ref' pr_context/pr-context.json)"
+            echo "pr_number=$PR_NUMBER"
+            echo "head_sha=$HEAD_SHA"
+            echo "head_repo=$HEAD_REPO"
+            echo "head_branch=$HEAD_BRANCH"
+            echo "base_ref=$BASE_REF"
           } >> "$GITHUB_OUTPUT"
 
-      # The PR context comes from a fork, so every value is read from the
-      # environment. Interpolating it into the script body would let a branch
-      # name containing a quote execute arbitrary code with this token.
+      # Validated values are passed through env and read via process.env, so no
+      # PR data is interpolated into the script body. The run id comes from the
+      # event, not the artifact.
       - name: Dispatch Sonar workflow with inputs
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
@@ -45,18 +58,20 @@ jobs:
           HEAD_REPO: ${{ steps.ctx.outputs.head_repo }}
           HEAD_BRANCH: ${{ steps.ctx.outputs.head_branch }}
           BASE_REF: ${{ steps.ctx.outputs.base_ref }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
         with:
           script: |
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'sonar.yml',
-              ref: process.env.BASE_REF,
+              ref: context.payload.repository.default_branch,
               inputs: {
-                pr_number: process.env.PR_NUMBER,
-                head_sha: process.env.HEAD_SHA,
-                head_repo: process.env.HEAD_REPO,
+                pr_number:   process.env.PR_NUMBER,
+                head_sha:    process.env.HEAD_SHA,
+                head_repo:   process.env.HEAD_REPO,
                 head_branch: process.env.HEAD_BRANCH,
-                base_ref: process.env.BASE_REF
+                base_ref:    process.env.BASE_REF,
+                run_id:      process.env.RUN_ID
               }
             });

@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/experimental-ct-react';
+import type { ReporterDescription } from '@playwright/test';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -6,8 +7,21 @@ import react from '@vitejs/plugin-react-swc';
 import tailwindcss from '@tailwindcss/vite';
 import istanbul from 'vite-plugin-istanbul';
 
+import { playwrightCoverage } from './scripts/playwright-coverage.js';
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// One shard of a sharded CI run writes a blob report and raw coverage; the CI merge job combines the shards into one
+// test report and one coverage report (scripts/merge-playwright-coverage.js).
+const isShard = !!process.env.PW_SHARD;
+
+const testReporters: ReporterDescription[] = isShard
+    ? [['blob', { outputDir: 'blob-report' }]]
+    : [
+          ['html', { outputFolder: 'playwright-report', open: 'never' }],
+          ['junit', { outputFile: 'playwright-report/junit.xml' }],
+      ];
 
 export default defineConfig({
     testDir: './src',
@@ -78,8 +92,7 @@ export default defineConfig({
     ],
     reporter: [
         ['list'],
-        ['html', { outputFolder: 'playwright-report', open: 'never' }],
-        ['junit', { outputFile: 'playwright-report/junit.xml' }],
+        ...testReporters,
         [
             'monocart-reporter',
             {
@@ -94,22 +107,8 @@ export default defineConfig({
                     return fp;
                 },
                 coverage: {
-                    outputDir: './coverage-playwright',
-                    reports: ['lcovonly', 'text-summary'],
-                    sourceFilter: (p: string) => {
-                        if (!p) return false;
-
-                        p = p.replaceAll('\\', '/');
-
-                        if (p.startsWith('localhost-')) return false;
-                        if (p.includes('/assets/') || p.includes('assets/')) return false;
-                        if (p.endsWith('.css')) return false;
-                        if (p.includes('node_modules')) return false;
-                        if (p.includes('/_pages/')) return false;
-                        if (p.includes('/types/openapi/')) return false; // Exclude generated types
-
-                        return /^src\/.*\.(ts|tsx|js|jsx)$/.test(p);
-                    },
+                    ...playwrightCoverage,
+                    reports: isShard ? [['raw', { merge: true }]] : ['lcovonly', 'text-summary'],
                 },
             },
         ],
