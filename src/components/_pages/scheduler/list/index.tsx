@@ -71,7 +71,7 @@ function SchedulerJobsList() {
                 sortable: true,
                 sort: 'asc',
                 id: 'name',
-                width: 'auto',
+                width: '40%',
             },
             {
                 content: 'Job Type',
@@ -83,7 +83,7 @@ function SchedulerJobsList() {
             {
                 content: 'Cron Expression (UTC)',
                 id: 'cron',
-                width: '60%',
+                width: 'auto',
             },
             {
                 content: 'Schedule',
