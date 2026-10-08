@@ -301,8 +301,9 @@ same coverage options (`scripts/playwright-coverage.js`) as an unsharded run. `t
 required status check, so its job name must not change. PRs run chromium only; main adds firefox
 and webkit.
 
-Sonar never runs the tests. For a PR, `dispatch-sonar.yml` (`workflow_run` on `Tests`) validates
-the `pr-context.json` artifact of that run and dispatches `sonar.yml` on the default branch.
+Sonar never runs the tests. For a PR, `dispatch-sonar.yml` (`workflow_run` on `Tests`) takes only
+the PR number from that run's `pr-context.json`, binds the PR to the run through the API, and
+dispatches `sonar.yml` on the default branch with the API's values.
 `sonar.yml` holds `SONAR_TOKEN` and the Sonar App key, so it executes no code from the PR: it
 verifies the run and the PR through the API, downloads the coverage artifacts outside the
 workspace, checks out the PR head and scans. Main is analysed by the `sonar-main` job in
