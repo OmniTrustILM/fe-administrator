@@ -1,4 +1,11 @@
-import { type EntityType, type ViewPosition, actions as filterActions, selectors as filterSelectors, toListScope } from 'ducks/filters';
+import {
+    type EntityType,
+    type ListPaging,
+    type ViewPosition,
+    actions as filterActions,
+    selectors as filterSelectors,
+    toListScope,
+} from 'ducks/filters';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector, useStore } from 'react-redux';
 import { useLocation, useNavigate } from 'react-router';
@@ -156,8 +163,9 @@ function PagedList<TRow extends object>({
     // every render, and the effect watching it would refetch forever.
     const isColumnDriven = configurableColumns !== undefined;
 
-    // Read when the list unmounts, which the effect below cannot depend on without recording a leave on every re-sort.
+    // Read when the list unmounts, which the effect below cannot depend on without recording a leave on every re-sort or page turn.
     const appliedSortRef = useRef<ColumnSort | undefined>(undefined);
+    const pagingRef = useRef<ListPaging | undefined>(undefined);
 
     // Only a list with a view strip records and takes a return: a picker over the same entity never takes one.
     useEffect(() => {
@@ -165,7 +173,15 @@ function PagedList<TRow extends object>({
         const path = location.pathname;
         dispatch(filterActions.returnToList({ entity, path }));
         return () => {
-            dispatch(filterActions.leaveList({ entity, path, scope: toListScope(path), sort: appliedSortRef.current }));
+            dispatch(
+                filterActions.leaveList({
+                    entity,
+                    path,
+                    scope: toListScope(path),
+                    sort: appliedSortRef.current,
+                    paging: pagingRef.current,
+                }),
+            );
         };
     }, [dispatch, entity, isColumnDriven, location.pathname]);
     const {
@@ -237,6 +253,7 @@ function PagedList<TRow extends object>({
     const isFetchingList = useSelector(selectors.isFetchingList(entity));
     const pageNumber = useSelector(selectors.pageNumber(entity));
     const pageSize = useSelector(selectors.pageSize(entity));
+    pagingRef.current = { pageNumber, pageSize };
     const listedFiltersSnapshot = useSelector(selectors.filtersSnapshot(entity));
 
     /**
@@ -414,21 +431,29 @@ function PagedList<TRow extends object>({
      * The ordering is put through the same sieve as `applyColumns`: this is the path the column
      * dialog comes back on, and it hands back the ordering the table was listing under before it.
      *
-     * Any other view lists from its first page, except the one a return from a detail page opens on
-     * under the ordering the list was left listing: that puts the list back where it was left, page
-     * included. A return that cannot reopen that ordering starts from the first page like any view.
+     * Any other view lists from its first page, except the tab a return from a detail page reopens under
+     * the ordering the list was left listing: that puts the list back on the page it was left on. A return
+     * that cannot reopen both starts from the first page. Either way a return takes back the page size it
+     * was left with, as a picker over the same entity may have changed the live one meanwhile.
      */
     const handedIn = useSelector(filterSelectors.handedInFilters(entity));
     const onApplyView = useCallback(
-        (slice: ViewSlice) => {
+        (slice: ViewSlice, reopensLeftPosition?: boolean) => {
             const nextSort = toDisplayableSort(slice.sort, slice.columns);
             setColumnSelection(slice.columns);
             setSortSelection(nextSort);
             dispatch(filterActions.setCurrentFilters({ entity, currentFilters: slice.filters }));
 
-            if (handedIn?.source !== 'return' || !isSameSort(nextSort, handedIn.sort)) {
-                dispatch(actions.setPagination({ entity, pageSize, pageNumber: 1 }));
-            }
+            const left = handedIn?.source === 'return' ? handedIn : undefined;
+            const leftPaging = left?.paging;
+            const keepsPage = reopensLeftPosition === true && leftPaging !== undefined && isSameSort(nextSort, left?.sort);
+            dispatch(
+                actions.setPagination({
+                    entity,
+                    pageSize: leftPaging?.pageSize ?? pageSize,
+                    pageNumber: keepsPage ? leftPaging.pageNumber : 1,
+                }),
+            );
             onCheckedRowsChanged([]);
         },
         [dispatch, entity, pageSize, handedIn, onCheckedRowsChanged],

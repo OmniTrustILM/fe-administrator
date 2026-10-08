@@ -128,7 +128,7 @@ export type FiltersTestState = {
             hasFailedFilters?: boolean;
             handedIn?:
                 | { source: 'drill-down'; scope: string }
-                | { source: 'return'; position?: { viewId: string; isDrillDown: boolean }; sort?: unknown };
+                | { source: 'return'; position?: { viewId: string; isDrillDown: boolean }; sort?: unknown; paging?: unknown };
             viewPosition?: { viewId: string; isDrillDown: boolean };
             leftList?: {
                 path: string;
@@ -136,6 +136,7 @@ export type FiltersTestState = {
                 filters: unknown[];
                 position?: { viewId: string; isDrillDown: boolean };
                 sort?: unknown;
+                paging?: unknown;
                 hasGoneAway: boolean;
             };
         };
@@ -160,6 +161,7 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
             path?: string;
             scope?: string;
             sort?: unknown;
+            paging?: unknown;
         };
     };
     if (a.type === 'filters/getAvailableFilters') {
@@ -246,6 +248,7 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
                 filters: filter.currentFilters,
                 position: filter.viewPosition,
                 sort: payload.sort,
+                paging: payload.paging,
                 hasGoneAway: false,
             },
         }));
@@ -280,7 +283,7 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
                 ...filter,
                 leftList: undefined,
                 currentFilters: left.filters,
-                handedIn: { source: 'return', position: left.position, sort: left.sort },
+                handedIn: { source: 'return', position: left.position, sort: left.sort, paging: left.paging },
             };
         });
     }

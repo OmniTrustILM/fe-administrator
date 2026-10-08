@@ -83,9 +83,10 @@ export type ViewTabsProps = Readonly<{
     /**
      * Applies a view: its columns, its filters and its ordering, together. The caller is expected to
      * return to page 1 and clear its row selection — the filters change which rows exist, so a
-     * carried-over selection would span rows the user can no longer see.
+     * carried-over selection would span rows the user can no longer see. `reopensLeftPosition` is set
+     * only when a return reopens the very tab the strip was left on, the one case a page may be kept.
      */
-    onApply: (slice: ViewSlice) => void;
+    onApply: (slice: ViewSlice, reopensLeftPosition?: boolean) => void;
     dataTestId?: string;
 }>;
 
@@ -288,7 +289,7 @@ export default function ViewTabs({
                 : toViewSlice(views.find((view) => view.uuid === initial) as ListViewModel, fields, standardColumns);
         setActiveId(initial);
         setDrillDownFilters(isDrillDown ? liveSlice.current.filters : undefined);
-        applyRef.current(handedIn ? { ...opening, filters: liveSlice.current.filters } : opening);
+        applyRef.current(handedIn ? { ...opening, filters: liveSlice.current.filters } : opening, initial === position?.viewId);
     }, [resource, isReady, views, fields, standardColumns, standardSort, handedIn]);
 
     const positionRef = useRef(onPositionChange);

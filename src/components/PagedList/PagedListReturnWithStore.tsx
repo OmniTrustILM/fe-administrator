@@ -57,14 +57,14 @@ function TypeFilters({ filters, testId }: Readonly<{ filters: SearchFilterModel[
     );
 }
 
-function TurnPage() {
+function TurnPage({ pageNumber, pageSize, testId }: Readonly<{ pageNumber: number; pageSize: number; testId: string }>) {
     const dispatch = useDispatch();
 
     return (
         <button
             type="button"
-            data-testid="turn-page"
-            onClick={() => dispatch(pagingActions.setPagination({ entity: EntityType.SECRET, pageNumber: 2, pageSize: 20 }))}
+            data-testid={testId}
+            onClick={() => dispatch(pagingActions.setPagination({ entity: EntityType.SECRET, pageNumber, pageSize }))}
         >
             Turn page
         </button>
@@ -184,6 +184,7 @@ export default function PagedListReturnWithStore({
                                     Back
                                 </Link>
                                 {viewsOnDetail && <ReplaceViews views={viewsOnDetail} />}
+                                <TurnPage pageNumber={2} pageSize={50} testId="turn-picker-page" />
                             </>
                         }
                     />
@@ -197,7 +198,7 @@ export default function PagedListReturnWithStore({
                     />
                 </Routes>
                 <TypeFilters filters={typedFilters} testId="type-filters" />
-                <TurnPage />
+                <TurnPage pageNumber={2} pageSize={20} testId="turn-page" />
                 {retypedFilters && <TypeFilters filters={retypedFilters} testId="retype-filters" />}
                 <SecretsFilters />
                 <div data-testid="list-requests">{JSON.stringify(requests)}</div>

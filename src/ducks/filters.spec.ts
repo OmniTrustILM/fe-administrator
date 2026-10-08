@@ -240,15 +240,16 @@ describe('handed-in filters', () => {
         expect(secretsHandedIn(returned)).toEqual({ source: 'return', position: onExpiryWatch });
     });
 
-    test('a return hands back the ordering the list was left listing under', () => {
+    test('a return hands back the ordering and the page the list was left listing', () => {
         const byName = { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' as const };
+        const paging = { pageNumber: 3, pageSize: 20 };
         const left = reducer(
             narrowedSecrets(initialState),
-            actions.leaveList({ entity: EntityType.SECRET, path: '/secrets', scope: '/secrets', sort: byName }),
+            actions.leaveList({ entity: EntityType.SECRET, path: '/secrets', scope: '/secrets', sort: byName, paging }),
         );
         const returned = comeBack(route(left, '/secrets/detail/1'));
 
-        expect(secretsHandedIn(returned)).toEqual({ source: 'return', position: undefined, sort: byName });
+        expect(secretsHandedIn(returned)).toEqual({ source: 'return', position: undefined, sort: byName, paging });
     });
 
     test('a list that went nowhere is not returned to, as a remount in place does', () => {

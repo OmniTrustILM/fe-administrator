@@ -106,6 +106,19 @@ test.describe('PagedList · coming back from a detail page', () => {
         await expect.poll(async () => await lastRequest(page)).toMatchObject({ pageNumber: 2, itemsPerPage: 20, filters: typed });
     });
 
+    test('keeps the page it was left on when a picker over the same entity turned the live one', async ({ mount, page }) => {
+        await mount(<PagedListReturnWithStore {...props} totalItems={60} />);
+        await page.getByRole('tab', { name: 'Everything' }).click();
+        await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(1);
+
+        await page.getByTestId('open-secret').click();
+        await page.getByTestId('turn-picker-page').click();
+        await page.getByTestId('back-to-list').click();
+
+        await expect(page.getByRole('tab', { name: 'Everything' })).toHaveAttribute('aria-selected', 'true');
+        await expect.poll(async () => await lastRequest(page)).toMatchObject({ pageNumber: 1, itemsPerPage: 10 });
+    });
+
     test('keeps the page of a sorted view it comes back to under the same ordering', async ({ mount, page }) => {
         await mount(<PagedListReturnWithStore {...props} views={[pinned, byName]} totalItems={60} />);
         await page.getByRole('tab', { name: 'By name' }).click();
@@ -130,6 +143,20 @@ test.describe('PagedList · coming back from a detail page', () => {
 
         await expect(page.getByRole('tab', { name: 'Standard' })).toHaveAttribute('aria-selected', 'true');
         await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(1);
+    });
+
+    test('opens on the first page when the unsorted view it was left on has gone', async ({ mount, page }) => {
+        await mount(<PagedListReturnWithStore {...props} viewsOnDetail={[pinned]} totalItems={60} />);
+        await page.getByRole('tab', { name: 'Everything' }).click();
+        await page.getByTestId('turn-page').click();
+        await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(2);
+
+        await page.getByTestId('open-secret').click();
+        await page.getByTestId('replace-views').click();
+        await page.getByTestId('back-to-list').click();
+
+        await expect(page.getByRole('tab', { name: 'Standard' })).toHaveAttribute('aria-selected', 'true');
+        await expect.poll(async () => await lastRequest(page)).toMatchObject({ pageNumber: 1, itemsPerPage: 20 });
     });
 
     test('opens on the first page once the list is left for elsewhere', async ({ mount, page }) => {
