@@ -42,3 +42,6 @@ src/setupProxy.js
 
 # SonarQube scanner output
 .scannerwork/
+
+# Sharded Playwright runs
+/blob-report/
