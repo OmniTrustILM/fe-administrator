@@ -83,6 +83,31 @@ test.describe('PagedList · coming back from a detail page', () => {
         await expect(page.getByTestId('view-tabs-summary-unsaved')).toContainText('Unsaved changes to this view');
     });
 
+    test('keeps the page and page size it was left on', async ({ mount, page }) => {
+        await mount(<PagedListReturnWithStore {...props} totalItems={60} />);
+        await page.getByRole('tab', { name: 'Everything' }).click();
+        await page.getByTestId('type-filters').click();
+        await page.getByTestId('turn-page').click();
+        await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(2);
+
+        await openSecretAndComeBack(page);
+
+        await expect(page.getByRole('tab', { name: 'Everything' })).toHaveAttribute('aria-selected', 'true');
+        await expect.poll(async () => await lastRequest(page)).toMatchObject({ pageNumber: 2, itemsPerPage: 20, filters: typed });
+    });
+
+    test('opens on the first page once the list is left for elsewhere', async ({ mount, page }) => {
+        await mount(<PagedListReturnWithStore {...props} totalItems={60} />);
+        await page.getByTestId('turn-page').click();
+        await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(2);
+
+        await page.getByTestId('go-elsewhere').click();
+        await page.getByTestId('open-secrets').click();
+
+        await expect(page.getByRole('tab', { name: 'Production' })).toHaveAttribute('aria-selected', 'true');
+        await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(1);
+    });
+
     test('keeps a drill-down it was left showing, on Standard', async ({ mount, page }) => {
         await mount(<PagedListReturnWithStore {...props} drillDownFilters={[nameContains('from-the-dashboard')]} />);
         await expect(page.getByTestId('view-tabs-summary-unsaved')).toContainText('Filtered from the Dashboard');

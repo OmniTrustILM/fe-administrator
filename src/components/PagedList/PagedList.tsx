@@ -409,18 +409,22 @@ function PagedList<TRow extends object>({
      *
      * The ordering is put through the same sieve as `applyColumns`: this is the path the column
      * dialog comes back on, and it hands back the ordering the table was listing under before it.
+     *
+     * Any other view lists from its first page, except the one a return from a detail page opens on:
+     * that puts the list back where it was left, so it keeps the page it was left on as well.
      */
     const handedIn = useSelector(filterSelectors.handedInFilters(entity));
+    const isReturning = handedIn?.source === 'return';
     const onApplyView = useCallback(
         (slice: ViewSlice) => {
             setColumnSelection(slice.columns);
             setSortSelection(toDisplayableSort(slice.sort, slice.columns));
             dispatch(filterActions.setCurrentFilters({ entity, currentFilters: slice.filters }));
 
-            dispatch(actions.setPagination({ entity, pageSize, pageNumber: 1 }));
+            if (!isReturning) dispatch(actions.setPagination({ entity, pageSize, pageNumber: 1 }));
             onCheckedRowsChanged([]);
         },
-        [dispatch, entity, pageSize, onCheckedRowsChanged],
+        [dispatch, entity, pageSize, isReturning, onCheckedRowsChanged],
     );
 
     const onViewPositionChange = useCallback(
