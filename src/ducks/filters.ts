@@ -4,6 +4,7 @@ import type { Observable } from 'rxjs';
 import type { ApiClients } from '../api';
 import type { AppState } from 'ducks';
 import type { SearchFieldListModel, SearchFilterModel } from 'types/certificate';
+import type { ColumnSort } from 'utils/tableColumns';
 
 export enum EntityType {
     AUDIT_LOG,
@@ -40,12 +41,22 @@ export type ViewPosition = {
     isDrillDown: boolean;
 };
 
+/** The page a list was showing. Kept apart from the live paging, which a picker over the same entity also drives. */
+export type ListPaging = {
+    pageNumber: number;
+    pageSize: number;
+    totalItems: number;
+};
+
 /**
  * Filters a list is to open on in place of its opening view's own. A drill-down opens on Standard with its
  * filters, and holds only while the user stays inside the route scope it was opened for; a return from a
- * detail page goes back to the position the list was left in.
+ * detail page goes back to the position the list was left in, and carries the ordering it was listing under
+ * and the page it was on, because that page belongs to that ordering alone.
  */
-export type HandedInFilters = { source: 'drill-down'; scope: string } | { source: 'return'; position?: ViewPosition };
+export type HandedInFilters =
+    | { source: 'drill-down'; scope: string }
+    | { source: 'return'; position?: ViewPosition; sort?: ColumnSort; paging?: ListPaging };
 
 /**
  * What a list with a view strip held when it unmounted, kept while the user stays inside the list's route
@@ -56,6 +67,8 @@ type LeftList = {
     scope: string;
     filters: SearchFilterModel[];
     position?: ViewPosition;
+    sort?: ColumnSort;
+    paging?: ListPaging;
     /** Whether a route other than the list's own has been visited since; a remount in place has not. */
     hasGoneAway: boolean;
 };
@@ -152,13 +165,18 @@ export const slice = createSlice({
             });
         },
 
-        leaveList: (state, action: PayloadAction<{ entity: EntityType; path: string; scope: string }>) => {
+        leaveList: (
+            state,
+            action: PayloadAction<{ entity: EntityType; path: string; scope: string; sort?: ColumnSort; paging?: ListPaging }>,
+        ) => {
             updateFilterState(state, action.payload.entity, (filter) => {
                 filter.leftList = {
                     path: toRoutePath(action.payload.path),
                     scope: toRoutePath(action.payload.scope),
                     filters: filter.currentFilters,
                     position: filter.viewPosition,
+                    sort: action.payload.sort,
+                    paging: action.payload.paging,
                     hasGoneAway: false,
                 };
             });
@@ -200,7 +218,7 @@ export const slice = createSlice({
                     return;
 
                 filter.currentFilters = left.filters;
-                filter.handedIn = { source: 'return', position: left.position };
+                filter.handedIn = { source: 'return', position: left.position, sort: left.sort, paging: left.paging };
             });
         },
 

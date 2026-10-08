@@ -126,13 +126,17 @@ export type FiltersTestState = {
             isFetchingFilters: boolean;
             hasLoadedFilters: boolean;
             hasFailedFilters?: boolean;
-            handedIn?: { source: 'drill-down'; scope: string } | { source: 'return'; position?: { viewId: string; isDrillDown: boolean } };
+            handedIn?:
+                | { source: 'drill-down'; scope: string }
+                | { source: 'return'; position?: { viewId: string; isDrillDown: boolean }; sort?: unknown; paging?: unknown };
             viewPosition?: { viewId: string; isDrillDown: boolean };
             leftList?: {
                 path: string;
                 scope: string;
                 filters: unknown[];
                 position?: { viewId: string; isDrillDown: boolean };
+                sort?: unknown;
+                paging?: unknown;
                 hasGoneAway: boolean;
             };
         };
@@ -156,6 +160,8 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
             position?: { viewId: string; isDrillDown: boolean };
             path?: string;
             scope?: string;
+            sort?: unknown;
+            paging?: unknown;
         };
     };
     if (a.type === 'filters/getAvailableFilters') {
@@ -241,6 +247,8 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
                 scope: (payload.scope ?? '').replace(/(.)\/+$/, '$1'),
                 filters: filter.currentFilters,
                 position: filter.viewPosition,
+                sort: payload.sort,
+                paging: payload.paging,
                 hasGoneAway: false,
             },
         }));
@@ -275,7 +283,7 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
                 ...filter,
                 leftList: undefined,
                 currentFilters: left.filters,
-                handedIn: { source: 'return', position: left.position },
+                handedIn: { source: 'return', position: left.position, sort: left.sort, paging: left.paging },
             };
         });
     }
@@ -760,6 +768,14 @@ function pagingsTestReducer(state: PagingsTestState = pagingsTestInitialState, a
         }));
     if (a.type === 'pagings/setFiltersSnapshot')
         return updatePaging(state, data.entity, (p) => ({ ...p, filtersSnapshot: data.filtersSnapshot }));
+    if (a.type === 'pagings/restorePaging')
+        return updatePaging(state, data.entity, (p) => ({
+            ...p,
+            pageNumber: data.pageNumber ?? p.pageNumber,
+            pageSize: data.pageSize ?? p.pageSize,
+            totalItems: data.totalItems ?? p.totalItems,
+            filtersSnapshot: data.filtersSnapshot,
+        }));
     if (a.type === 'pagings/resetPaging')
         return updatePaging(state, data.entity, (p) => ({
             ...p,

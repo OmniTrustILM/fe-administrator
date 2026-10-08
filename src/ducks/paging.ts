@@ -98,6 +98,25 @@ export const slice = createSlice({
             });
         },
 
+        /** Puts a list back on a page it held earlier, with the total and filters that page was read under. */
+        restorePaging: (
+            state,
+            action: PayloadAction<{
+                entity: EntityType;
+                pageNumber: number;
+                pageSize: number;
+                totalItems: number;
+                filtersSnapshot: string;
+            }>,
+        ) => {
+            updatePagingState(state, action.payload.entity, (paging) => {
+                paging.pageNumber = normalizePositiveInteger(action.payload.pageNumber, 1);
+                paging.pageSize = normalizePositiveInteger(action.payload.pageSize, 10);
+                paging.totalItems = action.payload.totalItems;
+                paging.filtersSnapshot = action.payload.filtersSnapshot;
+            });
+        },
+
         resetPaging: (state, action: PayloadAction<{ entity: EntityType }>) => {
             updatePagingState(state, action.payload.entity, (paging) => {
                 paging.pageNumber = EMPTY_PAGING.pageNumber;
