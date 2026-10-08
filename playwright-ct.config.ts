@@ -14,7 +14,7 @@ const __dirname = path.dirname(__filename);
 
 // One shard of a sharded CI run writes a blob report and raw coverage; the CI merge job combines the shards into one
 // test report and one coverage report (scripts/merge-playwright-coverage.js).
-const isShard = !!process.env.PW_SHARD;
+const isShard = process.env.PW_SHARDED === '1';
 
 const testReporters: ReporterDescription[] = isShard
     ? [['blob', { outputDir: 'blob-report' }]]

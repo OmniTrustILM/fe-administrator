@@ -55,7 +55,9 @@ jobs:
               num:    /^[0-9]+$/,
               sha:    /^[0-9a-f]{40}$/,
               repo:   /^[A-Za-z0-9_.][A-Za-z0-9_.-]*\/[A-Za-z0-9_.][A-Za-z0-9_.-]*$/,
-              branch: /^[A-Za-z0-9_.][A-Za-z0-9_.\/-]*$/,
+              // Valid branch characters without whitespace or quotes, which
+              // would break the unquoted scanner arguments.
+              branch: /^[A-Za-z0-9_.+@#,=][A-Za-z0-9_.+@#,=\/-]*$/,
             };
             const inp = {
               prNumber:   process.env.IN_PR_NUMBER,
@@ -122,10 +124,12 @@ jobs:
 
       - name: Generate token
         id: app_token
-        uses: tibdex/github-app-token@3beb63f4bd073e61482598c45c71c1019b59b73a # v2.1.0
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          app_id: ${{ secrets.SONAR_GH_APP_ID }}
-          private_key: ${{ secrets.SONAR_GH_APP_PRIVATE_KEY }}
+          app-id: ${{ secrets.SONAR_GH_APP_ID }}
+          private-key: ${{ secrets.SONAR_GH_APP_PRIVATE_KEY }}
+          # The check steps are all this token is for.
+          permission-checks: write
 
       - name: Create GitHub Check (in_progress)
         id: create_check
@@ -142,38 +146,53 @@ jobs:
             });
             core.setOutput("check_id", check.data.id);
 
+      # The coverage artifacts are PR-produced, so they stay outside the
+      # workspace.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: coverage-vitest
+          path: ${{ runner.temp }}/coverage/vitest
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.ctx.outputs.run_id }}
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: coverage-playwright
+          path: ${{ runner.temp }}/coverage/playwright
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          run-id: ${{ steps.ctx.outputs.run_id }}
+
+      - name: Check the coverage reports
+        run: |
+          for f in "$RUNNER_TEMP/coverage/vitest/lcov.info" "$RUNNER_TEMP/coverage/playwright/lcov.info"; do
+            if [ ! -f "$f" ] || [ -L "$f" ]; then
+              echo "::error::Coverage report missing or not a regular file: $f"
+              exit 1
+            fi
+          done
+
       # The verified commit, not the movable branch ref.
       - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
         with:
           repository: ${{ env.HEAD_REPO }}
           ref: ${{ env.HEAD_SHA }}
           fetch-depth: 0
+          persist-credentials: false
 
-      # Downloaded to the paths sonar-project.properties reads.
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: coverage-vitest
-          path: coverage-vitest
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ steps.ctx.outputs.run_id }}
-      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
-        with:
-          name: coverage-playwright
-          path: coverage-playwright
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          run-id: ${{ steps.ctx.outputs.run_id }}
-
-      # After the downloads, so a PR-produced artifact cannot overwrite the
-      # pinned file. The quality policy (exclusions, report paths) always comes
+      # The base goes into a local branch: the scanner resolves the PR target
+      # from refs/heads before refs/remotes/origin, which for a fork PR holds
+      # the fork's own branch. The quality policy (exclusions) always comes
       # from the base branch, not from the PR under analysis.
       - name: Fetch base branch and pin sonar-project.properties to base
         env:
           UPSTREAM_URL: ${{ github.event.repository.clone_url }}
         run: |
           git remote add upstream "$UPSTREAM_URL"
-          git fetch upstream "refs/heads/${BASE_BRANCH}:refs/remotes/upstream/${BASE_BRANCH}"
-          git checkout "refs/remotes/upstream/${BASE_BRANCH}" -- sonar-project.properties
+          git fetch upstream "+refs/heads/${BASE_BRANCH}:refs/heads/${BASE_BRANCH}"
+          git checkout "refs/heads/${BASE_BRANCH}" -- sonar-project.properties
 
+      # The report paths are set here rather than read from
+      # sonar-project.properties, because the reports live outside the
+      # workspace.
       - name: Sonar Scan
         uses: SonarSource/sonarqube-scan-action@c7ee0f9df90b7aa20e8dcf9695dcfe2e7da5b4f2 # v7.2.1
         env:
@@ -181,6 +200,7 @@ jobs:
           SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}
         with:
           args: >
+            -Dsonar.javascript.lcov.reportPaths=${{ runner.temp }}/coverage/playwright/lcov.info,${{ runner.temp }}/coverage/vitest/lcov.info
             -Dsonar.scm.revision=${{ env.HEAD_SHA }}
             -Dsonar.pullrequest.key=${{ env.PR_NUMBER }}
             -Dsonar.pullrequest.branch=${{ env.PR_BRANCH }}

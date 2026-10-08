@@ -274,8 +274,8 @@ credentials. Three workflows relay the context instead:
    `ref: <head_sha>`, and reports a `Docker preview build` check against that commit because a
    dispatched run does not attach to the PR on its own.
 
-`dispatch-sonar.yml` consumes the same `pr-context.json` to drive `sonar.yml`, so changing what
-`prepare_preview.yml` writes affects both paths.
+`dispatch-sonar.yml` reads a `pr-context.json` of the same shape, written by `tests.yml` (see
+[Tests and Sonar](#tests-and-sonar)).
 
 Passing the head SHA works for a fork PR because fork objects live in this repository's network, so
 `actions/checkout` resolves them without a `repository` override. Pinning the commit rather than the
@@ -290,6 +290,23 @@ Trivy gates the preview build under the org-default policy. Per-architecture ima
 digest before the scan runs, so a PR introducing a CRITICAL or HIGH vulnerability still leaves those
 digests in the registry — but no `pr-<number>-<sha>` tag or multiarch manifest is published.
 `test_docker_image.yaml` already fails that same PR.
+
+### Tests and Sonar
+
+`tests.yml` (`Tests`) runs Vitest and the Playwright component tests. The Playwright suite runs in
+shards: with `PW_SHARDED=1`, `playwright-ct.config.ts` writes a blob report and raw V8 coverage
+instead of its usual reports. `test (<browser>)` merges the shards into one report and, for
+chromium, merges the raw coverage with `scripts/merge-playwright-coverage.js`, which applies the
+same coverage options (`scripts/playwright-coverage.js`) as an unsharded run. `test (chromium)` is a
+required status check, so its job name must not change. PRs run chromium only; main adds firefox
+and webkit.
+
+Sonar never runs the tests. For a PR, `dispatch-sonar.yml` (`workflow_run` on `Tests`) validates
+the `pr-context.json` artifact of that run and dispatches `sonar.yml` on the default branch.
+`sonar.yml` holds `SONAR_TOKEN` and the Sonar App key, so it executes no code from the PR: it
+verifies the run and the PR through the API, downloads the coverage artifacts outside the
+workspace, checks out the PR head and scans. Main is analysed by the `sonar-main` job in
+`tests.yml`.
 
 ## Environment Variables (Runtime)
 

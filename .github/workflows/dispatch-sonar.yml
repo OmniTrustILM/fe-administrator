@@ -37,8 +37,8 @@ jobs:
           [[ "$PR_NUMBER"   =~ ^[0-9]+$ ]]                          || { echo "::error::bad pr_number";   exit 1; }
           [[ "$HEAD_SHA"    =~ ^[0-9a-f]{40}$ ]]                    || { echo "::error::bad head_sha";    exit 1; }
           [[ "$HEAD_REPO"   =~ ^[A-Za-z0-9_.][A-Za-z0-9_.-]*/[A-Za-z0-9_.][A-Za-z0-9_.-]*$ ]] || { echo "::error::bad head_repo";   exit 1; }
-          [[ "$HEAD_BRANCH" =~ ^[A-Za-z0-9_.][A-Za-z0-9_./-]*$ ]]   || { echo "::error::bad head_branch"; exit 1; }
-          [[ "$BASE_REF"    =~ ^[A-Za-z0-9_.][A-Za-z0-9_./-]*$ ]]   || { echo "::error::bad base_ref";    exit 1; }
+          [[ "$HEAD_BRANCH" =~ ^[A-Za-z0-9_.+@#,=][A-Za-z0-9_.+@#,=/-]*$ ]] || { echo "::error::bad head_branch"; exit 1; }
+          [[ "$BASE_REF"    =~ ^[A-Za-z0-9_.+@#,=][A-Za-z0-9_.+@#,=/-]*$ ]] || { echo "::error::bad base_ref";    exit 1; }
           {
             echo "pr_number=$PR_NUMBER"
             echo "head_sha=$HEAD_SHA"
