@@ -11,7 +11,7 @@ import Toggletip from 'components/Toggletip';
 import Tooltip from 'components/Tooltip';
 import { QUARANTINE_TOOLTIP } from 'components/_pages/crypto-assets/cryptoAssetTableHelpers';
 import { getEnumLabel } from 'ducks/enums';
-import { TriangleAlert } from 'lucide-react';
+import { Copy, TriangleAlert } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router';
 import type { PlatformEnumMap } from 'types/enums';
@@ -38,6 +38,7 @@ import {
     type PayloadDifference,
     type PayloadDifferenceKind,
 } from 'utils/crypto-assets';
+import { useCopyToClipboard } from 'utils/common-hooks';
 import { toFiniteNumber } from 'utils/common-utils';
 import { dateFormatter } from 'utils/dateUtil';
 
@@ -179,14 +180,14 @@ export function CryptoAssetIdentity({ detail, typeLabel }: Readonly<{ detail: Cr
 
 function PqcFieldList({ fields, typeEnum }: Readonly<{ fields: { [key: string]: unknown }; typeEnum: PlatformEnumMap }>) {
     return (
-        <ul className="flex flex-col gap-1">
+        <dl className="grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1">
             {Object.entries(fields).map(([key, value]) => (
-                <li key={key} className="break-words">
-                    <span className="text-content-muted">{getCryptoAssetFieldLabel(key)}:</span>{' '}
-                    <span className="font-mono">{fieldValueText(key, value, typeEnum)}</span>
-                </li>
+                <div key={key} className="contents" data-testid="pqc-field">
+                    <dt className="text-content-muted">{getCryptoAssetFieldLabel(key)}</dt>
+                    <dd className="m-0 break-words font-mono">{fieldValueText(key, value, typeEnum)}</dd>
+                </div>
             ))}
-        </ul>
+        </dl>
     );
 }
 
@@ -363,15 +364,30 @@ export function CryptoAssetEvaluatedProperties({
     inputs,
     typeEnum,
 }: Readonly<{ inputs: { [key: string]: unknown }; typeEnum: PlatformEnumMap }>) {
-    const rows: TableDataRow[] = Object.entries(inputs).map(([key, value]) => ({
-        id: `input-${key}`,
-        columns: [
-            getCryptoAssetFieldLabel(key),
-            <span key={key} className={cn('font-mono text-xs', WRAPPING_VALUE)}>
-                {fieldValueText(key, value, typeEnum)}
-            </span>,
-        ],
-    }));
+    const copyToClipboard = useCopyToClipboard();
+    const rows: TableDataRow[] = Object.entries(inputs).map(([key, value]) => {
+        const label = getCryptoAssetFieldLabel(key);
+        const shown = fieldValueText(key, value, typeEnum);
+        return {
+            id: `input-${key}`,
+            columns: [
+                label,
+                <span key={key} className="flex items-start gap-1">
+                    <span className={cn('font-mono text-xs', WRAPPING_VALUE)}>{shown}</span>
+                    <Button
+                        variant="transparent"
+                        color="primary"
+                        className="!p-1"
+                        title={`Copy ${label}`}
+                        aria-label={`Copy ${label}`}
+                        onClick={() => copyToClipboard(shown, `${label} was copied to clipboard`, `Failed to copy ${label} to clipboard`)}
+                    >
+                        <Copy size={14} />
+                    </Button>
+                </span>,
+            ],
+        };
+    });
     return (
         <div className="flex flex-col gap-3" data-testid="pqc-explanation-inputs">
             {rows.length === 0 ? (
@@ -416,9 +432,11 @@ export function CryptoAssetPqcExplanation({
             <ExplanationStatus explanation={explanation} verdictEnum={enums.verdict} />
             <CustomTable headers={STEP_HEADERS} data={rows} />
             <p className="text-xs text-content-subtle" data-testid="pqc-rule-set-note">
-                The rule set is fixed by the platform and cannot be configured. Stored evaluation results are re-evaluated when something
-                they were decided from changes: a new CBOM, a change to the asset or to an asset it refers to, or a rule change after an
-                upgrade.
+                The rule set is fixed by the platform and cannot be configured. Stored evaluation results are re-evaluated by the{' '}
+                <code className="font-mono">CryptoAssetPqcSweepTask</code> scheduled job, hourly by default and not while the job is
+                disabled in the Scheduler, once something they were decided from changes: a new CBOM, a change to the asset or to an asset
+                it refers to, or a rule change after an upgrade. There is no re-run for a single asset: this evaluation is computed on
+                demand and shows what the next re-evaluation will store.
             </p>
         </div>
     );

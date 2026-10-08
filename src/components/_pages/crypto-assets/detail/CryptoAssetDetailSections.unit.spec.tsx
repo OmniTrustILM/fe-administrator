@@ -51,6 +51,8 @@ vi.mock('components/Toggletip', () => ({
 vi.mock('components/Tooltip', () => ({
     default: ({ content, children }: { content: string; children: ReactNode }) => <span data-tooltip={content}>{children}</span>,
 }));
+const copyToClipboard = vi.fn();
+vi.mock('utils/common-hooks', () => ({ useCopyToClipboard: () => copyToClipboard }));
 vi.mock('components/JsonViewer', () => ({ default: ({ value }: { value: string }) => <pre data-testid="json-viewer">{value}</pre> }));
 // Clickable, because picking another source is this section's one interaction: each option is a button that hands
 // its value back the way Select does, plus one that clears the selection, which Select's onChange also allows.
@@ -304,7 +306,9 @@ describe('crypto asset detail sections', () => {
         const stepRows = () => all('[data-testid^="row-"]').filter((row) => /^row-\d+:/.test(row.getAttribute('data-testid') ?? ''));
         const cells = (row: Element) => Array.from(row.children).map((cell) => cell.textContent);
         const propertiesRead = (row: Element) =>
-            Array.from(row.querySelectorAll('[data-testid="toggletip"] li')).map((item) => item.textContent);
+            Array.from(row.querySelectorAll('[data-testid="toggletip"] [data-testid="pqc-field"]')).map(
+                (item) => `${item.querySelector('dt')?.textContent}: ${item.querySelector('dd')?.textContent}`,
+            );
 
         test('lists every step in served order with its title, rule id, outcome, verdict and message', async () => {
             await renderExplanation();
@@ -357,12 +361,16 @@ describe('crypto asset detail sections', () => {
             expect(result[3]).toBe('Security rests on factorisation or a discrete logarithm');
         });
 
-        test('says under the rules what fixes the rule set and what re-evaluates a stored result', async () => {
+        test('says under the rules what fixes the rule set, what re-evaluates a stored result and that nothing re-runs one asset', async () => {
             await renderExplanation();
 
             const note = text('[data-testid="pqc-rule-set-note"]');
             expect(note).toContain('fixed by the platform and cannot be configured');
+            expect(note).toContain('re-evaluated by the CryptoAssetPqcSweepTask scheduled job, hourly by default');
+            expect(note).toContain('not while the job is disabled in the Scheduler');
             expect(note).toContain('a new CBOM, a change to the asset or to an asset it refers to, or a rule change after an upgrade');
+            expect(note).toContain('There is no re-run for a single asset: this evaluation is computed on demand');
+            expect(note).toContain('shows what the next re-evaluation will store');
         });
 
         test('a resolved step is set apart and links the readiness of the asset it carried the verdict over from', async () => {
@@ -500,6 +508,21 @@ describe('crypto asset detail sections', () => {
         const renderProperties = (inputs: CryptographicAssetPqcExplanationDto['inputs']) =>
             render(<CryptoAssetEvaluatedProperties inputs={inputs} typeEnum={enums.assetType} />);
         const rows = () => all('[data-testid^="row-input-"]').map((row) => Array.from(row.children).map((cell) => cell.textContent));
+
+        test('each value has a copy control that puts the shown value on the clipboard', async () => {
+            await renderProperties({ assetType: 'certificate', cipherSuites: ['TLS_AES_128_GCM_SHA256', 'TLS_CHACHA20_POLY1305_SHA256'] });
+
+            const copy = one('[data-testid="row-input-cipherSuites"] button[aria-label="Copy Cipher suites"]') as HTMLButtonElement;
+            await act(async () => {
+                copy.click();
+            });
+
+            expect(copyToClipboard).toHaveBeenCalledWith(
+                'TLS_AES_128_GCM_SHA256, TLS_CHACHA20_POLY1305_SHA256',
+                'Cipher suites was copied to clipboard',
+                'Failed to copy Cipher suites to clipboard',
+            );
+        });
 
         test('read as labelled property rows, with unknown keys kept raw and lists joined', async () => {
             await renderProperties({
