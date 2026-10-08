@@ -269,6 +269,33 @@ test.describe('CertificateRekeyDialog — Register switch', () => {
         await expect.poll(() => registrations).toHaveLength(1);
     });
 
+    test('a required connector attribute left empty keeps the dialog open and stages nothing', async ({ mount, page }) => {
+        const registrations: CertificateRegistrationRequestModel[] = [];
+        const requiredRegisterDescriptor = {
+            ...renewDescriptor,
+            name: 'registerField',
+            uuid: 'register-data-uuid-1',
+            properties: { ...renewDescriptor.properties, label: 'Register Field', required: true },
+        } as AttributeDescriptorModel;
+        await mount(
+            <CertificateRekeyDialogTestWrapper
+                preloadedState={{
+                    certificates: {
+                        ...testInitialState.certificates,
+                        registerAttributes: { 'ra-profile-uuid': [requiredRegisterDescriptor] },
+                    },
+                }}
+                onRegister={(request) => registrations.push(request)}
+            />,
+        );
+        await switchToRegister(page);
+        await page.getByTestId('progress-button').click();
+
+        await expect(page.getByText('Register Field')).toBeVisible();
+        expect(registrations).toHaveLength(0);
+        await expect(page.getByTestId('dialog-closed')).toHaveCount(0);
+    });
+
     test('switching back to rekey clears the registration error and restores the key source', async ({ mount, page }) => {
         await mount(<CertificateRekeyDialogTestWrapper />);
         await switchToRegister(page);

@@ -245,15 +245,17 @@ export default function CertificateRekeyDialog({ onCancel, onDone, onRegister, c
 
     // Close once a submission is confirmed: a true→false in-flight transition with no error. A failure keeps the
     // dialog open so the holder can correct a mistyped challenge, each of which spends one attempt.
-    const isSubmitting = formState.isSubmitting || rekeying || isRegistering;
+    // The form's own isSubmitting stays out: a submit that fails validation dispatches nothing yet would close the dialog.
+    const isRequestInFlight = rekeying || isRegistering;
+    const isSubmitting = formState.isSubmitting || isRequestInFlight;
     const hasSubmissionError = !!rekeyErrorMessage || !!registerErrorMessage;
     const wasSubmitting = useRef(false);
     useEffect(() => {
-        if (wasSubmitting.current && !isSubmitting && !hasSubmissionError) {
+        if (wasSubmitting.current && !isRequestInFlight && !hasSubmissionError) {
             onDone();
         }
-        wasSubmitting.current = isSubmitting;
-    }, [isSubmitting, hasSubmissionError, onDone]);
+        wasSubmitting.current = isRequestInFlight;
+    }, [isRequestInFlight, hasSubmissionError, onDone]);
 
     const onRegisterSuccessorChange = (checked: boolean) => {
         // The two modes send different requests; values and errors of the one left behind must not carry over.
