@@ -255,14 +255,11 @@ test.describe('ImportWizard', () => {
                 onAction={(action) => actions.push(action)}
             />,
         );
-
         await chooseFile(page);
         await expect(page.getByRole('alert')).toHaveText(failure);
         await expect.poll(() => inspectRequests(actions)).toHaveLength(1);
-
         await page.getByLabel('File content').focus();
         await page.getByLabel('File content').blur();
-
         await expect.poll(() => inspectRequests(actions)).toEqual([{ file: FILE_BASE64 }, { file: FILE_BASE64 }]);
         await expect(page.getByRole('checkbox', { name: 'intermediate-ca-r4' })).toBeChecked();
     });
