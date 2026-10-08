@@ -133,6 +133,21 @@ test.describe('PagedList · coming back from a detail page', () => {
         await expect.poll(async () => await lastRequest(page)).toMatchObject({ pageNumber: 2, sort: { direction: SortDirection.Desc } });
     });
 
+    test('opens on the first page when the view it comes back to was re-sorted meanwhile', async ({ mount, page }) => {
+        const reSorted = { ...byName, sort: { ...byName.sort!, direction: SortDirection.Asc } };
+        await mount(<PagedListReturnWithStore {...props} views={[pinned, byName]} viewsOnDetail={[pinned, reSorted]} totalItems={60} />);
+        await page.getByRole('tab', { name: 'By name' }).click();
+        await page.getByTestId('turn-page').click();
+        await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(2);
+
+        await page.getByTestId('open-secret').click();
+        await page.getByTestId('replace-views').click();
+        await page.getByTestId('back-to-list').click();
+
+        await expect(page.getByRole('tab', { name: 'By name' })).toHaveAttribute('aria-selected', 'true');
+        await expect.poll(async () => await lastRequest(page)).toMatchObject({ pageNumber: 1, sort: { direction: SortDirection.Asc } });
+    });
+
     test('opens on the first page when the sorted view it was left on has gone', async ({ mount, page }) => {
         await mount(<PagedListReturnWithStore {...props} views={[pinned, byName]} viewsOnDetail={[pinned]} totalItems={60} />);
         await page.getByRole('tab', { name: 'By name' }).click();
