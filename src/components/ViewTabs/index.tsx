@@ -437,7 +437,7 @@ export default function ViewTabs({
         const confirmed = withConfirmed(arrived, live);
         const storedFilters = new Set((activeView.filters ?? []).map(getFilterKey));
         const filters = confirmed.filters.filter((filter) => !left.has(getColumnKey(filter)) || !storedFilters.has(getFilterKey(filter)));
-        if (filters.length !== live.filters.length) applyFromEffect({ ...confirmed, filters });
+        if (filtersKey(filters) !== filtersKey(live.filters)) applyFromEffect({ ...confirmed, filters });
     }, [isReady, activeView, columns, withConfirmed, applyFromEffect]);
 
     // The pinned view opens on load, and Standard when none is pinned. Once only: a later list read —
