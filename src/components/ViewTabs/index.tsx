@@ -770,7 +770,7 @@ export default function ViewTabs({
         );
 
         if (confirmed.length > 0) {
-            const confirmedSort = keptSort && confirmedKeys.has(getSortKey(keptSort)) ? keptSort : undefined;
+            const confirmedSort = !sort && keptSort && confirmedKeys.has(getSortKey(keptSort)) ? keptSort : undefined;
             pendingConfirmation.current = { uuid: activeView.uuid, confirmed, sort: confirmedSort };
         }
     }, [activeView, patchView, columns, resolved, storableFilters, heldKeysOf, heldFilters, catalogue, sort, heldSort]);

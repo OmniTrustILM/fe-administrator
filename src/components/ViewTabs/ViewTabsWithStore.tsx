@@ -265,7 +265,12 @@ export default function ViewTabsWithStore({
                 <button
                     type="button"
                     data-testid="drift-drop-last-column"
-                    onClick={() => setSlice((current) => ({ ...current, columns: current.columns.slice(0, -1) }))}
+                    onClick={() =>
+                        setSlice((current) => {
+                            const next = { ...current, columns: current.columns.slice(0, -1) };
+                            return dropsUnshownSort ? withShownSort(next) : next;
+                        })
+                    }
                 >
                     remove the last column
                 </button>

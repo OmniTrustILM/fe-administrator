@@ -1515,6 +1515,37 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
     });
 
+    test('leaves the stored ordering of a confirmed column off the table when the save wrote the ordering of the user', async ({
+        mount,
+        page,
+    }) => {
+        const sorted = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), stored('retired', FilterFieldSource.Custom)],
+            filters: [retiredFilter],
+            sort: { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', direction: SortDirection.Desc },
+        });
+        await mount(
+            heldBackStrip({
+                views: [sorted],
+                driftColumn: serialNumber,
+                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'SERIAL_NUMBER', direction: 'asc' },
+                dropsUnshownSort: true,
+            }),
+        );
+        await page.getByTestId('drift-columns').click();
+        await page.getByTestId('drift-sort').click();
+        await saveOwnFilter(page);
+        await page.getByTestId('drift-drop-last-column').click();
+        await expect.poll(async () => (await appliedSlice(page)).sort).toBeUndefined();
+
+        await page.getByTestId('simulate-update-success').click();
+        await expect(page.getByTestId('view-tabs-returned')).toHaveCount(0);
+        await settle(page);
+
+        expect((await appliedSlice(page)).sort).toBeUndefined();
+    });
+
     test('keeps holding a column back whose attribute goes and comes back while the save confirming it is in flight', async ({
         mount,
         page,
