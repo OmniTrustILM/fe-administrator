@@ -1,8 +1,7 @@
 import { combineReducers, type UnknownAction } from '@reduxjs/toolkit';
 import type { AttributeDescriptorModel } from 'types/attributes';
-import type { ConnectInfoDto, ListViewDto, ListViewUpdateRequestDto } from 'types/openapi';
+import type { ConnectInfoDto, ListViewDto } from 'types/openapi';
 import type { EventTriggerAssociationModel, TriggerModel } from 'types/rules';
-import { withWrittenStatuses } from 'utils/listViews';
 
 // IMPORTANT: This file is used ONLY in component tests (Playwright CT).
 // It must NOT import the real duck modules
@@ -1480,6 +1479,27 @@ const listViewsTestInitialState: ListViewsTestState = {
 // out rather than imported, because this file must not pull in the real ducks.
 const PENDING_LIST_VIEW_UUID = 'pending-view';
 
+type StatusedEntry = {
+    fieldSource: string;
+    fieldIdentifier: string;
+    condition?: string;
+    value?: unknown;
+    status?: string;
+    rebind?: boolean;
+};
+
+// Mirrors withWrittenStatuses in src/utils/listViews.ts, spelt out for the same reason: a spec loads this file in Node,
+// where importing utils/listViews fails on the generated types' directory import.
+function settleWrittenStatuses(entries: StatusedEntry[] | undefined, previous: StatusedEntry[] | undefined): StatusedEntry[] | undefined {
+    const keyOf = (entry: StatusedEntry) =>
+        JSON.stringify([entry.fieldSource, entry.fieldIdentifier, entry.condition, entry.value ?? null]);
+    const statuses = new Map((previous ?? []).map((entry) => [keyOf(entry), entry.status]));
+    return entries?.map(({ rebind, status, ...entry }) => {
+        const settled = rebind ? 'available' : (statuses.get(keyOf(entry)) ?? status);
+        return settled ? { ...entry, status: settled } : entry;
+    });
+}
+
 function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialState, action: UnknownAction): ListViewsTestState {
     const a = action as { type: string; payload?: { resource?: string; view?: Partial<ListViewDto> } };
     if (!a.type.startsWith('listViews/')) return state;
@@ -1552,7 +1572,14 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
             isMutating: true,
             rollback: entry.views,
             views: entry.views.map((each) =>
-                each.uuid === uuid ? ({ ...each, ...withWrittenStatuses(each, view as ListViewUpdateRequestDto) } as ListViewDto) : each,
+                each.uuid === uuid
+                    ? ({
+                          ...each,
+                          ...view,
+                          columns: settleWrittenStatuses(view.columns as StatusedEntry[], each.columns as StatusedEntry[]),
+                          filters: settleWrittenStatuses(view.filters as StatusedEntry[], each.filters as StatusedEntry[]),
+                      } as ListViewDto)
+                    : each,
             ),
         });
         return { ...updated, error: undefined };
