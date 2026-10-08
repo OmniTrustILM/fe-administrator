@@ -374,19 +374,32 @@ export default function ViewTabs({
         if (requestedFor === resource && isStale && !isMutating) dispatch(listViewActions.listViews({ resource }));
     }, [dispatch, resource, requestedFor, isStale, isMutating]);
 
-    // A view handed back from a detail page arrives with the filters the list held, its stored ones on held fields among
-    // them. Those go, as opening the view would leave them out; the user's own filters on such a field stay.
-    const previousUuid = useRef<string | undefined>(undefined);
+    /**
+     * Keeps the open view's table off fields it has not confirmed. A field that turns held while its view is open, from a
+     * write's answer or a failed write rolled back, takes its column, its stored filters and an ordering on it off the
+     * table, so the notice offers it again and a save cannot rebind it unasked. A view handed back from a detail page
+     * arrives with the filters the list held, its stored ones on held fields among them, and those go too. The user's own
+     * filters on such a field stay either way.
+     */
+    const previousHeld = useRef<{ uuid?: string; keys: ReadonlySet<string> }>({ keys: NO_KEYS });
     useEffect(() => {
-        const isArriving = previousUuid.current !== activeView?.uuid;
-        previousUuid.current = activeView?.uuid;
         const heldNow = heldKeysOf(activeView);
-        if (!isArriving || !activeView || heldNow.size === 0) return;
+        const previous = previousHeld.current;
+        previousHeld.current = { uuid: activeView?.uuid, keys: heldNow };
+        if (!activeView || heldNow.size === 0) return;
+
+        const isArriving = previous.uuid !== activeView.uuid;
+        const turned = isArriving ? heldNow : new Set([...heldNow].filter((key) => !previous.keys.has(key)));
+        if (turned.size === 0) return;
 
         const storedFilters = new Set((activeView.filters ?? []).map(getFilterKey));
-        const keptFilters = filters.filter((filter) => !heldNow.has(getColumnKey(filter)) || !storedFilters.has(getFilterKey(filter)));
-        if (keptFilters.length < filters.length) applyFromEffect({ columns, filters: keptFilters, sort });
-    }, [activeView, columns, filters, sort, applyFromEffect]);
+        const keptColumns = isArriving ? columns : columns.filter((column) => !turned.has(getColumnKey(column)));
+        const keptFilters = filters.filter((filter) => !turned.has(getColumnKey(filter)) || !storedFilters.has(getFilterKey(filter)));
+        const keptSort = !isArriving && sort && turned.has(getColumnKey(sort)) ? undefined : sort;
+        if (keptColumns.length < columns.length || keptFilters.length < filters.length || keptSort !== sort) {
+            applyFromEffect({ columns: keptColumns.length > 0 ? keptColumns : [...standardColumns], filters: keptFilters, sort: keptSort });
+        }
+    }, [activeView, columns, filters, sort, standardColumns, applyFromEffect]);
 
     /** `live` with the stored filters on the confirmed column keys put back, unless the user set their own. */
     const withConfirmed = useCallback(
@@ -654,14 +667,18 @@ export default function ViewTabs({
     }, [activeView, patchView, columns, filters, resolved, storableFilters, heldFilters, sort, catalogueFields, standardColumns]);
 
     // Showing a held-back column confirms it: it goes on the table, and the view is bound to the attribute now behind it.
+    // Where the user filters by the field themselves, their filter is written in place of the stored one they never saw.
     const onShowReturned = useCallback(() => {
         const keys = new Set(returned.map(getColumnKey));
         const slice = confirmedSlice(keys);
         if (!activeView || !slice) return;
 
-        patchView(activeView, {}, keys);
+        const own = filters.filter((filter) => keys.has(getColumnKey(filter)));
+        const ownKeys = new Set(own.map(getColumnKey));
+        const stored = (activeView.filters ?? []).filter((filter) => !ownKeys.has(getColumnKey(filter)));
+        patchView(activeView, own.length > 0 ? { filters: [...stored, ...own] } : {}, keys);
         applyRef.current(slice);
-    }, [confirmedSlice, returned, activeView, patchView]);
+    }, [confirmedSlice, returned, activeView, filters, patchView]);
 
     const onApplyHeldFilters = useCallback(() => {
         if (!activeView) return;
