@@ -157,6 +157,7 @@ export default function ImportWizard({ presetTokenProfileUuid, onCancel, onDone 
     const inspectedDigest = useRef<string | undefined>(undefined);
     // The content last loaded, which `file` no longer holds once another file starts to be read.
     const loadedContent = useRef('');
+    // Set when the field changes, so the same content is read again after a failed read or a same-file pick.
     const contentInvalidated = useRef(false);
 
     const { refusedProfileUuid, profileRefusal, inspected } = inspectionOutcome({
@@ -258,6 +259,7 @@ export default function ImportWizard({ presetTokenProfileUuid, onCancel, onDone 
     const onFileContentLoaded = useCallback(
         (content: string) => {
             if (content === loadedContent.current && !contentInvalidated.current && inspected) return;
+            // A password is given for one file, so another file is read without it.
             if (content !== loadedContent.current) setValue('passphrase', '');
             contentInvalidated.current = false;
             loadedContent.current = content;
