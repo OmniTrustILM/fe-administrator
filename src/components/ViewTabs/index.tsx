@@ -419,20 +419,25 @@ export default function ViewTabs({
     );
 
     // Putting a held-back field on the table of its view, from the column menu or otherwise, chooses it: its stored filters
-    // come back with it, and saving the view confirms it. Only a column that arrives on the table counts.
+    // come back with it, and saving the view confirms it. Taking the column off again un-chooses it, so they go with it;
+    // the user's own filters on the field stay. Only a column that arrives on or leaves the table counts.
     const previousColumns = useRef(columns);
     useEffect(() => {
         const before = new Set(previousColumns.current.map(getColumnKey));
+        const now = new Set(columns.map(getColumnKey));
         previousColumns.current = columns;
         const heldNow = heldKeysOf(activeView);
-        if (!isReady || heldNow.size === 0) return;
+        if (!isReady || !activeView || heldNow.size === 0) return;
 
-        const arrived = new Set(columns.map(getColumnKey).filter((key) => !before.has(key) && heldNow.has(key)));
-        if (arrived.size === 0) return;
+        const arrived = new Set([...now].filter((key) => !before.has(key) && heldNow.has(key)));
+        const left = new Set([...before].filter((key) => !now.has(key) && heldNow.has(key)));
+        if (arrived.size === 0 && left.size === 0) return;
 
         const live = liveSlice.current;
         const confirmed = withConfirmed(arrived, live);
-        if (confirmed.filters.length !== live.filters.length) applyFromEffect(confirmed);
+        const storedFilters = new Set((activeView.filters ?? []).map(getFilterKey));
+        const filters = confirmed.filters.filter((filter) => !left.has(getColumnKey(filter)) || !storedFilters.has(getFilterKey(filter)));
+        if (filters.length !== live.filters.length) applyFromEffect({ ...confirmed, filters });
     }, [isReady, activeView, columns, withConfirmed, applyFromEffect]);
 
     // The pinned view opens on load, and Standard when none is pinned. Once only: a later list read —

@@ -1437,6 +1437,36 @@ test.describe('ViewTabs', () => {
         expect(slice.filters).toEqual([retiredFilter]);
     });
 
+    test('takes the stored filter off again when the user removes a held-back column they added, and rebinds nothing', async ({
+        mount,
+        page,
+    }) => {
+        await mount(
+            heldBackStrip({
+                driftColumn: column('retired', 'Retired', FilterFieldSource.Custom),
+                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'asc' },
+            }),
+        );
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+        await page.getByTestId('drift-columns').click();
+        await expect.poll(async () => (await appliedSlice(page)).filters).toEqual([retiredFilter]);
+
+        await page.getByTestId('drift-drop-last-column').click();
+
+        await expect.poll(async () => (await appliedSlice(page)).filters).toEqual([]);
+        await expect(page.getByTestId('view-tabs-returned')).toContainText('this view is not showing or filtering by it');
+
+        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('view-tabs-summary-save').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const view = (await lastDispatched(page, 'listViews/updateView'))?.payload?.view as
+            | { columns: { rebind?: boolean }[]; filters: { rebind?: boolean }[] }
+            | undefined;
+        expect([...(view?.columns ?? []), ...(view?.filters ?? [])].some((entry) => entry.rebind)).toBe(false);
+        expect((await appliedSlice(page)).columns.map((each) => each.fieldIdentifier)).toEqual(['COMMON_NAME']);
+    });
+
     test('keeps the filter of the user over the stored one on the same field when the column menu adds the held-back column', async ({
         mount,
         page,
