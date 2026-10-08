@@ -3,7 +3,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import { CircleCheck, CircleAlert, CircleHelp } from 'lucide-react';
 
-import Badge from 'components/Badge';
+import Badge, { type BadgeColor } from 'components/Badge';
 import Breadcrumb from 'components/Breadcrumb';
 import CommentPanel from 'components/CommentPanel';
 import Container from 'components/Container';
@@ -16,7 +16,7 @@ import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { actions as userInterfaceActions } from 'ducks/user-interface';
 
 import type { AttributeDescriptorModel } from 'types/attributes';
-import type { FunctionGroupModel } from 'types/connectors';
+import type { FunctionGroupModel, HealthModel } from 'types/connectors';
 import { ConnectorStatus, ConnectorVersion, HealthStatus, PlatformEnum, Resource } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
@@ -41,6 +41,28 @@ function getHealthStatusIcon(status: string): { Icon: typeof CircleCheck; classN
         return { Icon: CircleAlert, className: 'text-warning' };
     }
     return { Icon: CircleHelp, className: 'text-content-subtle' };
+}
+
+function getHealthStatusBadgeColor(status?: HealthStatus): BadgeColor {
+    switch (status) {
+        case HealthStatus.Up:
+            return 'success';
+        case HealthStatus.Down:
+        case HealthStatus.OutOfService:
+            return 'danger';
+        case HealthStatus.Degraded:
+            return 'warning';
+        default:
+            return 'transparent';
+    }
+}
+
+function renderStatusBadge(status?: HealthStatus) {
+    return <Badge color={getHealthStatusBadgeColor(status)}>{status || 'Unknown'}</Badge>;
+}
+
+function healthRow(id: string, label: string, health?: HealthModel): TableDataRow {
+    return { id, columns: [label, renderStatusBadge(health?.status), health?.description || ''] };
 }
 
 export default function ConnectorDetail() {
@@ -326,21 +348,6 @@ export default function ConnectorDetail() {
         return rows;
     }, [connector, connectorInfoV2]);
 
-    const renderStatusBadge = useCallback((status?: HealthStatus) => {
-        if (!status) return <Badge color="transparent">Unknown</Badge>;
-        switch (status) {
-            case HealthStatus.Up:
-                return <Badge color="success">{status}</Badge>;
-            case HealthStatus.Down:
-            case HealthStatus.OutOfService:
-                return <Badge color="danger">{status}</Badge>;
-            case HealthStatus.Degraded:
-                return <Badge color="warning">{status}</Badge>;
-            default:
-                return <Badge color="transparent">{status}</Badge>;
-        }
-    }, []);
-
     const healthHeaders: TableHeader[] = useMemo(
         () => [
             {
@@ -359,33 +366,13 @@ export default function ConnectorDetail() {
         [],
     );
 
-    const healthData: TableDataRow[] = useMemo(() => {
-        const data: TableDataRow[] = [
-            {
-                id: 'overallHealth',
-                columns: ['Overall Health', renderStatusBadge(health?.status), health?.description || ''],
-            },
-        ];
-
-        if (health?.parts) {
-            Object.entries(health.parts).forEach(([key, value]) => {
-                data.push({
-                    id: key,
-                    columns: [
-                        key,
-                        ['ok', 'failed', 'down', 'nok', 'unknown'].includes(value.status) ? (
-                            renderStatusBadge(value.status)
-                        ) : (
-                            <Badge color="success">{value.status || 'OK'}</Badge>
-                        ),
-                        value?.description || '',
-                    ],
-                });
-            });
-        }
-
-        return data;
-    }, [health, renderStatusBadge]);
+    const healthData: TableDataRow[] = useMemo(
+        () => [
+            healthRow('overallHealth', 'Overall Health', health),
+            ...Object.entries(health?.parts ?? {}).map(([partName, part]) => healthRow(partName, partName, part)),
+        ],
+        [health],
+    );
 
     if (isFetchingDetail && !connector) {
         return <DetailPageSkeleton layout="simple" buttonsCount={4} />;
