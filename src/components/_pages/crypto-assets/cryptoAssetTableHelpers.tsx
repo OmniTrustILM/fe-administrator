@@ -6,6 +6,7 @@ import type { PlatformEnumMap } from 'types/enums';
 import { type CryptographicAssetDto, FilterFieldSource, FilterFieldType } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
 import { toFiniteNumber } from 'utils/common-utils';
+import { cryptoAssetDetailPath } from 'utils/crypto-assets';
 
 export interface BuildCryptoAssetCellsOpts {
     typeEnum: PlatformEnumMap;
@@ -71,11 +72,7 @@ export function buildCryptoAssetCellRegistry({
         'property:CBOM_ASSET_NAME': (asset) => (
             <span className="flex min-w-0 items-center gap-2">
                 <span className="min-w-0">
-                    <TruncatedCell
-                        value={asset.name ?? asset.uuid}
-                        to={`/cryptoassets/detail/${asset.uuid}`}
-                        dataTestId="crypto-asset-name"
-                    />
+                    <TruncatedCell value={asset.name ?? asset.uuid} to={cryptoAssetDetailPath(asset.uuid)} dataTestId="crypto-asset-name" />
                 </span>
                 {asset.quarantined && (
                     <Badge className="shrink-0" color="warning" title={QUARANTINE_TOOLTIP} dataTestId="crypto-asset-quarantined-badge">

@@ -1,5 +1,10 @@
 import { describe, expect, test } from 'vitest';
-import type { CryptographicAssetDetailDto, PaginationResponseDtoCryptographicAssetDto } from 'types/openapi';
+import type {
+    CryptographicAssetDetailDto,
+    CryptographicAssetPqcExplanationDto,
+    PaginationResponseDtoCryptographicAssetDto,
+} from 'types/openapi';
+import { LockTypeEnum } from 'types/user-interface';
 import reducer, { actions, initialState, selectors } from './crypto-assets';
 
 const page = {
@@ -114,5 +119,75 @@ describe('cryptoAssets slice, detail', () => {
         const cleared = reducer(reducer(failed, actions.getCryptoAssetDetailSuccess({ detail })), actions.clearCryptoAssetDetail());
 
         expect(cleared).toEqual(initialState);
+    });
+});
+
+const lock = { lockTitle: 'Not Found', lockText: 'The requested resource does not exist', lockType: LockTypeEnum.GENERIC };
+
+const explanation = { uuid: 'asset-1', ruleId: 'CLASSICAL-SHOR', steps: [] } as unknown as CryptographicAssetPqcExplanationDto;
+
+describe('cryptoAssets slice, PQC explanation', () => {
+    test('a refresh of the same asset keeps its explanation under the spinner', () => {
+        const loaded = reducer(initialState, actions.getCryptoAssetPqcExplanationSuccess({ explanation }));
+
+        const refreshing = reducer(loaded, actions.getCryptoAssetPqcExplanation({ uuid: 'asset-1' }));
+
+        expect(refreshing.pqcExplanation).toEqual(explanation);
+        expect(selectors.selectIsFetchingPqcExplanation({ cryptoAssets: refreshing } as never)).toBe(true);
+    });
+
+    test.each([
+        ['a loaded explanation', actions.getCryptoAssetPqcExplanationSuccess({ explanation })],
+        ['a locked explanation', actions.getCryptoAssetPqcExplanationFailure({ lock })],
+        ['an explanation in flight', actions.getCryptoAssetPqcExplanation({ uuid: 'asset-1' })],
+    ])('a reload of the detail starts from nothing, dropping %s', (_, before) => {
+        const reloading = reducer(reducer(initialState, before), actions.getCryptoAssetDetail({ uuid: 'asset-2' }));
+
+        expect(reloading.pqcExplanation).toBeUndefined();
+        expect(reloading.pqcExplanationLock).toBeUndefined();
+        expect(reloading.isFetchingPqcExplanation).toBe(false);
+    });
+
+    test('success stores the explanation for the selector and clears the busy flag', () => {
+        const state = reducer(
+            reducer(initialState, actions.getCryptoAssetPqcExplanation({ uuid: 'asset-1' })),
+            actions.getCryptoAssetPqcExplanationSuccess({ explanation }),
+        );
+
+        expect(selectors.selectPqcExplanation({ cryptoAssets: state } as never)).toEqual(explanation);
+        expect(state.isFetchingPqcExplanation).toBe(false);
+    });
+
+    test('a failure locks the explanation, drops what was shown and leaves the detail as it was', () => {
+        const withDetail = reducer(initialState, actions.getCryptoAssetDetailSuccess({ detail }));
+        const loaded = reducer(withDetail, actions.getCryptoAssetPqcExplanationSuccess({ explanation }));
+
+        const failed = reducer(
+            reducer(loaded, actions.getCryptoAssetPqcExplanation({ uuid: 'asset-1' })),
+            actions.getCryptoAssetPqcExplanationFailure({ lock }),
+        );
+
+        expect(failed.pqcExplanation).toBeUndefined();
+        expect(selectors.selectPqcExplanationLock({ cryptoAssets: failed } as never)).toEqual(lock);
+        expect(failed.isFetchingPqcExplanation).toBe(false);
+        expect(failed.assetDetail).toEqual(detail);
+    });
+
+    test('a retry lifts the lock while it is in flight', () => {
+        const failed = reducer(initialState, actions.getCryptoAssetPqcExplanationFailure({ lock }));
+
+        const retrying = reducer(failed, actions.getCryptoAssetPqcExplanation({ uuid: 'asset-1' }));
+
+        expect(retrying.pqcExplanationLock).toBeUndefined();
+        expect(retrying.isFetchingPqcExplanation).toBe(true);
+    });
+
+    test.each([
+        ['a loaded explanation being refreshed', actions.getCryptoAssetPqcExplanationSuccess({ explanation })],
+        ['a locked explanation being retried', actions.getCryptoAssetPqcExplanationFailure({ lock })],
+    ])('clearCryptoAssetDetail forgets %s with the asset', (_, settled) => {
+        const fetching = reducer(reducer(initialState, settled), actions.getCryptoAssetPqcExplanation({ uuid: 'asset-1' }));
+
+        expect(reducer(fetching, actions.clearCryptoAssetDetail())).toEqual(initialState);
     });
 });
