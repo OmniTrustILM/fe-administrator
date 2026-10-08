@@ -246,6 +246,27 @@ test.describe('ImportWizard', () => {
         await expect(page.getByTestId('import-done')).toBeVisible();
     });
 
+    test('re-inspects on File content blur after a non-password inspection failure', async ({ mount, page }) => {
+        const actions: UnknownAction[] = [];
+        const failure = 'Failed to read the uploaded file (500): The service is unavailable';
+        await mount(
+            <ImportWizardWithStore
+                inspectAnswers={[{ error: failure, status: 500 }, { inspection: inspection([certificate]) }]}
+                onAction={(action) => actions.push(action)}
+            />,
+        );
+
+        await chooseFile(page);
+        await expect(page.getByRole('alert')).toHaveText(failure);
+        await expect.poll(() => inspectRequests(actions)).toHaveLength(1);
+
+        await page.getByLabel('File content').focus();
+        await page.getByLabel('File content').blur();
+
+        await expect.poll(() => inspectRequests(actions)).toEqual([{ file: FILE_BASE64 }, { file: FILE_BASE64 }]);
+        await expect(page.getByRole('checkbox', { name: 'intermediate-ca-r4' })).toBeChecked();
+    });
+
     test('inspects a pasted PEM, and a file chosen after it rather than the paste', async ({ mount, page }) => {
         const actions: UnknownAction[] = [];
         const pem = '-----BEGIN CERTIFICATE-----\nMIIBszCCAVmgAwIBAgIU\n-----END CERTIFICATE-----';
