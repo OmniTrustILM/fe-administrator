@@ -9,7 +9,14 @@ import {
     SortDirection,
     type ViewSlice,
 } from 'types/listViews';
-import { AttributeContentType, FilterFieldSource, ListViewFieldStatus, type Resource, type SearchFieldDataByGroupDto } from 'types/openapi';
+import {
+    AttributeContentType,
+    FilterFieldSource,
+    ListViewFieldStatus,
+    type ListViewSortRequestDto,
+    type Resource,
+    type SearchFieldDataByGroupDto,
+} from 'types/openapi';
 import type { ColumnDefinition, PickerColumn, SourcedCatalogueField } from 'types/tableColumns';
 import { resolveColumns } from './columnPicker';
 import { type ColumnSort, getColumnHeading, getColumnKey, getSortKey } from './tableColumns';
@@ -334,10 +341,12 @@ export function withWrittenStatuses(
     previous: Pick<ListViewModel, 'columns' | 'filters'>,
     written: ListViewUpdateRequestModel,
 ): ListViewUpdateRequestModel {
+    const { rebind, ...sort } = written.sort ?? {};
     return {
         ...written,
         columns: settleStatuses(written.columns, previous.columns, getColumnKey) ?? [],
         filters: settleStatuses(written.filters, previous.filters, getFilterKey),
+        sort: written.sort && (sort as ListViewSortRequestDto),
     };
 }
 
@@ -593,6 +602,17 @@ export function toUpdateRequest(
         columns: withRebind(toStorableColumns(row.columns ?? [], schema, view.columns), rebind),
         filters: withRebind(toStorableFilters(row.filters ?? [], schema.catalogue, view.filters ?? []), rebind),
         // Core refuses the whole update over an ordering it cannot apply, which a stored one becomes once its field goes.
-        sort: row.sort && canOrderBy(schema.catalogue, row.sort) ? row.sort : undefined,
+        sort: row.sort && canOrderBy(schema.catalogue, row.sort) ? withSortRebind(row.sort, view.sort) : undefined,
     };
+}
+
+/**
+ * The ordering with `rebind` set when it is not the one the view read back. Core hides a stored ordering whose attribute
+ * was replaced, and carries one sent unchanged over on its old binding, so a user choosing that same ordering again
+ * would see it vanish on every save unless the write says it is chosen now.
+ */
+function withSortRebind(sort: SearchSortModel, stored: SearchSortModel | undefined): ListViewSortRequestDto {
+    const isStored =
+        stored?.fieldSource === sort.fieldSource && stored.fieldIdentifier === sort.fieldIdentifier && stored.direction === sort.direction;
+    return isStored ? sort : { ...sort, rebind: true };
 }

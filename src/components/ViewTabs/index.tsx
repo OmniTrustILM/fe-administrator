@@ -37,6 +37,7 @@ import {
     type ViewTab as ViewTabModel,
 } from 'utils/listViews';
 import { type ColumnSort, getColumnKey } from 'utils/tableColumns';
+import HeldFiltersNotice from './HeldFiltersNotice';
 import NameViewDialog from './NameViewDialog';
 import OverflowViewsMenu from './OverflowViewsMenu';
 import ReturnedColumnsNotice from './ReturnedColumnsNotice';
@@ -266,6 +267,25 @@ export default function ViewTabs({
         const slice = sliceOf(activeView);
         return { ...slice, filters: toStorableFilters(slice.filters, catalogue, activeView.filters ?? []) };
     }, [activeView, sliceOf, standardColumns, standardSort, catalogue]);
+
+    // Held filters on a field the view has no column for, which the returned-columns notice cannot name. One the user now
+    // filters by themselves is theirs, and saving confirms it.
+    const heldFilterKeys = useMemo(() => {
+        const named = new Set([...(activeView?.columns ?? []), ...filters].map(getColumnKey));
+        return [...new Set(heldFilters.map(getColumnKey))].filter((key) => !named.has(key));
+    }, [activeView, filters, heldFilters]);
+
+    const heldFilterLabels = useMemo(() => {
+        const labels = new Map(
+            catalogue.flatMap((group) =>
+                (group.searchFieldData ?? []).map((field) => [
+                    getColumnKey({ fieldSource: group.filterFieldSource, fieldIdentifier: field.fieldIdentifier }),
+                    field.fieldLabel,
+                ]),
+            ),
+        );
+        return heldFilterKeys.map((key) => labels.get(key) ?? key);
+    }, [catalogue, heldFilterKeys]);
 
     const returned = useMemo(() => {
         const shown = new Set(columns.map(getColumnKey));
@@ -643,6 +663,18 @@ export default function ViewTabs({
         applyRef.current(slice);
     }, [confirmedSlice, returned, activeView, patchView]);
 
+    const onApplyHeldFilters = useCallback(() => {
+        if (!activeView) return;
+        const keys = new Set(heldFilterKeys);
+        patchView(activeView, {}, keys);
+        applyRef.current(withConfirmed(keys, { columns, filters, sort }));
+    }, [activeView, heldFilterKeys, patchView, withConfirmed, columns, filters, sort]);
+
+    const onRemoveHeldFilters = useCallback(() => {
+        const keys = new Set(heldFilterKeys);
+        patchActive({ filters: activeView?.filters?.filter((filter) => !keys.has(getColumnKey(filter))) });
+    }, [patchActive, activeView, heldFilterKeys]);
+
     // Withheld when every stored column is held back: Core refuses a view with no columns.
     const remainingAfterReturned = useMemo(() => {
         const keys = new Set(returned.map(getColumnKey));
@@ -818,6 +850,14 @@ export default function ViewTabs({
                 onRemove={remainingAfterReturned.length > 0 ? onRemoveReturned : undefined}
                 isBusy={isMutating}
                 dataTestId={`${dataTestId}-returned`}
+            />
+
+            <HeldFiltersNotice
+                fields={heldFilterLabels}
+                onApply={onApplyHeldFilters}
+                onRemove={onRemoveHeldFilters}
+                isBusy={isMutating}
+                dataTestId={`${dataTestId}-held-filters`}
             />
 
             {/* A view whose only missing columns are held back is described by the returned-columns notice alone. */}

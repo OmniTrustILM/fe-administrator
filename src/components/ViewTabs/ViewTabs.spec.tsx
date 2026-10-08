@@ -1685,6 +1685,62 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-notice')).toHaveCount(0);
     });
 
+    test('names a held filter on a field the view shows no column for, and applies it once the user chooses to', async ({
+        mount,
+        page,
+    }) => {
+        const view = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME')], filters: [stateFilter, replaced(retiredFilter)] });
+        await mount(strip({ views: [view], fields: withRetired }));
+
+        await expect(page.getByTestId('view-tabs-held-filters')).toContainText(
+            'Retired may be a different attribute with the same name and content type, so this view is not applying the filter on it.',
+        );
+        expect((await appliedSlice(page)).filters).toEqual([stateFilter]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+
+        await page.getByTestId('view-tabs-held-filters-apply').click();
+
+        await expect(page.getByTestId('view-tabs-held-filters')).toHaveCount(0);
+        await expect.poll(async () => (await appliedSlice(page)).filters).toEqual([stateFilter, retiredFilter]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+        expect((await lastDispatched(page, 'listViews/updateView'))?.payload).toMatchObject({
+            view: { columns: [stored('COMMON_NAME')], filters: [stateFilter, { ...retiredFilter, rebind: true }] },
+        });
+    });
+
+    test('takes a held filter on a field the view shows no column for out of the view', async ({ mount, page }) => {
+        const view = expiryWatch({ defaultView: true, columns: [stored('COMMON_NAME')], filters: [stateFilter, replaced(retiredFilter)] });
+        await mount(strip({ views: [view], fields: withRetired }));
+
+        await page.getByTestId('view-tabs-held-filters-remove').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        expect((await lastDispatched(page, 'listViews/updateView'))?.payload).toMatchObject({ view: { filters: [stateFilter] } });
+    });
+
+    test('rebinds an ordering the user chooses again on a held-back column when the view is saved', async ({ mount, page }) => {
+        const byRetired = { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', direction: 'desc' as const };
+        await mount(
+            heldBackStrip({
+                driftColumn: column('retired', 'Retired', FilterFieldSource.Custom),
+                driftSort: byRetired,
+                dropsUnshownSort: true,
+            }),
+        );
+        await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
+        await page.getByTestId('drift-columns').click();
+        await page.getByTestId('drift-sort').click();
+
+        await page.getByTestId('view-tabs-summary-save').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        expect((await lastDispatched(page, 'listViews/updateView'))?.payload).toMatchObject({
+            view: {
+                sort: { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', direction: SortDirection.Desc, rebind: true },
+            },
+        });
+    });
+
     test('keeps a held-back column when the unavailable one beside it is removed', async ({ mount, page }) => {
         const view = expiryWatch({
             defaultView: true,

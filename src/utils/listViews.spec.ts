@@ -630,6 +630,21 @@ describe('toUpdateRequest', () => {
         expect(request.filters).toEqual([{ ...retiredFilter, rebind: true }]);
     });
 
+    it('rebinds an ordering the view did not read back, and leaves the one it did as stored', () => {
+        const byRetired = { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', direction: SortDirection.Desc };
+        const catalogue = [
+            {
+                filterFieldSource: FilterFieldSource.Custom,
+                searchFieldData: [
+                    { fieldIdentifier: 'retired', fieldLabel: 'Retired', type: FilterFieldType.String, conditions: [], sortable: true },
+                ],
+            },
+        ] as SearchFieldDataByGroupDto[];
+
+        expect(toUpdateRequest(view('a', 'One'), schemaOf(catalogue), { sort: byRetired }).sort).toEqual({ ...byRetired, rebind: true });
+        expect(toUpdateRequest(view('a', 'One', { sort: byRetired }), schemaOf(catalogue)).sort).toEqual(byRetired);
+    });
+
     it('applies the patch over the stored row, so a rename keeps the columns', () => {
         const stored = view('a', 'Expiry watch');
         const renamed = toUpdateRequest(stored, schema, { name: 'Expiry' });
@@ -1001,6 +1016,13 @@ describe('withWrittenStatuses', () => {
         const written = withWrittenStatuses({ columns: [replaced] }, { name: 'One', columns: [{ ...retired, rebind: true }] });
 
         expect(written.columns).toEqual([{ ...retired, status: ListViewFieldStatus.Available }]);
+    });
+
+    it('stores no rebind flag on the ordering', () => {
+        const sort = { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', direction: SortDirection.Desc };
+        const written = withWrittenStatuses({ columns: [] }, { name: 'One', columns: [], sort: { ...sort, rebind: true } });
+
+        expect(written.sort).toEqual(sort);
     });
 
     it('matches filters by their whole condition, so another value on the same field takes no status', () => {
