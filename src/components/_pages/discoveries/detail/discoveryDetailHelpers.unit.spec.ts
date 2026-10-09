@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { DiscoveryStatus, Resource } from 'types/openapi';
+import { ConnectorInterface, DiscoveryStatus, Resource } from 'types/openapi';
 import {
     certificateNotes,
     connectorInterfaceLabel,
@@ -83,6 +83,8 @@ describe('not-processed banner', () => {
 });
 
 describe('isLiveRun', () => {
+    const v2 = { connectorInterface: { uuid: 'iface-1', code: ConnectorInterface.Discovery, version: 'v2' } };
+
     it.each<[DiscoveryStatus, boolean]>([
         [DiscoveryStatus.InProgress, true],
         [DiscoveryStatus.Processing, true],
@@ -92,7 +94,17 @@ describe('isLiveRun', () => {
         [DiscoveryStatus.Failed, false],
         [DiscoveryStatus.Cancelled, false],
     ])('a run in %s is live: %s', (status, expected) => {
-        expect(isLiveRun(status)).toBe(expected);
+        expect(isLiveRun({ status })).toBe(expected);
+        expect(isLiveRun({ ...v2, status })).toBe(expected);
+    });
+
+    it('keeps a v1 run live once Core flags it as overrunning, for as long as its Provider is still working', () => {
+        expect(isLiveRun({ status: DiscoveryStatus.Warning, connectorStatus: DiscoveryStatus.InProgress })).toBe(true);
+        expect(isLiveRun({ status: DiscoveryStatus.Warning, connectorStatus: DiscoveryStatus.Completed })).toBe(false);
+    });
+
+    it('treats a v2 Warning as the end, which Core never reopens', () => {
+        expect(isLiveRun({ ...v2, status: DiscoveryStatus.Warning, connectorStatus: DiscoveryStatus.InProgress })).toBe(false);
     });
 
     it('is not live before the run has been read', () => {

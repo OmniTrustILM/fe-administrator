@@ -657,6 +657,21 @@ describe('DiscoveryDetail', () => {
             ]);
         });
 
+        it('follows a v1 run through the overrun warning Core gives while its Provider is still working', async () => {
+            await render(buildState({ ...v1Run, status: DiscoveryStatus.InProgress, connectorStatus: DiscoveryStatus.InProgress }));
+            dispatch.mockClear();
+
+            // Past its wait limit Core marks a v1 run Warning and keeps waiting on the Provider: the run has not ended.
+            await render(buildState({ ...v1Run, status: DiscoveryStatus.Warning, connectorStatus: DiscoveryStatus.InProgress }));
+            expect(dispatched().map((action) => action?.type)).not.toContain('rules/getTriggerHistorySummary');
+
+            await tick();
+            expect(polls()).toHaveLength(1);
+
+            await render(buildState({ ...v1Run, status: DiscoveryStatus.Completed }));
+            expect(dispatched().filter((action) => action?.type === 'rules/getTriggerHistorySummary')).toHaveLength(1);
+        });
+
         it('leaves the trigger summary alone when a stopped run is cancelled, since no triggers ran', async () => {
             await render(buildState({ ...v2Run, status: DiscoveryStatus.Stopped }));
             dispatch.mockClear();

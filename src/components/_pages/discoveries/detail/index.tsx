@@ -125,18 +125,21 @@ export default function DiscoveryDetail() {
         dispatch(actions.getDiscoveryDetail({ uuid: id, poll: true }));
     }, [id, isFetching, isPolling, isMutating, dispatch]);
     const isLocked = widgetLocks.some((lock) => lock.widgetName === LockWidgetNameEnum.DiscoveryDetails);
-    usePollWhileAttended(pollDiscoveryDetails, isLiveRun(discovery?.status) && !isLocked, LIVE_RUN_POLL_INTERVAL_MS);
+    usePollWhileAttended(pollDiscoveryDetails, isLiveRun(discovery) && !isLocked, LIVE_RUN_POLL_INTERVAL_MS);
 
     // Triggers run on a run's results as it ends, so polls leave the trigger summary alone, and it is re-read once
     // when the run on screen reaches its end.
     const runUuid = discovery?.uuid;
     const runStatus = discovery?.status;
+    const runLive = isLiveRun(discovery);
     const lastSeenRun = useRef<{ uuid?: string; live: boolean }>({ live: false });
     useEffect(() => {
         const previous = lastSeenRun.current;
-        lastSeenRun.current = { uuid: runUuid, live: isLiveRun(runStatus) };
-        if (runUuid && previous.uuid === runUuid && previous.live && isTerminalRun(runStatus)) getFreshTriggerHistorySummary();
-    }, [runUuid, runStatus, getFreshTriggerHistorySummary]);
+        lastSeenRun.current = { uuid: runUuid, live: runLive };
+        if (runUuid && previous.uuid === runUuid && previous.live && !runLive && isTerminalRun(runStatus)) {
+            getFreshTriggerHistorySummary();
+        }
+    }, [runUuid, runLive, runStatus, getFreshTriggerHistorySummary]);
 
     const onDeleteConfirmed = useCallback(() => {
         if (!discovery) return;
