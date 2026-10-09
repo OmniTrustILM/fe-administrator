@@ -588,7 +588,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
                     />
                 )}
 
-                <Widget title="Add discovery" busy={isBusy}>
+                <Widget noBorder busy={isBusy}>
                     <div className="space-y-4">
                         <div>
                             <Label htmlFor="name" required>

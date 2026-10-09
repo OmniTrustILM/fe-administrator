@@ -38,7 +38,14 @@ vi.mock('components/Select', () => ({
     ),
 }));
 
-vi.mock('components/Widget', () => ({ default: ({ children }: any) => <div>{children}</div> }));
+vi.mock('components/Widget', () => ({
+    default: ({ title, noBorder, children }: any) => (
+        <div data-testid={`widget-${title || 'untitled'}`} data-no-border={noBorder ? 'true' : undefined}>
+            {title}
+            {children}
+        </div>
+    ),
+}));
 vi.mock('components/Container', () => ({ default: ({ children }: any) => <div>{children}</div> }));
 vi.mock('components/Label', () => ({ default: ({ children }: any) => <div>{children}</div> }));
 vi.mock('components/Switch', () => ({ default: () => <input type="checkbox" /> }));
@@ -255,6 +262,17 @@ describe('DiscoveryForm', () => {
             expect(request.interfaceUuid).toBeUndefined();
             expect(request.resources).toBeUndefined();
             expect(request.resourceAttributes).toBeUndefined();
+        });
+    });
+
+    describe('layout', () => {
+        it('puts the discovery fields straight into the dialog, without a second heading or frame', async () => {
+            await render(buildState({ discoveryProviders: [singleInterfaceProvider], descriptors }));
+
+            const fields = container.querySelector('[data-testid="input-name"]')?.closest('[data-testid^="widget-"]');
+            expect(fields?.getAttribute('data-testid')).toBe('widget-untitled');
+            expect(fields?.getAttribute('data-no-border')).toBe('true');
+            expect(container.textContent).not.toContain('Add discovery');
         });
     });
 
