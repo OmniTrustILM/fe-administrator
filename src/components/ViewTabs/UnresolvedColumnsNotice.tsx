@@ -8,6 +8,8 @@ type Props = Readonly<{
     unavailable: PickerColumn[];
     /** How many columns the view arrived with, so the notice can say how much of it opened. */
     storedCount: number;
+    /** How many of the stored columns are held back by a notice of their own, so they are not counted as shown. */
+    withheld?: number;
     /** Whether nothing could be rendered, so the table fell back to the platform column set. */
     fellBackToStandard: boolean;
     /** Drops the columns this table cannot show from the stored view, which is the only cure for them. */
@@ -39,6 +41,7 @@ const list = (columns: PickerColumn[]): string => {
 export default function UnresolvedColumnsNotice({
     unavailable,
     storedCount,
+    withheld = 0,
     fellBackToStandard,
     onRemove,
     onDismiss,
@@ -48,7 +51,7 @@ export default function UnresolvedColumnsNotice({
     if (unavailable.length === 0 && !fellBackToStandard) return null;
 
     const named = unavailable.length > 0 ? list(unavailable) : undefined;
-    const shown = storedCount - unavailable.length;
+    const shown = storedCount - unavailable.length - withheld;
 
     const subject = named ? `${named} cannot be shown` : "None of this view's columns can be shown";
     const message = fellBackToStandard

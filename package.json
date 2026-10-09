@@ -116,7 +116,7 @@
     "overrides": {
         "typescript": "$typescript",
         "js-yaml": "$js-yaml",
-        "shell-quote": "^1.11.0",
+        "shell-quote": "^1.12.0",
         "esbuild": "^0.28.1",
         "brace-expansion": "5.0.12",
         "ws@8": "8.21.1",

@@ -1,5 +1,6 @@
 import type { FiltersTestState } from 'ducks/test-reducers';
 import { EntityType, actions as filterActions } from 'ducks/filters';
+import { actions as pagingActions } from 'ducks/paging';
 import { useCallback, useMemo, useState } from 'react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { Link, MemoryRouter, Route, Routes } from 'react-router';
@@ -27,6 +28,8 @@ type Props = Readonly<{
     retypedFilters?: SearchFilterModel[];
     /** The views a control on the detail page replaces the list with, as a change made elsewhere meanwhile does. */
     viewsOnDetail?: ListViewModel[];
+    /** How many items the list reports, so that it can have more than one page; the rows on screen by default. */
+    totalItems?: number;
 }>;
 
 const registry = { 'property:COMMON_NAME': (row: SecretRow) => row.name };
@@ -50,6 +53,43 @@ function TypeFilters({ filters, testId }: Readonly<{ filters: SearchFilterModel[
             onClick={() => dispatch(filterActions.setCurrentFilters({ entity: EntityType.SECRET, currentFilters: filters }))}
         >
             Type filters
+        </button>
+    );
+}
+
+function TurnPage({ pageNumber, pageSize, testId }: Readonly<{ pageNumber: number; pageSize: number; testId: string }>) {
+    const dispatch = useDispatch();
+
+    return (
+        <button
+            type="button"
+            data-testid={testId}
+            onClick={() => dispatch(pagingActions.setPagination({ entity: EntityType.SECRET, pageNumber, pageSize }))}
+        >
+            Turn page
+        </button>
+    );
+}
+
+/** Lists the same entity under other filters, page and size, as the related-certificate picker does. */
+function ListAsPicker() {
+    const dispatch = useDispatch();
+    const pickerFilters = [{ fieldSource: 'property', fieldIdentifier: 'SUBJECT_TYPE', condition: 'EQUALS', value: 'picker' }];
+
+    return (
+        <button
+            type="button"
+            data-testid="list-as-picker"
+            onClick={() => {
+                dispatch(
+                    filterActions.setCurrentFilters({ entity: EntityType.SECRET, currentFilters: pickerFilters as SearchFilterModel[] }),
+                );
+                dispatch(pagingActions.setFiltersSnapshot({ entity: EntityType.SECRET, filtersSnapshot: JSON.stringify(pickerFilters) }));
+                dispatch(pagingActions.listSuccess({ entity: EntityType.SECRET, totalItems: 3 }));
+                dispatch(pagingActions.setPagination({ entity: EntityType.SECRET, pageNumber: 1, pageSize: 50 }));
+            }}
+        >
+            List as picker
         </button>
     );
 }
@@ -114,6 +154,7 @@ export default function PagedListReturnWithStore({
     typedFilters,
     retypedFilters,
     viewsOnDetail,
+    totalItems = rows.length,
 }: Props) {
     const [store] = useState(() =>
         createMockStore({
@@ -140,7 +181,7 @@ export default function PagedListReturnWithStore({
                 pagings: [
                     {
                         entity: EntityType.SECRET,
-                        paging: { totalItems: rows.length, checkedRows: [], isFetchingList: false, pageNumber: 1, pageSize: 10 },
+                        paging: { totalItems, checkedRows: [], isFetchingList: false, pageNumber: 1, pageSize: 10 },
                     },
                 ],
             },
@@ -166,6 +207,7 @@ export default function PagedListReturnWithStore({
                                     Back
                                 </Link>
                                 {viewsOnDetail && <ReplaceViews views={viewsOnDetail} />}
+                                <ListAsPicker />
                             </>
                         }
                     />
@@ -179,6 +221,7 @@ export default function PagedListReturnWithStore({
                     />
                 </Routes>
                 <TypeFilters filters={typedFilters} testId="type-filters" />
+                <TurnPage pageNumber={2} pageSize={20} testId="turn-page" />
                 {retypedFilters && <TypeFilters filters={retypedFilters} testId="retype-filters" />}
                 <SecretsFilters />
                 <div data-testid="list-requests">{JSON.stringify(requests)}</div>

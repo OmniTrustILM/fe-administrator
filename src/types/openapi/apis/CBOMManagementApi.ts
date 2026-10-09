@@ -23,6 +23,7 @@ import type {
     CbomSyncSkipDto,
     CbomUploadRequestDto,
     ErrorMessageDto,
+    PaginationResponseDtoCbomContributedAssetDto,
     PaginationResponseDtoCbomDto,
     PaginationResponseDtoCbomSyncSkipDto,
     SearchFieldDataByGroupDto,
@@ -39,6 +40,11 @@ export interface DeleteCbomRequest {
 
 export interface GetCbomDetailRequest {
     uuid: string;
+}
+
+export interface ListCbomCryptographicAssetsRequest {
+    uuid: string;
+    searchRequestDto: SearchRequestDto;
 }
 
 export interface ListCbomSyncSkipsRequest {
@@ -156,6 +162,40 @@ export class CBOMManagementApi extends BaseAPI {
             {
                 url: '/v1/cboms/syncSkips/search',
                 method: 'GET',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * One page of the inventory assets this CBOM record contributed. Each row is the inventory row, with the asset\'s totals across all CBOMs, plus the `bomRefs` that link it to this document\'s components. The list follows the record\'s `assetSyncState` and empties once a later version of the document has synced its assets. `filters`, `sort` and `columns` take the fields of `GET /v1/cryptoAssets/search` and behave as on `POST /v1/cryptoAssets`.
+     * List the cryptographic assets a CBOM contributed to the inventory
+     */
+    listCbomCryptographicAssets({
+        uuid,
+        searchRequestDto,
+    }: ListCbomCryptographicAssetsRequest): Observable<PaginationResponseDtoCbomContributedAssetDto>;
+    listCbomCryptographicAssets(
+        { uuid, searchRequestDto }: ListCbomCryptographicAssetsRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<PaginationResponseDtoCbomContributedAssetDto>>;
+    listCbomCryptographicAssets(
+        { uuid, searchRequestDto }: ListCbomCryptographicAssetsRequest,
+        opts?: OperationOpts,
+    ): Observable<PaginationResponseDtoCbomContributedAssetDto | AjaxResponse<PaginationResponseDtoCbomContributedAssetDto>> {
+        throwIfNullOrUndefined(uuid, 'uuid', 'listCbomCryptographicAssets');
+        throwIfNullOrUndefined(searchRequestDto, 'searchRequestDto', 'listCbomCryptographicAssets');
+
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        return this.request<PaginationResponseDtoCbomContributedAssetDto>(
+            {
+                url: '/v1/cboms/{uuid}/assets'.replace('{uuid}', encodeURI(uuid)),
+                method: 'POST',
+                headers,
+                body: searchRequestDto,
             },
             opts?.responseOpts,
         );

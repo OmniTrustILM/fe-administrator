@@ -1,20 +1,22 @@
 name: Dispatch Sonar
 on:
   workflow_run:
-    workflows: [ "Check PR" ]
+    workflows: [ "Tests" ]
     types: [ completed ]
 
 permissions:
   actions: write # download artifact + create workflow dispatch
   contents: read
+  pull-requests: read # resolve the PR named in the artifact
 
 jobs:
   dispatch:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
+    # Tests also runs on main, which sonar-main in tests.yml analyses itself.
+    if: ${{ github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request' }}
     runs-on: ubuntu-latest
     steps:
       - name: Download PR context artifact from upstream run
-        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
           name: pr-context
           path: pr_context
@@ -22,41 +24,92 @@ jobs:
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract inputs
+      # A pull_request run executes the workflow file from the PR head, so a fork
+      # authors the job that writes this artifact and controls every value in it.
+      # Only the PR number is taken from here; it is never printed, since Actions
+      # interprets ::command:: sequences in step output.
+      - name: Read the PR number from the artifact
         id: ctx
         run: |
-          cat pr_context/pr-context.json
-          {
-            echo "pr_number=$(jq -r '.pr_number' pr_context/pr-context.json)"
-            echo "head_sha=$(jq -r '.head_sha' pr_context/pr-context.json)"
-            echo "head_repo=$(jq -r '.head_repo' pr_context/pr-context.json)"
-            echo "head_branch=$(jq -r '.head_branch' pr_context/pr-context.json)"
-            echo "base_ref=$(jq -r '.base_ref' pr_context/pr-context.json)"
-          } >> "$GITHUB_OUTPUT"
+          pr_number="$(jq -r '.pr_number' pr_context/pr-context.json)"
+          if ! [[ "$pr_number" =~ ^[0-9]+$ ]]; then
+            echo "::error::pr_number in pr-context.json is not a number"
+            exit 1
+          fi
+          echo "pr_number=$pr_number" >> "$GITHUB_OUTPUT"
 
-      # The PR context comes from a fork, so every value is read from the
-      # environment. Interpolating it into the script body would let a branch
-      # name containing a quote execute arbitrary code with this token.
-      - name: Dispatch Sonar workflow with inputs
+      # sonar.yml keys its concurrency group on the PR number, so a number the
+      # fork chose could cancel another PR's analysis. The PR is bound to the
+      # run that asked for the analysis, whose payload is GitHub's rather than
+      # the fork's, and every dispatch input comes from the API response.
+      - name: Resolve the PR and bind it to this run
+        id: pr
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         env:
           PR_NUMBER: ${{ steps.ctx.outputs.pr_number }}
-          HEAD_SHA: ${{ steps.ctx.outputs.head_sha }}
-          HEAD_REPO: ${{ steps.ctx.outputs.head_repo }}
-          HEAD_BRANCH: ${{ steps.ctx.outputs.head_branch }}
-          BASE_REF: ${{ steps.ctx.outputs.base_ref }}
+        with:
+          script: |
+            const { data: pr } = await github.rest.pulls.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: Number(process.env.PR_NUMBER)
+            });
+
+            if (!pr.head.repo) {
+              core.setFailed(`PR #${pr.number} has no head repository; the fork was probably deleted.`);
+              return;
+            }
+
+            const run = context.payload.workflow_run;
+            if (pr.head.repo.full_name !== run.head_repository.full_name ||
+                pr.head.ref !== run.head_branch) {
+              core.setFailed(
+                `PR #${pr.number} is ${pr.head.repo.full_name}@${pr.head.ref}, but this run is ` +
+                `${run.head_repository.full_name}@${run.head_branch}; refusing to analyse another PR.`
+              );
+              return;
+            }
+
+            // The push that moved the branch starts its own Tests run, which
+            // dispatches the analysis of the new head.
+            if (pr.head.sha !== run.head_sha) {
+              core.notice(`PR #${pr.number} has moved from ${run.head_sha} to ${pr.head.sha}; a newer run will analyse it.`);
+              core.setOutput('dispatch', 'false');
+              return;
+            }
+
+            core.setOutput('dispatch', 'true');
+            core.setOutput('pr_number', String(pr.number));
+            core.setOutput('head_sha', pr.head.sha);
+            core.setOutput('head_repo', pr.head.repo.full_name);
+            core.setOutput('head_branch', pr.head.ref);
+            core.setOutput('base_ref', pr.base.ref);
+
+      # Values are passed through env and read via process.env, so no PR data
+      # is interpolated into the script body. The run id comes from the event.
+      - name: Dispatch Sonar workflow with inputs
+        if: steps.pr.outputs.dispatch == 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          PR_NUMBER: ${{ steps.pr.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.pr.outputs.head_sha }}
+          HEAD_REPO: ${{ steps.pr.outputs.head_repo }}
+          HEAD_BRANCH: ${{ steps.pr.outputs.head_branch }}
+          BASE_REF: ${{ steps.pr.outputs.base_ref }}
+          RUN_ID: ${{ github.event.workflow_run.id }}
         with:
           script: |
             await github.rest.actions.createWorkflowDispatch({
               owner: context.repo.owner,
               repo: context.repo.repo,
               workflow_id: 'sonar.yml',
-              ref: process.env.BASE_REF,
+              ref: context.payload.repository.default_branch,
               inputs: {
-                pr_number: process.env.PR_NUMBER,
-                head_sha: process.env.HEAD_SHA,
-                head_repo: process.env.HEAD_REPO,
+                pr_number:   process.env.PR_NUMBER,
+                head_sha:    process.env.HEAD_SHA,
+                head_repo:   process.env.HEAD_REPO,
                 head_branch: process.env.HEAD_BRANCH,
-                base_ref: process.env.BASE_REF
+                base_ref:    process.env.BASE_REF,
+                run_id:      process.env.RUN_ID
               }
             });

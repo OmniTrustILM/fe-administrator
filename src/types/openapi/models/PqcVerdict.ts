@@ -12,7 +12,7 @@
  */
 
 /**
- *
+ * Post-quantum readiness verdict computed by the platform rule set
  * @export
  * @enum {string}
  */

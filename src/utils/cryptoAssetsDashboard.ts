@@ -12,6 +12,7 @@ export const CRYPTO_ASSET_FILTER_FIELDS = {
     type: 'CBOM_ASSET_TYPE',
     pqcVerdict: 'CBOM_ASSET_PQC_VERDICT',
     algorithmFamily: 'CBOM_ASSET_ALGORITHM_FAMILY',
+    sourceCbom: 'CBOM_ASSET_SOURCE_CBOM',
 } as const;
 
 // Verdict series wear the status hexes the certificate charts already use, so a segment matches its badge and

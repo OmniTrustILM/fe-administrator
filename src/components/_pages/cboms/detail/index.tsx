@@ -17,7 +17,9 @@ import TabLayout from 'components/Layout/TabLayout';
 import Widget from 'components/Widget';
 import { EntityType } from 'ducks/filters';
 import { actions, selectors } from 'ducks/cbom';
+import { CbomAssetName, CbomInventoryStatus, useCbomInventory } from './CbomInventoryLinks';
 import type { DashboardDict } from 'types/statisticsDashboard';
+import type { ComponentAssetLink } from 'utils/cbom-asset-links';
 import { dateFormatter } from 'utils/dateUtil';
 import { getDonutChartColorsByRandomNumberOfOptions } from 'utils/dashboard';
 
@@ -115,10 +117,12 @@ const getPathValue = (obj: unknown, path: string): unknown => {
 };
 
 type HandleAssetDetailClick = (assetName: string, assetData: unknown) => void;
+type ResolveAssetLink = (component: CbomComponent) => ComponentAssetLink | undefined;
 
-const buildComponentRows = (
+export const buildComponentRows = (
     components: CbomComponent[],
     handleAssetDetailClick: HandleAssetDetailClick,
+    resolveAssetLink: ResolveAssetLink,
     view: 'assets' | 'overview',
 ): TableDataRow[] =>
     components.map((c, i: number) => {
@@ -157,13 +161,14 @@ const buildComponentRows = (
             (value): value is string => typeof value === 'string' && value.trim().length > 0,
         );
         const primitive = primitiveValues.length > 0 ? primitiveValues.join(', ') : '-';
+        const nameColumn = <CbomAssetName key="name" name={toCellValue(assetName)} link={resolveAssetLink(c)} />;
 
         return {
             id: c?.bomRef ?? c?.['bom-ref'] ?? (view === 'overview' ? `overview-${i}` : i),
             columns:
                 view === 'overview'
-                    ? [assetName, assetType, primitive, locationsColumn, actionColumn]
-                    : [assetName, locationsColumn, assetType, primitive, actionColumn],
+                    ? [nameColumn, assetType, primitive, locationsColumn, actionColumn]
+                    : [nameColumn, locationsColumn, assetType, primitive, actionColumn],
         };
     });
 
@@ -203,6 +208,8 @@ export default function CbomDetail() {
         if (!id) return;
         dispatch(actions.listCbomVersions({ uuid: id }));
     }, [dispatch, id]);
+
+    const { state: inventoryState, reload: reloadInventory, resolveLink: resolveAssetLink } = useCbomInventory(detail);
 
     const components = useMemo(() => {
         const content = detail?.content;
@@ -507,8 +514,8 @@ export default function CbomDetail() {
     );
 
     const overviewComponentRows: TableDataRow[] = useMemo(
-        () => buildComponentRows(cryptographicComponents, handleAssetDetailClick, 'overview'),
-        [cryptographicComponents, handleAssetDetailClick],
+        () => buildComponentRows(cryptographicComponents, handleAssetDetailClick, resolveAssetLink, 'overview'),
+        [cryptographicComponents, handleAssetDetailClick, resolveAssetLink],
     );
 
     const assetTypeOptions = useMemo(() => {
@@ -577,8 +584,8 @@ export default function CbomDetail() {
     }, []);
 
     const componentRows: TableDataRow[] = useMemo(
-        () => buildComponentRows(filteredComponents, handleAssetDetailClick, 'assets'),
-        [filteredComponents, handleAssetDetailClick],
+        () => buildComponentRows(filteredComponents, handleAssetDetailClick, resolveAssetLink, 'assets'),
+        [filteredComponents, handleAssetDetailClick, resolveAssetLink],
     );
 
     useEffect(() => {
@@ -615,6 +622,8 @@ export default function CbomDetail() {
     if (isFetching) {
         return <DetailPageSkeleton layout="tabs" tabCount={3} />;
     }
+
+    const inventoryStatus = <CbomInventoryStatus state={inventoryState} onRetry={reloadInventory} />;
 
     const tabSwitchLoadingContent = (
         <Container>
@@ -814,11 +823,14 @@ export default function CbomDetail() {
                                             {showNonCbomAssetsNotice ? (
                                                 <NonCbomNotice />
                                             ) : (
-                                                <CustomTable
-                                                    headers={overviewComponentHeaders}
-                                                    data={overviewComponentRows}
-                                                    hasPagination
-                                                />
+                                                <>
+                                                    {inventoryStatus}
+                                                    <CustomTable
+                                                        headers={overviewComponentHeaders}
+                                                        data={overviewComponentRows}
+                                                        hasPagination
+                                                    />
+                                                </>
                                             )}
                                         </Widget>
                                     </div>
@@ -837,6 +849,7 @@ export default function CbomDetail() {
                                             <NonCbomNotice />
                                         ) : (
                                             <>
+                                                {inventoryStatus}
                                                 <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
                                                     <div className="md:col-span-2">
                                                         <TextInput

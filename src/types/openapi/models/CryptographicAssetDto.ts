@@ -49,7 +49,7 @@ export interface CryptographicAssetDto {
      */
     sourceCbomCount: number;
     /**
-     * Total number of occurrence evidence entries recorded across all source CBOMs
+     * Number of occurrences of the asset, summed over its source CBOMs. A source that recorded where it found the asset contributes one occurrence per evidence.occurrences entry, counted in full, including entries beyond the cap on the detail\'s per-source evidence list; a source that recorded no location counts as one occurrence, the report itself. Never lower than sourceCbomCount, and 0 only when sourceCbomCount is 0. Related crypto material with no digest, value or identifier is keyed on its occurrence entries (location, line and offset), so such a row stands for one set of entries and its occurrences count how often sources reported them, not how many keys or locations exist
      * @type {number}
      * @memberof CryptographicAssetDto
      */

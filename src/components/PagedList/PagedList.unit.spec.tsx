@@ -401,6 +401,14 @@ describe('PagedList unit coverage', () => {
         expect(container.querySelector('[data-testid^="widget-btn-"]')).toBeNull();
     });
 
+    it('renders the notice above the table', async () => {
+        await renderPagedList({ notice: <p data-testid="notice">Some runs are not listed</p> });
+
+        const notice = container.querySelector('[data-testid="notice"]') as HTMLElement;
+        expect(notice.textContent).toBe('Some runs are not listed');
+        expect(notice.nextElementSibling?.getAttribute('data-testid')).toBe('table');
+    });
+
     it.each([
         ['pagination', 'table-pagination-disabled'],
         ['selection', 'table-selection-disabled'],

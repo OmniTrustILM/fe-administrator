@@ -126,13 +126,17 @@ export type FiltersTestState = {
             isFetchingFilters: boolean;
             hasLoadedFilters: boolean;
             hasFailedFilters?: boolean;
-            handedIn?: { source: 'drill-down'; scope: string } | { source: 'return'; position?: { viewId: string; isDrillDown: boolean } };
+            handedIn?:
+                | { source: 'drill-down'; scope: string }
+                | { source: 'return'; position?: { viewId: string; isDrillDown: boolean }; sort?: unknown; paging?: unknown };
             viewPosition?: { viewId: string; isDrillDown: boolean };
             leftList?: {
                 path: string;
                 scope: string;
                 filters: unknown[];
                 position?: { viewId: string; isDrillDown: boolean };
+                sort?: unknown;
+                paging?: unknown;
                 hasGoneAway: boolean;
             };
         };
@@ -156,6 +160,8 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
             position?: { viewId: string; isDrillDown: boolean };
             path?: string;
             scope?: string;
+            sort?: unknown;
+            paging?: unknown;
         };
     };
     if (a.type === 'filters/getAvailableFilters') {
@@ -241,6 +247,8 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
                 scope: (payload.scope ?? '').replace(/(.)\/+$/, '$1'),
                 filters: filter.currentFilters,
                 position: filter.viewPosition,
+                sort: payload.sort,
+                paging: payload.paging,
                 hasGoneAway: false,
             },
         }));
@@ -275,7 +283,7 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
                 ...filter,
                 leftList: undefined,
                 currentFilters: left.filters,
-                handedIn: { source: 'return', position: left.position },
+                handedIn: { source: 'return', position: left.position, sort: left.sort, paging: left.paging },
             };
         });
     }
@@ -554,11 +562,15 @@ export type CryptoAssetsTestState = {
     assetDetailErrorStatusCode?: number;
     isFetchingList: boolean;
     isFetchingDetail: boolean;
+    pqcExplanation?: unknown;
+    pqcExplanationLock?: unknown;
+    isFetchingPqcExplanation: boolean;
 };
 
 const cryptoAssetsTestInitialState: CryptoAssetsTestState = {
     isFetchingList: false,
     isFetchingDetail: false,
+    isFetchingPqcExplanation: false,
 };
 
 function cryptoAssetsTestReducer(state: CryptoAssetsTestState | undefined, _action: UnknownAction): CryptoAssetsTestState {
@@ -760,6 +772,14 @@ function pagingsTestReducer(state: PagingsTestState = pagingsTestInitialState, a
         }));
     if (a.type === 'pagings/setFiltersSnapshot')
         return updatePaging(state, data.entity, (p) => ({ ...p, filtersSnapshot: data.filtersSnapshot }));
+    if (a.type === 'pagings/restorePaging')
+        return updatePaging(state, data.entity, (p) => ({
+            ...p,
+            pageNumber: data.pageNumber ?? p.pageNumber,
+            pageSize: data.pageSize ?? p.pageSize,
+            totalItems: data.totalItems ?? p.totalItems,
+            filtersSnapshot: data.filtersSnapshot,
+        }));
     if (a.type === 'pagings/resetPaging')
         return updatePaging(state, data.entity, (p) => ({
             ...p,
@@ -1444,8 +1464,10 @@ export type ListViewsTestState = {
             isStale?: boolean;
             createdUuid?: string;
             rollback?: ListViewDto[];
+            confirming?: string[];
         }
     >;
+    dormantFields?: Record<string, string[]>;
     error?: string;
     dispatched: Array<{ type: string; payload?: unknown }>;
 };
@@ -1467,6 +1489,21 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
 
     const resource = a.payload?.resource;
     if (!resource) return recorded;
+
+    const keys = (a.payload as { keys?: string[] }).keys ?? [];
+    const dormant = recorded.dormantFields?.[resource] ?? [];
+
+    if (a.type === 'listViews/markFieldsDormant') {
+        const marked = { ...recorded, dormantFields: { ...recorded.dormantFields, [resource]: [...new Set([...dormant, ...keys])] } };
+        const held = recorded.byResource[resource];
+        if (!held?.confirming) return marked;
+        const confirming = held.confirming.filter((key) => !keys.includes(key));
+        return { ...marked, byResource: { ...recorded.byResource, [resource]: { ...held, confirming } } };
+    }
+
+    if (a.type === 'listViews/releaseDormantFields') {
+        return { ...recorded, dormantFields: { ...recorded.dormantFields, [resource]: dormant.filter((key) => !keys.includes(key)) } };
+    }
 
     const view = a.payload?.view;
     const entry = recorded.byResource[resource] ?? { views: [], isFetching: false, hasLoaded: false, isMutating: false };
@@ -1523,6 +1560,39 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
 
     if (a.type === 'listViews/deleteViewFailure') {
         return withEntry({ isMutating: false, views: entry.rollback ?? entry.views, rollback: undefined });
+    }
+
+    // An update is applied optimistically and held in flight until a test answers it, as the real reducer does, and
+    // releases the dormant fields it confirms only on success.
+    if (a.type === 'listViews/updateView' && uuid && view) {
+        const updated = withEntry({
+            isMutating: true,
+            rollback: entry.views,
+            confirming: (a.payload as { confirms?: string[] }).confirms,
+            views: entry.views.map((each) => (each.uuid === uuid ? ({ ...each, ...view } as ListViewDto) : each)),
+        });
+        return { ...updated, error: undefined };
+    }
+
+    if (a.type === 'listViews/updateViewSuccess' && view) {
+        const confirmed = entry.confirming ?? [];
+        const saved = withEntry({
+            isMutating: false,
+            rollback: undefined,
+            confirming: undefined,
+            views: entry.views.map((each) => (each.uuid === view.uuid ? (view as ListViewDto) : each)),
+        });
+        return { ...saved, dormantFields: { ...saved.dormantFields, [resource]: dormant.filter((key) => !confirmed.includes(key)) } };
+    }
+
+    // The real slice keeps one error for every resource, so a failed read of another resource sets it too.
+    if (a.type === 'listViews/listViewsFailure') {
+        return { ...withEntry({ isFetching: false, hasLoaded: true }), error: (a.payload as { error?: string }).error };
+    }
+
+    if (a.type === 'listViews/updateViewFailure') {
+        const failed = withEntry({ isMutating: false, views: entry.rollback ?? entry.views, rollback: undefined, confirming: undefined });
+        return { ...failed, error: (a.payload as { error?: string }).error };
     }
 
     return recorded;

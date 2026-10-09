@@ -1,8 +1,10 @@
+import { isAnyOf } from '@reduxjs/toolkit';
 import type { AppEpic } from 'ducks';
 import { concat, of } from 'rxjs';
-import { catchError, filter, mergeMap, switchMap } from 'rxjs/operators';
-import { LockWidgetNameEnum } from 'types/user-interface';
-import { extractError } from 'utils/net';
+import { AjaxError } from 'rxjs/ajax';
+import { catchError, filter, map, mergeMap, switchMap, takeUntil } from 'rxjs/operators';
+import { LockTypeEnum, LockWidgetNameEnum, type WidgetLockErrorModel } from 'types/user-interface';
+import { extractError, getLockWidgetObject } from 'utils/net';
 import { slice } from './crypto-assets';
 import { EntityType } from './filters';
 import { actions as pagingActions } from './paging';
@@ -45,12 +47,15 @@ const listCryptoAssets: AppEpic = (action$, state, deps) => {
     );
 };
 
+// Leaving the page cancels a request still in flight, so nothing lands in the state the page has just cleared.
+const leavingThePage = (action$: Parameters<AppEpic>[0]) => action$.pipe(filter(slice.actions.clearCryptoAssetDetail.match));
+
 const getCryptoAssetDetail: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.getCryptoAssetDetail.match),
         switchMap((action) =>
             deps.apiClients.cryptographicAssets.getCryptographicAsset({ uuid: action.payload.uuid }).pipe(
-                mergeMap((detail) => of(slice.actions.getCryptoAssetDetailSuccess({ detail }))),
+                map((detail) => slice.actions.getCryptoAssetDetailSuccess({ detail })),
                 // No widget lock: the request clears the asset, so the page's own error card is what renders.
                 catchError((err) =>
                     of(
@@ -60,11 +65,38 @@ const getCryptoAssetDetail: AppEpic = (action$, state, deps) => {
                         }),
                     ),
                 ),
+                takeUntil(leavingThePage(action$)),
             ),
         ),
     );
 };
 
-const epics = [listCryptoAssets, getCryptoAssetDetail];
+const UNEXPLAINED_LOCK: WidgetLockErrorModel = {
+    lockTitle: 'Explanation unavailable',
+    lockText: 'The PQC verdict explanation could not be loaded',
+    lockType: LockTypeEnum.NETWORK,
+};
+
+// A reload of the detail cancels an explanation in flight as well: the reload resets it, and the page asks again.
+const getCryptoAssetPqcExplanation: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.getCryptoAssetPqcExplanation.match),
+        switchMap((action) =>
+            deps.apiClients.cryptographicAssets.getCryptographicAssetPqcExplanation({ uuid: action.payload.uuid }).pipe(
+                map((explanation) => slice.actions.getCryptoAssetPqcExplanationSuccess({ explanation })),
+                catchError((err) =>
+                    of(
+                        slice.actions.getCryptoAssetPqcExplanationFailure({
+                            lock: err instanceof AjaxError ? getLockWidgetObject(err) : UNEXPLAINED_LOCK,
+                        }),
+                    ),
+                ),
+                takeUntil(action$.pipe(filter(isAnyOf(slice.actions.getCryptoAssetDetail, slice.actions.clearCryptoAssetDetail)))),
+            ),
+        ),
+    );
+};
+
+const epics = [listCryptoAssets, getCryptoAssetDetail, getCryptoAssetPqcExplanation];
 
 export default epics;

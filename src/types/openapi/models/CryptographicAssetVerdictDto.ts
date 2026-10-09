@@ -11,17 +11,13 @@
  * Do not edit the class manually.
  */
 
+import type { PqcReferencedAssetDto } from './';
+
 /**
  * @export
  * @interface CryptographicAssetVerdictDto
  */
 export interface CryptographicAssetVerdictDto {
-    /**
-     * Version of the platform rule set that produced the verdict
-     * @type {number}
-     * @memberof CryptographicAssetVerdictDto
-     */
-    ruleSetVersion: number;
     /**
      * The rule that decided the verdict; absent when no rule matched and the verdict is the rule set\'s default
      * @type {string}
@@ -35,11 +31,17 @@ export interface CryptographicAssetVerdictDto {
      */
     reason?: string;
     /**
-     * Values of the asset fields the deciding rule evaluated, recorded at decision time and as stored, so assetType may be unroutable for an asset served with no type
+     * Values of the asset fields the deciding rule evaluated, recorded at decision time and as stored, so assetType may be unroutable for an asset served with no type. Values are strings, numbers, booleans or lists of strings, never nested objects
      * @type {{ [key: string]: any; }}
      * @memberof CryptographicAssetVerdictDto
      */
     evaluatedFields?: { [key: string]: any };
+    /**
+     * The inventory asset whose own verdict decided this one. Present only when the deciding rule carried a verdict over from an asset this one refers to; absent when the asset\'s own properties decided, or when the reference could not be resolved
+     * @type {PqcReferencedAssetDto}
+     * @memberof CryptographicAssetVerdictDto
+     */
+    referencedAsset?: PqcReferencedAssetDto;
     /**
      * When the current verdict value was decided
      * @type {string}

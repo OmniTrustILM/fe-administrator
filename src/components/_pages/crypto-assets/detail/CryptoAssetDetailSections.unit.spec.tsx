@@ -1,24 +1,58 @@
 import { act, type ReactNode } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter } from 'react-router';
-import type { CryptographicAssetDetailDto, CryptographicAssetSourceDto } from 'types/openapi';
-import { CryptographicAssetType, PqcVerdict } from 'types/openapi';
+import type { PlatformEnumMap } from 'types/enums';
+import type {
+    CryptographicAssetDetailDto,
+    CryptographicAssetPqcExplanationDto,
+    CryptographicAssetSourceDto,
+    PqcExplanationStepDto,
+    PqcReferencedAssetDto,
+} from 'types/openapi';
+import { CryptographicAssetType, PqcExplanationStepOutcome, PqcVerdict } from 'types/openapi';
+import { dateFormatter } from 'utils/dateUtil';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
 import {
+    CryptoAssetEvaluatedProperties,
     CryptoAssetIdentity,
     CryptoAssetPayloads,
+    CryptoAssetPqcExplanation,
     CryptoAssetSources,
-    CryptoAssetSummary,
     CryptoAssetVerdict,
 } from './CryptoAssetDetailSections';
 
 setupReactActEnvironment();
 
+// The shared mock renders rows only; the header's info slot is where the outcome descriptions live.
 vi.mock('components/CustomTable', async () => {
     const { customTableMockModule } = await import('../../test-utils/mockModules');
-    return customTableMockModule();
+    const Rows = customTableMockModule().default;
+    return {
+        default: (props: { headers?: { id: string; info?: ReactNode }[]; data?: never[] }) => (
+            <>
+                {props.headers?.map((header) => (
+                    <span key={header.id}>{header.info}</span>
+                ))}
+                <Rows data={props.data} />
+            </>
+        ),
+    };
 });
+vi.mock('components/EnumDescription', () => ({ EnumColumnDescription: () => <span data-testid="outcome-descriptions" /> }));
+// Both open on a pointer gesture; rendered inline, so what they would show can be read off the row.
+vi.mock('components/Toggletip', () => ({
+    default: ({ content, ariaLabel }: { content: ReactNode; ariaLabel: string }) => (
+        <div data-testid="toggletip" data-label={ariaLabel}>
+            {content}
+        </div>
+    ),
+}));
+vi.mock('components/Tooltip', () => ({
+    default: ({ content, children }: { content: string; children: ReactNode }) => <span data-tooltip={content}>{children}</span>,
+}));
+const copyToClipboard = vi.fn();
+vi.mock('utils/common-hooks', () => ({ useCopyToClipboard: () => copyToClipboard }));
 vi.mock('components/JsonViewer', () => ({ default: ({ value }: { value: string }) => <pre data-testid="json-viewer">{value}</pre> }));
 // Clickable, because picking another source is this section's one interaction: each option is a button that hands
 // its value back the way Select does, plus one that clears the selection, which Select's onChange also allows.
@@ -69,7 +103,6 @@ const detail = (overrides: Partial<CryptographicAssetDetailDto> = {}): Cryptogra
     occurrenceCount: 1321,
     quarantined: false,
     verdict: {
-        ruleSetVersion: 4,
         ruleId: 'CLASSICAL-SHOR',
         reason: 'Security rests on factorisation or a discrete logarithm',
         evaluatedFields: { algorithmFamily: 'RSA', parameterSet: '2048' },
@@ -83,6 +116,57 @@ const detail = (overrides: Partial<CryptographicAssetDetailDto> = {}): Cryptogra
         { oid: '1.2.840.113549.1.1.11', refuted: false },
         { oid: '2.16.840.1.101.3.4.2.1', refuted: true },
     ],
+    ...overrides,
+});
+
+const enumMap = (labels: Record<string, string>) =>
+    Object.fromEntries(Object.entries(labels).map(([code, label]) => [code, { code, label }])) as PlatformEnumMap;
+
+const enums = {
+    assetType: enumMap({ algorithm: 'Algorithm', certificate: 'Certificate', 'related-crypto-material': 'Related crypto material' }),
+    verdict: enumMap({ ready: 'PQC ready', notReady: 'Not PQC ready', unknown: 'Unknown' }),
+    outcome: enumMap({ notMatched: 'Not matched', decided: 'Decided', notReached: 'Not reached', resolved: 'Resolved', failed: 'Failed' }),
+};
+
+const visibleKey: PqcReferencedAssetDto = {
+    uuid: 'key-1',
+    visible: true,
+    name: 'RSA-2048 key',
+    type: CryptographicAssetType.RelatedCryptoMaterial,
+};
+const hiddenKey: PqcReferencedAssetDto = { uuid: 'key-2', visible: false };
+
+const step = (
+    ruleId: string,
+    outcome: PqcExplanationStepOutcome,
+    overrides: Partial<PqcExplanationStepDto> = {},
+): PqcExplanationStepDto => ({
+    ruleId,
+    title: `Title of ${ruleId}`,
+    outcome,
+    message: `Message of ${ruleId}`,
+    ...overrides,
+});
+
+const explanation = (overrides: Partial<CryptographicAssetPqcExplanationDto> = {}): CryptographicAssetPqcExplanationDto => ({
+    uuid: 'asset-1',
+    verdict: PqcVerdict.NotReady,
+    ruleId: 'CLASSICAL-SHOR',
+    reason: 'Security rests on factorisation or a discrete logarithm',
+    inputs: { assetType: 'algorithm', algorithmFamily: 'RSA', parameterSet: '2048' },
+    steps: [
+        step('PQC-STANDARDIZED', PqcExplanationStepOutcome.NotMatched, { evaluatedFields: { algorithmFamily: 'RSA' } }),
+        step('CLASSICAL-SHOR', PqcExplanationStepOutcome.Decided, {
+            verdict: PqcVerdict.NotReady,
+            evaluatedFields: { algorithmFamily: 'RSA', parameterSet: '2048' },
+        }),
+        step('SYMMETRIC-READY', PqcExplanationStepOutcome.NotReached),
+    ],
+    matchesStored: true,
+    storedVerdict: PqcVerdict.NotReady,
+    storedRuleId: 'CLASSICAL-SHOR',
+    storedEvaluatedAt: '2026-09-09T06:00:14Z',
+    explainedAt: '2026-10-01T08:00:00Z',
     ...overrides,
 });
 
@@ -120,42 +204,25 @@ describe('crypto asset detail sections', () => {
         });
     };
 
-    describe('summary', () => {
-        test('states the type, the verdict and how many CBOMs claim the asset', async () => {
-            await render(<CryptoAssetSummary detail={detail()} typeLabel="Algorithm" verdictLabel="Not PQC ready" />);
+    describe('identity', () => {
+        const renderIdentity = (overrides: Partial<CryptographicAssetDetailDto> = {}) =>
+            render(<CryptoAssetIdentity detail={detail(overrides)} typeLabel="Algorithm" />);
 
-            const summary = text('[data-testid="crypto-asset-summary"]');
-            expect(summary).toContain('Algorithm');
-            expect(summary).toContain('Not PQC ready');
-            // The name heads the page, and repeating it here put it twice within one screen height.
-            expect(summary).not.toContain('RSA-2048');
-            expect(text('[data-testid="crypto-asset-claims"]')).toBe(`Claimed by 2 CBOMs · ${(1321).toLocaleString()} occurrences`);
+        test('opens on the asset type, ahead of the normalized fields', async () => {
+            await renderIdentity();
+
+            expect(all('[data-testid^="row-"]')[0].textContent).toBe('Asset typeAlgorithm');
             expect(one('[data-testid="crypto-asset-quarantined-badge"]')).toBeNull();
         });
 
-        // toFiniteNumber is what the list helper reads these two counts through, so the detail reads them the same way.
-        test('a count the API leaves out renders as zero rather than blanking the page', async () => {
-            await render(
-                <CryptoAssetSummary
-                    detail={detail({ sourceCbomCount: null as never, occurrenceCount: undefined as never })}
-                    typeLabel="Algorithm"
-                    verdictLabel="Not PQC ready"
-                />,
-            );
+        test('a quarantined asset is flagged beside its type', async () => {
+            await renderIdentity({ quarantined: true });
 
-            expect(text('[data-testid="crypto-asset-claims"]')).toBe('Claimed by 0 CBOMs · 0 occurrences');
+            expect(text('[data-testid="row-assetType"] [data-testid="crypto-asset-quarantined-badge"]')).toBe('Quarantined');
         });
 
-        test('a quarantined asset is flagged in the header', async () => {
-            await render(<CryptoAssetSummary detail={detail({ quarantined: true })} typeLabel="Algorithm" verdictLabel="Not PQC ready" />);
-
-            expect(text('[data-testid="crypto-asset-quarantined-badge"]')).toBe('Quarantined');
-        });
-    });
-
-    describe('identity', () => {
         test('normalized fields Core did not derive render as a dash rather than disappearing', async () => {
-            await render(<CryptoAssetIdentity detail={detail()} />);
+            await renderIdentity();
 
             expect(text('[data-testid="row-algorithmFamily"]')).toBe('Algorithm familyRSA');
             expect(text('[data-testid="row-curve"]')).toBe('Elliptic curve-');
@@ -163,7 +230,7 @@ describe('crypto asset detail sections', () => {
 
         // A table cell is one unwrapped line, so a value left bare is cut off at the card's edge instead.
         test('a field value and an OID both wrap rather than run out of the card', async () => {
-            await render(<CryptoAssetIdentity detail={detail()} />);
+            await renderIdentity();
 
             const value = one('[data-testid="row-algorithmFamily"] span');
             const oid = one('[data-testid="crypto-asset-oid"] span');
@@ -173,7 +240,7 @@ describe('crypto asset detail sections', () => {
         });
 
         test('a refuted OID is flagged and struck through, an accepted one is not', async () => {
-            await render(<CryptoAssetIdentity detail={detail()} />);
+            await renderIdentity();
 
             const [accepted, refuted] = all('[data-testid="crypto-asset-oid"]');
             expect(accepted.querySelector('[data-testid="crypto-asset-oid-refuted"]')).toBeNull();
@@ -183,20 +250,311 @@ describe('crypto asset detail sections', () => {
     });
 
     describe('verdict', () => {
-        test('shows the deciding rule, its reason, the fields it read and the rule-set version', async () => {
-            await render(<CryptoAssetVerdict detail={detail()} verdictLabel="Not PQC ready" />);
+        const renderVerdict = (overrides: Partial<CryptographicAssetDetailDto> = {}) =>
+            render(<CryptoAssetVerdict detail={detail(overrides)} verdictLabel="Not PQC ready" typeEnum={enums.assetType} />);
 
-            expect(text('[data-testid="row-ruleSet"]')).toBe('Rule setv4');
+        // What the rules read and when they last ran belong to the PQC readiness tab.
+        test('shows the verdict, the deciding rule, its reason and when it was decided, and nothing more', async () => {
+            await renderVerdict();
+
+            expect(all('[data-testid^="row-"]').map((row) => row.getAttribute('data-testid'))).toEqual([
+                'row-verdict',
+                'row-rule',
+                'row-reason',
+                'row-decidedAt',
+            ]);
             expect(text('[data-testid="row-rule"]')).toContain('CLASSICAL-SHOR');
             expect(text('[data-testid="row-reason"]')).toContain('Security rests on factorisation');
-            expect(text('[data-testid="row-evaluatedFields"]')).toContain('algorithmFamily = RSA');
+            expect(text('[data-testid="row-decidedAt"]')).toBe(`Decided${dateFormatter('2026-09-02T19:41:07Z')}`);
         });
 
         test('an asset the rule set has not evaluated yet says so instead of throwing on the missing block', async () => {
-            await render(<CryptoAssetVerdict detail={detail({ verdict: undefined as never })} verdictLabel="Not PQC ready" />);
+            await renderVerdict({ verdict: undefined as never });
 
             expect(text('[data-testid="crypto-asset-verdict-pending"]')).toContain('Not evaluated yet');
             expect(one('[data-testid="row-rule"]')).toBeNull();
+        });
+
+        test('a verdict carried over from a visible asset links to its details under Decided by', async () => {
+            await renderVerdict({ verdict: { ...detail().verdict, ruleId: 'CERT-SUBJECT-KEY', referencedAsset: visibleKey } });
+
+            const link = one('[data-testid="row-decidedBy"] a');
+            expect(link?.getAttribute('href')).toBe('/cryptoassets/detail/key-1');
+            expect(link?.textContent).toBe('RSA-2048 key');
+            expect(text('[data-testid="row-decidedBy"]')).toContain('Related crypto material');
+        });
+
+        test('a visible asset with no name is labelled by its uuid', async () => {
+            await renderVerdict({ verdict: { ...detail().verdict, referencedAsset: { uuid: 'key-1', visible: true } } });
+
+            expect(text('[data-testid="row-decidedBy"] a')).toBe('key-1');
+        });
+
+        test('an asset the reader cannot open is named by uuid without a link, and says why', async () => {
+            await renderVerdict({ verdict: { ...detail().verdict, referencedAsset: hiddenKey } });
+
+            expect(one('[data-testid="row-decidedBy"] a')).toBeNull();
+            expect(text('[data-testid="row-decidedBy"]')).toContain('key-2');
+            expect(text('[data-testid="row-decidedBy"]')).toContain('removed from the inventory, or your role does not grant access to it');
+        });
+    });
+
+    describe('PQC explanation', () => {
+        const renderExplanation = (overrides: Partial<CryptographicAssetPqcExplanationDto> = {}) =>
+            render(<CryptoAssetPqcExplanation explanation={explanation(overrides)} enums={enums} />);
+
+        const stepRows = () => all('[data-testid^="row-"]').filter((row) => /^row-\d+:/.test(row.getAttribute('data-testid') ?? ''));
+        const cells = (row: Element) => Array.from(row.children).map((cell) => cell.textContent);
+        const propertiesRead = (row: Element) =>
+            Array.from(row.querySelectorAll('[data-testid="toggletip"] [data-testid="pqc-field"]')).map(
+                (item) => `${item.querySelector('dt')?.textContent}: ${item.querySelector('dd')?.textContent}`,
+            );
+
+        test('lists every step in served order with its title, rule id, outcome, verdict and message', async () => {
+            await renderExplanation();
+
+            expect(stepRows().map((row) => cells(row).slice(0, 4))).toEqual([
+                ['Title of PQC-STANDARDIZEDPQC-STANDARDIZED', 'Not matched', '-', 'Message of PQC-STANDARDIZED'],
+                ['Title of CLASSICAL-SHORCLASSICAL-SHOR', 'Decided', 'Not PQC ready', 'Message of CLASSICAL-SHOR'],
+                ['Title of SYMMETRIC-READYSYMMETRIC-READY', 'Not reached', '-', 'Message of SYMMETRIC-READY'],
+            ]);
+            expect(one('[data-testid="outcome-descriptions"]')).not.toBeNull();
+        });
+
+        test('every outcome is a badge', async () => {
+            await renderExplanation();
+
+            expect(stepRows().map((row) => row.querySelector('[data-testid$="-outcome"]')?.textContent)).toEqual([
+                'Not matched',
+                'Decided',
+                'Not reached',
+            ]);
+        });
+
+        test('the properties a step read open from its info control, and a step that read none has no control', async () => {
+            await renderExplanation();
+
+            const [notMatched, decided, notReached] = stepRows();
+            expect(propertiesRead(notMatched)).toEqual(['Algorithm family: RSA']);
+            expect(propertiesRead(decided)).toEqual(['Algorithm family: RSA', 'Parameter set: 2048']);
+            expect(decided.querySelector('[data-testid="toggletip"]')?.getAttribute('data-label')).toBe(
+                'Properties read by CLASSICAL-SHOR',
+            );
+            expect(notReached.querySelector('[data-testid="toggletip"]')).toBeNull();
+        });
+
+        const isSetApart = (row: Element) =>
+            row.querySelector('[data-testid="pqc-deciding-outcome"]') !== null && row.querySelector('.font-bold') !== null;
+
+        test('only the deciding step is set apart', async () => {
+            await renderExplanation();
+
+            expect(stepRows().map(isSetApart)).toEqual([false, true, false]);
+        });
+
+        test('closes on the readiness result with its reason and time, and without a rule id of its own', async () => {
+            await renderExplanation();
+
+            const result = cells(one('[data-testid="row-result"]') as Element);
+            expect(result[0]).toBe(`PQC readiness result (${dateFormatter('2026-10-01T08:00:00Z')})`);
+            expect(result[2]).toBe('Not PQC ready');
+            expect(result[3]).toBe('Security rests on factorisation or a discrete logarithm');
+        });
+
+        test('says under the rules what fixes the rule set, what re-evaluates a stored result and that nothing re-runs one asset', async () => {
+            await renderExplanation();
+
+            const note = text('[data-testid="pqc-rule-set-note"]');
+            expect(note).toContain('fixed by the platform and cannot be configured');
+            expect(note).toContain('re-evaluated by the CryptoAssetPqcSweepTask scheduled job, hourly by default');
+            expect(note).toContain('not while the job is disabled in the Scheduler');
+            expect(note).toContain('a new CBOM, a change to the asset or to an asset it refers to, or a rule change after an upgrade');
+            expect(note).toContain('There is no re-run for a single asset: this evaluation is computed on demand');
+            expect(note).toContain('shows what the next re-evaluation will store');
+        });
+
+        test('a resolved step is set apart and links the readiness of the asset it carried the verdict over from', async () => {
+            await renderExplanation({
+                steps: [
+                    step('CERT-SUBJECT-KEY', PqcExplanationStepOutcome.Resolved, {
+                        verdict: PqcVerdict.NotReady,
+                        referencedAsset: visibleKey,
+                        evaluatedFields: {
+                            assetType: 'certificate',
+                            subjectPublicKeyRef: 'crypto/key/rsa-2048',
+                            referencedRuleId: 'CLASSICAL-SHOR',
+                        },
+                    }),
+                ],
+            });
+
+            const [row] = stepRows();
+            expect(isSetApart(row)).toBe(true);
+            expect(cells(row)[1]).toBe('Resolved');
+            expect(row.querySelector('a')?.getAttribute('href')).toBe('/cryptoassets/detail/key-1?tab=pqc-readiness');
+            expect(propertiesRead(row)).toEqual([
+                'Asset type: Certificate',
+                'Subject public key reference: crypto/key/rsa-2048',
+                'Rule of the referenced asset: CLASSICAL-SHOR',
+            ]);
+        });
+
+        test('a resolved step whose asset the reader cannot open names it without a link', async () => {
+            await renderExplanation({
+                steps: [
+                    step('CERT-SIGNATURE-ALGORITHM', PqcExplanationStepOutcome.Resolved, {
+                        verdict: PqcVerdict.NotReady,
+                        referencedAsset: hiddenKey,
+                    }),
+                ],
+            });
+
+            const [row] = stepRows();
+            expect(row.querySelector('a')).toBeNull();
+            expect(row.textContent).toContain('key-2');
+            expect(row.textContent).toContain('removed from the inventory, or your role does not grant access to it');
+        });
+
+        test('an unresolved reference step shows the references it serves and only its own message', async () => {
+            await renderExplanation({
+                steps: [
+                    step('CERT-REFERENCE-UNRESOLVED', PqcExplanationStepOutcome.Decided, {
+                        verdict: PqcVerdict.Unknown,
+                        evaluatedFields: { unresolvedRefs: ['crypto/key/a', 'crypto/key/b'] },
+                    }),
+                ],
+            });
+
+            const [row] = stepRows();
+            expect(cells(row)[3]).toBe('Message of CERT-REFERENCE-UNRESOLVED');
+            expect(propertiesRead(row)).toEqual(['Unresolved references: crypto/key/a, crypto/key/b']);
+        });
+
+        test('an asset the rule set cannot evaluate shows its one failed step', async () => {
+            await renderExplanation({
+                verdict: PqcVerdict.Unknown,
+                ruleId: 'EVALUATION-FAILED',
+                reason: 'The rule set could not evaluate this asset',
+                inputs: {},
+                steps: [
+                    step('EVALUATION-FAILED', PqcExplanationStepOutcome.Failed, {
+                        title: 'Evaluation',
+                        verdict: PqcVerdict.Unknown,
+                        message: 'The rule set could not evaluate this asset',
+                        evaluatedFields: {},
+                    }),
+                ],
+            });
+
+            expect(stepRows().map(cells)).toEqual([
+                ['EvaluationEVALUATION-FAILED', 'Failed', 'Unknown', 'The rule set could not evaluate this asset', ''],
+            ]);
+        });
+
+        test('an up-to-date stored result says so with its last evaluation', async () => {
+            await renderExplanation();
+
+            expect(text('[data-testid="pqc-explanation-status"]')).toBe(
+                `Evaluation is up-to-date with stored evaluation result. It was last evaluated ${dateFormatter('2026-09-09T06:00:14Z')}.`,
+            );
+        });
+
+        test('an asset never evaluated says the next re-evaluation will store this result', async () => {
+            await renderExplanation({
+                matchesStored: false,
+                storedVerdict: undefined,
+                storedRuleId: undefined,
+                storedEvaluatedAt: undefined,
+            });
+
+            expect(text('[data-testid="pqc-explanation-status"]')).toBe(
+                'This asset has not been evaluated yet. The next re-evaluation will store this result.',
+            );
+        });
+
+        // The typical stale verdict is Unknown, whose warning tint is the callout's own.
+        test('a stale stored result is contrasted with the recomputed one, with the badges outside the warning tint', async () => {
+            await renderExplanation({ matchesStored: false, storedVerdict: PqcVerdict.Unknown, storedRuleId: 'CERT-DEFERRED-V1' });
+
+            expect(text('[data-testid="pqc-explanation-stored"]')).toBe(
+                `UnknownCERT-DEFERRED-V1last evaluated ${dateFormatter('2026-09-09T06:00:14Z')}`,
+            );
+            expect(text('[data-testid="pqc-explanation-recomputed"]')).toBe('Not PQC readyCLASSICAL-SHOR');
+            expect(text('[data-testid="pqc-explanation-status"]')).toContain(
+                "The asset, an asset it refers to, or the platform's rules have changed since",
+            );
+            expect(one('[data-testid="pqc-explanation-status"] .bg-warning-surface [data-testid="pqc-verdict-badge"]')).toBeNull();
+        });
+
+        // Core also calls a stored result stale when only the asset's revision or a referenced verdict moved.
+        test('a stale stored result that names the same verdict and rule is called out of date, not different', async () => {
+            await renderExplanation({ matchesStored: false });
+
+            const status = text('[data-testid="pqc-explanation-status"]');
+            expect(status).toContain('The stored evaluation result is out of date.');
+            expect(status).not.toContain('differs');
+            expect(text('[data-testid="pqc-explanation-stored"]')).toContain('Not PQC readyCLASSICAL-SHOR');
+            expect(text('[data-testid="pqc-explanation-recomputed"]')).toBe('Not PQC readyCLASSICAL-SHOR');
+        });
+
+        test('a stale stored result no rule decided says so instead of showing an empty rule', async () => {
+            await renderExplanation({ matchesStored: false, storedVerdict: PqcVerdict.Unknown, storedRuleId: undefined });
+
+            expect(text('[data-testid="pqc-explanation-stored"]')).toContain('no rule decided it');
+        });
+    });
+
+    describe('evaluated properties', () => {
+        const renderProperties = (inputs: CryptographicAssetPqcExplanationDto['inputs']) =>
+            render(<CryptoAssetEvaluatedProperties inputs={inputs} typeEnum={enums.assetType} />);
+        const rows = () => all('[data-testid^="row-input-"]').map((row) => Array.from(row.children).map((cell) => cell.textContent));
+
+        test('each value has a copy control that puts the shown value on the clipboard', async () => {
+            await renderProperties({ assetType: 'certificate', cipherSuites: ['TLS_AES_128_GCM_SHA256', 'TLS_CHACHA20_POLY1305_SHA256'] });
+
+            const copy = one('[data-testid="row-input-cipherSuites"] button[aria-label="Copy Cipher suites"]') as HTMLButtonElement;
+            await act(async () => {
+                copy.click();
+            });
+
+            expect(copyToClipboard).toHaveBeenCalledWith(
+                'TLS_AES_128_GCM_SHA256, TLS_CHACHA20_POLY1305_SHA256',
+                'Cipher suites was copied to clipboard',
+                'Failed to copy Cipher suites to clipboard',
+            );
+        });
+
+        test('read as labelled property rows, with unknown keys kept raw and lists joined', async () => {
+            await renderProperties({
+                assetType: 'certificate',
+                cipherSuites: ['TLS_AES_128_GCM_SHA256', 'TLS_CHACHA20_POLY1305_SHA256'],
+                futureKey: 7,
+            });
+
+            expect(rows()).toEqual([
+                ['Asset type', 'Certificate'],
+                ['Cipher suites', 'TLS_AES_128_GCM_SHA256, TLS_CHACHA20_POLY1305_SHA256'],
+                ['futureKey', '7'],
+            ]);
+        });
+
+        // Core withholds document-derived values from a reader without CBOM access, and says nothing when it does.
+        test('withheld document fields are simply not listed, never reported as unrecorded', async () => {
+            await renderProperties({ assetType: 'certificate' });
+
+            const panel = text('[data-testid="pqc-explanation-inputs"]');
+            expect(rows()).toHaveLength(1);
+            expect(panel).not.toContain('Subject public key reference');
+            expect(panel).not.toMatch(/not recorded|nothing recorded/i);
+            expect(text('[data-testid="pqc-explanation-withheld-note"]')).toContain(
+                'not shown here or on the rules, although the rules still read them, so an absent property does not mean the asset lacks it',
+            );
+        });
+
+        test('an asset the rule set could not evaluate has none to show, and says so', async () => {
+            await renderProperties({});
+
+            expect(text('[data-testid="pqc-explanation-inputs-empty"]')).toBe('No properties are served for this asset.');
         });
     });
 
@@ -210,29 +568,52 @@ describe('crypto asset detail sections', () => {
             expect(row?.textContent).toContain('3');
         });
 
-        test('capped evidence shows the true count, and a list that fits says it is complete', async () => {
+        const locations = '[data-testid="crypto-asset-source-locations"]';
+
+        test('a capped sample shows what was kept of the true count and explains the cap, a complete list is just its count', async () => {
             await render(<CryptoAssetSources detail={detail()} />);
 
-            expect(all('[data-testid="crypto-asset-evidence-coverage"]').map((cell) => cell.textContent)).toEqual([
-                `50 shown of ${(1284).toLocaleString()} recorded`,
-                'all 37',
-            ]);
+            expect(all(locations).map((cell) => cell.textContent)).toEqual([`50 of ${(1284).toLocaleString()}`, '37']);
+            expect(one(`[data-testid="row-cbom-1"] [data-tooltip] ${locations}`)?.parentElement?.getAttribute('data-tooltip')).toBe(
+                "Core stores a capped sample of each source's locations",
+            );
+            expect(one('[data-testid="row-cbom-2"] [data-tooltip]')).toBeNull();
         });
 
-        // The DTO does not name the electing document, so the mark reports the payload match it can prove.
-        test('a source carrying the elected payload is marked, one that disagrees is not', async () => {
+        // The DTO does not name the source the properties were taken from, so the mark reports the match it can prove.
+        test('a source carrying the properties in use is marked, one that disagrees is not', async () => {
             await render(<CryptoAssetSources detail={detail()} />);
 
-            expect(one('[data-testid="row-cbom-1"] [data-testid="crypto-asset-source-elected"]')?.textContent).toBe('Matches elected');
-            expect(one('[data-testid="row-cbom-2"] [data-testid="crypto-asset-source-elected"]')).toBeNull();
+            expect(one('[data-testid="row-cbom-1"] [data-testid="crypto-asset-source-in-use"]')?.textContent).toBe('In use');
+            expect(one('[data-testid="row-cbom-2"] [data-testid="crypto-asset-source-in-use"]')).toBeNull();
         });
 
-        test("Show opens that one source's occurrences with the cap note, and Hide closes them", async () => {
+        test('says how many CBOMs claim the asset, and how many of them the reader cannot see', async () => {
+            await render(<CryptoAssetSources detail={detail({ sourceCbomCount: 3 })} />);
+
+            expect(text('[data-testid="crypto-asset-claims"]')).toBe(
+                `Claimed by 3 CBOMs · ${(1321).toLocaleString()} occurrences · 1 document outside your access`,
+            );
+        });
+
+        test('with every claiming CBOM listed, the claim line names no hidden document', async () => {
+            await render(<CryptoAssetSources detail={detail()} />);
+
+            expect(text('[data-testid="crypto-asset-claims"]')).toBe(`Claimed by 2 CBOMs · ${(1321).toLocaleString()} occurrences`);
+        });
+
+        test('an asset with a single source carries no mark, since it would always be true', async () => {
+            await render(<CryptoAssetSources detail={detail({ sourceCbomCount: 1, sources: [source()] })} />);
+
+            expect(one('[data-testid="crypto-asset-source-in-use"]')).toBeNull();
+        });
+
+        test("Show opens that one source's locations with the cap note, and Hide closes them", async () => {
             await render(<CryptoAssetSources detail={detail()} />);
             expect(one('[data-testid="crypto-asset-evidence"]')).toBeNull();
 
             await clickButton('Show');
-            expect(text('[data-testid="crypto-asset-evidence"] p')).toBe('Occurrences in urn:uuid:7c1e · v3');
+            expect(text('[data-testid="crypto-asset-evidence"] p')).toBe('Locations in urn:uuid:7c1e · v3');
             expect(all('[data-testid="crypto-asset-evidence"] [data-testid^="row-"]')).toHaveLength(50);
             expect(one('[data-testid="crypto-asset-evidence-capped-note"]')).not.toBeNull();
 
@@ -250,14 +631,14 @@ describe('crypto asset detail sections', () => {
             await render(<CryptoAssetSources detail={detail()} />);
 
             const toggle = one('[data-testid="row-cbom-1"] button') as HTMLButtonElement;
-            expect(toggle.getAttribute('aria-label')).toBe('Show occurrences in urn:uuid:7c1e');
+            expect(toggle.getAttribute('aria-label')).toBe('Show locations in urn:uuid:7c1e');
             expect(toggle.getAttribute('aria-expanded')).toBe('false');
             expect(toggle.getAttribute('aria-controls')).toBe('crypto-asset-evidence-cbom-1');
 
             await clickButton('Show');
 
             const openToggle = one('[data-testid="row-cbom-1"] button') as HTMLButtonElement;
-            expect(openToggle.getAttribute('aria-label')).toBe('Hide occurrences in urn:uuid:7c1e');
+            expect(openToggle.getAttribute('aria-label')).toBe('Hide locations in urn:uuid:7c1e');
             expect(openToggle.getAttribute('aria-expanded')).toBe('true');
             expect(one('[data-testid="crypto-asset-evidence"]')?.id).toBe('crypto-asset-evidence-cbom-1');
         });
@@ -283,7 +664,7 @@ describe('crypto asset detail sections', () => {
             const countless = source({ cbomUuid: 'cbom-4', occurrenceCount: null as never, evidence: [] });
             await render(<CryptoAssetSources detail={detail({ sources: [countless] })} />);
 
-            expect(text('[data-testid="row-cbom-4"] [data-testid="crypto-asset-evidence-coverage"]')).toBe('none recorded');
+            expect(text(`[data-testid="row-cbom-4"] ${locations}`)).toBe('none recorded');
         });
 
         test('an asset with no visible source says so', async () => {
@@ -293,10 +674,14 @@ describe('crypto asset detail sections', () => {
         });
     });
 
-    describe('payloads', () => {
-        test('a source that disagrees is shown beside the elected payload, with the disagreement listed', async () => {
+    describe('crypto properties', () => {
+        test('a source that disagrees is shown beside the properties in use, with the disagreement listed', async () => {
             await render(<CryptoAssetPayloads detail={detail()} />);
 
+            expect(all('[data-testid="crypto-asset-elected-payload"] p').map((line) => line.textContent)).toEqual([
+                'Properties in use',
+                'Taken whole from the source CBOM with the most detail. The PQC rules read these values.',
+            ]);
             expect(text('[data-testid="crypto-asset-elected-payload"] pre')).toContain('"parameterSetIdentifier": "2048"');
             expect(text('[data-testid="crypto-asset-source-payload"] p')).toBe('As recorded by urn:uuid:a91b v1');
             expect(text('[data-testid="crypto-asset-source-payload"] pre')).not.toContain('parameterSetIdentifier');
@@ -305,10 +690,10 @@ describe('crypto asset detail sections', () => {
             ]);
         });
 
-        test('a source identical to the elected payload is reported as identical', async () => {
+        test('a source that recorded the same properties is reported as the same', async () => {
             await render(<CryptoAssetPayloads detail={detail({ sources: [source()] })} />);
 
-            expect(one('[data-testid="crypto-asset-payload-identical"]')).not.toBeNull();
+            expect(text('[data-testid="crypto-asset-payload-identical"]')).toBe('This source recorded the same properties.');
             expect(one('[data-testid="crypto-asset-payload-differences"]')).toBeNull();
         });
 
@@ -334,18 +719,18 @@ describe('crypto asset detail sections', () => {
             expect(text('[data-testid="crypto-asset-source-payload"] p')).toBe('As recorded by urn:uuid:a91b v1');
         });
 
-        test('with no source served, the pane says there is none rather than blaming an empty payload', async () => {
+        test('with no source served, the pane says there is none rather than blaming a source that recorded nothing', async () => {
             await render(<CryptoAssetPayloads detail={detail({ sources: [] })} />);
 
             const pane = text('[data-testid="crypto-asset-source-payload"]');
-            expect(pane).toContain('No source payload to compare');
-            expect(pane).not.toContain('This source recorded no payload');
+            expect(pane).toContain('Nothing to compare: this asset has no source CBOM to show.');
+            expect(pane).not.toContain('This source recorded no crypto properties');
         });
 
-        test('with no elected payload served, the pane says so and no comparison is claimed', async () => {
+        test('with no properties in use served, the pane says so and no comparison is claimed', async () => {
             await render(<CryptoAssetPayloads detail={detail({ electedPayload: undefined })} />);
 
-            expect(text('[data-testid="crypto-asset-elected-payload"]')).toContain('No elected payload is served');
+            expect(text('[data-testid="crypto-asset-elected-payload"]')).toContain('The properties in use are not shown');
             expect(one('[data-testid="crypto-asset-payload-identical"]')).toBeNull();
             expect(one('[data-testid="crypto-asset-payload-differences"]')).toBeNull();
         });

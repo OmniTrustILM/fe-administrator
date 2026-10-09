@@ -1,0 +1,297 @@
+name: Tests
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+# A new push to a PR supersedes the run of its previous head. Runs on main are
+# never cancelled, so every commit there gets its full browser matrix and its
+# Sonar analysis.
+concurrency:
+  group: tests-${{ github.event.pull_request.number || github.sha }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+permissions:
+  contents: read
+
+# The Playwright suite runs sharded per browser. Each shard writes a blob
+# report and, on chromium, raw coverage (PW_SHARDED in playwright-ct.config.ts);
+# `test (chromium)` and `test cross-browser` merge them into one report per
+# browser, and one lcov file for chromium.
+# PRs run chromium only, for fast feedback; main and manual runs add firefox
+# and webkit.
+#
+# Playwright runs from node_modules/.bin rather than through npx, so nothing
+# is fetched on demand.
+#
+# Every job checks out the PR head, not the merge commit: Sonar analyses the
+# head and reads its coverage from this run, so both must come from the same
+# tree or the coverage of changed lines drifts.
+
+jobs:
+  vitest:
+    name: Vitest
+    timeout-minutes: 20
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24.x
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Run Vitest tests with coverage
+        run: npm run test:vitest:cov
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-vitest
+          path: coverage-vitest/lcov.info
+          retention-days: 30
+          if-no-files-found: error
+
+  chromium:
+    name: Playwright chromium (${{ matrix.shard }}/4)
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [ 1, 2, 3, 4 ]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24.x
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Install Playwright Browsers
+        run: ./node_modules/.bin/playwright install --with-deps chromium
+      - name: Run Playwright tests
+        env:
+          PW_SHARDED: 1
+        run: ./node_modules/.bin/playwright test -c playwright-ct.config.ts --project=chromium --shard=${{ matrix.shard }}/4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-chromium-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 7
+          if-no-files-found: error
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: coverage-raw-${{ matrix.shard }}
+          path: coverage-playwright/raw/
+          retention-days: 7
+          if-no-files-found: error
+
+  # The job name is a required status check; renaming it blocks PR merges.
+  test-chromium:
+    name: test (chromium)
+    needs: chromium
+    if: ${{ !cancelled() }}
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          ref: ${{ github.event.pull_request.head.sha || github.sha }}
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24.x
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: blob-chromium-*
+          merge-multiple: true
+          path: blob-report
+      - name: Merge test reports
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report
+          PLAYWRIGHT_HTML_OPEN: never
+          PLAYWRIGHT_JUNIT_OUTPUT_FILE: playwright-report/junit.xml
+        run: ./node_modules/.bin/playwright merge-reports --reporter html,junit blob-report
+      # merge-reports exits 1 when a test failed, after writing the report.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-chromium
+          path: playwright-report/
+          retention-days: 30
+      # Coverage is merged only from a complete set of passing shards.
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        if: needs.chromium.result == 'success'
+        with:
+          pattern: coverage-raw-*
+          path: coverage-raw
+      # A shard re-run on its own finds the other shards' artifacts gone once
+      # they expire, while their earlier results still read as success.
+      - name: Check every shard reported
+        if: needs.chromium.result == 'success'
+        run: |
+          blobs=$(find blob-report -maxdepth 1 -name '*.zip' 2>/dev/null | wc -l || true)
+          raws=$(find coverage-raw -mindepth 1 -maxdepth 1 -type d 2>/dev/null | wc -l || true)
+          if [ "$blobs" -ne 4 ] || [ "$raws" -ne 4 ]; then
+            echo "::error::Expected 4 shard reports and 4 raw coverage sets, found $blobs and $raws. Shard artifacts expire after 7 days; re-run all jobs."
+            exit 1
+          fi
+      - name: Merge coverage
+        if: needs.chromium.result == 'success'
+        run: |
+          node scripts/merge-playwright-coverage.js coverage-raw/*
+          node scripts/clean-lcov.js
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: needs.chromium.result == 'success'
+        with:
+          name: coverage-playwright
+          path: coverage-playwright/lcov.info
+          retention-days: 30
+          if-no-files-found: error
+      - name: Fail when a shard failed
+        if: needs.chromium.result != 'success'
+        env:
+          RESULT: ${{ needs.chromium.result }}
+        run: |
+          echo "::error::Chromium shards concluded '$RESULT'. The merged report lists the failures."
+          exit 1
+
+  cross-browser:
+    # No matrix values in the name: on a PR the job is skipped before the matrix
+    # expands, and GitHub appends the values itself when the job runs.
+    name: Playwright cross-browser
+    if: github.event_name != 'pull_request'
+    timeout-minutes: 30
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [ firefox, webkit ]
+        shard: [ 1, 2, 3, 4 ]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24.x
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - name: Install Playwright Browsers
+        run: ./node_modules/.bin/playwright install --with-deps ${{ matrix.browser }}
+      - name: Run Playwright tests
+        env:
+          PW_SHARDED: 1
+        run: ./node_modules/.bin/playwright test -c playwright-ct.config.ts --project=${{ matrix.browser }} --shard=${{ matrix.shard }}/4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: blob-${{ matrix.browser }}-${{ matrix.shard }}
+          path: blob-report/
+          retention-days: 7
+          if-no-files-found: error
+
+  # `needs` sees both browsers' shards at once, so each job judges its own
+  # browser: merge-reports fails on a failed test, and the count catches a
+  # shard that ended without a report.
+  test-cross-browser:
+    name: test cross-browser
+    needs: cross-browser
+    if: ${{ !cancelled() && github.event_name != 'pull_request' }}
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        browser: [ firefox, webkit ]
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+      - uses: actions/setup-node@249970729cb0ef3589644e2896645e5dc5ba9c38 # v6.5.0
+        with:
+          node-version: 24.x
+      - name: Install dependencies
+        run: npm ci --ignore-scripts
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          pattern: blob-${{ matrix.browser }}-*
+          merge-multiple: true
+          path: blob-report
+      - name: Merge test reports
+        env:
+          PLAYWRIGHT_HTML_OUTPUT_DIR: playwright-report
+          PLAYWRIGHT_HTML_OPEN: never
+          PLAYWRIGHT_JUNIT_OUTPUT_FILE: playwright-report/junit.xml
+        run: ./node_modules/.bin/playwright merge-reports --reporter html,junit blob-report
+      # merge-reports exits 1 when a test failed, after writing the report.
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report-${{ matrix.browser }}
+          path: playwright-report/
+          retention-days: 30
+      - name: Check every shard reported
+        run: |
+          count=$(find blob-report -maxdepth 1 -name '*.zip' | wc -l)
+          if [ "$count" -ne 4 ]; then
+            echo "::error::Expected 4 shard reports, found $count. A shard ended without a report."
+            exit 1
+          fi
+
+  # Hands the PR to dispatch-sonar.yml, which starts the Sonar analysis once
+  # this run has passed. Values go through env and jq --arg, so an unusual
+  # branch or repo name can neither inject shell nor break the JSON.
+  pr-context:
+    name: PR context
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Prepare PR context artifact
+        env:
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+          HEAD_REPO: ${{ github.event.pull_request.head.repo.full_name }}
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          BASE_REF: ${{ github.event.pull_request.base.ref }}
+        run: |
+          jq -n \
+            --arg pr_number   "$PR_NUMBER" \
+            --arg head_sha    "$HEAD_SHA" \
+            --arg head_repo   "$HEAD_REPO" \
+            --arg head_branch "$HEAD_BRANCH" \
+            --arg base_ref    "$BASE_REF" \
+            '{pr_number: $pr_number, head_sha: $head_sha, head_repo: $head_repo, head_branch: $head_branch, base_ref: $base_ref}' \
+            > pr-context.json
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: pr-context
+          path: pr-context.json
+          retention-days: 1
+          if-no-files-found: error
+
+  # Branch analysis of main: the baseline the PR analyses compare against.
+  # Only repository-owned code runs on main, so SONAR_TOKEN is safe here.
+  sonar-main:
+    name: Sonar • main
+    needs: [ vitest, test-chromium ]
+    if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6.1.0
+        with:
+          fetch-depth: 0
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: coverage-vitest
+          path: coverage-vitest
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: coverage-playwright
+          path: coverage-playwright
+      - name: Sonar Scan
+        uses: SonarSource/sonarqube-scan-action@c7ee0f9df90b7aa20e8dcf9695dcfe2e7da5b4f2 # v7.2.1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SONAR_TOKEN:  ${{ secrets.SONAR_TOKEN }}
