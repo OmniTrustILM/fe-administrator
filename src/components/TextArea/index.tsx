@@ -20,6 +20,7 @@ type Props = {
     ariaDescribedBy?: string;
     /** Id of the error paragraph; derived from `id` when not given. It is named in `aria-describedby` while an error shows. */
     errorId?: string;
+    dataTestId?: string;
 };
 
 function TextArea({
@@ -37,6 +38,7 @@ function TextArea({
     rows = 3,
     ariaDescribedBy,
     errorId,
+    dataTestId,
 }: Readonly<Props>) {
     const generatedId = useId();
     const resolvedErrorId = errorId ?? `${id ?? `textarea-${generatedId.replaceAll(':', '')}`}-error`;
@@ -64,6 +66,7 @@ function TextArea({
                 onBlur={onBlur}
                 disabled={disabled}
                 id={id}
+                data-testid={dataTestId}
                 rows={rows}
                 aria-invalid={invalid || undefined}
                 aria-describedby={joinAriaIds(ariaDescribedBy, error ? resolvedErrorId : undefined)}

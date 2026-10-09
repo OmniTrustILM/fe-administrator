@@ -36,7 +36,11 @@ export default function DetectedContent({ entries, selected, mayImportKeys, onTo
     const keyAlgorithmEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyAlgorithm));
 
     return (
-        <WizardSection id="importDetectedContent" title={`Detected content – ${entryCount(entries.length)}`}>
+        <WizardSection
+            id="importDetectedContent"
+            dataTestId="import-detected-content"
+            title={`Detected content – ${entryCount(entries.length)}`}
+        >
             <ul className="space-y-2">
                 {entries.map((entry) => {
                     const id = `importEntry-${entry.entryReference}`;

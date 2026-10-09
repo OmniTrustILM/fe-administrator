@@ -189,7 +189,7 @@ async function chooseProfile(page: Page, option = PROFILE_OPTION) {
 }
 
 const resultRow = (page: Page, title: string) => page.getByRole('listitem').filter({ hasText: title });
-const resultBadge = (page: Page, title: string) => resultRow(page, title).getByTestId('badge');
+const resultBadge = (page: Page, title: string) => resultRow(page, title).getByTestId('import-result-badge');
 const boxOf = async (locator: Locator) => (await locator.boundingBox())!;
 
 test.describe('ImportWizard', () => {
@@ -225,6 +225,39 @@ test.describe('ImportWizard', () => {
         expect(request.customAttributes).toEqual([
             expect.objectContaining({ name: 'department', content: [expect.objectContaining({ data: 'Platform' })] }),
         ]);
+    });
+
+    test('exposes stable test ids for the import flow', async ({ mount, page }) => {
+        await mount(
+            <ImportWizardWithStore
+                inspectAnswers={[{ inspection: inspection([certificate]) }]}
+                importAnswers={[{ results: [importedCertificate] }]}
+            />,
+        );
+
+        await expect(page.getByTestId('import-file-content')).toBeVisible();
+        await chooseFile(page);
+        await expect(page.getByTestId('import-detected-content')).toBeVisible();
+        await expect(page.getByTestId('import-submit')).toBeEnabled();
+        await page.getByTestId('import-submit').click();
+        await expect(page.getByTestId('import-results')).toBeVisible();
+        await expect(page.getByTestId('import-result-badge')).toHaveText('Imported');
+        await expect(page.getByTestId('import-open-certificate')).toBeVisible();
+        await expect(page.getByTestId('import-done')).toBeVisible();
+    });
+
+    test('re-inspects on File content blur after a non-password inspection failure', async ({ mount, page }) => {
+        const actions: UnknownAction[] = [];
+        const failure = 'Failed to read the uploaded file (500): The service is unavailable';
+        await mount(
+            <ImportWizardWithStore inspectAnswers={[{ error: failure, status: 500 }]} onAction={(action) => actions.push(action)} />,
+        );
+        await chooseFile(page);
+        await expect(page.getByRole('alert')).toHaveText(failure);
+        await expect.poll(() => inspectRequests(actions)).toHaveLength(1);
+        await page.getByLabel('File content').focus();
+        await page.getByLabel('File content').blur();
+        await expect.poll(() => inspectRequests(actions)).toEqual([{ file: FILE_BASE64 }, { file: FILE_BASE64 }]);
     });
 
     test('inspects a pasted PEM, and a file chosen after it rather than the paste', async ({ mount, page }) => {

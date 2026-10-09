@@ -50,7 +50,7 @@ export default function ImportResults({ entries, results, isImporting, retryDisa
 
     return (
         <div className="space-y-4">
-            <WizardSection id="importResults" title="Import results" focusTitle>
+            <WizardSection id="importResults" dataTestId="import-results" title="Import results" focusTitle>
                 <ul className="space-y-2">
                     {results.map((result) => {
                         const entry = entries.find((each) => each.entryReference === result.entryReference);
@@ -69,6 +69,7 @@ export default function ImportResults({ entries, results, isImporting, retryDisa
                                                 <Link
                                                     to={`/${Resource.Certificates.toLowerCase()}/detail/${result.certificateUuid}`}
                                                     className={LINK_CLASS}
+                                                    data-testid="import-open-certificate"
                                                 >
                                                     Open certificate
                                                 </Link>
@@ -84,7 +85,9 @@ export default function ImportResults({ entries, results, isImporting, retryDisa
                                         </p>
                                     )}
                                 </div>
-                                <Badge color={badge.color}>{badge.label}</Badge>
+                                <Badge color={badge.color} dataTestId="import-result-badge">
+                                    {badge.label}
+                                </Badge>
                             </li>
                         );
                     })}
@@ -109,7 +112,13 @@ export default function ImportResults({ entries, results, isImporting, retryDisa
                         </Button>
                     </>
                 )}
-                <Button variant={hasFailures ? 'outline' : 'solid'} onClick={onDone} disabled={isImporting} type="button">
+                <Button
+                    variant={hasFailures ? 'outline' : 'solid'}
+                    onClick={onDone}
+                    disabled={isImporting}
+                    type="button"
+                    data-testid="import-done"
+                >
                     Done
                 </Button>
             </Container>

@@ -5,10 +5,11 @@ type Props = Readonly<{
     title: string;
     /** Moves focus to the title as the section is shown, for a section that replaces the one the user was in. */
     focusTitle?: boolean;
+    dataTestId?: string;
     children: ReactNode;
 }>;
 
-export default function WizardSection({ id, title, focusTitle = false, children }: Props) {
+export default function WizardSection({ id, title, focusTitle = false, dataTestId, children }: Props) {
     const titleRef = useRef<HTMLHeadingElement>(null);
 
     useEffect(() => {
@@ -16,7 +17,7 @@ export default function WizardSection({ id, title, focusTitle = false, children 
     }, [focusTitle]);
 
     return (
-        <section aria-labelledby={id} className="space-y-3">
+        <section aria-labelledby={id} data-testid={dataTestId} className="space-y-3">
             <h4
                 ref={titleRef}
                 id={id}
