@@ -366,6 +366,7 @@ describe('DiscoveryDetail', () => {
             expect(bar?.getAttribute('aria-valuenow')).toBe('5');
             expect(bar?.getAttribute('aria-valuemax')).toBe('7');
             expect(container.querySelector('[data-testid="import-progress"]')?.textContent).toContain('1 waiting, 1 not imported');
+            expect(container.querySelector('[data-testid="import-progress"]')?.textContent).not.toContain('counted on every read');
         });
 
         it('says one target failed without a plural', async () => {
@@ -384,6 +385,29 @@ describe('DiscoveryDetail', () => {
             expect(container.querySelector('[data-testid="import-progress"]')?.textContent).toContain('Nothing to import');
         });
 
+        it('keeps its place for a v2 run whose Provider has reported nothing yet, and says so', async () => {
+            await render(buildState({ ...v2Run, progress: undefined }));
+
+            expect(container.querySelector('[data-testid="widget-Progress"]')?.textContent).toContain('No progress reported yet.');
+            expect(container.querySelector('[data-testid="provider-progress"]')).toBeNull();
+        });
+
+        it('says no progress was reported once the Provider is done with a run that never reported any', async () => {
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Completed, progress: undefined }));
+
+            expect(container.querySelector('[data-testid="widget-Progress"]')?.textContent).toContain(
+                'The Discovery Provider reported no progress for this run.',
+            );
+        });
+
+        it('lets Progress and Import summary shrink to share their row, so a table measured at full width cannot hold it', async () => {
+            await render(buildState(v2Run));
+
+            for (const title of ['Progress', 'Import summary']) {
+                expect(container.querySelector(`[data-testid="widget-${title}"]`)?.className).toContain('md:min-w-0');
+            }
+        });
+
         it('lists the per-resource breakdown by resource label', async () => {
             await render(buildState(v2Run));
 
@@ -399,8 +423,8 @@ describe('DiscoveryDetail', () => {
             expect(rowText('itemsDiscovered')).toBe('Items received52');
             expect(rowText('itemsNewlyDiscovered')).toBe('New to the inventory7');
             expect(container.querySelector('[data-testid="items-failed"]')?.textContent).toBe('1');
-            expect(container.querySelector('[data-testid="widget-Results"]')?.textContent).toContain('All resources');
-            expect(container.querySelector('[data-testid="widget-Results"]')?.textContent).toContain('Certificates only');
+            expect(container.querySelector('[data-testid="widget-Import summary"]')?.textContent).toContain('All resources');
+            expect(container.querySelector('[data-testid="widget-Import summary"]')?.textContent).toContain('Certificates only');
         });
 
         it('explains a provider figure above the saved one as repeats on a completed certificates-only run', async () => {
@@ -472,8 +496,8 @@ describe('DiscoveryDetail', () => {
         it('omits the certificate counters for a run that never targeted certificates', async () => {
             await render(buildState({ ...v2Run, resources: [Resource.Keys] }));
 
-            expect(container.querySelector('[data-testid="widget-Results"]')?.textContent).toContain('All resources');
-            expect(container.querySelector('[data-testid="widget-Results"]')?.textContent).not.toContain('Certificates only');
+            expect(container.querySelector('[data-testid="widget-Import summary"]')?.textContent).toContain('All resources');
+            expect(container.querySelector('[data-testid="widget-Import summary"]')?.textContent).not.toContain('Certificates only');
         });
 
         it('names the ending in words rather than the wire code', async () => {

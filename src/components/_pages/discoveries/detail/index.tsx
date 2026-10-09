@@ -401,15 +401,18 @@ export default function DiscoveryDetail() {
 
                                     {discovery && (
                                         <Container marginTop className="md:flex-row items-start">
+                                            {/* min-w-0: a table records its width when it first renders, and a flex
+                                                item that cannot shrink below it keeps that width when a neighbour
+                                                arrives later. */}
                                             <DiscoveryProgressWidget
                                                 discovery={discovery}
                                                 onRefresh={refreshDiscoveryDetails}
-                                                className="w-full md:flex-1"
+                                                className="w-full md:flex-1 md:min-w-0"
                                             />
                                             <DiscoveryResultsSummary
                                                 discovery={discovery}
                                                 headers={detailHeaders}
-                                                className="w-full md:flex-1"
+                                                className="w-full md:flex-1 md:min-w-0"
                                             />
                                         </Container>
                                     )}

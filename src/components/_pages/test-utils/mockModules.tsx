@@ -45,14 +45,16 @@ export const widgetMockModule = () => ({
         title,
         widgetButtons,
         refreshAction,
+        className,
         children,
     }: {
         title?: string;
         widgetButtons?: MockButton[];
         refreshAction?: () => void;
+        className?: string;
         children?: ReactNode;
     }) => (
-        <div data-testid={`widget-${title || 'root'}`}>
+        <div data-testid={`widget-${title || 'root'}`} className={className}>
             {refreshAction ? (
                 <span>
                     <button type="button" data-testid={`refresh-${title || 'root'}`} onClick={refreshAction}>
