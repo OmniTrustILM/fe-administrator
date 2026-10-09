@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { BaseAttributeContentDtoV3, ConnectorInterfaceDto, DiscoveryStatus } from './';
+import type { BaseAttributeContentDtoV3, ConnectorInterfaceDto, DiscoveryStatus, Resource } from './';
 
 /**
  * @export
@@ -59,6 +59,18 @@ export interface DiscoveryListDto {
      * @memberof DiscoveryListDto
      */
     totalCertificatesDiscovered?: number;
+    /**
+     * Number of items discovered, across all resource types
+     * @type {number}
+     * @memberof DiscoveryListDto
+     */
+    totalItemsDiscovered: number;
+    /**
+     * Resource types the discovery targets
+     * @type {Array<Resource>}
+     * @memberof DiscoveryListDto
+     */
+    resources: Array<Resource>;
     /**
      * UUID of the Discovery Provider
      * @type {string}

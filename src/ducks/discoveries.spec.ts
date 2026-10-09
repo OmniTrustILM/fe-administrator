@@ -95,7 +95,7 @@ describe('discoveries slice', () => {
         next = reducer(next, actions.getDiscoveryDetailSuccess({ discovery: detail }));
         expect(next.isFetchingDetail).toBe(false);
         expect(next.discovery).toEqual(detail);
-        expect(next.discoveries[0]).toEqual(detail);
+        expect(next.discoveries[0]).toEqual({ ...detail, totalItemsDiscovered: 0 });
 
         next = reducer({ ...next, isFetchingDetail: true }, actions.getDiscoveryDetailFailure({ error: 'err' }));
         expect(next.isFetchingDetail).toBe(false);
@@ -108,6 +108,18 @@ describe('discoveries slice', () => {
         );
         expect(next.discoveries).toHaveLength(1);
         expect(next.discoveries[0].uuid).toBe('d-99');
+    });
+
+    test('a detail entered into the list carries the item total Core would list for it', () => {
+        const listed = (discovery: object) =>
+            reducer({ ...initialState, discoveries: [] }, actions.getDiscoveryDetailSuccess({ discovery: discovery as any }))
+                .discoveries[0];
+
+        // A v2 run: the items received, keys included.
+        expect(listed({ uuid: 'v2', itemsDiscovered: 52, totalCertificatesDiscovered: 48 }).totalItemsDiscovered).toBe(52);
+        // A v1 run reports no items received; it finds certificates only.
+        expect(listed({ uuid: 'v1', totalCertificatesDiscovered: 4 }).totalItemsDiscovered).toBe(4);
+        expect(listed({ uuid: 'v1-empty' }).totalItemsDiscovered).toBe(0);
     });
 
     test('createDiscovery / success / failure flags', () => {

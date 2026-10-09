@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { actions, selectors } from 'ducks/discoveries';
+import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EntityType, actions as filterActions } from 'ducks/filters';
 import { actions as pagingActions } from 'ducks/paging';
 import { dateFormatter, durationFormatter } from 'utils/dateUtil';
@@ -10,7 +11,7 @@ import type { ApiClients } from '../../../../api';
 import PagedList from 'components/PagedList/PagedList';
 import type { SearchRequestModel } from 'types/certificate';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { Resource } from 'types/openapi';
+import { PlatformEnum, Resource } from 'types/openapi';
 import type { DiscoveryResponseModel } from 'types/discoveries';
 import { buildDiscoveryCellRegistry, DISCOVERY_COLUMNS, DISCOVERY_DEFAULT_SORT } from '../discoveryTableHelpers';
 import Dialog from 'components/Dialog';
@@ -29,7 +30,16 @@ function DiscoveryList() {
     const isBulkDeleting = useSelector(selectors.isBulkDeleting);
     const isBusy = isDeleting || isBulkDeleting;
 
-    const registry = useMemo(() => buildDiscoveryCellRegistry({ dateFormatter, durationFormatter }), []);
+    const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
+    const registry = useMemo(
+        () =>
+            buildDiscoveryCellRegistry({
+                dateFormatter,
+                durationFormatter,
+                resourceLabel: (resource) => getEnumLabel(resourceEnum, resource),
+            }),
+        [resourceEnum],
+    );
 
     const configurableColumns = useMemo(
         () => ({

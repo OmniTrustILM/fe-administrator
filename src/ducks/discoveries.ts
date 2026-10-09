@@ -60,6 +60,14 @@ export type State = {
     isCancelling: boolean;
 };
 
+/**
+ * A detail as the list would carry it. The detail has no item total of its own; Core lists the items received for a v2
+ * run and the certificates for a v1 run, which reports no items received.
+ */
+function toListEntry(discovery: DiscoveryResponseDetailModel): DiscoveryResponseModel {
+    return { ...discovery, totalItemsDiscovered: discovery.itemsDiscovered ?? discovery.totalCertificatesDiscovered ?? 0 };
+}
+
 export const initialState: State = {
     discoveries: [],
     discoveryProviderResourceAttributeDescriptors: {},
@@ -276,12 +284,13 @@ export const slice = createSlice({
 
             state.discovery = action.payload.discovery;
 
-            const discoveryIndex = state.discoveries.findIndex((discovery) => discovery.uuid === action.payload.discovery.uuid);
+            const listEntry = toListEntry(action.payload.discovery);
+            const discoveryIndex = state.discoveries.findIndex((discovery) => discovery.uuid === listEntry.uuid);
 
             if (discoveryIndex >= 0) {
-                state.discoveries[discoveryIndex] = action.payload.discovery;
+                state.discoveries[discoveryIndex] = listEntry;
             } else {
-                state.discoveries.push(action.payload.discovery);
+                state.discoveries.push(listEntry);
             }
         },
 
