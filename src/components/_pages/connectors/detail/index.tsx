@@ -65,6 +65,13 @@ function healthRow(id: string, label: string, health?: HealthModel): TableDataRo
     return { id, columns: [label, renderStatusBadge(health?.status), health?.description || ''] };
 }
 
+export function buildHealthRows(health?: HealthModel): TableDataRow[] {
+    return [
+        healthRow('overallHealth', 'Overall Health', health),
+        ...Object.entries(health?.parts ?? {}).map(([partName, part]) => healthRow(partName, partName, part)),
+    ];
+}
+
 export default function ConnectorDetail() {
     const dispatch = useDispatch();
 
@@ -366,13 +373,7 @@ export default function ConnectorDetail() {
         [],
     );
 
-    const healthData: TableDataRow[] = useMemo(
-        () => [
-            healthRow('overallHealth', 'Overall Health', health),
-            ...Object.entries(health?.parts ?? {}).map(([partName, part]) => healthRow(partName, partName, part)),
-        ],
-        [health],
-    );
+    const healthData: TableDataRow[] = useMemo(() => buildHealthRows(health), [health]);
 
     if (isFetchingDetail && !connector) {
         return <DetailPageSkeleton layout="simple" buttonsCount={4} />;
