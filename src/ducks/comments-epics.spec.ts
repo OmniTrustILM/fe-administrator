@@ -109,17 +109,15 @@ describe('listThreads epic', () => {
         expect(emitted).toEqual([slice.actions.listThreadsSuccess({ key, page: result, sortDirection: SortDirection.Desc })]);
     });
 
-    test('a list that is not loaded yet is read in the direction the user picked', async () => {
+    test('a list that is not loaded yet is read in the direction the user picked for its object, and no other', async () => {
         const { deps, calls } = createDeps();
+        const state = stateWith({ sortDirections: { [key]: SortDirection.Asc } });
 
-        await run(
-            EpicIndex.ListThreads,
-            slice.actions.listThreads({ resource, objectUuid, pageNumber: 1 }),
-            deps,
-            stateWith({ sortDirection: SortDirection.Asc }),
-        );
+        await run(EpicIndex.ListThreads, slice.actions.listThreads({ resource, objectUuid, pageNumber: 1 }), deps, state);
+        await run(EpicIndex.ListThreads, slice.actions.listThreads({ resource, objectUuid: 'obj-2', pageNumber: 1 }), deps, state);
 
-        expect(calls[0].args).toMatchObject({ sortDirection: SortDirection.Asc });
+        expect(calls[0].args).toMatchObject({ objectUuid, sortDirection: SortDirection.Asc });
+        expect(calls[1].args).toMatchObject({ objectUuid: 'obj-2', sortDirection: SortDirection.Desc });
     });
 
     test('the requested direction reaches the API and is reported back with the page', async () => {
@@ -228,7 +226,11 @@ describe('listReplies epic', () => {
         const result = page([comment('c1')]);
         const { deps, calls } = createDeps({ listReplies: () => of(result) });
 
-        const emitted = await run(EpicIndex.ListReplies, slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1 }), deps);
+        const emitted = await run(
+            EpicIndex.ListReplies,
+            slice.actions.listReplies({ resource, objectUuid, rootUuid: 'r1', pageNumber: 1 }),
+            deps,
+        );
 
         expect(calls[0].args).toEqual({
             uuid: 'r1',
@@ -243,7 +245,6 @@ describe('listReplies epic', () => {
     test('a requested direction wins, and a request that names none keeps the one the thread holds', async () => {
         const { deps, calls } = createDeps();
         const state = stateWith({
-            sortDirection: SortDirection.Desc,
             replies: {
                 r1: {
                     ...page([comment('c1')]),
@@ -256,10 +257,10 @@ describe('listReplies epic', () => {
             },
         });
 
-        await run(EpicIndex.ListReplies, slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 2 }), deps, state);
+        await run(EpicIndex.ListReplies, slice.actions.listReplies({ resource, objectUuid, rootUuid: 'r1', pageNumber: 2 }), deps, state);
         await run(
             EpicIndex.ListReplies,
-            slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, sortDirection: SortDirection.Desc }),
+            slice.actions.listReplies({ resource, objectUuid, rootUuid: 'r1', pageNumber: 1, sortDirection: SortDirection.Desc }),
             deps,
             state,
         );
@@ -268,15 +269,15 @@ describe('listReplies epic', () => {
         expect(calls[1].args).toMatchObject({ pageNumber: 1, sortDirection: SortDirection.Desc });
     });
 
-    test('a thread that holds no replies has no order to keep, so it is read in the user direction', async () => {
+    test('a thread that holds no replies has no order to keep, so it is read in the direction chosen for its object', async () => {
         const { deps, calls } = createDeps();
         const state = stateWith({
-            sortDirection: SortDirection.Desc,
+            sortDirections: { [key]: SortDirection.Asc },
             replies: {
                 r1: {
                     ...page([]),
                     firstPage: 1,
-                    sortDirection: SortDirection.Asc,
+                    sortDirection: SortDirection.Desc,
                     isFetching: true,
                     isPosting: false,
                     postSucceeded: false,
@@ -284,9 +285,9 @@ describe('listReplies epic', () => {
             },
         });
 
-        await run(EpicIndex.ListReplies, slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1 }), deps, state);
+        await run(EpicIndex.ListReplies, slice.actions.listReplies({ resource, objectUuid, rootUuid: 'r1', pageNumber: 1 }), deps, state);
 
-        expect(calls[0].args).toMatchObject({ pageNumber: 1, sortDirection: SortDirection.Desc });
+        expect(calls[0].args).toMatchObject({ pageNumber: 1, sortDirection: SortDirection.Asc });
     });
 
     test('an anchored reply reaches the API and comes back with the page', async () => {
@@ -295,7 +296,7 @@ describe('listReplies epic', () => {
 
         const emitted = await run(
             EpicIndex.ListReplies,
-            slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, anchorUuid: 'c41' }),
+            slice.actions.listReplies({ resource, objectUuid, rootUuid: 'r1', pageNumber: 1, anchorUuid: 'c41' }),
             deps,
         );
 
@@ -310,7 +311,7 @@ describe('listReplies epic', () => {
 
         const emitted = await run(
             EpicIndex.ListReplies,
-            slice.actions.listReplies({ rootUuid: 'gone', pageNumber: 1, anchorUuid: 'c1' }),
+            slice.actions.listReplies({ resource, objectUuid, rootUuid: 'gone', pageNumber: 1, anchorUuid: 'c1' }),
             deps,
         );
 
@@ -320,7 +321,11 @@ describe('listReplies epic', () => {
     test('a 404 without an anchor is an ordinary failure', async () => {
         const { deps } = createDeps({ listReplies: () => throwError(() => ajaxError(404)) });
 
-        const emitted = await run(EpicIndex.ListReplies, slice.actions.listReplies({ rootUuid: 'gone', pageNumber: 1 }), deps);
+        const emitted = await run(
+            EpicIndex.ListReplies,
+            slice.actions.listReplies({ resource, objectUuid, rootUuid: 'gone', pageNumber: 1 }),
+            deps,
+        );
 
         expect(emitted[0]).toEqual(slice.actions.listRepliesFailure({ rootUuid: 'gone' }));
         expect(emitted[1]).toMatchObject({ type: alertActions.error.type });
@@ -329,7 +334,11 @@ describe('listReplies epic', () => {
     test('failure reports through an alert, never a lock', async () => {
         const { deps } = createDeps({ listReplies: () => throwError(() => ajaxError(422, { message: 'not a thread root' })) });
 
-        const emitted = await run(EpicIndex.ListReplies, slice.actions.listReplies({ rootUuid: 'c1', pageNumber: 1 }), deps);
+        const emitted = await run(
+            EpicIndex.ListReplies,
+            slice.actions.listReplies({ resource, objectUuid, rootUuid: 'c1', pageNumber: 1 }),
+            deps,
+        );
 
         expect(emitted[0]).toEqual(slice.actions.listRepliesFailure({ rootUuid: 'c1' }));
         expect(emitted[1]).toMatchObject({ type: alertActions.error.type, payload: expect.stringContaining('not a thread root') });
@@ -365,7 +374,7 @@ describe('refreshPanel epic', () => {
 
         expect(emitted).toEqual([
             slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: 20 }),
-            slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, itemsPerPage: 40 }),
+            slice.actions.listReplies({ resource, objectUuid, rootUuid: 'r1', pageNumber: 1, itemsPerPage: 40 }),
         ]);
     });
 
@@ -388,7 +397,7 @@ describe('changeSortDirection epic', () => {
         postSucceeded: false,
     });
 
-    test('stores the choice and re-reads the roots and every opened thread from their first page', async () => {
+    test('stores the choice for the object and re-reads the roots and every opened thread from their first page', async () => {
         const state = stateWith({
             threads: { [key]: loaded([comment('r1'), comment('r2')], SortDirection.Desc) },
             replies: { r1: loaded([comment('c1')], SortDirection.Desc), other: loaded([comment('c9')], SortDirection.Desc) },
@@ -401,10 +410,10 @@ describe('changeSortDirection epic', () => {
             state,
         );
 
-        expect(localStorage.getItem(COMMENT_SORT_STORAGE_KEY)).toBe(SortDirection.Asc);
+        expect(JSON.parse(localStorage.getItem(COMMENT_SORT_STORAGE_KEY) ?? 'null')).toEqual({ [key]: SortDirection.Asc });
         expect(emitted).toEqual([
             slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, sortDirection: SortDirection.Asc }),
-            slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, sortDirection: SortDirection.Asc }),
+            slice.actions.listReplies({ resource, objectUuid, rootUuid: 'r1', pageNumber: 1, sortDirection: SortDirection.Asc }),
         ]);
     });
 });
@@ -444,7 +453,7 @@ describe('createComment epic', () => {
         );
 
         expect(calls[0].args).toMatchObject({ commentCreateRequestDto: { body: 'hi', parentUuid: 'r1' } });
-        expect(emitted[1]).toEqual(slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, itemsPerPage: 41 }));
+        expect(emitted[1]).toEqual(slice.actions.listReplies({ resource, objectUuid, rootUuid: 'r1', pageNumber: 1, itemsPerPage: 41 }));
     });
 
     test('a reply to a thread that was never expanded reads the first page', async () => {
@@ -456,7 +465,9 @@ describe('createComment epic', () => {
             deps,
         );
 
-        expect(emitted[1]).toEqual(slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, itemsPerPage: REPLIES_PAGE_SIZE }));
+        expect(emitted[1]).toEqual(
+            slice.actions.listReplies({ resource, objectUuid, rootUuid: 'r1', pageNumber: 1, itemsPerPage: REPLIES_PAGE_SIZE }),
+        );
     });
 
     test('403 disables the compose box with the API message and raises no alert', async () => {
@@ -569,7 +580,7 @@ describe('deleteComment epic', () => {
 
         expect(emitted).toEqual([
             slice.actions.deleteCommentSuccess({ uuid: 'c1', parentUuid: 'r1' }),
-            slice.actions.listReplies({ rootUuid: 'r1', pageNumber: 1, itemsPerPage: 40 }),
+            slice.actions.listReplies({ resource, objectUuid, rootUuid: 'r1', pageNumber: 1, itemsPerPage: 40 }),
             slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, itemsPerPage: THREADS_PAGE_SIZE }),
         ]);
     });

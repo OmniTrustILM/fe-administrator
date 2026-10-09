@@ -1353,7 +1353,8 @@ export type CommentsTestState = {
     threads: Record<string, CommentsTestPage & { lock?: unknown }>;
     replies: Record<string, CommentsTestPage>;
     busy: Record<string, boolean>;
-    sortDirection?: string;
+    /** The direction chosen per panel key, as the real slice holds it. */
+    sortDirections: Record<string, string>;
     /** Every `comments/*` action the panel dispatched, so a test can assert the request without an epic. */
     dispatched: Array<{ type: string; payload?: unknown }>;
 };
@@ -1362,7 +1363,7 @@ const commentsTestInitialState: CommentsTestState = {
     threads: {},
     replies: {},
     busy: {},
-    sortDirection: 'desc',
+    sortDirections: {},
     dispatched: [],
 };
 
@@ -1397,7 +1398,7 @@ function withPage(state: CommentsTestState, payload: CommentsPagePayload): Comme
     const isThreads = payload.rootUuid === undefined;
     const id = payload.rootUuid ?? payload.key ?? '';
     const target = (isThreads ? state.threads[id] : state.replies[id]) ?? emptyCommentsTestPage;
-    const sameOrder = payload.sortDirection === (target.sortDirection ?? state.sortDirection);
+    const sameOrder = payload.sortDirection === (target.sortDirection ?? (isThreads ? state.sortDirections[id] : undefined) ?? 'desc');
     const append = page.pageNumber > 1 && anchorUuid === undefined && sameOrder;
     const loaded = append ? target.comments : [];
     const seen = new Set(loaded.map((comment) => comment.uuid));
@@ -1435,7 +1436,8 @@ function commentsTestReducer(state: CommentsTestState | undefined, action: Unkno
     if (action.type === 'comments/createComment') return withPostState(recorded, payload, { isPosting: true, postSucceeded: false });
     if (action.type === 'comments/createCommentSuccess') return withPostState(recorded, payload, { isPosting: false, postSucceeded: true });
     if (action.type === 'comments/changeSortDirection') {
-        return { ...recorded, sortDirection: (action.payload as { sortDirection: string }).sortDirection };
+        const { resource, objectUuid, sortDirection } = action.payload as { resource: string; objectUuid: string; sortDirection: string };
+        return { ...recorded, sortDirections: { ...recorded.sortDirections, [`${resource}/${objectUuid}`]: sortDirection } };
     }
     if (action.type === 'comments/listThreadsSuccess' || action.type === 'comments/listRepliesSuccess') {
         return withPage(recorded, action.payload as CommentsPagePayload);
