@@ -9,7 +9,14 @@ import {
     SortDirection,
     type ViewSlice,
 } from 'types/listViews';
-import { AttributeContentType, FilterFieldSource, type Resource, type SearchFieldDataByGroupDto } from 'types/openapi';
+import {
+    AttributeContentType,
+    FilterFieldSource,
+    ListViewFieldStatus,
+    type ListViewSortRequestDto,
+    type Resource,
+    type SearchFieldDataByGroupDto,
+} from 'types/openapi';
 import type { ColumnDefinition, PickerColumn, SourcedCatalogueField } from 'types/tableColumns';
 import { resolveColumns } from './columnPicker';
 import { type ColumnSort, getColumnHeading, getColumnKey, getSortKey } from './tableColumns';
@@ -301,31 +308,46 @@ export function canOrderBy(
     );
 }
 
-/** A column of one stored view, so confirming an attribute in one view does not confirm it in another. */
-export function toDormantKey(viewUuid: string, column: Pick<ColumnDefinition, 'fieldSource' | 'fieldIdentifier'>): string {
-    return `${viewUuid}|${getColumnKey(column)}`;
+/**
+ * The column keys of a view's columns and filters that Core reports as replaced: their identifier is now backed by an
+ * attribute definition other than the one they were added for, so they stay off the table until the user confirms them.
+ */
+export function heldKeys(view: Pick<ListViewModel, 'columns' | 'filters'>): Set<string> {
+    return new Set(
+        [...view.columns, ...(view.filters ?? [])].filter((entry) => entry.status === ListViewFieldStatus.Replaced).map(getColumnKey),
+    );
+}
+
+function settleStatuses<T extends { status?: ListViewFieldStatus; rebind?: boolean }>(
+    written: readonly T[] | undefined,
+    previous: readonly T[] | undefined,
+    keyOf: (entry: T) => string,
+): T[] | undefined {
+    if (!written) return written;
+    const statuses = new Map((previous ?? []).map((entry) => [keyOf(entry), entry.status]));
+
+    return written.map(({ rebind, status, ...entry }) => {
+        const settled = rebind ? ListViewFieldStatus.Available : (statuses.get(keyOf(entry as T)) ?? status);
+        return (settled ? { ...entry, status: settled } : entry) as T;
+    });
 }
 
 /**
- * The {@link toDormantKey} of each attribute column a stored view holds whose field the catalogue no longer
- * publishes.
- *
- * A column names its attribute only by name and content type, so a later attribute under the same pair may be
- * a different one; these keys are what gets held back for the user to confirm. Call it only once the catalogue
- * has settled: an empty one then means every attribute is gone, not that it has not arrived.
+ * The update as the row will read back once Core accepts it, for an optimistic write: a column or filter sent with
+ * `rebind` is confirmed, and every other one keeps the status the row gave it. Without this the request's columns,
+ * which carry no status, would show a held-back column for as long as the write is out.
  */
-export function goneAttributeKeys(views: readonly ListViewModel[], catalogue: readonly SearchFieldDataByGroupDto[]): string[] {
-    const published = catalogueKeys(catalogue);
-    const gone = new Set<string>();
-    for (const view of views) {
-        for (const column of view.columns) {
-            if (column.fieldSource !== FilterFieldSource.Property && !published.has(getColumnKey(column))) {
-                gone.add(toDormantKey(view.uuid, column));
-            }
-        }
-    }
-
-    return [...gone];
+export function withWrittenStatuses(
+    previous: Pick<ListViewModel, 'columns' | 'filters'>,
+    written: ListViewUpdateRequestModel,
+): ListViewUpdateRequestModel {
+    const { rebind, ...sort } = written.sort ?? {};
+    return {
+        ...written,
+        columns: settleStatuses(written.columns, previous.columns, getColumnKey) ?? [],
+        filters: settleStatuses(written.filters, previous.filters, getFilterKey),
+        sort: written.sort && (sort as ListViewSortRequestDto),
+    };
 }
 
 /** What a write is checked against: the live column catalogue and the page's own platform column set. */
@@ -426,6 +448,11 @@ function toDefinition({ available, ...definition }: PickerColumn): ColumnDefinit
     return definition;
 }
 
+/** A stored filter as the listing takes it, without the binding Core reports beside it. */
+export function toTableFilter({ fieldSource, fieldIdentifier, condition, value }: SearchFilterModel): SearchFilterModel {
+    return { fieldSource, fieldIdentifier, condition, value };
+}
+
 /** The slice a stored view describes, resolved against the live catalogue. */
 export function toViewSlice(
     view: ListViewModel,
@@ -434,7 +461,7 @@ export function toViewSlice(
 ): ViewSlice {
     return {
         columns: resolveView(view.columns, fields, standardColumns).renderable,
-        filters: view.filters ?? [],
+        filters: (view.filters ?? []).map(toTableFilter),
         sort: toColumnSort(view.sort),
     };
 }
@@ -533,6 +560,10 @@ export function toCreateRequest(
     };
 }
 
+function withRebind<T extends StoredField>(entries: T[], rebind: ReadonlySet<string>): T[] {
+    return rebind.size === 0 ? entries : entries.map((entry) => (rebind.has(getColumnKey(entry)) ? { ...entry, rebind: true } : entry));
+}
+
 /**
  * An update request for a stored view.
  *
@@ -547,11 +578,15 @@ export function toCreateRequest(
  *
  * The columns go through {@link toStorableColumns} for a different reason: a display-only column, or a
  * field that is gone and that the stored row does not already hold, makes the API reject the whole request.
+ *
+ * `rebind` names the column keys the user has confirmed: their columns and filters are bound to the attribute
+ * definitions now behind them. Every other one keeps the binding Core holds, so a replacement never takes it over.
  */
 export function toUpdateRequest(
     view: ListViewModel,
     schema: ViewSchema,
     patch: Partial<ListViewUpdateRequestModel> = {},
+    rebind: ReadonlySet<string> = new Set(),
 ): ListViewUpdateRequestModel {
     const row: ListViewUpdateRequestModel = {
         name: view.name,
@@ -564,9 +599,20 @@ export function toUpdateRequest(
 
     return {
         ...row,
-        columns: toStorableColumns(row.columns ?? [], schema, view.columns),
-        filters: toStorableFilters(row.filters ?? [], schema.catalogue, view.filters ?? []),
+        columns: withRebind(toStorableColumns(row.columns ?? [], schema, view.columns), rebind),
+        filters: withRebind(toStorableFilters(row.filters ?? [], schema.catalogue, view.filters ?? []), rebind),
         // Core refuses the whole update over an ordering it cannot apply, which a stored one becomes once its field goes.
-        sort: row.sort && canOrderBy(schema.catalogue, row.sort) ? row.sort : undefined,
+        sort: row.sort && canOrderBy(schema.catalogue, row.sort) ? withSortRebind(row.sort, view.sort) : undefined,
     };
+}
+
+/**
+ * The ordering with `rebind` set when it is not the one the view read back. Core hides a stored ordering whose attribute
+ * was replaced, and carries one sent unchanged over on its old binding, so a user choosing that same ordering again
+ * would see it vanish on every save unless the write says it is chosen now.
+ */
+function withSortRebind(sort: SearchSortModel, stored: SearchSortModel | undefined): ListViewSortRequestDto {
+    const isStored =
+        stored?.fieldSource === sort.fieldSource && stored.fieldIdentifier === sort.fieldIdentifier && stored.direction === sort.direction;
+    return isStored ? sort : { ...sort, rebind: true };
 }

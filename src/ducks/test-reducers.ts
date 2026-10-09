@@ -1466,10 +1466,8 @@ export type ListViewsTestState = {
             isStale?: boolean;
             createdUuid?: string;
             rollback?: ListViewDto[];
-            confirming?: string[];
         }
     >;
-    dormantFields?: Record<string, string[]>;
     error?: string;
     dispatched: Array<{ type: string; payload?: unknown }>;
 };
@@ -1483,6 +1481,31 @@ const listViewsTestInitialState: ListViewsTestState = {
 // out rather than imported, because this file must not pull in the real ducks.
 const PENDING_LIST_VIEW_UUID = 'pending-view';
 
+type StatusedEntry = {
+    fieldSource: string;
+    fieldIdentifier: string;
+    condition?: string;
+    value?: unknown;
+    status?: string;
+    rebind?: boolean;
+};
+
+// Mirrors withWrittenStatuses in src/utils/listViews.ts, spelt out for the same reason: a spec loads this file in Node,
+// where importing utils/listViews fails on the generated types' directory import.
+function settleWrittenStatuses(entries: StatusedEntry[] | undefined, previous: StatusedEntry[] | undefined): StatusedEntry[] | undefined {
+    const keyOf = (entry: StatusedEntry) =>
+        JSON.stringify([entry.fieldSource, entry.fieldIdentifier, entry.condition, entry.value ?? null]);
+    const statuses = new Map((previous ?? []).map((entry) => [keyOf(entry), entry.status]));
+    return entries?.map(({ rebind, status, ...entry }) => {
+        const settled = rebind ? 'available' : (statuses.get(keyOf(entry)) ?? status);
+        return settled ? { ...entry, status: settled } : entry;
+    });
+}
+
+function withoutRebind<T extends { rebind?: boolean }>({ rebind, ...sort }: T): Omit<T, 'rebind'> {
+    return sort;
+}
+
 function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialState, action: UnknownAction): ListViewsTestState {
     const a = action as { type: string; payload?: { resource?: string; view?: Partial<ListViewDto> } };
     if (!a.type.startsWith('listViews/')) return state;
@@ -1491,21 +1514,6 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
 
     const resource = a.payload?.resource;
     if (!resource) return recorded;
-
-    const keys = (a.payload as { keys?: string[] }).keys ?? [];
-    const dormant = recorded.dormantFields?.[resource] ?? [];
-
-    if (a.type === 'listViews/markFieldsDormant') {
-        const marked = { ...recorded, dormantFields: { ...recorded.dormantFields, [resource]: [...new Set([...dormant, ...keys])] } };
-        const held = recorded.byResource[resource];
-        if (!held?.confirming) return marked;
-        const confirming = held.confirming.filter((key) => !keys.includes(key));
-        return { ...marked, byResource: { ...recorded.byResource, [resource]: { ...held, confirming } } };
-    }
-
-    if (a.type === 'listViews/releaseDormantFields') {
-        return { ...recorded, dormantFields: { ...recorded.dormantFields, [resource]: dormant.filter((key) => !keys.includes(key)) } };
-    }
 
     const view = a.payload?.view;
     const entry = recorded.byResource[resource] ?? { views: [], isFetching: false, hasLoaded: false, isMutating: false };
@@ -1564,27 +1572,32 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
         return withEntry({ isMutating: false, views: entry.rollback ?? entry.views, rollback: undefined });
     }
 
-    // An update is applied optimistically and held in flight until a test answers it, as the real reducer does, and
-    // releases the dormant fields it confirms only on success.
+    // An update is applied optimistically and held in flight until a test answers it, as the real reducer does.
     if (a.type === 'listViews/updateView' && uuid && view) {
         const updated = withEntry({
             isMutating: true,
             rollback: entry.views,
-            confirming: (a.payload as { confirms?: string[] }).confirms,
-            views: entry.views.map((each) => (each.uuid === uuid ? ({ ...each, ...view } as ListViewDto) : each)),
+            views: entry.views.map((each) =>
+                each.uuid === uuid
+                    ? ({
+                          ...each,
+                          ...view,
+                          columns: settleWrittenStatuses(view.columns as StatusedEntry[], each.columns as StatusedEntry[]),
+                          filters: settleWrittenStatuses(view.filters as StatusedEntry[], each.filters as StatusedEntry[]),
+                          sort: view.sort && withoutRebind(view.sort as { rebind?: boolean }),
+                      } as ListViewDto)
+                    : each,
+            ),
         });
         return { ...updated, error: undefined };
     }
 
     if (a.type === 'listViews/updateViewSuccess' && view) {
-        const confirmed = entry.confirming ?? [];
-        const saved = withEntry({
+        return withEntry({
             isMutating: false,
             rollback: undefined,
-            confirming: undefined,
             views: entry.views.map((each) => (each.uuid === view.uuid ? (view as ListViewDto) : each)),
         });
-        return { ...saved, dormantFields: { ...saved.dormantFields, [resource]: dormant.filter((key) => !confirmed.includes(key)) } };
     }
 
     // The real slice keeps one error for every resource, so a failed read of another resource sets it too.
@@ -1593,7 +1606,7 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
     }
 
     if (a.type === 'listViews/updateViewFailure') {
-        const failed = withEntry({ isMutating: false, views: entry.rollback ?? entry.views, rollback: undefined, confirming: undefined });
+        const failed = withEntry({ isMutating: false, views: entry.rollback ?? entry.views, rollback: undefined });
         return { ...failed, error: (a.payload as { error?: string }).error };
     }
 
