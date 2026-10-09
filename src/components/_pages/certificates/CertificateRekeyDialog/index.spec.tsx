@@ -1,7 +1,7 @@
 import type { Page } from '@playwright/test';
 import { testInitialState } from 'ducks/test-reducers';
 import type { AttributeDescriptorModel } from 'types/attributes';
-import type { CertificateRegistrationRequestModel } from 'types/certificate';
+import type { CertificateDetailResponseModel, CertificateRegistrationRequestModel } from 'types/certificate';
 import { AttributeContentType, AttributeType, CertificateRegistrationState } from 'types/openapi';
 import { expect, test } from '../../../../../playwright/ct-test';
 import { CertificateRekeyDialogTestWrapper } from './CertificateRekeyDialogTestWrapper';
@@ -326,6 +326,41 @@ test.describe('CertificateRekeyDialog — Register switch', () => {
 
         await expect(page.getByTestId('text-input-__attributes__signatureAttributes__.callbackField')).toHaveCount(0);
         await expect(page.getByTestId('progress-button')).toBeEnabled();
+    });
+
+    test('switching back to rekey reloads the keys of the restored token profile', async ({ mount, page }) => {
+        const certificate = {
+            uuid: 'certificate-uuid',
+            commonName: 'test-certificate',
+            subjectAlternativeNames: { dNSName: ['test.example'] },
+            raProfile: { uuid: 'ra-profile-uuid', name: 'Test RA Profile', authorityInstanceUuid: 'authority-uuid' },
+            key: { uuid: 'current-key-uuid', name: 'Current Key', tokenProfileUuid: 'current-token-profile-uuid' },
+        } as unknown as CertificateDetailResponseModel;
+        await mount(
+            <CertificateRekeyDialogTestWrapper
+                certificate={certificate}
+                preloadedState={{
+                    ...withRenewAndSignatureSchemas,
+                    tokenprofiles: {
+                        tokenProfiles: [
+                            { uuid: 'current-token-profile-uuid', name: 'Current Profile' },
+                            { uuid: 'token-profile-uuid', name: 'Token Profile' },
+                        ],
+                    },
+                }}
+            />,
+        );
+        await chooseNewKey(page);
+
+        await switchToRegister(page);
+        await switchToRegister(page);
+
+        await expect
+            .poll(
+                async () =>
+                    (await dispatched(page)).filter((a) => a.type === 'cryptographicKeys/listCryptographicKeyPairs').at(-1)?.payload,
+            )
+            .toEqual({ tokenProfileUuid: 'current-token-profile-uuid', store: 'normal' });
     });
 
     test('switching back to rekey clears the registration error and restores the key source', async ({ mount, page }) => {

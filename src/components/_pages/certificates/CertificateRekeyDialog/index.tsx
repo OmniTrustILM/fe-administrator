@@ -262,6 +262,11 @@ export default function CertificateRekeyDialog({ onCancel, onDone, onRegister, c
         setRegisterSuccessor(checked);
         if (checked) successor.loadSchema();
         reset(defaultValues);
+        // The key lists still hold the token profile picked before the switch, not the one the reset restored.
+        onTokenProfileChange(defaultValues.tokenProfile, 'normal');
+        onTokenProfileChange(defaultValues.altTokenProfile, 'alt');
+        dispatch(cryptographyOperationActions.clearSignatureAttributeDescriptors('normal'));
+        dispatch(cryptographyOperationActions.clearSignatureAttributeDescriptors('alt'));
         setSignatureAttributesCallbackAttributes([]);
         setAltSignatureAttributesCallbackAttributes([]);
         setFileContent('');

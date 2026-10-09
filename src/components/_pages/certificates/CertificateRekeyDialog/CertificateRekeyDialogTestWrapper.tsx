@@ -70,7 +70,7 @@ export function CertificateRekeyDialogTestWrapper({
 }: CertificateRekeyDialogTestWrapperProps) {
     const certificate = useMemo(() => certificateOverride ?? testCertificate(registrationState), [certificateOverride, registrationState]);
 
-    const { store, dispatched } = useRecordingStore(preloadedState ?? loadedRegisterSchema, 'certificates/', rootReducer);
+    const { store, dispatched } = useRecordingStore(preloadedState ?? loadedRegisterSchema, '', rootReducer);
 
     const [open, setOpen] = useState(true);
 
