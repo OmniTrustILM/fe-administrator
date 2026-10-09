@@ -2,6 +2,7 @@ import cn from 'classnames';
 import Breadcrumb from 'components/Breadcrumb';
 import Button from 'components/Button';
 import Container from 'components/Container';
+import CustomAttributeWidget from 'components/Attributes/CustomAttributeWidget';
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import TabLayout from 'components/Layout/TabLayout';
 import Widget from 'components/Widget';
@@ -10,7 +11,8 @@ import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
 import { useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
-import { PlatformEnum } from 'types/openapi';
+import type { AttributeResponseModel } from 'types/attributes';
+import { PlatformEnum, Resource } from 'types/openapi';
 import { PQC_READINESS_TAB } from 'utils/crypto-assets';
 import {
     CryptoAssetEvaluatedProperties,
@@ -170,6 +172,16 @@ export default function CryptoAssetDetail() {
         </div>
     );
 
+    const attributesTab = (
+        <Container>
+            <CustomAttributeWidget
+                resource={Resource.CryptoAssets}
+                resourceUuid={detail.uuid}
+                attributes={(detail as typeof detail & { customAttributes?: AttributeResponseModel[] }).customAttributes}
+            />
+        </Container>
+    );
+
     return (
         <div>
             {breadcrumb}
@@ -178,6 +190,7 @@ export default function CryptoAssetDetail() {
                 tabs={[
                     { title: 'Details', content: detailsTab },
                     { title: 'PQC readiness', tabKey: PQC_READINESS_TAB, content: readinessTab },
+                    { title: 'Attributes', tabKey: 'attributes', content: attributesTab },
                 ]}
             />
         </div>

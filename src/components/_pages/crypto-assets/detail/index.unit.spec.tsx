@@ -4,6 +4,8 @@ import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { actions } from 'ducks/crypto-assets';
+import { actions as customAttributeActions } from 'ducks/customAttributes';
+import { AttributeContentType, AttributeType, Resource } from 'types/openapi';
 import { LockTypeEnum } from 'types/user-interface';
 import { createMockStore } from 'utils/test-helpers';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
@@ -117,6 +119,36 @@ describe('CryptoAssetDetail', () => {
         expect(one('h1')?.textContent).toBe('RSA-2048');
         expect(widgetTitles()).toEqual(['Identity', 'PQC readiness', 'Source CBOMs', 'Crypto properties']);
         expect(one(explanationWidget)).toBeNull();
+    });
+
+    test('the attributes tab shows saved content and loads the editor for this asset', async () => {
+        const customAttributes = [
+            {
+                uuid: 'owner-attribute',
+                name: 'owner',
+                label: 'Owner',
+                type: AttributeType.Custom,
+                contentType: AttributeContentType.String,
+                properties: { label: 'Owner', readOnly: false, required: false, list: false, multiSelect: false },
+                content: [{ data: 'Security team' }],
+            },
+        ];
+        const store = storeWith({ assetDetail: { ...loadedAsset, customAttributes } });
+        store.dispatch(customAttributeActions.listResourceCustomAttributesSuccess([customAttributes[0] as never]));
+        const dispatch = vi.spyOn(store, 'dispatch');
+
+        await render(store, '?tab=attributes');
+
+        expect(widgetTitles()).toContain('Custom Attributes');
+        expect(container.textContent).toContain('Security team');
+        expect(dispatch).toHaveBeenCalledWith(customAttributeActions.listResourceCustomAttributes(Resource.CryptoAssets));
+        expect(dispatch).toHaveBeenCalledWith(
+            customAttributeActions.loadCustomAttributeContent({
+                resource: Resource.CryptoAssets,
+                resourceUuid: 'asset-1',
+                customAttributes,
+            }),
+        );
     });
 
     test('the PQC readiness tab shows the rules beside the properties they evaluated', async () => {

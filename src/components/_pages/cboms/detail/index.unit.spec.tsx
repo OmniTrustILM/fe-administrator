@@ -1,10 +1,16 @@
 import { act } from 'react';
+import { configureStore } from '@reduxjs/toolkit';
+import { Provider } from 'react-redux';
 import { createRoot, type Root } from 'react-dom/client';
-import { MemoryRouter } from 'react-router';
+import { MemoryRouter, Route, Routes } from 'react-router';
 import type { ComponentAssetLink } from 'utils/cbom-asset-links';
+import { actions as customAttributeActions } from 'ducks/customAttributes';
+import { initialState as initialCbomState } from 'ducks/cbom';
+import { testInitialState, testReducers } from 'ducks/test-reducers';
+import { AttributeContentType, AttributeType, Resource } from 'types/openapi';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
-import { buildComponentRows } from './index';
+import CbomDetail, { buildComponentRows } from './index';
 
 setupReactActEnvironment();
 
@@ -113,5 +119,72 @@ describe('CBOM detail component rows', () => {
         });
 
         expect(onDetail).toHaveBeenCalledWith('RSA-2048', components[0]);
+    });
+});
+
+describe('CBOM detail attributes', () => {
+    test('the attributes tab shows saved content and loads the editor for this CBOM version', async () => {
+        const customAttributes = [
+            {
+                uuid: 'owner-attribute',
+                name: 'owner',
+                label: 'Owner',
+                type: AttributeType.Custom,
+                contentType: AttributeContentType.String,
+                properties: { label: 'Owner', readOnly: false, required: false, list: false, multiSelect: false },
+                content: [{ data: 'Inventory team' }],
+            },
+        ];
+        const cbomState = {
+            ...initialCbomState,
+            cbomDetail: {
+                uuid: 'cbom-v2',
+                serialNumber: 'urn:cbom:example',
+                version: 2,
+                specVersion: '1.7',
+                content: { components: [] },
+                totalAssets: 0,
+                customAttributes,
+            },
+        };
+        const store = configureStore({
+            reducer: (state = { ...testInitialState, cbom: cbomState }, action) => {
+                const { cbom: _cbom, ...otherState } = state;
+                return { ...testReducers(otherState, action), cbom: cbomState };
+            },
+        });
+        store.dispatch(customAttributeActions.listResourceCustomAttributesSuccess([customAttributes[0] as never]));
+        const dispatch = vi.spyOn(store, 'dispatch');
+        const container = document.createElement('div');
+        document.body.appendChild(container);
+        const root = createRoot(container);
+        try {
+            await act(async () => {
+                root.render(
+                    <Provider store={store}>
+                        <MemoryRouter initialEntries={['/cboms/detail/cbom-v2?tab=attributes']}>
+                            <Routes>
+                                <Route path="/cboms/detail/:id" element={<CbomDetail />} />
+                            </Routes>
+                        </MemoryRouter>
+                    </Provider>,
+                );
+            });
+            await act(async () => new Promise((resolve) => setTimeout(resolve, 50)));
+
+            expect(container.textContent).toContain('Custom Attributes');
+            expect(container.textContent).toContain('Inventory team');
+            expect(dispatch).toHaveBeenCalledWith(customAttributeActions.listResourceCustomAttributes(Resource.Cboms));
+            expect(dispatch).toHaveBeenCalledWith(
+                customAttributeActions.loadCustomAttributeContent({
+                    resource: Resource.Cboms,
+                    resourceUuid: 'cbom-v2',
+                    customAttributes,
+                }),
+            );
+        } finally {
+            await act(async () => root.unmount());
+            container.remove();
+        }
     });
 });
