@@ -270,12 +270,12 @@ describe('DiscoveryDetail', () => {
             expect(deleteButton()?.title).toBe('Delete');
         });
 
-        it('refreshes a widget in place, keeping the run that is on screen', async () => {
+        it('refreshes the page in place from Discovery Details, keeping the run that is on screen', async () => {
             await render(buildState(v2Run));
             dispatch.mockClear();
 
             await act(async () => {
-                container.querySelector<HTMLButtonElement>('[data-testid="refresh-Progress"]')?.click();
+                container.querySelector<HTMLButtonElement>('[data-testid="refresh-Discovery Details"]')?.click();
             });
 
             const actions = dispatch.mock.calls.map((call) => call[0]);
@@ -531,6 +531,28 @@ describe('DiscoveryDetail', () => {
     });
 
     describe('refreshing', () => {
+        it('has one refresh button, on Discovery Details, which re-reads the trigger summary too', async () => {
+            const state = buildState(v2Run);
+            (state.rules as any).triggerHistorySummary = {
+                associationObjectUuid: 'disc-1',
+                objectsEvaluated: 1,
+                objectsMatched: 1,
+                objectsIgnored: 0,
+            };
+            await render(state);
+
+            expect(container.querySelector('[data-testid="widget-Triggers summary"]')).not.toBeNull();
+            expect(Array.from(container.querySelectorAll('[data-testid^="refresh-"]')).map((b) => b.getAttribute('data-testid'))).toEqual([
+                'refresh-Discovery Details',
+            ]);
+
+            dispatch.mockClear();
+            await act(async () => {
+                container.querySelector<HTMLButtonElement>('[data-testid="refresh-Discovery Details"]')?.click();
+            });
+            expect(dispatch.mock.calls.map((call) => call[0]?.type)).toContain('rules/getTriggerHistorySummary');
+        });
+
         it('keeps the page while a refresh is in flight and shows the skeleton only before the first load', async () => {
             const refreshing = buildState(v2Run);
             refreshing.discoveries.isFetchingDetail = true;

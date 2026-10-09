@@ -104,8 +104,9 @@ export default function DiscoveryDetail() {
         dispatch(rulesActions.getTriggerHistorySummary({ triggerObjectUuid: id }));
     }, [id, dispatch]);
 
-    // What a refresh button does: re-read the run that is already on screen and leave it standing, as the lifecycle
-    // epic does. Resetting first would blank the page and show the full skeleton for a re-read of one widget.
+    // The page's one refresh button, on Discovery Details as on the other detail pages. It re-reads the run that is
+    // already on screen and leaves it standing, as the lifecycle epic does. Resetting first would blank the page and
+    // show the full skeleton.
     const refreshDiscoveryDetails = useCallback(() => {
         if (!id) return;
         dispatch(actions.getDiscoveryDetail({ uuid: id, keepCurrent: true }));
@@ -432,11 +433,7 @@ export default function DiscoveryDetail() {
                                             {/* min-w-0: a table records its width when it first renders, and a flex
                                                 item that cannot shrink below it keeps that width when a neighbour
                                                 arrives later. */}
-                                            <DiscoveryProgressWidget
-                                                discovery={discovery}
-                                                onRefresh={refreshDiscoveryDetails}
-                                                className="w-full md:flex-1 md:min-w-0"
-                                            />
+                                            <DiscoveryProgressWidget discovery={discovery} className="w-full md:flex-1 md:min-w-0" />
                                             <DiscoveryResultsSummary
                                                 discovery={discovery}
                                                 headers={detailHeaders}
@@ -451,12 +448,7 @@ export default function DiscoveryDetail() {
                                         </Widget>
 
                                         {triggerHistorySummary?.associationObjectUuid === id && (
-                                            <Widget
-                                                title="Triggers summary"
-                                                titleSize="large"
-                                                busy={isFetchingTriggerSummary}
-                                                refreshAction={getFreshTriggerHistorySummary}
-                                            >
+                                            <Widget title="Triggers summary" titleSize="large" busy={isFetchingTriggerSummary}>
                                                 <CustomTable headers={detailHeaders} data={triggersSummary} />
                                             </Widget>
                                         )}

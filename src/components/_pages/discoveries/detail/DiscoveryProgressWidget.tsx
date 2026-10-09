@@ -10,7 +10,6 @@ import { importRemainder, isTerminalRun, progressRecordedCaption, targetsCaption
 
 type Props = Readonly<{
     discovery: DiscoveryResponseDetailModel;
-    onRefresh?: () => void;
     className?: string;
 }>;
 
@@ -28,7 +27,7 @@ const BY_RESOURCE_HEADERS: TableHeader[] = [
  * reports no progress at all, and then this widget renders nothing. A v2 run always gets the widget, so the row it shares
  * keeps its shape when the first report arrives.
  */
-export default function DiscoveryProgressWidget({ discovery, onRefresh, className }: Props) {
+export default function DiscoveryProgressWidget({ discovery, className }: Props) {
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
 
     const progress = discovery.progress;
@@ -63,7 +62,7 @@ export default function DiscoveryProgressWidget({ discovery, onRefresh, classNam
     const importCaption = nothingToImport ? 'Nothing to import' : `${remaining} waiting${notImported}`;
 
     return (
-        <Widget title="Progress" titleSize="large" refreshAction={onRefresh} className={className} dataTestId="discovery-progress">
+        <Widget title="Progress" titleSize="large" className={className} dataTestId="discovery-progress">
             <div className="flex flex-col gap-4">
                 {progress ? (
                     <div data-testid="provider-progress">
