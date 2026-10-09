@@ -90,7 +90,8 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
 
     // The reply box sits where the new reply will land: above the replies in a newest-first thread, below them otherwise.
     const composer = (
-        <CommentComposer key="reply-composer"
+        <CommentComposer
+            key="reply-composer"
             onSubmit={onReplySubmit}
             onCancel={() => setReplying(false)}
             isPosting={isPosting}

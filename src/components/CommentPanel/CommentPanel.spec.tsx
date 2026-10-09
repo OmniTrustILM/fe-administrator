@@ -405,6 +405,45 @@ test.describe('CommentPanel', () => {
         await expect(page.getByPlaceholder('Write a reply…')).toBeFocused();
     });
 
+    test('a reply draft survives the direction change that moves the reply box', async ({ mount, page }) => {
+        await mount(
+            <CommentPanelWithStore
+                comments={{
+                    threads: { [KEY]: threadsPage([comment('r1', 'root', { replyCount: 2 })]) },
+                    replies: { r1: threadsPage([comment('c1', 'older'), comment('c2', 'newer')], { itemsPerPage: 20 }) },
+                }}
+                deliver={[
+                    {
+                        testId: 'deliver-replies-desc',
+                        type: 'comments/listRepliesSuccess',
+                        payload: {
+                            rootUuid: 'r1',
+                            page: apiPage([comment('c2', 'newer'), comment('c1', 'older')], { itemsPerPage: 20 }),
+                            sortDirection: 'desc',
+                        },
+                    },
+                ]}
+            />,
+        );
+
+        const boxFollows = (replyUuid: string) =>
+            page.evaluate((uuid) => {
+                const reply = document.querySelector(`[data-testid="comment-${uuid}"]`);
+                const box = document.querySelector('[data-testid="thread-r1-reply-composer"]');
+                return reply && box ? Boolean(reply.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_FOLLOWING) : undefined;
+            }, replyUuid);
+
+        await page.getByTestId('comment-r1-reply').click();
+        await page.getByPlaceholder('Write a reply…').fill('half-written');
+        expect(await boxFollows('c2')).toBe(true);
+
+        // The thread is re-read newest-first, as the epic does after the panel's direction is switched.
+        await page.getByTestId('deliver-replies-desc').click();
+        await expect(page.getByTestId('thread-r1-replies').locator('[data-testid$="-body"]')).toHaveText(['newer', 'older']);
+        expect(await boxFollows('c2')).toBe(false);
+        await expect(page.getByPlaceholder('Write a reply…')).toHaveValue('half-written');
+    });
+
     test('replies load incrementally with a Load more button', async ({ mount, page }) => {
         await mount(
             <CommentPanelWithStore
