@@ -4,6 +4,8 @@ import { TriangleAlert } from 'lucide-react';
 type Props = Readonly<{
     /** Labels of the fields whose stored filters are withheld, on fields the view has no column for. */
     fields: string[];
+    /** How many stored filters are withheld across those fields; a field can carry several with different conditions. */
+    filterCount: number;
     onApply: () => void;
     onRemove: () => void;
     /** Whether a view write is already out. A second one would be built from the first one's optimistic state. */
@@ -18,10 +20,11 @@ const list = (names: string[]): string => (names.length === 1 ? names[0] : `${na
  * for. The returned-columns notice names only columns, so without this the filter would be withheld with nothing
  * naming it, and the view would list more rows than it was saved to. It has no dismissal for the same reason.
  */
-export default function HeldFiltersNotice({ fields, onApply, onRemove, isBusy = false, dataTestId }: Props) {
+export default function HeldFiltersNotice({ fields, filterCount, onApply, onRemove, isBusy = false, dataTestId }: Props) {
     if (fields.length === 0) return null;
 
-    const subject = fields.length === 1 ? 'the filter on' : 'the filters on';
+    const plural = filterCount > 1;
+    const subject = plural ? 'the filters on' : 'the filter on';
     const identity =
         fields.length === 1
             ? 'may be a different attribute with the same name and content type'
@@ -36,10 +39,10 @@ export default function HeldFiltersNotice({ fields, onApply, onRemove, isBusy = 
             <TriangleAlert className="size-4 shrink-0 text-warning" aria-hidden="true" />
             <span>{message}</span>
             <Button variant="transparent" color="secondary" onClick={onApply} disabled={isBusy} data-testid={`${dataTestId}-apply`}>
-                {fields.length === 1 ? 'Apply filter' : 'Apply filters'}
+                {plural ? 'Apply filters' : 'Apply filter'}
             </Button>
             <Button variant="transparent" color="secondary" onClick={onRemove} disabled={isBusy} data-testid={`${dataTestId}-remove`}>
-                {fields.length === 1 ? 'Remove filter' : 'Remove filters'}
+                {plural ? 'Remove filters' : 'Remove filter'}
             </Button>
         </output>
     );

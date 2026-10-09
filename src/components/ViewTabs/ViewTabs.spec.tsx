@@ -1806,6 +1806,22 @@ test.describe('ViewTabs', () => {
         });
     });
 
+    test('speaks of the filters when one held field carries several of them', async ({ mount, page }) => {
+        const notEmpty = { ...retiredFilter, condition: FilterConditionOperator.NotEmpty, value: undefined };
+        const view = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME')],
+            filters: [replaced(retiredFilter), replaced(notEmpty)],
+        });
+        await mount(strip({ views: [view], fields: withRetired }));
+
+        await expect(page.getByTestId('view-tabs-held-filters')).toContainText(
+            'Retired may be a different attribute with the same name and content type, so this view is not applying the filters on it.',
+        );
+        await expect(page.getByTestId('view-tabs-held-filters-apply')).toHaveText('Apply filters');
+        await expect(page.getByTestId('view-tabs-held-filters-remove')).toHaveText('Remove filters');
+    });
+
     test('names a held filter whose column this page cannot display', async ({ mount, page }) => {
         await mount(heldBackStrip({ fields: hiddenRetired }));
 

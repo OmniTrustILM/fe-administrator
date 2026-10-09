@@ -287,6 +287,11 @@ export default function ViewTabs({
         return heldFilterKeys.map((key) => labels.get(key) ?? key);
     }, [catalogue, heldFilterKeys]);
 
+    const heldFilterCount = useMemo(() => {
+        const keys = new Set(heldFilterKeys);
+        return heldFilters.filter((filter) => keys.has(getColumnKey(filter))).length;
+    }, [heldFilters, heldFilterKeys]);
+
     const returned = useMemo(() => {
         const shown = new Set(columns.map(getColumnKey));
         return held.filter((column) => !shown.has(getColumnKey(column)));
@@ -880,6 +885,7 @@ export default function ViewTabs({
 
             <HeldFiltersNotice
                 fields={heldFilterLabels}
+                filterCount={heldFilterCount}
                 onApply={onApplyHeldFilters}
                 onRemove={onRemoveHeldFilters}
                 isBusy={isMutating}
