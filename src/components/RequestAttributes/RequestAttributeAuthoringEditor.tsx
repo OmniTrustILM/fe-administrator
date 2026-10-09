@@ -240,7 +240,11 @@ type Props = Readonly<{
     onChange: (next: RequestAttributeAuthoringFormValues) => void;
     /** RA-Profile authoring shows the merge-mode selector; the platform default set does not. */
     showMergeMode?: boolean;
-    /** Value-source bindings are RA-Profile-only; the platform default DTO can't persist them. */
+    /**
+     * Value-source bindings are RA-Profile-only; the platform default DTO can't persist them. The
+     * RA-Profile views hide the section as well until Core resolves values from a binding: the stored
+     * bindings stay in `value` and are saved back unchanged.
+     */
     showBindings?: boolean;
     disabled?: boolean;
     /** Optional connector attribute descriptors to pick a binding target from (name/uuid). */

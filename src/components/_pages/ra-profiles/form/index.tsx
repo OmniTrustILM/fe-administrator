@@ -311,11 +311,6 @@ export default function RaProfileForm({
                 }
             });
             setLocalProfileModifications({ attributes: [] });
-            // Value-source bindings reference the previous authority's connector-attribute descriptor
-            // UUIDs, which are cleared and refetched below. Drop them so stale bindings can't be PATCHed
-            // against the newly selected authority. Authored static attributes are authority-independent
-            // and are preserved.
-            setRequestAttributesForm((prev) => ({ ...prev, valueSourceBindings: [] }));
             dispatch(authoritiesActions.clearRAProfilesAttributesDescriptors());
             dispatch(authoritiesActions.getRAProfilesAttributesDescriptors({ authorityUuid }));
         },
@@ -513,7 +508,7 @@ export default function RaProfileForm({
                                                 value={requestAttributesForm}
                                                 onChange={onChangeRequestAttributes}
                                                 showMergeMode
-                                                showBindings
+                                                showBindings={false}
                                                 connectorAttributeOptions={connectorAttributeOptions}
                                                 rdnOptions={rdnOptions}
                                                 extensionOptions={extensionOptions}
@@ -539,7 +534,7 @@ export default function RaProfileForm({
                                                 value={requestAttributesForm}
                                                 onChange={setRequestAttributesForm}
                                                 showMergeMode
-                                                showBindings
+                                                showBindings={false}
                                                 connectorAttributeOptions={connectorAttributeOptions}
                                                 rdnOptions={rdnOptions}
                                                 extensionOptions={extensionOptions}

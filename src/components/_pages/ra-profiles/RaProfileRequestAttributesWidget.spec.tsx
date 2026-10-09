@@ -102,22 +102,24 @@ test.describe('RaProfileRequestAttributesWidget', () => {
         await expect(page.getByTestId('request-attributes-update-error')).toHaveCount(0);
     });
 
-    test('static only: a profile without a merge mode seeds Static only and no bindings', async ({ mount, page }) => {
+    test('static only: a profile without a merge mode seeds Static only and shows no bindings section', async ({ mount, page }) => {
         await mount(<RaProfileRequestAttributesWidgetTestWrapper certificateRequestAttributes={authoredSet} />);
 
         const mergeMode = page.getByTestId('request-attribute-authoring-merge-mode');
         await expect(mergeMode).toBeVisible();
         await expect(mergeMode.getByRole('radio', { name: /Static only/ })).toBeChecked();
-        await expect(page.getByTestId('request-attribute-authoring-bindings-empty')).toBeVisible();
+        await expect(page.getByTestId('request-attribute-authoring-bindings')).toHaveCount(0);
     });
 
-    test('connector-provided: a merged profile seeds its merge mode and binding rows and counts as authored', async ({ mount, page }) => {
+    test('connector-provided: a merged profile seeds its merge mode and counts as authored without listing its bindings', async ({
+        mount,
+        page,
+    }) => {
         await mount(<RaProfileRequestAttributesWidgetTestWrapper certificateRequestAttributes={mergedSet} />);
 
         const mergeMode = page.getByTestId('request-attribute-authoring-merge-mode');
         await expect(mergeMode.getByRole('radio', { name: /^Merge/ })).toBeChecked();
-        await expect(page.getByTestId('request-attribute-authoring-binding-row')).toHaveCount(1);
-        await expect(page.getByTestId('request-attribute-authoring-binding-row')).toContainText('commonName');
+        await expect(page.getByTestId('request-attribute-authoring-binding-row')).toHaveCount(0);
         await expect(page.getByTestId('request-attributes-platform-default-note')).toHaveCount(0);
     });
 
@@ -138,14 +140,14 @@ test.describe('RaProfileRequestAttributesWidget', () => {
         });
     });
 
-    test('removing the last binding sends an explicit empty list so Core clears it rather than keeps it', async ({ mount, page }) => {
+    test('offers no control to add, edit or remove a stored binding, and sends nothing on its own', async ({ mount, page }) => {
         await mount(<RaProfileRequestAttributesWidgetTestWrapper certificateRequestAttributes={mergedSet} />);
 
-        await page.getByTestId('request-attribute-authoring-binding-remove').click();
-
-        await expect.poll(() => updatePatches(page)).toHaveLength(1);
-        const [patch] = await updatePatches(page);
-        expect(patch.payload).toMatchObject({ data: { mergeMode: 'merge', valueSourceBindings: [] } });
+        await expect(page.getByTestId('request-attribute-authoring-merge-mode')).toBeVisible();
+        await expect(page.getByTestId('request-attribute-authoring-binding-add')).toHaveCount(0);
+        await expect(page.getByTestId('request-attribute-authoring-binding-edit')).toHaveCount(0);
+        await expect(page.getByTestId('request-attribute-authoring-binding-remove')).toHaveCount(0);
+        expect(await updatePatches(page)).toHaveLength(0);
     });
 
     test('clears the previous connector descriptors before fetching the current authority set', async ({ mount, page }) => {

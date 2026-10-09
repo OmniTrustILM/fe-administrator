@@ -155,7 +155,7 @@ export default function RaProfileRequestAttributesWidget({
                 value={form}
                 onChange={onChange}
                 showMergeMode
-                showBindings
+                showBindings={false}
                 connectorAttributeOptions={connectorAttributeOptions}
                 rdnOptions={rdnOptions}
                 extensionOptions={extensionOptions}
