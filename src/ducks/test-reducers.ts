@@ -1500,6 +1500,10 @@ function settleWrittenStatuses(entries: StatusedEntry[] | undefined, previous: S
     });
 }
 
+function withoutRebind<T extends { rebind?: boolean }>({ rebind, ...sort }: T): Omit<T, 'rebind'> {
+    return sort;
+}
+
 function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialState, action: UnknownAction): ListViewsTestState {
     const a = action as { type: string; payload?: { resource?: string; view?: Partial<ListViewDto> } };
     if (!a.type.startsWith('listViews/')) return state;
@@ -1578,6 +1582,7 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
                           ...view,
                           columns: settleWrittenStatuses(view.columns as StatusedEntry[], each.columns as StatusedEntry[]),
                           filters: settleWrittenStatuses(view.filters as StatusedEntry[], each.filters as StatusedEntry[]),
+                          sort: view.sort && withoutRebind(view.sort as { rebind?: boolean }),
                       } as ListViewDto)
                     : each,
             ),
