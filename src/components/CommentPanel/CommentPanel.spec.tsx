@@ -381,6 +381,30 @@ test.describe('CommentPanel', () => {
         });
     });
 
+    test('in a newest-first thread the reply box sits before the first reply, where the new one will land', async ({ mount, page }) => {
+        await mount(
+            <CommentPanelWithStore
+                comments={{
+                    threads: { [KEY]: threadsPage([comment('r1', 'root', { replyCount: 2 })], { sortDirection: 'desc' }) },
+                    replies: {
+                        r1: threadsPage([comment('c2', 'newer'), comment('c1', 'older')], { itemsPerPage: 20, sortDirection: 'desc' }),
+                    },
+                }}
+            />,
+        );
+
+        await page.getByTestId('comment-r1-reply').click();
+        await expect(page.getByTestId('comment-c2-body')).toHaveText('newer');
+        expect(
+            await page.evaluate(() => {
+                const reply = document.querySelector('[data-testid="comment-c2"]');
+                const box = document.querySelector('[data-testid="thread-r1-reply-composer"]');
+                return reply && box ? Boolean(reply.compareDocumentPosition(box) & Node.DOCUMENT_POSITION_PRECEDING) : false;
+            }),
+        ).toBe(true);
+        await expect(page.getByPlaceholder('Write a reply…')).toBeFocused();
+    });
+
     test('replies load incrementally with a Load more button', async ({ mount, page }) => {
         await mount(
             <CommentPanelWithStore

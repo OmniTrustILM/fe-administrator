@@ -88,6 +88,21 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
         [dispatch, resource, objectUuid, uuid],
     );
 
+    // The reply box sits where the new reply will land: above the replies in a newest-first thread, below them otherwise.
+    const composer = (
+        <CommentComposer
+            onSubmit={onReplySubmit}
+            onCancel={() => setReplying(false)}
+            isPosting={isPosting}
+            postSucceeded={postSucceeded}
+            denied={postingDenied}
+            placeholder="Write a reply…"
+            submitLabel="Reply"
+            dataTestId={`thread-${uuid}-reply-composer`}
+            autoFocus
+        />
+    );
+
     return (
         <div className="flex flex-col gap-2" data-testid={`thread-${uuid}`}>
             <CommentItem
@@ -118,6 +133,8 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
                             {replyLabel(replyCount)}
                         </Button>
                     )}
+
+                    {replying && newestFirst && composer}
 
                     {expanded && (
                         <div className="relative flex flex-col gap-2" data-testid={`thread-${uuid}-replies`}>
@@ -159,19 +176,7 @@ export default function CommentThread({ resource, objectUuid, root, busy, onDele
                         </div>
                     )}
 
-                    {replying && (
-                        <CommentComposer
-                            onSubmit={onReplySubmit}
-                            onCancel={() => setReplying(false)}
-                            isPosting={isPosting}
-                            postSucceeded={postSucceeded}
-                            denied={postingDenied}
-                            placeholder="Write a reply…"
-                            submitLabel="Reply"
-                            dataTestId={`thread-${uuid}-reply-composer`}
-                            autoFocus
-                        />
-                    )}
+                    {replying && !newestFirst && composer}
                 </div>
             )}
         </div>
