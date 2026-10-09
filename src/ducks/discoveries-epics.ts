@@ -51,7 +51,7 @@ const listDiscoveries: AppEpic = (action$, state$, deps) => {
     );
 };
 
-const getDiscoveryDetail: AppEpic = (action$, state$, deps) => {
+export const getDiscoveryDetail: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.getDiscoveryDetail.match),
 
@@ -63,12 +63,14 @@ const getDiscoveryDetail: AppEpic = (action$, state$, deps) => {
                         userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.DiscoveryDetails),
                     ),
                 ),
-                catchError((err) =>
-                    of(
-                        slice.actions.getDiscoveryDetailFailure({ error: extractError(err, 'Failed to get Discovery detail') }),
-                        userInterfaceActions.insertWidgetLock(err, LockWidgetNameEnum.DiscoveryDetails),
-                    ),
-                ),
+                catchError((err) => {
+                    const failure = slice.actions.getDiscoveryDetailFailure({ error: extractError(err, 'Failed to get Discovery detail') });
+                    // A failed poll is dropped and the next one tries again, so one network blip does not take the page
+                    // down. A run that no longer exists is an answer rather than a blip, and locks the page as a refresh
+                    // would.
+                    if (action.payload.poll && !(err instanceof AjaxError && err.status === 404)) return of(failure);
+                    return of(failure, userInterfaceActions.insertWidgetLock(err, LockWidgetNameEnum.DiscoveryDetails));
+                }),
             ),
         ),
     );

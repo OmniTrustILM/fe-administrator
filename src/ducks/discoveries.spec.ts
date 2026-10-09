@@ -318,6 +318,25 @@ describe('discoveries slice - v2 additions', () => {
         expect(loading.discovery).toBeUndefined();
     });
 
+    test('a poll re-reads in place under its own flag, so the page never shows busy for it', () => {
+        const shown = { ...initialState, discovery: { uuid: 'd-1' } } as any;
+
+        const polling = reducer(shown, actions.getDiscoveryDetail({ uuid: 'd-1', poll: true }));
+        expect(polling.discovery).toEqual({ uuid: 'd-1' });
+        expect(polling.isPollingDetail).toBe(true);
+        expect(polling.isFetchingDetail).toBe(false);
+
+        // A refresh clicked during a poll replaces it, and its answer is the only one that arrives.
+        const refreshed = reducer(
+            reducer(polling, actions.getDiscoveryDetail({ uuid: 'd-1', keepCurrent: true })),
+            actions.getDiscoveryDetailSuccess({ discovery: { uuid: 'd-1' } as any }),
+        );
+        expect(refreshed.isPollingDetail).toBe(false);
+        expect(refreshed.isFetchingDetail).toBe(false);
+
+        expect(reducer(polling, actions.getDiscoveryDetailFailure({ error: 'err' })).isPollingDetail).toBe(false);
+    });
+
     test('clearing without a resource drops every per-resource set', () => {
         const pre = { ...initialState, discoveryProviderResourceAttributeDescriptors: { keys: [], certificates: [] } };
         expect(reducer(pre, actions.clearDiscoveryResourceAttributeDescriptors({})).discoveryProviderResourceAttributeDescriptors).toEqual(
@@ -413,6 +432,7 @@ describe('discoveries selectors', () => {
             isFetchingDiscoveryProviderAttributeDescriptors: true,
             isFetchingDiscoveryCertificates: true,
             isFetchingDetail: true,
+            isPollingDetail: true,
             isCreating: true,
             createDiscoverySucceeded: true,
             isDeleting: true,
@@ -430,6 +450,7 @@ describe('discoveries selectors', () => {
         expect(selectors.isFetchingDiscoveryProviderAttributeDescriptors(state)).toBe(true);
         expect(selectors.isFetchingDiscoveryCertificates(state)).toBe(true);
         expect(selectors.isFetchingDetail(state)).toBe(true);
+        expect(selectors.isPollingDetail(state)).toBe(true);
         expect(selectors.isCreating(state)).toBe(true);
         expect(selectors.createDiscoverySucceeded(state)).toBe(true);
         expect(selectors.isDeleting(state)).toBe(true);

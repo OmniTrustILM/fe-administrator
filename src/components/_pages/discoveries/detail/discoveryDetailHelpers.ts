@@ -54,6 +54,11 @@ export function isTerminalRun(status: DiscoveryStatus | undefined): boolean {
     );
 }
 
+/** A run whose figures are still moving: the Provider is working, or the platform is importing what it found. */
+export function isLiveRun(status: DiscoveryStatus | undefined): boolean {
+    return status === DiscoveryStatus.InProgress || status === DiscoveryStatus.Processing;
+}
+
 /**
  * What the delete button says when Core will refuse the call. Cancel is itself refused once the run is processing -
  * the Provider is done and the remaining import is not abortable - so the only way out of that state is waiting.

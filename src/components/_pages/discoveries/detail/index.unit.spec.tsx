@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 
 import DiscoveryDetail from './index';
 import { DiscoveryStatus, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { LockWidgetNameEnum } from 'types/user-interface';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
 import { useDispatchMock, useSelectorMock } from '../../test-utils/reactReduxMockModule';
 
@@ -541,6 +542,105 @@ describe('DiscoveryDetail', () => {
             firstLoad.discoveries.isFetchingDetail = true;
             await render(firstLoad);
             expect(container.querySelector('[data-testid="skeleton"]')).not.toBeNull();
+        });
+    });
+
+    describe('re-reading a live run on its own', () => {
+        const POLL = 10_000;
+
+        beforeEach(() => {
+            vi.useFakeTimers();
+            vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+            vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+            vi.restoreAllMocks();
+        });
+
+        const dispatched = () => dispatch.mock.calls.map((call) => call[0]);
+        const polls = () => dispatched().filter((action) => action?.type === 'discoveries/getDiscoveryDetail' && action.payload.poll);
+        const tick = async () => {
+            await act(async () => {
+                vi.advanceTimersByTime(POLL);
+            });
+        };
+
+        it('polls the run in place every ten seconds, and nothing else, while it is live', async () => {
+            await render(buildState(v2Run));
+            dispatch.mockClear();
+
+            await act(async () => {
+                vi.advanceTimersByTime(POLL - 1);
+            });
+            expect(polls()).toHaveLength(0);
+
+            await act(async () => {
+                vi.advanceTimersByTime(1);
+            });
+            expect(dispatched()).toEqual([{ type: 'discoveries/getDiscoveryDetail', payload: { uuid: 'disc-1', poll: true } }]);
+        });
+
+        it('keeps polling while the platform imports what the Provider found', async () => {
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Processing }));
+            dispatch.mockClear();
+
+            await tick();
+            expect(polls()).toHaveLength(1);
+        });
+
+        it('leaves a run alone once it has ended, and while it is stopped', async () => {
+            for (const status of [DiscoveryStatus.Completed, DiscoveryStatus.Stopped]) {
+                await render(buildState({ ...v2Run, status }));
+                dispatch.mockClear();
+
+                await tick();
+                expect(polls()).toHaveLength(0);
+            }
+        });
+
+        it('skips a tick while a read or a lifecycle call is in flight, whose own answer is newer', async () => {
+            for (const flag of ['isFetchingDetail', 'isPollingDetail', 'isStopping']) {
+                const state = buildState(v2Run);
+                (state.discoveries as any)[flag] = true;
+                await render(state);
+                dispatch.mockClear();
+
+                await tick();
+                expect(polls()).toHaveLength(0);
+            }
+        });
+
+        it('stops on a locked page, which has nothing to show an answer on', async () => {
+            const state: any = buildState(v2Run);
+            state.userInterface = { widgetLocks: [{ widgetName: LockWidgetNameEnum.DiscoveryDetails }] };
+            await render(state);
+            dispatch.mockClear();
+
+            await tick();
+            expect(polls()).toHaveLength(0);
+        });
+
+        it('re-reads the trigger summary once, when the run on screen reaches its end', async () => {
+            await render(buildState(v2Run));
+            dispatch.mockClear();
+
+            await tick();
+            expect(dispatched().map((action) => action?.type)).not.toContain('rules/getTriggerHistorySummary');
+
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Completed }));
+            expect(dispatched().filter((action) => action?.type === 'rules/getTriggerHistorySummary')).toEqual([
+                { type: 'rules/getTriggerHistorySummary', payload: { triggerObjectUuid: 'disc-1' } },
+            ]);
+        });
+
+        it('leaves the trigger summary alone when a stopped run is cancelled, since no triggers ran', async () => {
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Stopped }));
+            dispatch.mockClear();
+
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Cancelled }));
+            expect(dispatched().map((action) => action?.type)).not.toContain('rules/getTriggerHistorySummary');
         });
     });
 

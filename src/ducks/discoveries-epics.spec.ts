@@ -6,6 +6,7 @@ import { take, toArray } from 'rxjs/operators';
 import {
     cancelDiscovery,
     describeLifecycleRefusal,
+    getDiscoveryDetail,
     getDiscoveryInterfaceAttributesDescriptors,
     getDiscoveryResourceAttributesDescriptors,
     listDiscoveryProviders,
@@ -15,6 +16,7 @@ import {
 } from './discoveries-epics';
 import { slice } from './discoveries';
 import { alertsSlice } from './alert-slice';
+import { actions as userInterfaceActions } from './user-interface';
 import { ConnectorInterface, Resource } from 'types/openapi';
 
 vi.mock('./alerts', () => ({
@@ -206,6 +208,40 @@ describe('lifecycle epics', () => {
         );
         expect(cancelled[0].type).toBe(slice.actions.cancelDiscoverySuccess.type);
         expect(cancelled[2].type).toBe(slice.actions.getDiscoveryDetail.type);
+    });
+});
+
+describe('getDiscoveryDetail', () => {
+    const failingWith = (status: number) => ({
+        discoveries: { getDiscovery: () => throwError(() => ajaxError(status, { message: `HTTP ${status}` })) },
+    });
+
+    test('drops a failed poll quietly, so one network blip does not take the page down', async () => {
+        const emitted = await runEpic(getDiscoveryDetail, slice.actions.getDiscoveryDetail({ uuid: 'd-1', poll: true }), failingWith(502));
+
+        expect(emitted.map((a) => a.type)).toEqual([slice.actions.getDiscoveryDetailFailure.type]);
+    });
+
+    test('locks the page when a poll finds the run gone, as a refresh would', async () => {
+        const emitted = await runEpic(getDiscoveryDetail, slice.actions.getDiscoveryDetail({ uuid: 'd-1', poll: true }), failingWith(404));
+
+        expect(emitted.map((a) => a.type)).toEqual([
+            slice.actions.getDiscoveryDetailFailure.type,
+            userInterfaceActions.insertWidgetLock.type,
+        ]);
+    });
+
+    test('still locks the page when a refresh the user asked for fails', async () => {
+        const emitted = await runEpic(
+            getDiscoveryDetail,
+            slice.actions.getDiscoveryDetail({ uuid: 'd-1', keepCurrent: true }),
+            failingWith(502),
+        );
+
+        expect(emitted.map((a) => a.type)).toEqual([
+            slice.actions.getDiscoveryDetailFailure.type,
+            userInterfaceActions.insertWidgetLock.type,
+        ]);
     });
 });
 

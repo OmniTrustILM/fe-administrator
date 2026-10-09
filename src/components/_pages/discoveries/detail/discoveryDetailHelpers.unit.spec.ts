@@ -8,6 +8,7 @@ import {
     type DiscoveryLifecycleAction,
     importRemainder,
     inventoryPath,
+    isLiveRun,
     isNotProcessedRun,
     lifecycleActionsForStatus,
     progressRecordedCaption,
@@ -78,6 +79,24 @@ describe('not-processed banner', () => {
         [undefined, false],
     ])('%s → %s', (status, expected) => {
         expect(isNotProcessedRun(status)).toBe(expected);
+    });
+});
+
+describe('isLiveRun', () => {
+    it.each<[DiscoveryStatus, boolean]>([
+        [DiscoveryStatus.InProgress, true],
+        [DiscoveryStatus.Processing, true],
+        [DiscoveryStatus.Stopped, false],
+        [DiscoveryStatus.Completed, false],
+        [DiscoveryStatus.Warning, false],
+        [DiscoveryStatus.Failed, false],
+        [DiscoveryStatus.Cancelled, false],
+    ])('a run in %s is live: %s', (status, expected) => {
+        expect(isLiveRun(status)).toBe(expected);
+    });
+
+    it('is not live before the run has been read', () => {
+        expect(isLiveRun(undefined)).toBe(false);
     });
 });
 

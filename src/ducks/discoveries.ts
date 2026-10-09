@@ -49,6 +49,8 @@ export type State = {
     isFetchingDiscoveryMessages: boolean;
 
     isFetchingDetail: boolean;
+    // An automatic re-read of a live run. It has its own flag so that it never shows the page busy.
+    isPollingDetail: boolean;
     isCreating: boolean;
     createDiscoverySucceeded: boolean;
     isDeleting: boolean;
@@ -72,6 +74,7 @@ export const initialState: State = {
     isFetchingDiscoveryMessages: false,
 
     isFetchingDetail: false,
+    isPollingDetail: false,
     isCreating: false,
     createDiscoverySucceeded: false,
     isDeleting: false,
@@ -256,13 +259,20 @@ export const slice = createSlice({
         },
 
         // keepCurrent: a refresh of the run already on screen, which stays up while the re-read is in flight.
-        getDiscoveryDetail: (state, action: PayloadAction<{ uuid: string; keepCurrent?: boolean }>) => {
+        // poll: the same, sent by the page itself while the run is live, which leaves the page's busy state alone.
+        getDiscoveryDetail: (state, action: PayloadAction<{ uuid: string; keepCurrent?: boolean; poll?: boolean }>) => {
+            if (action.payload.poll) {
+                state.isPollingDetail = true;
+                return;
+            }
             if (!action.payload.keepCurrent) state.discovery = undefined;
             state.isFetchingDetail = true;
         },
 
+        // Both flags clear on either answer: a newer read replaces the one in flight, whichever kind each of them is.
         getDiscoveryDetailSuccess: (state, action: PayloadAction<{ discovery: DiscoveryResponseDetailModel }>) => {
             state.isFetchingDetail = false;
+            state.isPollingDetail = false;
 
             state.discovery = action.payload.discovery;
 
@@ -277,6 +287,7 @@ export const slice = createSlice({
 
         getDiscoveryDetailFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isFetchingDetail = false;
+            state.isPollingDetail = false;
         },
 
         createDiscovery: (
@@ -407,6 +418,7 @@ const isFetchingDiscoveryItems = createSelector(state, (state) => state.isFetchi
 const isFetchingDiscoveryMessages = createSelector(state, (state) => state.isFetchingDiscoveryMessages);
 
 const isFetchingDetail = createSelector(state, (state) => state.isFetchingDetail);
+const isPollingDetail = createSelector(state, (state) => state.isPollingDetail);
 const isCreating = createSelector(state, (state) => state.isCreating);
 const createDiscoverySucceeded = createSelector(state, (state) => state.createDiscoverySucceeded);
 const isDeleting = createSelector(state, (state) => state.isDeleting);
@@ -441,6 +453,7 @@ export const selectors = {
     isFetchingDiscoveryMessages,
 
     isFetchingDetail,
+    isPollingDetail,
     isCreating,
     createDiscoverySucceeded,
     isDeleting,
