@@ -309,6 +309,25 @@ test.describe('CertificateRekeyDialog — Register switch', () => {
         await expect(page.getByTestId('progress-button')).toBeDisabled();
     });
 
+    test('a field added by a connector callback does not survive a trip through Register', async ({ mount, page }) => {
+        await mount(<CertificateRekeyDialogTestWrapper preloadedState={withRenewAndSignatureSchemas} />);
+        await chooseNewKey(page);
+        await page.getByRole('tab', { name: 'Signature Attributes' }).click();
+        await page.getByTestId('simulate-signature-callback').click();
+        await expect(page.getByTestId('text-input-__attributes__signatureAttributes__.callbackField')).toBeVisible();
+
+        await switchToRegister(page);
+        await switchToRegister(page);
+        await chooseNewKey(page);
+        await page.getByRole('tab', { name: 'Signature Attributes' }).click();
+        const field = page.getByTestId('text-input-__attributes__signatureAttributes__.signatureField');
+        await field.click();
+        await field.fill('signature-value');
+
+        await expect(page.getByTestId('text-input-__attributes__signatureAttributes__.callbackField')).toHaveCount(0);
+        await expect(page.getByTestId('progress-button')).toBeEnabled();
+    });
+
     test('switching back to rekey clears the registration error and restores the key source', async ({ mount, page }) => {
         await mount(<CertificateRekeyDialogTestWrapper />);
         await switchToRegister(page);

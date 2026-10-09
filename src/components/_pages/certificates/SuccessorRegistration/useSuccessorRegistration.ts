@@ -1,4 +1,5 @@
 import { actions as certificateActions, selectors as certificateSelectors } from 'ducks/certificates';
+import { actions as connectorActions } from 'ducks/connectors';
 import { useEffect, useMemo, useState } from 'react';
 import { type FieldValues, type UseFormReturn, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
@@ -71,6 +72,9 @@ export function useSuccessorRegistration<T extends SuccessorFormValues>(
     const clearValues = () => {
         setValue('successorAuthorizationSecret', undefined);
         setValue('successorExpiresAt', undefined);
+        setCallbackAttributes([]);
+        // A callback payload left in the store is replayed by the next editor to mount, restoring its fields.
+        dispatch(connectorActions.clearCallbackData());
         dispatch(certificateActions.clearRegisterErrors());
     };
 

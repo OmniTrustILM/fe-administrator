@@ -262,6 +262,8 @@ export default function CertificateRekeyDialog({ onCancel, onDone, onRegister, c
         setRegisterSuccessor(checked);
         if (checked) successor.loadSchema();
         reset(defaultValues);
+        setSignatureAttributesCallbackAttributes([]);
+        setAltSignatureAttributesCallbackAttributes([]);
         setFileContent('');
         dispatch(utilsCertificateRequestActions.reset());
         successor.clearValues();

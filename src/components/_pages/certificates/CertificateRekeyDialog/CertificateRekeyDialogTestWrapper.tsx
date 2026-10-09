@@ -3,9 +3,11 @@ import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 
 import certificatesReducer, { actions as certificateActions } from 'ducks/certificates';
+import { actions as connectorActions } from 'ducks/connectors';
 import { testInitialState, type testReducers } from 'ducks/test-reducers';
+import type { AttributeDescriptorModel } from 'types/attributes';
 import type { CertificateDetailResponseModel, CertificateRegistrationRequestModel } from 'types/certificate';
-import { type CertificateRegistrationState, CertificateState } from 'types/openapi';
+import { AttributeContentType, AttributeType, type CertificateRegistrationState, CertificateState } from 'types/openapi';
 import { overlaySliceReducer, useRecordingStore } from 'utils/test-helpers';
 
 import CertificateRekeyDialog from './index';
@@ -47,6 +49,14 @@ const dialogActions = [
 
 // Register waits for the RA profile's register schema; stand in a loaded, empty one unless a test brings its own.
 const loadedRegisterSchema = { certificates: { ...testInitialState.certificates, registerAttributes: { 'ra-profile-uuid': [] } } };
+
+const callbackAddedDescriptor = {
+    type: AttributeType.Data,
+    name: 'callbackField',
+    uuid: 'callback-data-uuid-1',
+    contentType: AttributeContentType.String,
+    properties: { label: 'Callback Field', required: true, readOnly: false, visible: true, list: false, multiSelect: false },
+} as AttributeDescriptorModel;
 
 const rootReducer = overlaySliceReducer('certificates', certificatesReducer, dialogActions);
 
@@ -130,6 +140,20 @@ export function CertificateRekeyDialogTestWrapper({
                     onClick={() => store.dispatch(certificateActions.registerCertificateSuccess({ uuid: 'placeholder-uuid' }))}
                 >
                     register success
+                </button>
+                <button
+                    type="button"
+                    data-testid="simulate-signature-callback"
+                    onClick={() =>
+                        store.dispatch(
+                            connectorActions.callbackSuccess({
+                                callbackId: '__attributes__signatureAttributes__.signatureField',
+                                data: [callbackAddedDescriptor],
+                            }),
+                        )
+                    }
+                >
+                    signature callback
                 </button>
                 <div data-testid="dispatched">{JSON.stringify(dispatched)}</div>
             </MemoryRouter>
