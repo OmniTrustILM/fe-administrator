@@ -1,24 +1,16 @@
-import AttributeEditor from 'components/Attributes/AttributeEditor';
-import AttributeViewer from 'components/Attributes/AttributeViewer';
 import Button from 'components/Button';
 import Container from 'components/Container';
-import CustomTable, { type TableDataRow } from 'components/CustomTable';
 import TabLayout from 'components/Layout/TabLayout';
 import Switch from 'components/Switch';
 import TextInput from 'components/TextInput';
-import Widget from 'components/Widget';
 import { actions as certificateActions, selectors as certificateSelectors } from 'ducks/certificates';
 import { actions as utilsActuatorActions, selectors as utilsActuatorSelectors } from 'ducks/utilsActuator';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Controller, type FieldValues, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
-import type { AttributeDescriptorModel, AttributeRequestModel } from 'types/attributes';
-import { CertificateRegistrationState, Resource } from 'types/openapi';
+import type { AttributeRequestModel } from 'types/attributes';
+import { CertificateRegistrationState } from 'types/openapi';
 import { ParseRequestRequestDtoParseTypeEnum } from 'types/openapi/utils';
-import { collectFormAttributes } from 'utils/attributes/attributes';
-import { validateRegistrationChallenge } from 'utils/validators';
-import { buildValidationRules } from 'utils/validators-helper';
-import { createWidgetDetailHeaders } from 'utils/widget';
 import { transformParseRequestResponseDtoToCertificateResponseDetailModel } from '../../../../ducks/transform/utilsCertificateRequest';
 import {
     actions as utilsCertificateRequestActions,
@@ -29,7 +21,8 @@ import CertificateAttributes from '../../../CertificateAttributes';
 import FileUpload from '../../../Input/FileUpload/FileUpload';
 import OperationAttributesEditor from '../OperationAttributesEditor';
 import { useOperationAttributes } from '../OperationAttributesEditor/useOperationAttributes';
-import { replaySourceIdentity, toRequestAttributes } from './successorIdentity';
+import SuccessorRegistrationFields from '../SuccessorRegistration';
+import { type SuccessorFormValues, useSuccessorRegistration } from '../SuccessorRegistration/useSuccessorRegistration';
 
 type Props = {
     certificate: CertificateDetailResponseModel;
@@ -41,15 +34,10 @@ type Props = {
     onRegister: (request: CertificateRegistrationRequestModel) => void;
 };
 
-type RenewFormValues = {
+type RenewFormValues = SuccessorFormValues & {
     // The certificate's own challenge, verified by Core on renew.
     authorizationSecret?: string;
-    // A new, independent challenge for the staged successor; nothing is inherited from this certificate.
-    successorAuthorizationSecret?: string;
-    successorExpiresAt?: string;
 };
-
-const detailHeaders = createWidgetDetailHeaders();
 
 export default function CertificateRenewDialog({ certificate, onCancel, onDone, allowWithoutFile, onRenew, onRegister }: Readonly<Props>) {
     const dispatch = useDispatch();
@@ -58,26 +46,19 @@ export default function CertificateRenewDialog({ certificate, onCancel, onDone, 
     const [uploadCsr, setUploadCsr] = useState(false);
     const [registerSuccessor, setRegisterSuccessor] = useState(false);
     const [parsedCertificate, setParsedCertificate] = useState<CertificateDetailResponseModel | undefined>();
-    const [registerCallbackAttributes, setRegisterCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
 
     const parsedCertificateRequest = useSelector(utilsCertificateRequestSelectors.parsedCertificateRequest);
     const health = useSelector(utilsActuatorSelectors.health);
     const isRenewing = useSelector(certificateSelectors.isRenewing);
     const renewErrorMessage = useSelector(certificateSelectors.renewErrorMessage);
-    const isRegistering = useSelector(certificateSelectors.isRegistering);
-    const registerErrorMessage = useSelector(certificateSelectors.registerErrorMessage);
-    const registerAttributeDescriptors = useSelector(certificateSelectors.registerAttributes);
-    const isFetchingRegisterAttributes = useSelector(certificateSelectors.isFetchingRegisterAttributes);
 
     const raProfileUuid = certificate.raProfile?.uuid;
     const authorityUuid = certificate.raProfile?.authorityInstanceUuid;
     const renew = useOperationAttributes('renew', raProfileUuid, authorityUuid);
-    const registerDescriptors = (raProfileUuid && registerAttributeDescriptors[raProfileUuid]) || [];
 
     // Core verifies the certificate's challenge only while its registration is Active; with none, or a Closed one,
     // the renewal passes without it.
     const hasChallenge = certificate.registration?.state === CertificateRegistrationState.Active;
-    const identity = useMemo(() => replaySourceIdentity(certificate), [certificate]);
 
     useEffect(() => {
         dispatch(utilsCertificateRequestActions.reset());
@@ -96,12 +77,15 @@ export default function CertificateRenewDialog({ certificate, onCancel, onDone, 
     // and clear it again on unmount.
     useEffect(() => {
         dispatch(certificateActions.clearRenewErrors());
-        dispatch(certificateActions.clearRegisterErrors());
         return () => {
             dispatch(certificateActions.clearRenewErrors());
-            dispatch(certificateActions.clearRegisterErrors());
         };
     }, [dispatch]);
+
+    const methods = useForm<RenewFormValues>({ mode: 'onChange' });
+    const { control, handleSubmit, setValue, clearErrors } = methods;
+    const successor = useSuccessorRegistration(certificate, methods);
+    const { isRegistering, registerErrorMessage } = successor;
 
     // Close once a submission is confirmed: a true→false in-flight transition with no error. A failure keeps the
     // dialog open so the holder can correct a mistyped challenge, each of which spends one attempt.
@@ -115,83 +99,28 @@ export default function CertificateRenewDialog({ certificate, onCancel, onDone, 
         wasSubmitting.current = isSubmitting;
     }, [isSubmitting, hasSubmissionError, onDone]);
 
-    const methods = useForm<RenewFormValues>({ mode: 'onChange' });
-    const { control, handleSubmit, setValue, clearErrors } = methods;
-
     const authorizationSecret = useWatch({ control, name: 'authorizationSecret' });
-    const successorAuthorizationSecret = useWatch({ control, name: 'successorAuthorizationSecret' });
-    const successorExpiresAt = useWatch({ control, name: 'successorExpiresAt' });
-
-    // Core treats a blank secret as none (String.isBlank).
-    const hasSuccessorChallenge = !!successorAuthorizationSecret?.trim();
-
-    // Requested together with the switch, not from an effect, so the not-loaded state below never shows before the
-    // request has gone out.
-    const loadRegisterSchema = () => {
-        if (raProfileUuid && authorityUuid) dispatch(certificateActions.getRegisterAttributes({ raProfileUuid, authorityUuid }));
-    };
-    // A failed load removes the profile's entry, while an authority without register support answers with an empty
-    // list; only a present entry means Core's register schema is known.
-    const registerSchemaLoaded = !raProfileUuid || raProfileUuid in registerAttributeDescriptors;
-
-    useEffect(() => {
-        // An issuance window without a challenge is rejected by Core, so a date entered and then abandoned must not
-        // survive clearing the challenge.
-        if (!hasSuccessorChallenge) {
-            setValue('successorExpiresAt', undefined);
-            clearErrors('successorExpiresAt');
-        }
-    }, [hasSuccessorChallenge, setValue, clearErrors]);
 
     const onRegisterSuccessorChange = (checked: boolean) => {
         // The two modes send different requests; values and errors of the one left behind must not carry over.
         setRegisterSuccessor(checked);
-        if (checked) loadRegisterSchema();
+        if (checked) successor.loadSchema();
         setUploadCsr(false);
         setFileContent(undefined);
         dispatch(utilsCertificateRequestActions.reset());
         setValue('authorizationSecret', undefined);
-        setValue('successorAuthorizationSecret', undefined);
-        setValue('successorExpiresAt', undefined);
+        successor.clearValues();
         clearErrors();
         dispatch(certificateActions.clearRenewErrors());
-        dispatch(certificateActions.clearRegisterErrors());
     };
 
-    const identityPresent = Object.keys(identity.request).length > 0;
-    // A successor registered without some of the source's SANs would never match a holder enrolling with the source's
-    // identity: Core's CMP registration matching compares SAN sets exactly.
-    const identityReplayable = identity.kind !== 'flat' || identity.omittedSanTypes.length === 0;
-    const successorChallengeValid = !validateRegistrationChallenge()(successorAuthorizationSecret);
-    const successorWindowValid = !successorExpiresAt || new Date(successorExpiresAt) > new Date();
-    const canRegister =
-        identityPresent &&
-        identityReplayable &&
-        successorChallengeValid &&
-        successorWindowValid &&
-        // A blank challenge on a successor of a challenge-protected certificate would silently drop that protection
-        // for the new branch.
-        (!hasChallenge || hasSuccessorChallenge) &&
-        !isFetchingRegisterAttributes &&
-        // Registering without a loaded schema skips required connector attributes; on a connector-backed authority Core
-        // then fails the placeholder it has already created.
-        registerSchemaLoaded;
     const canRenew = (!hasChallenge || !!authorizationSecret?.trim()) && !renew.isFetching;
-    const canSubmit = !isSubmitting && (registerSuccessor ? canRegister : canRenew);
+    const canSubmit = !isSubmitting && (registerSuccessor ? successor.canRegister : canRenew);
 
     const onSubmit = (values: RenewFormValues) => {
         if (!canSubmit) return;
         if (registerSuccessor) {
-            onRegister({
-                ...identity.request,
-                sourceCertificateUuid: certificate.uuid,
-                authorizationSecret: hasSuccessorChallenge ? values.successorAuthorizationSecret : undefined,
-                expiresAt:
-                    hasSuccessorChallenge && values.successorExpiresAt ? new Date(values.successorExpiresAt).toISOString() : undefined,
-                attributes: collectFormAttributes('register_attributes', [...registerDescriptors, ...registerCallbackAttributes], values),
-                // Carried over as Core's own renew does, so a required certificate custom attribute is satisfied.
-                customAttributes: toRequestAttributes(certificate.customAttributes),
-            });
+            onRegister(successor.buildRequest(values));
             return;
         }
         onRenew({
@@ -206,14 +135,6 @@ export default function CertificateRenewDialog({ certificate, onCancel, onDone, 
 
     let submitLabel = registerSuccessor ? 'Register' : 'Renew';
     if (isSubmitting) submitLabel = registerSuccessor ? 'Registering…' : 'Renewing…';
-
-    const flatIdentityRows: TableDataRow[] =
-        identity.kind === 'flat'
-            ? [
-                  { id: 'subjectDn', columns: ['Subject DN', identity.subjectDn ?? ''] },
-                  { id: 'subjectAltName', columns: ['Subject Alternative Names', identity.subjectAltName ?? ''] },
-              ]
-            : [];
 
     return (
         <FormProvider {...methods}>
@@ -240,96 +161,7 @@ export default function CertificateRenewDialog({ certificate, onCancel, onDone, 
                     />
 
                     {registerSuccessor ? (
-                        <>
-                            <Widget title="Identity" titleSize="large" noBorder>
-                                <div data-testid="successorIdentity">
-                                    {identity.kind === 'csrAttributes' ? (
-                                        <AttributeViewer attributes={identity.attributes} />
-                                    ) : (
-                                        <CustomTable headers={detailHeaders} data={flatIdentityRows} />
-                                    )}
-                                </div>
-                                {identity.kind === 'flat' && !identityReplayable && (
-                                    <p className="mt-2 text-sm text-danger" data-testid="successorIdentityNotReplayable">
-                                        This identity cannot be registered as it is: {identity.omittedSanTypes.join(', ')} cannot be carried
-                                        over, so the successor would not match this certificate.
-                                    </p>
-                                )}
-                                {!identityPresent && (
-                                    <p className="mt-2 text-sm text-danger">This certificate has no subject or SAN to register.</p>
-                                )}
-                            </Widget>
-
-                            <Controller
-                                control={control}
-                                name="successorAuthorizationSecret"
-                                rules={buildValidationRules([validateRegistrationChallenge()])}
-                                render={({ field: { value, onChange, onBlur }, fieldState }) => (
-                                    <TextInput
-                                        id="successorAuthorizationSecret"
-                                        type="password"
-                                        required={hasChallenge}
-                                        label={hasChallenge ? 'Challenge' : 'Challenge (optional)'}
-                                        labelTooltip={
-                                            hasChallenge
-                                                ? 'This certificate is challenge-protected, so its successor needs its own challenge'
-                                                : 'Leave empty to register without a challenge — completion will not require a secret'
-                                        }
-                                        value={value ?? ''}
-                                        onChange={onChange}
-                                        onBlur={onBlur}
-                                        invalid={!!fieldState.error}
-                                        error={fieldState.error?.message}
-                                    />
-                                )}
-                            />
-
-                            <Controller
-                                control={control}
-                                name="successorExpiresAt"
-                                disabled={!hasSuccessorChallenge}
-                                rules={{
-                                    validate: (value) => !value || new Date(value) > new Date() || 'Issuance window must be a future date',
-                                }}
-                                render={({ field: { value, onChange }, fieldState }) => (
-                                    <TextInput
-                                        id="successorExpiresAt"
-                                        type="date"
-                                        label="Issuance window (optional)"
-                                        labelTooltip={hasSuccessorChallenge ? undefined : 'Requires a challenge'}
-                                        disabled={!hasSuccessorChallenge}
-                                        value={value ?? ''}
-                                        onChange={onChange}
-                                        invalid={!!fieldState.error}
-                                        error={fieldState.error?.message}
-                                    />
-                                )}
-                            />
-
-                            <Widget title="Connector Attributes" titleSize="large" noBorder busy={isFetchingRegisterAttributes}>
-                                {registerDescriptors.length > 0 ? (
-                                    <AttributeEditor
-                                        id="register_attributes"
-                                        attributeDescriptors={registerDescriptors}
-                                        callbackParentUuid={raProfileUuid}
-                                        callbackResource={Resource.Certificates}
-                                        groupAttributesCallbackAttributes={registerCallbackAttributes}
-                                        setGroupAttributesCallbackAttributes={setRegisterCallbackAttributes}
-                                    />
-                                ) : registerSchemaLoaded || isFetchingRegisterAttributes ? (
-                                    <span className="text-content-subtle">This RA Profile has no connector attributes.</span>
-                                ) : (
-                                    <Container className="flex-row items-center" gap={4}>
-                                        <span className="text-sm text-danger" data-testid="registerAttributesNotLoaded">
-                                            Connector attributes could not be loaded.
-                                        </span>
-                                        <Button variant="outline" type="button" onClick={loadRegisterSchema}>
-                                            Retry
-                                        </Button>
-                                    </Container>
-                                )}
-                            </Widget>
-                        </>
+                        <SuccessorRegistrationFields successor={successor} />
                     ) : (
                         <>
                             {hasChallenge && (
