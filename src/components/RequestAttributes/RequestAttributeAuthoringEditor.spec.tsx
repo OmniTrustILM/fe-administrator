@@ -3,7 +3,7 @@ import { test, expect } from '../../../playwright/ct-test';
 import { withProviders } from 'utils/test-helpers';
 import RequestAttributeAuthoringEditorHarness from './RequestAttributeAuthoringEditorHarness';
 import { emptyAuthoringForm, emptyAuthoredAttribute } from 'utils/requestAttributeAuthoring';
-import { FieldSource, FieldType, GeneralNameType, ObjectType } from 'types/openapi';
+import { FieldSource, FieldType, GeneralNameType, ObjectType, ValueSourceType } from 'types/openapi';
 
 /**
  * Every definition must carry a mapping target, so a test that is not about mapping still has to
@@ -518,6 +518,26 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await expect(component.getByTestId('request-attribute-authoring-binding-row')).toHaveCount(1);
         const json = await component.getByTestId('value-json').textContent();
         expect(JSON.parse(json ?? '{}').valueSourceBindings[0].attributeName).toBe('datacenter');
+    });
+
+    test('removing the last binding leaves an explicit empty list', async ({ mount, page }) => {
+        const component = await mount(
+            withProviders(
+                <RequestAttributeAuthoringEditorHarness
+                    initialValue={{
+                        ...emptyAuthoringForm(),
+                        valueSourceBindings: [{ attributeName: 'datacenter', valueSourceType: ValueSourceType.None }],
+                    }}
+                />,
+            ),
+        );
+
+        await expect(component.getByTestId('request-attribute-authoring-binding-row')).toHaveCount(1);
+        await component.getByTestId('request-attribute-authoring-binding-remove').click();
+
+        await expect(component.getByTestId('request-attribute-authoring-binding-row')).toHaveCount(0);
+        await expect(page.getByTestId('request-attribute-authoring-bindings-empty')).toBeVisible();
+        expect(JSON.parse((await component.getByTestId('value-json').textContent()) ?? '{}').valueSourceBindings).toEqual([]);
     });
 
     test('hides the value-source bindings section when showBindings is false', async ({ mount }) => {
