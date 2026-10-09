@@ -13,6 +13,7 @@ type Props = {
      */
     onContentChange?: () => void;
     id?: string;
+    contentTestId?: string;
     fileType?: string;
     showContent?: boolean;
     showFileInfo?: boolean;
@@ -25,6 +26,7 @@ type Props = {
 
 export default function FileUpload({
     id = '',
+    contentTestId,
     fileType = '',
     editable,
     onFileContentLoaded,
@@ -171,6 +173,7 @@ export default function FileUpload({
                 <div className="mb-4">
                     <TextArea
                         id={`${id}__fileUpload__fileContent`}
+                        dataTestId={contentTestId}
                         label="File content"
                         rows={3}
                         placeholder={resolvedContentPlaceholderText}

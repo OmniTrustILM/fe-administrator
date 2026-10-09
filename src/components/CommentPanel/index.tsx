@@ -23,7 +23,7 @@ type PendingDelete = { comment: CommentDto; parentUuid?: string };
  * is the whole binding, and nothing here branches on which resource it is.
  *
  * Thread roots and the replies inside a thread share one direction, newest-first until the user picks otherwise. The
- * choice belongs to the user rather than to the object, so it carries over to every panel and outlives this one.
+ * choice is made per object: it outlives this panel and comes back with the object, but changes no other object.
  */
 export default function CommentPanel({ resource, objectUuid }: Readonly<Props>) {
     const dispatch = useDispatch();
@@ -31,7 +31,8 @@ export default function CommentPanel({ resource, objectUuid }: Readonly<Props>) 
     const threadsSelector = useMemo(() => selectors.threads(key), [key]);
     const threads = useSelector(threadsSelector);
     const busy = useSelector(selectors.busy);
-    const preferredDirection = useSelector(selectors.sortDirection);
+    const preferredSelector = useMemo(() => selectors.sortDirection(key), [key]);
+    const preferredDirection = useSelector(preferredSelector);
 
     const [pendingDelete, setPendingDelete] = useState<PendingDelete | undefined>(undefined);
 
@@ -57,7 +58,9 @@ export default function CommentPanel({ resource, objectUuid }: Readonly<Props>) 
         // The roots page holding the thread and the replies page holding the reply are independent, so both are asked
         // for at once; the reply anchor is what the thread expands onto.
         dispatch(actions.listThreads({ resource, objectUuid, pageNumber: 1, anchorUuid: anchor?.rootUuid }));
-        if (anchor?.replyUuid) dispatch(actions.listReplies({ rootUuid: anchor.rootUuid, pageNumber: 1, anchorUuid: anchor.replyUuid }));
+        if (anchor?.replyUuid) {
+            dispatch(actions.listReplies({ resource, objectUuid, rootUuid: anchor.rootUuid, pageNumber: 1, anchorUuid: anchor.replyUuid }));
+        }
     }, [dispatch, resource, objectUuid, anchor]);
 
     const sortDirection = threads?.sortDirection ?? preferredDirection;

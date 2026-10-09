@@ -48,7 +48,7 @@ export default function ReturnedColumnsNotice({ returned, unfiltered = [], onSho
         >
             <TriangleAlert className="size-4 shrink-0 text-warning" aria-hidden="true" />
             <span>{message}</span>
-            <Button variant="transparent" color="secondary" onClick={onShow} data-testid={`${dataTestId}-show`}>
+            <Button variant="transparent" color="secondary" onClick={onShow} disabled={isBusy} data-testid={`${dataTestId}-show`}>
                 Show in view
             </Button>
             {onRemove && (

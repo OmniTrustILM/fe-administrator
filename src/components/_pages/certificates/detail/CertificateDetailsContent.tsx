@@ -159,7 +159,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
         setConfirmDelete(false);
     }, [certificate, dispatch]);
 
-    // The renew dialog closes itself once the renewal or registration is confirmed; a failure keeps it open.
+    // The renew and rekey dialogs close themselves once the operation or registration is confirmed; a failure keeps them open.
     const onRenew = useCallback(
         (data: { fileContent?: string; authorizationSecret?: string; attributes: AttributeRequestModel[] }) => {
             dispatch(
@@ -218,8 +218,8 @@ export default function CertificateDetailsContent({ certificate, validationResul
     }, [isRenewing, isRegistering, closeOperationDialog]);
 
     const onCloseRekey = useCallback(() => {
-        if (!isRekeying) closeOperationDialog(() => setRekey(false));
-    }, [isRekeying, closeOperationDialog]);
+        if (!isRekeying && !isRegistering) closeOperationDialog(() => setRekey(false));
+    }, [isRekeying, isRegistering, closeOperationDialog]);
 
     // A confirmed operation redirects to the new certificate, so the one it left needs no refetch.
     const onRenewDone = useCallback(() => setRenew(false), []);
@@ -728,7 +728,16 @@ export default function CertificateDetailsContent({ certificate, validationResul
             <Dialog
                 isOpen={rekey}
                 caption={`Rekey Certificate`}
-                body={<CertificateRekeyDialog onCancel={onCloseRekey} onDone={onRekeyDone} certificate={certificate} />}
+                body={
+                    certificate ? (
+                        <CertificateRekeyDialog
+                            certificate={certificate}
+                            onCancel={onCloseRekey}
+                            onDone={onRekeyDone}
+                            onRegister={onRegisterSuccessor}
+                        />
+                    ) : null
+                }
                 toggle={onCloseRekey}
                 buttons={[]}
                 icon="shuffle"

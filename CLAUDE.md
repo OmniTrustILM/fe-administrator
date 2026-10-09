@@ -309,6 +309,12 @@ verifies the run and the PR through the API, downloads the coverage artifacts ou
 workspace, checks out the PR head and scans. Main is analysed by the `sonar-main` job in
 `tests.yml`.
 
+Sonar's TypeScript rules need the libraries' types, but neither Sonar job installs dependencies.
+The `Vitest` job uploads the declaration files from its `npm ci` (`*.ts`, `*.mts`, `*.cts` and
+each package's `package.json`) as `node-types`, and both Sonar jobs download them into
+`<workspace>/../node_modules`, where TypeScript resolves modules from. Without them those rules
+see `any` and report nothing.
+
 ## Environment Variables (Runtime)
 
 Injected via `window.__ENV__` at runtime (not build time):

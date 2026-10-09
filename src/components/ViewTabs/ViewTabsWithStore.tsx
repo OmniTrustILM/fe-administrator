@@ -27,14 +27,8 @@ type Props = Readonly<{
     refreshedViews?: ListViewModel[];
     /** Withholds the catalogue until released, so a test can make it land after the views did. */
     withheldCatalogue?: boolean;
-    /** The catalogue a later read answers with once `swap-catalogue` is pressed, and pressing it again goes back. */
-    laterCatalogue?: SearchFieldDataByGroupDto[];
-    /** The catalogues later reads answer with, one per press of `next-catalogue`, the last one standing. */
-    catalogueSequence?: SearchFieldDataByGroupDto[][];
     /** Drops an applied ordering on a column the applied slice does not show, as PagedList does. */
     dropsUnshownSort?: boolean;
-    /** Attribute column keys an earlier visit saw without their field. */
-    dormantFields?: string[];
     /** Passed straight through, so a test can say the catalogue read has settled on nothing. */
     isCatalogueLoaded?: boolean;
     /** As an array: a `Set` does not survive the props boundary. */
@@ -43,8 +37,6 @@ type Props = Readonly<{
     driftColumn?: ColumnDefinition;
     driftSort?: ColumnSort;
     driftFilter?: SearchFilterModel;
-    /** Added beside the filters already applied, where `driftFilter` replaces them. */
-    driftAddedFilter?: SearchFilterModel;
     /** Opens as a return from a detail page to this view, with the filters the list held when it was left. */
     returnTo?: { viewId: string; filters: SearchFilterModel[] };
 }>;
@@ -82,23 +74,18 @@ export default function ViewTabsWithStore({
     isRefreshing = false,
     refreshedViews = [],
     withheldCatalogue = false,
-    laterCatalogue,
-    catalogueSequence = [],
     dropsUnshownSort = false,
-    dormantFields,
     isCatalogueLoaded,
     renderableProperties,
     driftColumn,
     driftSort,
     driftFilter,
-    driftAddedFilter,
     returnTo,
 }: Props) {
     const [store] = useState(() =>
         createMockStore({
             listViews: {
                 byResource: { [resource]: { views, isFetching: !hasLoaded || isRefreshing, hasLoaded, isMutating } },
-                ...(dormantFields ? { dormantFields: { [resource]: dormantFields } } : {}),
                 dispatched: [],
             },
         }),
@@ -109,11 +96,7 @@ export default function ViewTabsWithStore({
         returnTo ? { source: 'return', position: { viewId: returnTo.viewId, isDrillDown: false } } : undefined,
     );
     const [isCatalogueReleased, setIsCatalogueReleased] = useState(!withheldCatalogue);
-    const [isCatalogueSwapped, setIsCatalogueSwapped] = useState(false);
     const [mountKey, setMountKey] = useState(0);
-    const [catalogueStep, setCatalogueStep] = useState(0);
-    const swappedCatalogue = isCatalogueSwapped && laterCatalogue ? laterCatalogue : catalogue;
-    const liveCatalogue = catalogueStep > 0 ? catalogueSequence[Math.min(catalogueStep, catalogueSequence.length) - 1] : swappedCatalogue;
     const gate = useMemo(() => (renderableProperties ? new Set(renderableProperties) : undefined), [renderableProperties]);
 
     const answerUpdate = () => {
@@ -130,7 +113,7 @@ export default function ViewTabsWithStore({
                 <ViewTabs
                     key={mountKey}
                     resource={resource}
-                    catalogue={isCatalogueReleased ? liveCatalogue : []}
+                    catalogue={isCatalogueReleased ? catalogue : []}
                     isCatalogueLoaded={isCatalogueReleased ? isCatalogueLoaded : false}
                     standardColumns={standardColumns}
                     renderableProperties={gate}
@@ -143,14 +126,6 @@ export default function ViewTabsWithStore({
 
                 <div data-testid="applied-slice">{JSON.stringify(slice)}</div>
                 <DispatchedActions />
-
-                <button type="button" data-testid="swap-catalogue" onClick={() => setIsCatalogueSwapped((current) => !current)}>
-                    answer another catalogue read
-                </button>
-
-                <button type="button" data-testid="next-catalogue" onClick={() => setCatalogueStep((current) => current + 1)}>
-                    answer the next catalogue read
-                </button>
 
                 <button type="button" data-testid="remount-strip" onClick={() => setMountKey((current) => current + 1)}>
                     leave the page and come back
@@ -213,27 +188,6 @@ export default function ViewTabsWithStore({
 
                 <button
                     type="button"
-                    data-testid="simulate-update-success-with-next-catalogue"
-                    onClick={() => {
-                        answerUpdate();
-                        setCatalogueStep((current) => current + 1);
-                    }}
-                >
-                    answer the update and the next catalogue read together
-                </button>
-
-                <button
-                    type="button"
-                    data-testid="simulate-unrelated-read-failure"
-                    onClick={() =>
-                        store.dispatch({ type: 'listViews/listViewsFailure', payload: { resource: 'keys', error: 'Could not be read' } })
-                    }
-                >
-                    fail a read of another resource
-                </button>
-
-                <button
-                    type="button"
                     data-testid="simulate-update-failure"
                     onClick={() =>
                         store.dispatch({ type: 'listViews/updateViewFailure', payload: { resource, error: 'Could not be saved' } })
@@ -283,15 +237,6 @@ export default function ViewTabsWithStore({
                     onClick={() => setSlice((current) => ({ ...current, filters: [driftFilter as SearchFilterModel] }))}
                 >
                     filter the table
-                </button>
-                <button
-                    type="button"
-                    data-testid="drift-add-filter"
-                    onClick={() =>
-                        setSlice((current) => ({ ...current, filters: [...current.filters, driftAddedFilter as SearchFilterModel] }))
-                    }
-                >
-                    add a filter
                 </button>
             </MemoryRouter>
         </Provider>

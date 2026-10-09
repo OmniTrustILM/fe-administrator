@@ -157,6 +157,8 @@ export default function ImportWizard({ presetTokenProfileUuid, onCancel, onDone 
     const inspectedDigest = useRef<string | undefined>(undefined);
     // The content last loaded, which `file` no longer holds once another file starts to be read.
     const loadedContent = useRef('');
+    // Set when the field changes, so the same content is read again after a failed read or a same-file pick.
+    const contentInvalidated = useRef(false);
 
     const { refusedProfileUuid, profileRefusal, inspected } = inspectionOutcome({
         file,
@@ -250,18 +252,21 @@ export default function ImportWizard({ presetTokenProfileUuid, onCancel, onDone 
     // A new file, chosen or typed in, replaces the one read before, so that none of the old entries can be imported with it.
     const onContentChange = useCallback(() => {
         setFile('');
+        contentInvalidated.current = true;
         dispatch(inspectionsActions.resetInspection());
     }, [dispatch]);
 
     const onFileContentLoaded = useCallback(
         (content: string) => {
+            if (content === loadedContent.current && !contentInvalidated.current && inspected) return;
             // A password is given for one file, so another file is read without it.
             if (content !== loadedContent.current) setValue('passphrase', '');
+            contentInvalidated.current = false;
             loadedContent.current = content;
             setFile(content);
             inspect(content, profile?.uuid);
         },
-        [inspect, profile, setValue],
+        [inspect, inspected, profile, setValue],
     );
 
     const onPasswordLeave = useCallback(() => {
@@ -473,6 +478,7 @@ export default function ImportWizard({ presetTokenProfileUuid, onCancel, onDone 
                 <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" hidden={showResults}>
                     <FileUpload
                         id="importWizard"
+                        contentTestId="import-file-content"
                         editable
                         fileType="certificate or key"
                         onContentChange={onContentChange}
@@ -552,6 +558,7 @@ export default function ImportWizard({ presetTokenProfileUuid, onCancel, onDone 
                             Cancel
                         </Button>
                         <ProgressButton
+                            dataTestId="import-submit"
                             title={`Import ${entryCount(selectedEntries.length)}`}
                             inProgressTitle="Importing..."
                             inProgress={isImporting}
