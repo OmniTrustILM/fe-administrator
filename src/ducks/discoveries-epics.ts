@@ -51,6 +51,10 @@ const listDiscoveries: AppEpic = (action$, state$, deps) => {
     );
 };
 
+// What a poll may retry: no answer at all, a timeout, a rate limit or a server error. Each can clear by itself.
+const isRetriableFailure = (err: unknown) =>
+    err instanceof AjaxError && (err.status === 0 || err.status === 408 || err.status === 429 || err.status >= 500);
+
 export const getDiscoveryDetail: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.getDiscoveryDetail.match),
@@ -65,10 +69,10 @@ export const getDiscoveryDetail: AppEpic = (action$, state$, deps) => {
                 ),
                 catchError((err) => {
                     const failure = slice.actions.getDiscoveryDetailFailure({ error: extractError(err, 'Failed to get Discovery detail') });
-                    // A failed poll is dropped and the next one tries again, so one network blip does not take the page
-                    // down. A run that no longer exists is an answer rather than a blip, and locks the page as a refresh
-                    // would.
-                    if (action.payload.poll && !(err instanceof AjaxError && err.status === 404)) return of(failure);
+                    // A poll that can be retried is dropped and the next one tries again, so one network blip does not
+                    // take the page down. Any other answer, such as the run gone or the session or permission lost, does
+                    // not change by waiting, and locks the page as a refresh would. The lock also stops the polling.
+                    if (action.payload.poll && isRetriableFailure(err)) return of(failure);
                     return of(failure, userInterfaceActions.insertWidgetLock(err, LockWidgetNameEnum.DiscoveryDetails));
                 }),
             ),

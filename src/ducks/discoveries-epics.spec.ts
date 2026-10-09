@@ -216,11 +216,31 @@ describe('getDiscoveryDetail', () => {
         discoveries: { getDiscovery: () => throwError(() => ajaxError(status, { message: `HTTP ${status}` })) },
     });
 
-    test('drops a failed poll quietly, so one network blip does not take the page down', async () => {
-        const emitted = await runEpic(getDiscoveryDetail, slice.actions.getDiscoveryDetail({ uuid: 'd-1', poll: true }), failingWith(502));
+    test.each([0, 408, 429, 502, 503])('drops a poll that failed with %i quietly, since it can clear by itself', async (status) => {
+        const emitted = await runEpic(
+            getDiscoveryDetail,
+            slice.actions.getDiscoveryDetail({ uuid: 'd-1', poll: true }),
+            failingWith(status),
+        );
 
         expect(emitted.map((a) => a.type)).toEqual([slice.actions.getDiscoveryDetailFailure.type]);
     });
+
+    test.each([401, 403])(
+        'locks the page when a poll is refused with %i, since lost access does not come back by itself',
+        async (status) => {
+            const emitted = await runEpic(
+                getDiscoveryDetail,
+                slice.actions.getDiscoveryDetail({ uuid: 'd-1', poll: true }),
+                failingWith(status),
+            );
+
+            expect(emitted.map((a) => a.type)).toEqual([
+                slice.actions.getDiscoveryDetailFailure.type,
+                userInterfaceActions.insertWidgetLock.type,
+            ]);
+        },
+    );
 
     test('locks the page when a poll finds the run gone, as a refresh would', async () => {
         const emitted = await runEpic(getDiscoveryDetail, slice.actions.getDiscoveryDetail({ uuid: 'd-1', poll: true }), failingWith(404));
