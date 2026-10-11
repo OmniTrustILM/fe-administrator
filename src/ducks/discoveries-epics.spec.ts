@@ -252,7 +252,11 @@ describe('getDiscoveryDetail', () => {
     });
 
     describe('a read overtaken by deleting its run', () => {
-        function readThenDelete(deletedUuid: string, land: (answer$: Subject<any>) => void): any[] {
+        function readThenDelete(
+            deletedUuid: string,
+            land: (answer$: Subject<any>) => void,
+            read: { uuid: string; poll?: boolean; keepCurrent?: boolean } = { uuid: 'd-1', poll: true },
+        ): any[] {
             const action$ = new Subject<any>();
             const answer$ = new Subject<any>();
             const emitted: any[] = [];
@@ -264,19 +268,42 @@ describe('getDiscoveryDetail', () => {
                 } as any,
             ).subscribe((emittedAction: any) => emitted.push(emittedAction));
 
-            action$.next(slice.actions.getDiscoveryDetail({ uuid: 'd-1', poll: true }));
+            action$.next(slice.actions.getDiscoveryDetail(read));
             action$.next(slice.actions.deleteDiscovery({ uuid: deletedUuid }));
             land(answer$);
             return emitted;
         }
         const answered = (answer$: Subject<any>) => answer$.next({ uuid: 'd-1', name: 'run', attributes: [] });
 
+        // The read still ends, so the page's read flags clear; only the stale answer and a lock are dropped.
+        const endedWithoutAnAnswer = [slice.actions.getDiscoveryDetailFailure.type];
+
         test('puts nothing back once the delete has started', () => {
-            expect(readThenDelete('d-1', answered)).toEqual([]);
+            expect(readThenDelete('d-1', answered).map((a) => a.type)).toEqual(endedWithoutAnAnswer);
         });
 
         test('locks nothing when it then finds the run gone', () => {
-            expect(readThenDelete('d-1', (answer$) => answer$.error(ajaxError(404, { message: 'HTTP 404' })))).toEqual([]);
+            expect(readThenDelete('d-1', (answer$) => answer$.error(ajaxError(404, { message: 'HTTP 404' }))).map((a) => a.type)).toEqual(
+                endedWithoutAnAnswer,
+            );
+        });
+
+        test.each([
+            { uuid: 'd-1', poll: true },
+            { uuid: 'd-1', keepCurrent: true },
+        ])('leaves no read in flight when the delete then fails, so %o does not block the next one', (read) => {
+            const started = [slice.actions.getDiscoveryDetail(read), slice.actions.deleteDiscovery({ uuid: 'd-1' })].reduce(
+                slice.reducer,
+                slice.getInitialState(),
+            );
+            const settled = [...readThenDelete('d-1', () => {}, read), slice.actions.deleteDiscoveryFailure({ error: 'refused' })].reduce(
+                slice.reducer,
+                started,
+            );
+
+            expect(settled.isPollingDetail).toBe(false);
+            expect(settled.isFetchingDetail).toBe(false);
+            expect(settled.isDeleting).toBe(false);
         });
 
         test('still lands when another run is deleted', () => {
