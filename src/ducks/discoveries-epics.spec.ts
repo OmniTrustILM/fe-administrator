@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { firstValueFrom, of, throwError } from 'rxjs';
+import { firstValueFrom, of, Subject, throwError } from 'rxjs';
 import { AjaxError } from 'rxjs/ajax';
 import { take, toArray } from 'rxjs/operators';
 
@@ -249,6 +249,42 @@ describe('getDiscoveryDetail', () => {
             slice.actions.getDiscoveryDetailFailure.type,
             userInterfaceActions.insertWidgetLock.type,
         ]);
+    });
+
+    describe('a read overtaken by deleting its run', () => {
+        function readThenDelete(deletedUuid: string, land: (answer$: Subject<any>) => void): any[] {
+            const action$ = new Subject<any>();
+            const answer$ = new Subject<any>();
+            const emitted: any[] = [];
+            getDiscoveryDetail(
+                action$ as any,
+                of({}) as any,
+                {
+                    apiClients: { discoveries: { getDiscovery: () => answer$ } },
+                } as any,
+            ).subscribe((emittedAction: any) => emitted.push(emittedAction));
+
+            action$.next(slice.actions.getDiscoveryDetail({ uuid: 'd-1', poll: true }));
+            action$.next(slice.actions.deleteDiscovery({ uuid: deletedUuid }));
+            land(answer$);
+            return emitted;
+        }
+        const answered = (answer$: Subject<any>) => answer$.next({ uuid: 'd-1', name: 'run', attributes: [] });
+
+        test('puts nothing back once the delete has started', () => {
+            expect(readThenDelete('d-1', answered)).toEqual([]);
+        });
+
+        test('locks nothing when it then finds the run gone', () => {
+            expect(readThenDelete('d-1', (answer$) => answer$.error(ajaxError(404, { message: 'HTTP 404' })))).toEqual([]);
+        });
+
+        test('still lands when another run is deleted', () => {
+            expect(readThenDelete('d-2', answered).map((a) => a.type)).toEqual([
+                slice.actions.getDiscoveryDetailSuccess.type,
+                userInterfaceActions.removeWidgetLock.type,
+            ]);
+        });
     });
 
     test('still locks the page when a refresh the user asked for fails', async () => {

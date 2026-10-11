@@ -2,7 +2,7 @@ import type { AppEpic, EpicDependencies } from 'ducks';
 import type { UnknownAction } from '@reduxjs/toolkit';
 import { forkJoin, iif, type Observable, of, throwError } from 'rxjs';
 import { AjaxError } from 'rxjs/ajax';
-import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
+import { catchError, filter, map, mergeMap, switchMap, takeUntil } from 'rxjs/operators';
 import { extractError } from 'utils/net';
 import { ConnectorInterface, FilterConditionOperator, FilterFieldSource, FunctionGroupCode, type UuidDto } from '../types/openapi';
 import { actions as alertActions } from './alerts';
@@ -75,6 +75,14 @@ export const getDiscoveryDetail: AppEpic = (action$, state$, deps) => {
                     if (action.payload.poll && isRetriableFailure(err)) return of(failure);
                     return of(failure, userInterfaceActions.insertWidgetLock(err, LockWidgetNameEnum.DiscoveryDetails));
                 }),
+                // Deleting the run makes any answer stale: it would put the run back into the list, or lock the page
+                // the delete redirects away from.
+                takeUntil(
+                    action$.pipe(
+                        filter(slice.actions.deleteDiscovery.match),
+                        filter((deletion) => deletion.payload.uuid === action.payload.uuid),
+                    ),
+                ),
             ),
         ),
     );

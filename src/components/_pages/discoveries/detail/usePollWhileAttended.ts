@@ -19,7 +19,7 @@ export function usePollWhileAttended(poll: () => void, enabled: boolean, interva
         let timer: ReturnType<typeof setInterval> | undefined;
         const attended = () => document.visibilityState === 'visible' && document.hasFocus();
         const start = () => {
-            if (timer === undefined) timer = setInterval(() => pollRef.current(), intervalMs);
+            timer ??= setInterval(() => pollRef.current(), intervalMs);
         };
         const stop = () => {
             clearInterval(timer);
