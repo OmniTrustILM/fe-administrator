@@ -1,5 +1,6 @@
-import type { Page } from '@playwright/test';
+import type { Locator, Page } from '@playwright/test';
 import { LockTypeEnum } from 'types/user-interface';
+import { relativeLuminance } from 'utils/contrast';
 import { expect, test } from '../../../playwright/ct-test';
 import CommentPanelWithStore from './CommentPanelWithStore';
 
@@ -41,6 +42,20 @@ const apiPage = (comments: Array<{ uuid: string }>, overrides: Record<string, un
 const dispatched = async (page: Page) => {
     const raw = await page.getByTestId('comments-dispatch-probe').getAttribute('data-actions');
     return JSON.parse(raw ?? '[]') as Array<{ type: string; payload?: Record<string, unknown> }>;
+};
+
+const luminanceOf = (cssColour: string) => {
+    const [r, g, b] = (cssColour.match(/\d+(\.\d+)?/g) ?? []).map(Number);
+    return relativeLuminance({ r, g, b });
+};
+
+const textContrast = async (locator: Locator) => {
+    const { colour, background } = await locator.evaluate((node) => {
+        const style = getComputedStyle(node);
+        return { colour: style.color, background: style.backgroundColor };
+    });
+    const [darker, lighter] = [luminanceOf(colour), luminanceOf(background)].sort((a, b) => a - b);
+    return (lighter + 0.05) / (darker + 0.05);
 };
 
 test.describe('CommentPanel', () => {
@@ -131,6 +146,20 @@ test.describe('CommentPanel', () => {
             true,
         );
     });
+
+    for (const theme of ['light', 'dark'] as const) {
+        test(`the selected editor mode tab meets AA text contrast in the ${theme} theme`, async ({ mount, page }) => {
+            await mount(<CommentPanelWithStore />);
+            await page.evaluate((isDark) => document.documentElement.classList.toggle('dark', isDark), theme === 'dark');
+
+            for (const mode of ['write', 'preview']) {
+                const tab = page.getByTestId(`comment-panel-obj-1-composer-toggle-${mode}`);
+                await tab.click();
+                await expect(tab).toHaveAttribute('aria-selected', 'true');
+                expect(await textContrast(tab)).toBeGreaterThanOrEqual(4.5);
+            }
+        });
+    }
 
     test('posts a root comment and supports preview', async ({ mount, page }) => {
         await mount(<CommentPanelWithStore />);

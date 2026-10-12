@@ -66,6 +66,8 @@ describe('theme-tokens', () => {
             ['content-muted', 'surface-raised'],
             ['content-subtle', 'surface-raised'],
             ['brand', 'surface-raised'],
+            ['brand-hover', 'brand-subtle'],
+            ['content', 'brand-subtle'],
             ['content-on-brand', 'surface-header'],
             ['success', 'success-surface'],
             ['danger', 'danger-surface'],
