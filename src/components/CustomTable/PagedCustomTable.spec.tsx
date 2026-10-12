@@ -1,6 +1,7 @@
 import { test, expect } from '../../../playwright/ct-test';
 import { withProviders } from 'utils/test-helpers';
 import PagedCustomTable from './PagedCustomTable';
+import PagedCustomTableWithStore from './PagedCustomTableWithStore';
 import type { TableHeader, TableDataRow } from './index';
 
 const mockHeaders: TableHeader[] = [
@@ -66,5 +67,38 @@ test.describe('PagedCustomTable', () => {
         );
         await expect(page.getByTestId('table-skeleton')).toHaveCount(0);
         await expect(page.getByText('Row 1')).toBeVisible();
+    });
+
+    test('opens on the stored page and loads only that page', async ({ mount, page }) => {
+        await mount(<PagedCustomTableWithStore storedPage={2} />);
+
+        await expect(page.getByTestId('loaded-pages')).toHaveText('2');
+        await expect(page.getByTestId('stored-page')).toHaveText('2');
+    });
+
+    test('keeps the stored page when the table is replaced right after mounting', async ({ mount, page }) => {
+        await mount(<PagedCustomTableWithStore storedPage={2} replaceOnMount />);
+
+        await expect(page.getByTestId('loaded-pages')).toHaveText('2, 2');
+        await expect(page.getByTestId('stored-page')).toHaveText('2');
+    });
+
+    test('stores the page the user moves to', async ({ mount, page }) => {
+        await mount(<PagedCustomTableWithStore />);
+
+        await page.getByRole('button', { name: 'Next' }).click();
+
+        await expect(page.getByTestId('loaded-pages')).toHaveText('1, 2');
+        await expect(page.getByTestId('stored-page')).toHaveText('2');
+    });
+
+    test('follows a changed state key to the page stored for it', async ({ mount, page }) => {
+        await mount(<PagedCustomTableWithStore storedPage={2} otherStoredPage={3} />);
+
+        await page.getByRole('button', { name: 'Other table' }).click();
+
+        await expect(page.getByTestId('loaded-pages')).toHaveText('2, 3');
+        await expect(page.getByTestId('stored-page')).toHaveText('2');
+        await expect(page.getByTestId('other-stored-page')).toHaveText('3');
     });
 });
