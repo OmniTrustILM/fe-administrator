@@ -95,7 +95,7 @@ export default function DiscoveryResultsSummary({ discovery, headers, className 
     }, [discovery]);
 
     return (
-        <Widget title="Results" titleSize="large" className={className} dataTestId="discovery-results">
+        <Widget title="Import summary" titleSize="large" className={className} dataTestId="discovery-results">
             <div className="flex flex-col gap-4">
                 <div>
                     <p className="mb-1 text-xs font-medium uppercase tracking-wide text-content-muted">All resources</p>

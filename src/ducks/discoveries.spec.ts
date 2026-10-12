@@ -95,7 +95,7 @@ describe('discoveries slice', () => {
         next = reducer(next, actions.getDiscoveryDetailSuccess({ discovery: detail }));
         expect(next.isFetchingDetail).toBe(false);
         expect(next.discovery).toEqual(detail);
-        expect(next.discoveries[0]).toEqual(detail);
+        expect(next.discoveries[0]).toEqual({ ...detail, totalItemsDiscovered: 0 });
 
         next = reducer({ ...next, isFetchingDetail: true }, actions.getDiscoveryDetailFailure({ error: 'err' }));
         expect(next.isFetchingDetail).toBe(false);
@@ -108,6 +108,18 @@ describe('discoveries slice', () => {
         );
         expect(next.discoveries).toHaveLength(1);
         expect(next.discoveries[0].uuid).toBe('d-99');
+    });
+
+    test('a detail entered into the list carries the item total Core would list for it', () => {
+        const listed = (discovery: object) =>
+            reducer({ ...initialState, discoveries: [] }, actions.getDiscoveryDetailSuccess({ discovery: discovery as any }))
+                .discoveries[0];
+
+        // A v2 run: the items received, keys included.
+        expect(listed({ uuid: 'v2', itemsDiscovered: 52, totalCertificatesDiscovered: 48 }).totalItemsDiscovered).toBe(52);
+        // A v1 run reports no items received; it finds certificates only.
+        expect(listed({ uuid: 'v1', totalCertificatesDiscovered: 4 }).totalItemsDiscovered).toBe(4);
+        expect(listed({ uuid: 'v1-empty' }).totalItemsDiscovered).toBe(0);
     });
 
     test('createDiscovery / success / failure flags', () => {
@@ -318,6 +330,25 @@ describe('discoveries slice - v2 additions', () => {
         expect(loading.discovery).toBeUndefined();
     });
 
+    test('a poll re-reads in place under its own flag, so the page never shows busy for it', () => {
+        const shown = { ...initialState, discovery: { uuid: 'd-1' } } as any;
+
+        const polling = reducer(shown, actions.getDiscoveryDetail({ uuid: 'd-1', poll: true }));
+        expect(polling.discovery).toEqual({ uuid: 'd-1' });
+        expect(polling.isPollingDetail).toBe(true);
+        expect(polling.isFetchingDetail).toBe(false);
+
+        // A refresh clicked during a poll replaces it, and its answer is the only one that arrives.
+        const refreshed = reducer(
+            reducer(polling, actions.getDiscoveryDetail({ uuid: 'd-1', keepCurrent: true })),
+            actions.getDiscoveryDetailSuccess({ discovery: { uuid: 'd-1' } as any }),
+        );
+        expect(refreshed.isPollingDetail).toBe(false);
+        expect(refreshed.isFetchingDetail).toBe(false);
+
+        expect(reducer(polling, actions.getDiscoveryDetailFailure({ error: 'err' })).isPollingDetail).toBe(false);
+    });
+
     test('clearing without a resource drops every per-resource set', () => {
         const pre = { ...initialState, discoveryProviderResourceAttributeDescriptors: { keys: [], certificates: [] } };
         expect(reducer(pre, actions.clearDiscoveryResourceAttributeDescriptors({})).discoveryProviderResourceAttributeDescriptors).toEqual(
@@ -413,6 +444,7 @@ describe('discoveries selectors', () => {
             isFetchingDiscoveryProviderAttributeDescriptors: true,
             isFetchingDiscoveryCertificates: true,
             isFetchingDetail: true,
+            isPollingDetail: true,
             isCreating: true,
             createDiscoverySucceeded: true,
             isDeleting: true,
@@ -430,6 +462,7 @@ describe('discoveries selectors', () => {
         expect(selectors.isFetchingDiscoveryProviderAttributeDescriptors(state)).toBe(true);
         expect(selectors.isFetchingDiscoveryCertificates(state)).toBe(true);
         expect(selectors.isFetchingDetail(state)).toBe(true);
+        expect(selectors.isPollingDetail(state)).toBe(true);
         expect(selectors.isCreating(state)).toBe(true);
         expect(selectors.createDiscoverySucceeded(state)).toBe(true);
         expect(selectors.isDeleting(state)).toBe(true);

@@ -1,11 +1,12 @@
 import { describe, expect, test, vi } from 'vitest';
-import { firstValueFrom, of, throwError } from 'rxjs';
+import { firstValueFrom, of, Subject, throwError } from 'rxjs';
 import { AjaxError } from 'rxjs/ajax';
 import { take, toArray } from 'rxjs/operators';
 
 import {
     cancelDiscovery,
     describeLifecycleRefusal,
+    getDiscoveryDetail,
     getDiscoveryInterfaceAttributesDescriptors,
     getDiscoveryResourceAttributesDescriptors,
     listDiscoveryProviders,
@@ -15,6 +16,7 @@ import {
 } from './discoveries-epics';
 import { slice } from './discoveries';
 import { alertsSlice } from './alert-slice';
+import { actions as userInterfaceActions } from './user-interface';
 import { ConnectorInterface, Resource } from 'types/openapi';
 
 vi.mock('./alerts', () => ({
@@ -206,6 +208,123 @@ describe('lifecycle epics', () => {
         );
         expect(cancelled[0].type).toBe(slice.actions.cancelDiscoverySuccess.type);
         expect(cancelled[2].type).toBe(slice.actions.getDiscoveryDetail.type);
+    });
+});
+
+describe('getDiscoveryDetail', () => {
+    const failingWith = (status: number) => ({
+        discoveries: { getDiscovery: () => throwError(() => ajaxError(status, { message: `HTTP ${status}` })) },
+    });
+
+    test.each([0, 408, 429, 502, 503])('drops a poll that failed with %i quietly, since it can clear by itself', async (status) => {
+        const emitted = await runEpic(
+            getDiscoveryDetail,
+            slice.actions.getDiscoveryDetail({ uuid: 'd-1', poll: true }),
+            failingWith(status),
+        );
+
+        expect(emitted.map((a) => a.type)).toEqual([slice.actions.getDiscoveryDetailFailure.type]);
+    });
+
+    test.each([401, 403])(
+        'locks the page when a poll is refused with %i, since lost access does not come back by itself',
+        async (status) => {
+            const emitted = await runEpic(
+                getDiscoveryDetail,
+                slice.actions.getDiscoveryDetail({ uuid: 'd-1', poll: true }),
+                failingWith(status),
+            );
+
+            expect(emitted.map((a) => a.type)).toEqual([
+                slice.actions.getDiscoveryDetailFailure.type,
+                userInterfaceActions.insertWidgetLock.type,
+            ]);
+        },
+    );
+
+    test('locks the page when a poll finds the run gone, as a refresh would', async () => {
+        const emitted = await runEpic(getDiscoveryDetail, slice.actions.getDiscoveryDetail({ uuid: 'd-1', poll: true }), failingWith(404));
+
+        expect(emitted.map((a) => a.type)).toEqual([
+            slice.actions.getDiscoveryDetailFailure.type,
+            userInterfaceActions.insertWidgetLock.type,
+        ]);
+    });
+
+    describe('a read overtaken by deleting its run', () => {
+        function readThenDelete(
+            deletedUuid: string,
+            land: (answer$: Subject<any>) => void,
+            read: { uuid: string; poll?: boolean; keepCurrent?: boolean } = { uuid: 'd-1', poll: true },
+        ): any[] {
+            const action$ = new Subject<any>();
+            const answer$ = new Subject<any>();
+            const emitted: any[] = [];
+            getDiscoveryDetail(
+                action$ as any,
+                of({}) as any,
+                {
+                    apiClients: { discoveries: { getDiscovery: () => answer$ } },
+                } as any,
+            ).subscribe((emittedAction: any) => emitted.push(emittedAction));
+
+            action$.next(slice.actions.getDiscoveryDetail(read));
+            action$.next(slice.actions.deleteDiscovery({ uuid: deletedUuid }));
+            land(answer$);
+            return emitted;
+        }
+        const answered = (answer$: Subject<any>) => answer$.next({ uuid: 'd-1', name: 'run', attributes: [] });
+
+        // The read still ends, so the page's read flags clear; only the stale answer and a lock are dropped.
+        const endedWithoutAnAnswer = [slice.actions.getDiscoveryDetailFailure.type];
+
+        test('puts nothing back once the delete has started', () => {
+            expect(readThenDelete('d-1', answered).map((a) => a.type)).toEqual(endedWithoutAnAnswer);
+        });
+
+        test('locks nothing when it then finds the run gone', () => {
+            expect(readThenDelete('d-1', (answer$) => answer$.error(ajaxError(404, { message: 'HTTP 404' }))).map((a) => a.type)).toEqual(
+                endedWithoutAnAnswer,
+            );
+        });
+
+        test.each([
+            { uuid: 'd-1', poll: true },
+            { uuid: 'd-1', keepCurrent: true },
+        ])('leaves no read in flight when the delete then fails, so %o does not block the next one', (read) => {
+            const started = [slice.actions.getDiscoveryDetail(read), slice.actions.deleteDiscovery({ uuid: 'd-1' })].reduce(
+                slice.reducer,
+                slice.getInitialState(),
+            );
+            const settled = [...readThenDelete('d-1', () => {}, read), slice.actions.deleteDiscoveryFailure({ error: 'refused' })].reduce(
+                slice.reducer,
+                started,
+            );
+
+            expect(settled.isPollingDetail).toBe(false);
+            expect(settled.isFetchingDetail).toBe(false);
+            expect(settled.isDeleting).toBe(false);
+        });
+
+        test('still lands when another run is deleted', () => {
+            expect(readThenDelete('d-2', answered).map((a) => a.type)).toEqual([
+                slice.actions.getDiscoveryDetailSuccess.type,
+                userInterfaceActions.removeWidgetLock.type,
+            ]);
+        });
+    });
+
+    test('still locks the page when a refresh the user asked for fails', async () => {
+        const emitted = await runEpic(
+            getDiscoveryDetail,
+            slice.actions.getDiscoveryDetail({ uuid: 'd-1', keepCurrent: true }),
+            failingWith(502),
+        );
+
+        expect(emitted.map((a) => a.type)).toEqual([
+            slice.actions.getDiscoveryDetailFailure.type,
+            userInterfaceActions.insertWidgetLock.type,
+        ]);
     });
 });
 
