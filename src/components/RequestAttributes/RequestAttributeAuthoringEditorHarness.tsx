@@ -9,7 +9,6 @@ type Props = Readonly<{
     showMergeMode?: boolean;
     showBindings?: boolean;
     disabled?: boolean;
-    connectorAttributeOptions?: { value: string; label: string; description?: string }[];
     rdnOptions?: OidSelectOption[];
     extensionOptions?: OidSelectOption[];
     extendedKeyUsageOptions?: OidSelectOption[];
@@ -34,7 +33,6 @@ export default function RequestAttributeAuthoringEditorHarness({
     showMergeMode,
     showBindings,
     disabled,
-    connectorAttributeOptions,
     rdnOptions,
     extensionOptions,
     extendedKeyUsageOptions,
@@ -76,7 +74,6 @@ export default function RequestAttributeAuthoringEditorHarness({
                 showMergeMode={showMergeMode}
                 showBindings={showBindings}
                 disabled={disabled}
-                connectorAttributeOptions={connectorAttributeOptions}
                 rdnOptions={rdnOptions}
                 extensionOptions={extensionOptions}
                 extendedKeyUsageOptions={extendedKeyUsageOptions}

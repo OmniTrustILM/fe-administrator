@@ -139,9 +139,6 @@ function valueSourceLabel(type: ValueSourceType): string {
     return VALUE_SOURCE_OPTIONS.find((o) => o.value === type)?.label ?? 'Free input';
 }
 
-/** `value` = attribute UUID, `label` = human display, `description` = internal attribute name (the binding name-fallback key). */
-type ConnectorAttributeOption = { value: string; label: string; description?: string };
-
 // Resolve a stored mapping value to the option it belongs to. A legacy value may be an RDN code
 // (e.g. CN) rather than the dotted OID the dropdown now emits, so match aliases too and return the
 // canonical OID. Falls back to the (trimmed) stored value when nothing matches — for the synthetic
@@ -243,8 +240,6 @@ type Props = Readonly<{
     /** Value-source bindings are RA-Profile-only; the platform default DTO can't persist them. */
     showBindings?: boolean;
     disabled?: boolean;
-    /** Optional connector attribute descriptors to pick a binding target from (name/uuid). */
-    connectorAttributeOptions?: ConnectorAttributeOption[];
     /** Custom-OID entries (category rdnAttributeType) offered for the RDN mapping target. */
     rdnOptions?: OidSelectOption[];
     /** Custom-OID entries (category certificateExtension) offered for the extension mapping target. */
@@ -280,7 +275,6 @@ export default function RequestAttributeAuthoringEditor({
     showMergeMode = false,
     showBindings = true,
     disabled = false,
-    connectorAttributeOptions,
     rdnOptions = [],
     extensionOptions = [],
     extendedKeyUsageOptions = [],
@@ -1176,26 +1170,6 @@ export default function RequestAttributeAuthoringEditor({
         const set = (p: Partial<ValueSourceBindingFormValues>) => setBindingDraft({ ...bindingDraft, data: { ...d, ...p } });
         return (
             <div className="space-y-3 text-left" data-testid={`${dataTestId}-binding-form`}>
-                {connectorAttributeOptions && connectorAttributeOptions.length > 0 && (
-                    <Select
-                        id="ra-binding-connector-attr"
-                        label="Connector attribute"
-                        value={d.attributeUuid || ''}
-                        onChange={(v) => {
-                            const opt = connectorAttributeOptions.find((o) => o.value === v);
-                            // Bind by UUID (primary) + internal attribute name (fallback key, from the
-                            // option's `description`) — never the display label. Descriptors without a
-                            // real UUID fall back to name-only (their option value equals the name), so
-                            // only store a UUID when it differs from the internal name. Clearing resets both.
-                            const hasRealUuid = !!opt && opt.value !== opt.description;
-                            set({ attributeUuid: hasRealUuid ? opt.value : '', attributeName: opt?.description ?? '' });
-                        }}
-                        options={connectorAttributeOptions}
-                        showOptionDescriptionInDropdown
-                        isClearable
-                        placeholder="Pick a connector attribute (optional)"
-                    />
-                )}
                 <TextInput
                     id="ra-binding-uuid"
                     label="Attribute UUID"
