@@ -92,6 +92,14 @@ test.describe('PagedCustomTable', () => {
         await expect(page.getByTestId('stored-page')).toHaveText('2');
     });
 
+    test('reloads for a changed state key even when both keys store the same page', async ({ mount, page }) => {
+        await mount(<PagedCustomTableWithStore />);
+
+        await page.getByRole('button', { name: 'Other table' }).click();
+
+        await expect(page.getByTestId('loaded-pages')).toHaveText('1, 1');
+    });
+
     test('follows a changed state key to the page stored for it', async ({ mount, page }) => {
         await mount(<PagedCustomTableWithStore storedPage={2} otherStoredPage={3} />);
 

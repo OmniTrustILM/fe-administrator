@@ -40,8 +40,14 @@ export default function PagedCustomTable({ headers, data, totalItems, onReloadDa
     }
     const { page: pageNumber, pageSize } = pagination;
 
-    const setPageNumber = useCallback((page: number) => setPagination((current) => ({ ...current, page })), []);
-    const setPageSize = useCallback((size: number) => setPagination((current) => ({ ...current, pageSize: size })), []);
+    const setPageNumber = useCallback(
+        (page: number) => setPagination((current) => (current.page === page ? current : { ...current, page })),
+        [],
+    );
+    const setPageSize = useCallback(
+        (size: number) => setPagination((current) => (current.pageSize === size ? current : { ...current, pageSize: size })),
+        [],
+    );
 
     const onReloadDataRef = useRef(onReloadData);
 
@@ -63,9 +69,10 @@ export default function PagedCustomTable({ headers, data, totalItems, onReloadDa
         );
     }, [dispatch, pageNumber, pageSize, paginationStateStorageKey, persistedPaginationState.page, persistedPaginationState.pageSize]);
 
+    // One load per table state: a new key with the same page is still another table's page.
     useEffect(() => {
-        onReloadDataRef.current(pageSize, pageNumber);
-    }, [pageSize, pageNumber]);
+        onReloadDataRef.current(pagination.pageSize, pagination.page);
+    }, [pagination]);
 
     const paginationData = useMemo(
         () => ({
