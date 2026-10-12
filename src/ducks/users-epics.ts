@@ -83,8 +83,12 @@ const create: AppEpic = (action$, state, deps) => {
 
                             catchError((err) =>
                                 of(
-                                    slice.actions.createFailure({ error: extractError(err, 'Failed to update user roles') }),
-                                    appRedirectActions.fetchError({ error: err, message: 'Failed to update user roles' }),
+                                    slice.actions.createSuccess({ user: transformUserDetailDtoToModel(user) }),
+                                    appRedirectActions.redirect({ url: `../users/detail/${user.uuid}` }),
+                                    appRedirectActions.fetchError({
+                                        error: err,
+                                        message: `User ${user.username} was created, but its roles could not be assigned`,
+                                    }),
                                 ),
                             ),
                         ),
