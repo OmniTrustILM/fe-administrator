@@ -1,6 +1,11 @@
 import Dialog from 'components/Dialog';
-import { Fragment, useMemo } from 'react';
-import type { TriggerHistoryObjectTriggerSummaryDto } from 'types/openapi';
+import { selectors as enumSelectors } from 'ducks/enums';
+import { EntityType, actions as filterActions, selectors as filterSelectors } from 'ducks/filters';
+import { Fragment, type ReactNode, useEffect, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { PlatformEnum, type TriggerHistoryObjectTriggerSummaryDto } from 'types/openapi';
+import { findConditionField, renderConditionItems } from 'utils/condition-badges';
+import { findUnmetConditionItem } from 'utils/trigger-history';
 
 type Props = {
     isOpen: boolean;
@@ -9,10 +14,39 @@ type Props = {
     trigger?: TriggerHistoryObjectTriggerSummaryDto;
 };
 
-type Row = { label: string; value: string };
+type Row = { label: string; value: ReactNode };
 type Section = { id: string; rows: Row[] };
 
+const unmetItemReason = (item: ReactNode) => (
+    <span className="inline-flex flex-wrap items-center gap-1">
+        Condition item
+        {item}
+        is false.
+    </span>
+);
+
 export default function EvaluationDetailsDialog({ isOpen, onClose, objectLabel, trigger }: Readonly<Props>) {
+    const dispatch = useDispatch();
+    const fieldSourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.FilterFieldSource));
+    const operatorEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.FilterConditionOperator));
+    const platformEnums = useSelector(enumSelectors.platformEnums);
+    const availableFilters = useSelector(filterSelectors.availableFilters(EntityType.CONDITIONS));
+
+    const filtersResource = useMemo(
+        () => trigger?.records.find((record) => findUnmetConditionItem(record, fieldSourceEnum, operatorEnum))?.condition?.resource,
+        [trigger, fieldSourceEnum, operatorEnum],
+    );
+
+    useEffect(() => {
+        if (!isOpen || !filtersResource) return;
+        dispatch(
+            filterActions.getAvailableFilters({
+                entity: EntityType.CONDITIONS,
+                getAvailableFiltersApi: (apiClients) => apiClients.resources.listResourceRuleFilterFields({ resource: filtersResource }),
+            }),
+        );
+    }, [dispatch, isOpen, filtersResource]);
+
     const sections: Section[] = useMemo(() => {
         if (!trigger) return [];
 
@@ -38,7 +72,14 @@ export default function EvaluationDetailsDialog({ isOpen, onClose, objectLabel, 
                       { label: 'Result', value: 'Failed' },
                   ]
                 : [];
-            const reasonRows: Row[] = record.message ? [{ label: 'Reason', value: record.message }] : [];
+            const unmetItem = findUnmetConditionItem(record, fieldSourceEnum, operatorEnum);
+            const isUnmetItemReadable = !!unmetItem && !!findConditionField(availableFilters, unmetItem);
+            const reason = isUnmetItemReadable
+                ? unmetItemReason(
+                      renderConditionItems([unmetItem], availableFilters, platformEnums, fieldSourceEnum, operatorEnum, { className: '' }),
+                  )
+                : record.message;
+            const reasonRows: Row[] = record.message ? [{ label: 'Reason', value: reason }] : [];
 
             return {
                 id: `record-${index}`,
@@ -47,7 +88,7 @@ export default function EvaluationDetailsDialog({ isOpen, onClose, objectLabel, 
         });
 
         return [header, ...recordSections];
-    }, [trigger, objectLabel]);
+    }, [trigger, objectLabel, fieldSourceEnum, operatorEnum, platformEnums, availableFilters]);
 
     return (
         <Dialog

@@ -8,6 +8,11 @@ import { getInputStringFromIso8601String } from 'utils/duration';
 
 type RenderVariant = 'badge' | 'small';
 
+export const findConditionField = (availableFilters: SearchFieldListModel[], condition: ConditionItemDto): SearchFieldModel | undefined =>
+    availableFilters
+        .find((a) => a.filterFieldSource === condition.fieldSource)
+        ?.searchFieldData?.find((s) => s.fieldIdentifier === condition.fieldIdentifier);
+
 type RenderConditionItemsOptions = {
     className: string;
     variant?: RenderVariant;
@@ -78,9 +83,7 @@ export const renderConditionItems = (
     };
 
     return conditionItems.map((condition, i) => {
-        const field = availableFilters
-            .find((a) => a.filterFieldSource === condition.fieldSource)
-            ?.searchFieldData?.find((s) => s.fieldIdentifier === condition.fieldIdentifier);
+        const field = findConditionField(availableFilters, condition);
 
         const label = field ? field.fieldLabel : condition.fieldIdentifier;
         const value = getConditionValue(condition, field, platformEnums);
