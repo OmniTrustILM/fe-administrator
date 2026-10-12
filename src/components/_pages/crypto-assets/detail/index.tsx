@@ -146,7 +146,11 @@ export default function CryptoAssetDetail() {
 
     // The properties sit beside the rules they explain once there is room; a failed explanation has none to show.
     const readinessTab = (
-        <div className={cn('grid items-start gap-4', { '2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]': pqcExplanation !== undefined })}>
+        <div
+            className={cn('grid grid-cols-1 items-start gap-4', {
+                '2xl:grid-cols-[minmax(0,2fr)_minmax(0,1fr)]': pqcExplanation !== undefined,
+            })}
+        >
             <Widget
                 title="PQC readiness evaluation"
                 titleSize="large"
