@@ -12,7 +12,7 @@ import { EnumColumnDescription } from 'components/EnumDescription';
 import { selectors as authSelectors } from 'ducks/auth';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { DiscoveryMessageSeverity, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import ConnectorLink from 'components/ConnectorLink';
@@ -105,9 +105,17 @@ export default function DiscoveryDetail() {
         dispatch(rulesActions.getTriggerHistorySummary({ triggerObjectUuid: id }));
     }, [id, dispatch]);
 
+    const shownRunUuidRef = useRef(discovery?.uuid);
+    shownRunUuidRef.current = discovery?.uuid;
+
+    // Coming back to the run already on screen re-reads it in place: a reset would blank the page and remount its tables.
     useEffect(() => {
-        getFreshDiscoveryDetails();
-    }, [id, getFreshDiscoveryDetails]);
+        if (shownRunUuidRef.current === id) {
+            refreshDiscoveryDetails();
+        } else {
+            getFreshDiscoveryDetails();
+        }
+    }, [id, getFreshDiscoveryDetails, refreshDiscoveryDetails]);
 
     const onDeleteConfirmed = useCallback(() => {
         if (!discovery) return;
@@ -281,8 +289,10 @@ export default function DiscoveryDetail() {
         );
     }, [discovery?.runMessageCount, discoveryMessages]);
 
-    // Only the first load gets the skeleton; a refresh keeps the page and lets the widgets show busy.
-    if (isFetching && !discovery) {
+    // Only the first load gets the skeleton; a refresh keeps the page and lets the widgets show busy. A run left over
+    // from another detail page is not shown either, or its tables would load under that run's uuid.
+    const isShowingAnotherRun = !!discovery && discovery.uuid !== id;
+    if ((isFetching && !discovery) || isShowingAnotherRun) {
         return <DetailPageSkeleton layout="tabs" tabCount={6} />;
     }
 
