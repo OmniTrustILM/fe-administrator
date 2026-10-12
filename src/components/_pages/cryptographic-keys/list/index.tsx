@@ -1,3 +1,4 @@
+import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
 
 import type { WidgetButtonProps } from 'components/WidgetButtons';
@@ -9,6 +10,7 @@ import { actions, selectors } from 'ducks/cryptographic-keys';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EntityType, actions as filterActions } from 'ducks/filters';
 import { actions as pagingActions, selectors as pagingSelectors } from 'ducks/paging';
+import { actions as tokenProfilesActions, selectors as tokenProfilesSelectors } from 'ducks/token-profiles';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Select from 'components/Select';
@@ -22,6 +24,35 @@ import KeyUsageSelect from '../KeyUsageSelect';
 import { buildKeyCellRegistry, KEY_COLUMNS } from '../keyTableHelpers';
 import { EnumColumnDescription } from 'components/EnumDescription';
 import CryptographicKeyForm from '../form';
+import { isRemovableFromInventory, REMOVE_KEY_FROM_INVENTORY_NOTE, REMOVE_KEYS_FROM_INVENTORY_NOTE } from '../inventoryRemoval';
+
+const removalReportHeaders: TableHeader[] = [
+    { id: 'name', content: 'Name' },
+    { id: 'reason', content: 'Reason' },
+];
+
+function keyCount(count: number) {
+    return count === 1 ? '1 key' : `${count} keys`;
+}
+
+/**
+ * The checked rows are key items, while removal from the inventory acts on the key each item belongs to. A key is
+ * judged by its rows on the page.
+ */
+function removabilityOfCheckedKeys(
+    items: CryptographicKeyResponseModel[],
+    checkedItemUuids: string[],
+    keyListingProfileUuids: ReadonlySet<string>,
+) {
+    const checkedKeyUuids = new Set(items.filter((item) => checkedItemUuids.includes(item.uuid)).map((item) => item.keyWrapperUuid));
+    const removability = new Map<string, boolean>();
+    for (const keyUuid of checkedKeyUuids) {
+        const rows = items.filter((item) => item.keyWrapperUuid === keyUuid);
+        const tokenListsKeys = rows.every((row) => row.tokenProfileUuid !== undefined && keyListingProfileUuids.has(row.tokenProfileUuid));
+        removability.set(keyUuid, isRemovableFromInventory(tokenListsKeys, rows));
+    }
+    return removability;
+}
 
 function CryptographicKeyList() {
     const dispatch = useDispatch();
@@ -34,13 +65,26 @@ function CryptographicKeyList() {
     const isBulkUpdatingKeyUsage = useSelector(selectors.isBulkUpdatingKeyUsage);
     const isBulkCompromising = useSelector(selectors.isBulkCompromising);
     const isBulkDestroying = useSelector(selectors.isBulkDestroying);
+    const isBulkRemovingFromInventory = useSelector(selectors.isBulkRemovingFromInventory);
+    const bulkRemoveFromInventoryRequestSize = useSelector(selectors.bulkRemoveFromInventoryRequestSize);
+    const bulkRemoveFromInventoryMessages = useSelector(selectors.bulkRemoveFromInventoryMessages);
     const isImporting = useSelector(certificateSelectors.isImporting);
     const importResults = useSelector(certificateSelectors.importResults);
+    const isOnboarding = useSelector(tokenProfilesSelectors.isOnboardingTokenKeys);
+    const onboardingResults = useSelector(tokenProfilesSelectors.tokenKeyOnboardingResults);
 
     const keyUsageEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyUsage));
     const keyTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyType));
     const keyCompromiseReasonEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyCompromiseReason));
-    const isBusy = isBulkDeleting || isBulkEnabling || isBulkDisabling || isBulkUpdatingKeyUsage || isBulkCompromising || isBulkDestroying;
+    const keyListingProfiles = useSelector(tokenProfilesSelectors.keyListableTokenProfiles);
+    const isBusy =
+        isBulkDeleting ||
+        isBulkEnabling ||
+        isBulkDisabling ||
+        isBulkUpdatingKeyUsage ||
+        isBulkCompromising ||
+        isBulkDestroying ||
+        isBulkRemovingFromInventory;
 
     const [confirmCompromise, setConfirmCompromise] = useState<boolean>(false);
 
@@ -54,8 +98,29 @@ function CryptographicKeyList() {
 
     const [isAddOpen, setIsAddOpen] = useState<boolean>(false);
 
+    const [isAddDialogWide, setIsAddDialogWide] = useState<boolean>(false);
+
+    const [confirmRemoveFromInventory, setConfirmRemoveFromInventory] = useState<boolean>(false);
+
+    const [isRemovalReportOpen, setIsRemovalReportOpen] = useState<boolean>(false);
+
+    const keyListingProfileUuids = useMemo(() => new Set(keyListingProfiles.map((profile) => profile.uuid)), [keyListingProfiles]);
+    const checkedKeyRemovability = useMemo(
+        () => removabilityOfCheckedKeys(cryptographicKeys, checkedRows, keyListingProfileUuids),
+        [cryptographicKeys, checkedRows, keyListingProfileUuids],
+    );
+    const removableKeyUuids = useMemo(
+        () => [...checkedKeyRemovability].filter(([, removable]) => removable).map(([keyUuid]) => keyUuid),
+        [checkedKeyRemovability],
+    );
+    const keptKeyCount = checkedKeyRemovability.size - removableKeyUuids.length;
+
     useEffect(() => {
         dispatch(actions.clearDeleteErrorMessages());
+    }, [dispatch]);
+
+    useEffect(() => {
+        dispatch(tokenProfilesActions.listKeyListableTokenProfiles());
     }, [dispatch]);
 
     const onEnableClick = useCallback(() => {
@@ -81,6 +146,11 @@ function CryptographicKeyList() {
         dispatch(actions.bulkDestroyCryptographicKeyItems({ uuids: checkedRows }));
         setConfirmDestroy(false);
     }, [checkedRows, dispatch]);
+
+    const onRemoveFromInventoryConfirmed = useCallback(() => {
+        dispatch(actions.bulkRemoveKeysFromInventory({ uuids: removableKeyUuids }));
+        setConfirmRemoveFromInventory(false);
+    }, [removableKeyUuids, dispatch]);
 
     const buttons: WidgetButtonProps[] = [
         {
@@ -129,6 +199,16 @@ function CryptographicKeyList() {
             tooltip: 'Destroy',
             onClick: () => {
                 setConfirmDestroy(true);
+            },
+        },
+        {
+            icon: 'package-minus',
+            disabled: removableKeyUuids.length === 0,
+            tooltip: 'Remove from inventory',
+            disabledTooltip: 'Select at least one key that can be removed from the inventory',
+            'aria-label': 'Remove from inventory',
+            onClick: () => {
+                setConfirmRemoveFromInventory(true);
             },
         },
     ];
@@ -186,8 +266,21 @@ function CryptographicKeyList() {
         refreshList();
     }, [dispatch, refreshList]);
 
-    // An import from the Create Key dialog is listed as soon as it succeeds, however the dialog is closed after it.
+    // An import or an onboarding from the Create Key dialog is listed as soon as it succeeds, however the dialog is closed after it.
     useRunOnSuccessfulFinish(isImporting, !!importResults, refreshList);
+    useRunOnSuccessfulFinish(isOnboarding, !!onboardingResults?.some((result) => result.onboarded), refreshList);
+
+    const removalReportRows: TableDataRow[] = useMemo(
+        () => (bulkRemoveFromInventoryMessages ?? []).map((message) => ({ id: message.uuid, columns: [message.name, message.message] })),
+        [bulkRemoveFromInventoryMessages],
+    );
+
+    const onRemovedFromInventory = useCallback(() => {
+        refreshList();
+        setIsRemovalReportOpen(removalReportRows.length > 0);
+    }, [removalReportRows, refreshList]);
+
+    useRunOnSuccessfulFinish(isBulkRemovingFromInventory, bulkRemoveFromInventoryMessages !== undefined, onRemovedFromInventory);
 
     return (
         <>
@@ -213,12 +306,18 @@ function CryptographicKeyList() {
             <Dialog
                 isOpen={isAddOpen}
                 caption="Create Key"
-                body={<CryptographicKeyForm onSuccess={handleFormSuccess} onCancel={() => setIsAddOpen(false)} />}
+                body={
+                    <CryptographicKeyForm
+                        onSuccess={handleFormSuccess}
+                        onCancel={() => setIsAddOpen(false)}
+                        onWideTabShown={setIsAddDialogWide}
+                    />
+                }
                 toggle={() => {
-                    // An import in flight is seen through to its results, so the dialog is not closed under it.
-                    if (!isImporting) setIsAddOpen(false);
+                    // An import or an onboarding in flight is seen through to its results, so the dialog is not closed under it.
+                    if (!isImporting && !isOnboarding) setIsAddOpen(false);
                 }}
-                size="xl"
+                size={isAddDialogWide ? 'xxl' : 'xl'}
                 buttons={[]}
             />
             <Dialog
@@ -255,6 +354,38 @@ function CryptographicKeyList() {
                     { color: 'secondary', variant: 'outline', onClick: () => setConfirmDestroy(false), body: 'Cancel' },
                     { color: 'danger', onClick: onDestroy, body: 'Destroy' },
                 ]}
+            />
+            <Dialog
+                isOpen={confirmRemoveFromInventory}
+                caption={removableKeyUuids.length > 1 ? 'Remove Keys from Inventory' : 'Remove Key from Inventory'}
+                size="lg"
+                body={
+                    <div>
+                        <p>{removableKeyUuids.length > 1 ? REMOVE_KEYS_FROM_INVENTORY_NOTE : REMOVE_KEY_FROM_INVENTORY_NOTE}</p>
+                        <p className="mt-2">{keyCount(removableKeyUuids.length)} will be removed.</p>
+                        {keptKeyCount > 0 && (
+                            <p className="mt-2">
+                                {keptKeyCount === 1
+                                    ? '1 selected key cannot be removed from the inventory and is skipped.'
+                                    : `${keptKeyCount} selected keys cannot be removed from the inventory and are skipped.`}
+                            </p>
+                        )}
+                    </div>
+                }
+                toggle={() => setConfirmRemoveFromInventory(false)}
+                icon="delete"
+                buttons={[
+                    { color: 'secondary', variant: 'outline', onClick: () => setConfirmRemoveFromInventory(false), body: 'Cancel' },
+                    { color: 'danger', onClick: onRemoveFromInventoryConfirmed, body: 'Remove' },
+                ]}
+            />
+            <Dialog
+                isOpen={isRemovalReportOpen}
+                caption={`Removed ${bulkRemoveFromInventoryRequestSize - removalReportRows.length} of ${keyCount(bulkRemoveFromInventoryRequestSize)}`}
+                size="lg"
+                body={<CustomTable headers={removalReportHeaders} data={removalReportRows} />}
+                toggle={() => setIsRemovalReportOpen(false)}
+                buttons={[{ color: 'secondary', variant: 'outline', onClick: () => setIsRemovalReportOpen(false), body: 'Close' }]}
             />
             <Dialog
                 isOpen={keyUsageUpdate}

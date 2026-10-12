@@ -41,7 +41,7 @@ export function answerExport(
 }
 
 /** The harnesses' signed-in user, who holds the key import and the key export permission unless a test takes one away. */
-export const keyPermissionsAuth = ({ importKey = true, exportKey = true } = {}): AuthTestState => ({
+export const keyPermissionsAuth = ({ importKey = true, exportKey = true, createKey = false } = {}): AuthTestState => ({
     profile: {
         username: 'Test User',
         permissions: {
@@ -49,7 +49,11 @@ export const keyPermissionsAuth = ({ importKey = true, exportKey = true } = {}):
             allowedActions: [
                 {
                     resource: Resource.Keys,
-                    actions: [...(importKey ? [ResourceAction.ImportKey] : []), ...(exportKey ? [ResourceAction.ExportKey] : [])],
+                    actions: [
+                        ...(importKey ? [ResourceAction.ImportKey] : []),
+                        ...(exportKey ? [ResourceAction.ExportKey] : []),
+                        ...(createKey ? [ResourceAction.Create] : []),
+                    ],
                 },
             ],
         },

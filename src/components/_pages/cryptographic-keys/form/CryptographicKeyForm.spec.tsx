@@ -8,6 +8,7 @@ import {
     KeyRequestType,
     Resource,
     TokenInstanceStatus,
+    TokenKeyStatus,
 } from 'types/openapi';
 import { actions as keyActions } from 'ducks/cryptographic-keys';
 import { actions as connectorActions } from 'ducks/connectors';
@@ -16,7 +17,7 @@ import { actions as tokenProfilesActions } from 'ducks/token-profiles';
 import type { UnknownAction } from '@reduxjs/toolkit';
 import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
 import type { TokenProfileResponseModel } from 'types/token-profiles';
-import type { CertificateImportResultDto, InspectedEntryDto } from 'types/openapi';
+import type { CertificateImportResultDto, InspectedEntryDto, TokenKeyListResponseDto } from 'types/openapi';
 
 function aTokenProfile() {
     const profile: TokenProfileResponseModel = {
@@ -50,6 +51,30 @@ async function selectKeyType(page: Page, type: KeyRequestType) {
 
 async function clickExportableSwitch(page: Page) {
     await page.locator('label[for="exportable"]').first().click();
+}
+
+const onboardableKeys: TokenKeyListResponseDto = {
+    items: [
+        {
+            keyHandle: 'onboardable',
+            label: 'signer',
+            keyAlgorithm: KeyAlgorithm.Rsa,
+            length: 2048,
+            status: TokenKeyStatus.Onboardable,
+            suggestedName: 'signer',
+        },
+    ],
+    itemsPerPage: 10,
+    pageNumber: 1,
+    totalPages: 1,
+    totalItems: 1,
+};
+
+async function selectKeyToOnboard(page: Page, profile: TokenProfileResponseModel) {
+    await page.getByRole('tab', { name: 'Onboard from token' }).click();
+    await page.getByTestId('select-onboardTokenProfileSelect-trigger').click();
+    await page.getByRole('option', { name: `${profile.tokenInstanceName} / ${profile.name}` }).click();
+    await page.getByRole('checkbox', { name: 'Select signer' }).click();
 }
 
 const detailRequests = (actions: UnknownAction[]) =>
@@ -216,14 +241,36 @@ test.describe('CryptographicKeyForm', () => {
         expect(actions.filter(tokenProfilesActions.getTokenProfileDetail.match)).toHaveLength(0);
     });
 
-    test('offers Generate new and Import material tabs in create mode', async ({ mount, page }) => {
+    test('offers Generate new, Import material and Onboard from token tabs in create mode', async ({ mount, page }) => {
         const profile = aTokenProfile().build();
         await mount(<CryptographicKeyFormWithStore initialRoute="/keys/create" routePath="/keys/create" tokenProfiles={[profile]} />);
 
         await expect(page.getByRole('tab', { name: 'Generate new' })).toBeVisible();
         await expect(page.getByRole('tab', { name: 'Import material' })).toBeVisible();
+        await expect(page.getByRole('tab', { name: 'Onboard from token' })).toBeVisible();
         // Generate new starts active, so its fields render without switching tabs.
         await expect(page.getByText('Token Profile *')).toBeVisible();
+    });
+
+    test('asks for a wide dialog only while the Onboard from token tab is open', async ({ mount, page }) => {
+        const profile = aTokenProfile().build();
+        const wide: boolean[] = [];
+        await mount(
+            <CryptographicKeyFormWithStore
+                initialRoute="/keys/create"
+                routePath="/keys/create"
+                tokenProfiles={[profile]}
+                keyListableTokenProfiles={[profile]}
+                onWideTabShown={(shown) => wide.push(shown)}
+            />,
+        );
+        await expect.poll(() => wide.at(-1)).toBe(false);
+
+        await page.getByRole('tab', { name: 'Onboard from token' }).click();
+        await expect.poll(() => wide.at(-1)).toBe(true);
+
+        await page.getByRole('tab', { name: 'Import material' }).click();
+        await expect.poll(() => wide.at(-1)).toBe(false);
     });
 
     test('does not offer the Import material tab without the key import permission', async ({ mount, page }) => {
@@ -237,10 +284,87 @@ test.describe('CryptographicKeyForm', () => {
             />,
         );
 
+        await expect(page.getByRole('tab', { name: 'Generate new' })).toBeVisible();
+        await expect(page.getByRole('tab', { name: 'Onboard from token' })).toBeVisible();
+        await expect(page.getByRole('tab', { name: 'Import material' })).toHaveCount(0);
+    });
+
+    test('does not offer the Onboard from token tab without the key create permission', async ({ mount, page }) => {
+        const profile = aTokenProfile().build();
+        await mount(
+            <CryptographicKeyFormWithStore
+                initialRoute="/keys/create"
+                routePath="/keys/create"
+                tokenProfiles={[profile]}
+                canCreateKeys={false}
+            />,
+        );
+
+        await expect(page.getByRole('tab', { name: 'Import material' })).toBeVisible();
+        await expect(page.getByRole('tab', { name: 'Onboard from token' })).toHaveCount(0);
+    });
+
+    test('offers neither tab without the key import and the key create permission', async ({ mount, page }) => {
+        const profile = aTokenProfile().build();
+        await mount(
+            <CryptographicKeyFormWithStore
+                initialRoute="/keys/create"
+                routePath="/keys/create"
+                tokenProfiles={[profile]}
+                canImportKeys={false}
+                canCreateKeys={false}
+            />,
+        );
+
         await expect(page.getByRole('button', { name: 'Create' })).toBeVisible();
         await expect(page.getByText('Token Profile *')).toBeVisible();
-        await expect(page.getByRole('tab', { name: 'Import material' })).toHaveCount(0);
         await expect(page.getByRole('tab', { name: 'Generate new' })).toHaveCount(0);
+    });
+
+    test('keeps to the Onboard from token tab while an onboarding runs', async ({ mount, page }) => {
+        const profile = aTokenProfile().build();
+        await mount(
+            <CryptographicKeyFormWithStore
+                initialRoute="/keys/create"
+                routePath="/keys/create"
+                tokenProfiles={[profile]}
+                keyListableTokenProfiles={[profile]}
+                tokenKeys={onboardableKeys}
+            />,
+        );
+
+        await selectKeyToOnboard(page, profile);
+        await page.getByRole('button', { name: 'Onboard 1' }).click();
+
+        await expect(page.getByRole('button', { name: 'Onboarding...' })).toBeVisible();
+        await expect(page.getByRole('tab', { name: 'Generate new' })).toBeDisabled();
+        await expect(page.getByRole('tab', { name: 'Import material' })).toBeDisabled();
+    });
+
+    test('finishes an onboarding with the create-success handling', async ({ mount, page }) => {
+        const profile = aTokenProfile().build();
+        let succeededCount = 0;
+        await mount(
+            <CryptographicKeyFormWithStore
+                initialRoute="/keys/create"
+                routePath="/keys/create"
+                tokenProfiles={[profile]}
+                keyListableTokenProfiles={[profile]}
+                tokenKeys={onboardableKeys}
+                onboardingResults={[
+                    { keyHandle: 'onboardable', onboarded: true, intoExistingKey: false, keyUuid: 'key', keyName: 'signer' },
+                ]}
+                onSuccess={() => {
+                    succeededCount += 1;
+                }}
+            />,
+        );
+
+        await selectKeyToOnboard(page, profile);
+        await page.getByRole('button', { name: 'Onboard 1' }).click();
+        await page.getByRole('button', { name: 'Done' }).click();
+
+        await expect.poll(() => succeededCount).toBe(1);
     });
 
     test('shows the Exportable switch only for a key type the profile can export, resets it on change, and submits it', async ({

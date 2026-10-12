@@ -2,7 +2,7 @@ import * as RadixTooltip from '@radix-ui/react-tooltip';
 import cn from 'classnames';
 import { cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
 
-export type TooltipPlacement = 'bottom';
+export type TooltipPlacement = 'bottom' | 'right';
 
 type Props = {
     content: string | ReactNode;

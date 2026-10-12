@@ -536,3 +536,55 @@ test.describe('CryptographicKeyDetail signature attributes', () => {
         });
     }
 });
+
+test.describe('CryptographicKeyDetail removal from the inventory', () => {
+    const listingProfile = { ...aTokenProfile([]), keyListAvailable: true };
+
+    test('offers to remove a key pair whose token lists keys', async ({ mount, page }) => {
+        const key = aSynchronizedKey().withTokenProfile(listingProfile.uuid).build();
+
+        await mount(<CryptographicKeyDetailWithStore cryptographicKey={key} tokenProfile={listingProfile} />);
+
+        await expect(page.getByRole('button', { name: 'Remove from inventory' })).toBeVisible();
+    });
+
+    test('hides removal for a key whose token lists no keys', async ({ mount, page }) => {
+        const key = aSynchronizedKey().withTokenProfile(listingProfile.uuid).build();
+
+        await mount(
+            <CryptographicKeyDetailWithStore cryptographicKey={key} tokenProfile={{ ...listingProfile, keyListAvailable: false }} />,
+        );
+
+        await expect(page.getByText('Synchronized key').first()).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Remove from inventory' })).toHaveCount(0);
+    });
+
+    test('hides removal for a compromised key', async ({ mount, page }) => {
+        const key = aSynchronizedKey().withTokenProfile(listingProfile.uuid).build();
+        const compromised = { ...key, items: key.items.map((item) => ({ ...item, state: KeyState.Compromised })) };
+
+        await mount(<CryptographicKeyDetailWithStore cryptographicKey={compromised} tokenProfile={listingProfile} />);
+
+        await expect(page.getByText('Synchronized key').first()).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Remove from inventory' })).toHaveCount(0);
+    });
+
+    test('removes the key from the inventory once confirmed', async ({ mount, page }) => {
+        const dispatched: UnknownAction[] = [];
+        const key = aSynchronizedKey().withTokenProfile(listingProfile.uuid).build();
+        await mount(
+            <CryptographicKeyDetailWithStore
+                cryptographicKey={key}
+                tokenProfile={listingProfile}
+                onAction={(action) => dispatched.push(action)}
+            />,
+        );
+
+        await page.getByRole('button', { name: 'Remove from inventory' }).click();
+        await page.getByRole('button', { name: 'Remove', exact: true }).click();
+
+        await expect
+            .poll(() => dispatched.filter(keyActions.removeKeyFromInventory.match).map((action) => action.payload))
+            .toEqual([{ uuid: 'synchronized-key', redirect: '/keys' }]);
+    });
+});
