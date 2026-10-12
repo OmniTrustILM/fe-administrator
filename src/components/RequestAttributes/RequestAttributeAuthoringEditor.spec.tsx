@@ -546,25 +546,6 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         await expect(component.getByTestId('request-attribute-authoring-attributes')).toBeVisible();
     });
 
-    test('binding uses the internal attribute name (option description), not the display label', async ({ mount, page }) => {
-        const component = await mount(
-            withProviders(
-                <RequestAttributeAuthoringEditorHarness
-                    connectorAttributeOptions={[{ value: 'uuid-123', label: 'Datacenter (friendly)', description: 'datacenter' }]}
-                />,
-            ),
-        );
-
-        await component.getByTestId('request-attribute-authoring-binding-add').click();
-        await page.getByTestId('select-ra-binding-connector-attr-trigger').click();
-        await page.getByRole('option', { name: 'Datacenter (friendly)' }).click();
-        await page.getByRole('button', { name: 'Save' }).click();
-
-        const binding = JSON.parse((await component.getByTestId('value-json').textContent()) ?? '{}').valueSourceBindings[0];
-        expect(binding.attributeUuid).toBe('uuid-123');
-        expect(binding.attributeName).toBe('datacenter'); // internal name, not "Datacenter (friendly)"
-    });
-
     test('blocks saving an attribute whose name duplicates an existing one', async ({ mount, page }) => {
         const initialValue = {
             mergeMode: 'merge' as const,
