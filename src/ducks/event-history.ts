@@ -85,8 +85,6 @@ const objectEventHistory = createSelector(state, (s) => s.objectEventHistory);
 const isFetchingObjectEventHistory = createSelector(state, (s) => s.isFetchingObjectEventHistory);
 const conditionFilterFields = (resource: Resource | undefined) =>
     createSelector(state, (s) => (resource ? s.conditionFilterFieldsByResource[resource] : undefined));
-const isFetchingConditionFilterFields = (resource: Resource | undefined) =>
-    createSelector(state, (s) => !!resource && s.fetchingConditionFilterFieldsFor.includes(resource));
 
 export const selectors = {
     state,
@@ -95,7 +93,6 @@ export const selectors = {
     objectEventHistory,
     isFetchingObjectEventHistory,
     conditionFilterFields,
-    isFetchingConditionFilterFields,
 };
 
 export const actions = slice.actions;

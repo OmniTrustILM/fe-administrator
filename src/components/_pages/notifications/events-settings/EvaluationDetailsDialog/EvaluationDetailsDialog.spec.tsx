@@ -7,6 +7,7 @@ import {
 } from 'types/openapi';
 import { withProviders } from 'utils/test-helpers';
 import { test, expect } from '../../../../../../playwright/ct-test';
+import EvaluationDetailsDialogRecordingWrapper from './EvaluationDetailsDialogRecordingWrapper';
 import EvaluationDetailsDialogWithStore from './EvaluationDetailsDialogWithStore';
 import EvaluationDetailsDialog from './index';
 
@@ -133,5 +134,16 @@ test.describe('EvaluationDetailsDialog', () => {
         await mount(<EvaluationDetailsDialogWithStore trigger={unmetDateTrigger(recorded, Resource.Keys)} />);
 
         await expect(page.getByText(recorded)).toBeVisible();
+    });
+
+    test('asks for the fields once per opening, not again after the read failed', async ({ mount, page }) => {
+        await mount(<EvaluationDetailsDialogRecordingWrapper />);
+        await expect(page.getByTestId('field-reads')).toHaveText('1');
+        await page.waitForTimeout(500);
+        await expect(page.getByTestId('field-reads')).toHaveText('1');
+
+        await page.getByRole('button', { name: 'Close', exact: true }).last().click();
+        await page.getByRole('button', { name: 'Open again' }).click();
+        await expect(page.getByTestId('field-reads')).toHaveText('2');
     });
 });

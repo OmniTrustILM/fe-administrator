@@ -35,17 +35,14 @@ export default function EvaluationDetailsDialog({ isOpen, onClose, objectLabel, 
         [trigger, fieldSourceEnum, operatorEnum],
     );
     const selectFilterFields = useMemo(() => eventHistorySelectors.conditionFilterFields(filtersResource), [filtersResource]);
-    const selectIsFetchingFilterFields = useMemo(
-        () => eventHistorySelectors.isFetchingConditionFilterFields(filtersResource),
-        [filtersResource],
-    );
     const availableFilters = useSelector(selectFilterFields);
-    const isFetchingFilterFields = useSelector(selectIsFetchingFilterFields);
 
+    // Asked for once per opening: a failed read keeps the recorded text and is tried again when the dialog opens next.
+    // In-flight duplicates are dropped by the epic, so the fetching flag is not consulted here.
     useEffect(() => {
-        if (!isOpen || !filtersResource || availableFilters || isFetchingFilterFields) return;
+        if (!isOpen || !filtersResource || availableFilters) return;
         dispatch(eventHistoryActions.getConditionFilterFields({ resource: filtersResource }));
-    }, [dispatch, isOpen, filtersResource, availableFilters, isFetchingFilterFields]);
+    }, [dispatch, isOpen, filtersResource, availableFilters]);
 
     const sections: Section[] = useMemo(() => {
         if (!trigger) return [];

@@ -129,7 +129,7 @@ describe('event-history slice', () => {
         const certificateFields = [{ filterFieldSource: 'property', searchFieldData: [] }] as any;
         let state = reducer(initialState, actions.getConditionFilterFields({ resource: Resource.Certificates }));
         state = reducer(state, actions.getConditionFilterFields({ resource: Resource.Keys }));
-        expect(selectors.isFetchingConditionFilterFields(Resource.Certificates)({ eventHistory: state } as any)).toBe(true);
+        expect(state.fetchingConditionFilterFieldsFor).toEqual([Resource.Certificates, Resource.Keys]);
 
         state = reducer(
             state,
