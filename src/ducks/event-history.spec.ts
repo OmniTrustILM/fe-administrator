@@ -10,7 +10,7 @@ describe('event-history slice', () => {
 
     test('getPlatformSettingsEventHistory clears eventHistory and sets isFetchingEventHistory to true', () => {
         const state = reducer(
-            { isFetchingEventHistory: false, eventHistory: sampleEventHistory, isFetchingObjectEventHistory: false },
+            { ...initialState, isFetchingEventHistory: false, eventHistory: sampleEventHistory, isFetchingObjectEventHistory: false },
             actions.getPlatformSettingsEventHistory({
                 event: ResourceEvent.CertificateStatusChanged,
                 request: sampleEventHistoryRequest,
@@ -22,7 +22,7 @@ describe('event-history slice', () => {
 
     test('getPlatformSettingsEventHistorySuccess sets eventHistory and clears isFetchingEventHistory', () => {
         const state = reducer(
-            { isFetchingEventHistory: true, eventHistory: undefined, isFetchingObjectEventHistory: false },
+            { ...initialState, isFetchingEventHistory: true, eventHistory: undefined, isFetchingObjectEventHistory: false },
             actions.getPlatformSettingsEventHistorySuccess({ eventHistory: sampleEventHistory }),
         );
         expect(state.isFetchingEventHistory).toBe(false);
@@ -31,7 +31,7 @@ describe('event-history slice', () => {
 
     test('getPlatformSettingsEventHistoryFailure clears isFetchingEventHistory', () => {
         const state = reducer(
-            { isFetchingEventHistory: true, eventHistory: undefined, isFetchingObjectEventHistory: false },
+            { ...initialState, isFetchingEventHistory: true, eventHistory: undefined, isFetchingObjectEventHistory: false },
             actions.getPlatformSettingsEventHistoryFailure({ error: 'boom' }),
         );
         expect(state.isFetchingEventHistory).toBe(false);
@@ -39,6 +39,7 @@ describe('event-history slice', () => {
 
     test('resetEventHistory wipes eventHistory and isFetchingEventHistory', () => {
         const dirty = {
+            ...initialState,
             isFetchingEventHistory: true,
             eventHistory: sampleEventHistory,
             isFetchingObjectEventHistory: true,
@@ -51,6 +52,7 @@ describe('event-history slice', () => {
     test('getObjectEventHistory clears objectEventHistory and sets isFetchingObjectEventHistory to true', () => {
         const state = reducer(
             {
+                ...initialState,
                 isFetchingEventHistory: false,
                 isFetchingObjectEventHistory: false,
                 objectEventHistory: sampleObjectEventHistory,
@@ -68,7 +70,7 @@ describe('event-history slice', () => {
 
     test('getObjectEventHistorySuccess sets objectEventHistory and clears isFetchingObjectEventHistory', () => {
         const state = reducer(
-            { isFetchingEventHistory: false, isFetchingObjectEventHistory: true, objectEventHistory: undefined },
+            { ...initialState, isFetchingEventHistory: false, isFetchingObjectEventHistory: true, objectEventHistory: undefined },
             actions.getObjectEventHistorySuccess({ objectEventHistory: sampleObjectEventHistory }),
         );
         expect(state.isFetchingObjectEventHistory).toBe(false);
@@ -77,7 +79,7 @@ describe('event-history slice', () => {
 
     test('getObjectEventHistoryFailure clears isFetchingObjectEventHistory', () => {
         const state = reducer(
-            { isFetchingEventHistory: false, isFetchingObjectEventHistory: true, objectEventHistory: undefined },
+            { ...initialState, isFetchingEventHistory: false, isFetchingObjectEventHistory: true, objectEventHistory: undefined },
             actions.getObjectEventHistoryFailure({ error: 'boom' }),
         );
         expect(state.isFetchingObjectEventHistory).toBe(false);
@@ -98,7 +100,7 @@ describe('event-history slice', () => {
         });
 
         test('eventHistory returns undefined when not set', () => {
-            const s = { eventHistory: { isFetchingEventHistory: false, eventHistory: undefined } };
+            const s = { eventHistory: { ...initialState, isFetchingEventHistory: false, eventHistory: undefined } };
             expect(selectors.eventHistory(s)).toBeUndefined();
         });
 
@@ -121,5 +123,23 @@ describe('event-history slice', () => {
         test('state returns the eventHistory slice when present', () => {
             expect(selectors.state(store)).toEqual(store.eventHistory);
         });
+    });
+
+    test('condition filter fields are kept per resource and a failed read leaves nothing behind', () => {
+        const certificateFields = [{ filterFieldSource: 'property', searchFieldData: [] }] as any;
+        let state = reducer(initialState, actions.getConditionFilterFields({ resource: Resource.Certificates }));
+        state = reducer(state, actions.getConditionFilterFields({ resource: Resource.Keys }));
+        expect(selectors.isFetchingConditionFilterFields(Resource.Certificates)({ eventHistory: state } as any)).toBe(true);
+
+        state = reducer(
+            state,
+            actions.getConditionFilterFieldsSuccess({ resource: Resource.Certificates, filterFields: certificateFields }),
+        );
+        state = reducer(state, actions.getConditionFilterFieldsFailure({ resource: Resource.Keys, error: 'boom' }));
+
+        expect(selectors.conditionFilterFields(Resource.Certificates)({ eventHistory: state } as any)).toEqual(certificateFields);
+        expect(selectors.conditionFilterFields(Resource.Keys)({ eventHistory: state } as any)).toBeUndefined();
+        expect(selectors.conditionFilterFields(undefined)({ eventHistory: state } as any)).toBeUndefined();
+        expect(state.fetchingConditionFilterFieldsFor).toEqual([]);
     });
 });

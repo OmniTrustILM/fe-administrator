@@ -30,7 +30,7 @@ const baseTrigger: TriggerHistoryObjectTriggerSummaryDto = {
 const expiresAt = new Date(2026, 8, 1).toISOString();
 const expiresAtReason = (value: string) => `Condition item 'Property NOT_AFTER greater than ${value}' is false.`;
 
-const unmetDateTrigger = (message: string): TriggerHistoryObjectTriggerSummaryDto => ({
+const unmetDateTrigger = (message: string, resource = Resource.Certificates): TriggerHistoryObjectTriggerSummaryDto => ({
     ...baseTrigger,
     records: [
         {
@@ -39,7 +39,7 @@ const unmetDateTrigger = (message: string): TriggerHistoryObjectTriggerSummaryDt
                 uuid: 'c-2',
                 name: 'expires after September',
                 type: ConditionType.CheckField,
-                resource: Resource.Certificates,
+                resource,
                 items: [
                     {
                         fieldSource: FilterFieldSource.Property,
@@ -124,6 +124,13 @@ test.describe('EvaluationDetailsDialog', () => {
     test('keeps the reason as recorded while the field of the item is not known', async ({ mount, page }) => {
         const recorded = expiresAtReason(expiresAt);
         await mount(<EvaluationDetailsDialogWithStore trigger={unmetDateTrigger(recorded)} hasFilterFields={false} />);
+
+        await expect(page.getByText(recorded)).toBeVisible();
+    });
+
+    test('keeps the reason as recorded when only the fields of another resource are loaded', async ({ mount, page }) => {
+        const recorded = expiresAtReason(expiresAt);
+        await mount(<EvaluationDetailsDialogWithStore trigger={unmetDateTrigger(recorded, Resource.Keys)} />);
 
         await expect(page.getByText(recorded)).toBeVisible();
     });

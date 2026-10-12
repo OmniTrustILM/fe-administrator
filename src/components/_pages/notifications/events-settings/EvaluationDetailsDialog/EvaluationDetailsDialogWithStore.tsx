@@ -1,10 +1,10 @@
-import { EntityType } from 'ducks/filters';
 import { Provider } from 'react-redux';
 import {
     FilterConditionOperator,
     FilterFieldSource,
     FilterFieldType,
     PlatformEnum,
+    Resource,
     type TriggerHistoryObjectTriggerSummaryDto,
 } from 'types/openapi';
 import { createMockStore } from 'utils/test-helpers';
@@ -34,18 +34,11 @@ export default function EvaluationDetailsDialogWithStore({ trigger, hasFilterFie
                 },
             },
         },
-        filters: {
-            filters: [
-                {
-                    entity: EntityType.CONDITIONS,
-                    filter: {
-                        availableFilters: hasFilterFields ? filterFields : [],
-                        currentFilters: [],
-                        isFetchingFilters: false,
-                        hasLoadedFilters: hasFilterFields,
-                    },
-                },
-            ],
+        eventHistory: {
+            isFetchingEventHistory: false,
+            isFetchingObjectEventHistory: false,
+            conditionFilterFieldsByResource: hasFilterFields ? { [Resource.Certificates]: filterFields } : {},
+            fetchingConditionFilterFieldsFor: [],
         },
     });
 

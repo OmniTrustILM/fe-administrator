@@ -873,6 +873,8 @@ export type EventHistoryTestState = {
     isFetchingEventHistory: boolean;
     objectEventHistory?: unknown;
     isFetchingObjectEventHistory: boolean;
+    conditionFilterFieldsByResource: Record<string, unknown[]>;
+    fetchingConditionFilterFieldsFor: string[];
 };
 
 const eventHistoryTestInitialState: EventHistoryTestState = {
@@ -880,6 +882,8 @@ const eventHistoryTestInitialState: EventHistoryTestState = {
     isFetchingEventHistory: false,
     objectEventHistory: undefined,
     isFetchingObjectEventHistory: false,
+    conditionFilterFieldsByResource: {},
+    fetchingConditionFilterFieldsFor: [],
 };
 
 function eventHistoryTestReducer(state: EventHistoryTestState | undefined, _action: UnknownAction): EventHistoryTestState {
