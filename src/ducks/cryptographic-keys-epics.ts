@@ -411,6 +411,56 @@ const disableCryptographicKey: AppEpic = (action$, state$, deps) => {
     );
 };
 
+const removeKeyFromInventory: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.removeKeyFromInventory.match),
+        switchMap((action) =>
+            defer(() => deps.apiClients.cryptographicKeys.removeKeyFromInventory({ uuid: action.payload.uuid })).pipe(
+                mergeMap(() =>
+                    of(
+                        slice.actions.removeKeyFromInventorySuccess({ uuid: action.payload.uuid }),
+                        appRedirectActions.redirect({ url: action.payload.redirect }),
+                    ),
+                ),
+                catchError((err) =>
+                    of(
+                        slice.actions.removeKeyFromInventoryFailure({
+                            error: extractError(err, 'Failed to remove the key from the inventory'),
+                        }),
+                        alertActions.error(extractError(err, 'Failed to remove the key from the inventory')),
+                    ),
+                ),
+            ),
+        ),
+    );
+};
+
+const bulkRemoveKeysFromInventory: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.bulkRemoveKeysFromInventory.match),
+        switchMap((action) =>
+            defer(() => deps.apiClients.cryptographicKeys.removeKeysFromInventory({ requestBody: action.payload.uuids })).pipe(
+                mergeMap((messages) =>
+                    messages.length === 0
+                        ? of(
+                              slice.actions.bulkRemoveKeysFromInventorySuccess({ messages }),
+                              alertActions.success('Selected keys removed from the inventory.'),
+                          )
+                        : of(slice.actions.bulkRemoveKeysFromInventorySuccess({ messages })),
+                ),
+                catchError((err) =>
+                    of(
+                        slice.actions.bulkRemoveKeysFromInventoryFailure({
+                            error: extractError(err, 'Failed to remove keys from the inventory'),
+                        }),
+                        appRedirectActions.fetchError({ error: err, message: 'Failed to remove keys from the inventory' }),
+                    ),
+                ),
+            ),
+        ),
+    );
+};
+
 const deleteCryptographicKey: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.deleteCryptographicKey.match),
@@ -907,6 +957,8 @@ const listSupportedKeyRequestTypes: AppEpic = (action$, _state$, deps) =>
 
 const epics = [
     listSupportedKeyRequestTypes,
+    removeKeyFromInventory,
+    bulkRemoveKeysFromInventory,
     listCryptographicKeys,
     listCryptographicKeyPairs,
     getCryptographicKeyDetail,

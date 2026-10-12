@@ -20,6 +20,8 @@ type Props = {
     timePicker?: boolean;
     /** Id of an element describing the field (typically an error paragraph) — announced by screen readers. */
     ariaDescribedBy?: string;
+    /** Accessible name for a field shown without a visible label. */
+    ariaLabel?: string;
     /** Id of the error paragraph; derived from `id` when not given. It is named in `aria-describedby` while an error shows. */
     errorId?: string;
 };
@@ -39,6 +41,7 @@ function DatePicker({
     required,
     timePicker = false,
     ariaDescribedBy,
+    ariaLabel,
     errorId,
 }: Readonly<Props>) {
     const generatedId = useId();
@@ -325,6 +328,7 @@ function DatePicker({
                     id={id}
                     aria-invalid={invalid || undefined}
                     aria-describedby={joinAriaIds(ariaDescribedBy, error ? resolvedErrorId : undefined)}
+                    aria-label={ariaLabel}
                     onClick={() => !disabled && setIsOpen(!isOpen)}
                     placeholder={timePicker ? 'dd.mm.yyyy 00:00:00' : 'dd.mm.yyyy'}
                     className={cn(

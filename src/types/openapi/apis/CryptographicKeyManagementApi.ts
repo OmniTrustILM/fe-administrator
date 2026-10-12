@@ -18,6 +18,7 @@ import type { OperationOpts, HttpHeaders, HttpQuery } from '../runtime';
 import type {
     AuthenticationServiceExceptionDto,
     BaseAttributeDto,
+    BulkActionMessageDto,
     BulkCompromiseKeyItemRequestDto,
     BulkCompromiseKeyRequestDto,
     BulkKeyItemUsageRequestDto,
@@ -35,8 +36,11 @@ import type {
     KeyItemDetailDto,
     KeyRequestDto,
     KeyRequestType,
+    OnboardTokenKeysRequestDto,
+    OnboardTokenKeysResponseDto,
     SearchFieldDataByGroupDto,
     SearchRequestDto,
+    TokenKeyListResponseDto,
     UpdateKeyUsageRequestDto,
 } from '../models';
 
@@ -225,6 +229,27 @@ export interface ListImportKeyAttributesRequest {
 
 export interface ListKeyPairsRequest {
     tokenProfileUuid?: string;
+}
+
+export interface ListTokenKeysRequest {
+    tokenInstanceUuid: string;
+    tokenProfileUuid: string;
+    pageNumber?: number;
+    itemsPerPage?: number;
+}
+
+export interface OnboardTokenKeysRequest {
+    tokenInstanceUuid: string;
+    tokenProfileUuid: string;
+    onboardTokenKeysRequestDto: OnboardTokenKeysRequestDto;
+}
+
+export interface RemoveKeyFromInventoryRequest {
+    uuid: string;
+}
+
+export interface RemoveKeysFromInventoryRequest {
+    requestBody: Array<string>;
 }
 
 export interface SyncKeysRequest {
@@ -1267,6 +1292,134 @@ export class CryptographicKeyManagementApi extends BaseAPI {
                 url: '/v1/keys/pairs',
                 method: 'GET',
                 queryParams,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * List one page of the key pairs in the key storage of this token profile, including those created outside the platform. Each entry carries a status: onboardable, onboardable into the inventory key that holds its public key, or the reason it cannot be onboarded.  Listing requires `keyListAvailable` on the token profile.
+     * List the key pairs in the key storage of a token instance
+     */
+    listTokenKeys({
+        tokenInstanceUuid,
+        tokenProfileUuid,
+        pageNumber,
+        itemsPerPage,
+    }: ListTokenKeysRequest): Observable<TokenKeyListResponseDto>;
+    listTokenKeys(
+        { tokenInstanceUuid, tokenProfileUuid, pageNumber, itemsPerPage }: ListTokenKeysRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<TokenKeyListResponseDto>>;
+    listTokenKeys(
+        { tokenInstanceUuid, tokenProfileUuid, pageNumber, itemsPerPage }: ListTokenKeysRequest,
+        opts?: OperationOpts,
+    ): Observable<TokenKeyListResponseDto | AjaxResponse<TokenKeyListResponseDto>> {
+        throwIfNullOrUndefined(tokenInstanceUuid, 'tokenInstanceUuid', 'listTokenKeys');
+        throwIfNullOrUndefined(tokenProfileUuid, 'tokenProfileUuid', 'listTokenKeys');
+
+        const queryParams: HttpQuery = {};
+
+        if (pageNumber != null) {
+            queryParams['pageNumber'] = pageNumber;
+        }
+        if (itemsPerPage != null) {
+            queryParams['itemsPerPage'] = itemsPerPage;
+        }
+
+        return this.request<TokenKeyListResponseDto>(
+            {
+                url: '/v1/tokens/{tokenInstanceUuid}/tokenProfiles/{tokenProfileUuid}/tokenKeys'
+                    .replace('{tokenInstanceUuid}', encodeURI(tokenInstanceUuid))
+                    .replace('{tokenProfileUuid}', encodeURI(tokenProfileUuid)),
+                method: 'GET',
+                queryParams,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Onboard the selected key pairs into this token profile. Each selected key pair is read again from the key storage.  A key pair whose public key the inventory holds without a token instance joins that key, which keeps its name, owner, groups, custom attributes and certificates. This requires the right to update that key. A key pair the inventory already holds otherwise is skipped. Its result names the key that holds it.
+     * Onboard key pairs from the key storage of a token instance
+     */
+    onboardTokenKeys({
+        tokenInstanceUuid,
+        tokenProfileUuid,
+        onboardTokenKeysRequestDto,
+    }: OnboardTokenKeysRequest): Observable<OnboardTokenKeysResponseDto>;
+    onboardTokenKeys(
+        { tokenInstanceUuid, tokenProfileUuid, onboardTokenKeysRequestDto }: OnboardTokenKeysRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<OnboardTokenKeysResponseDto>>;
+    onboardTokenKeys(
+        { tokenInstanceUuid, tokenProfileUuid, onboardTokenKeysRequestDto }: OnboardTokenKeysRequest,
+        opts?: OperationOpts,
+    ): Observable<OnboardTokenKeysResponseDto | AjaxResponse<OnboardTokenKeysResponseDto>> {
+        throwIfNullOrUndefined(tokenInstanceUuid, 'tokenInstanceUuid', 'onboardTokenKeys');
+        throwIfNullOrUndefined(tokenProfileUuid, 'tokenProfileUuid', 'onboardTokenKeys');
+        throwIfNullOrUndefined(onboardTokenKeysRequestDto, 'onboardTokenKeysRequestDto', 'onboardTokenKeys');
+
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        return this.request<OnboardTokenKeysResponseDto>(
+            {
+                url: '/v1/tokens/{tokenInstanceUuid}/tokenProfiles/{tokenProfileUuid}/tokenKeys/onboard'
+                    .replace('{tokenInstanceUuid}', encodeURI(tokenInstanceUuid))
+                    .replace('{tokenProfileUuid}', encodeURI(tokenProfileUuid)),
+                method: 'POST',
+                headers,
+                body: onboardTokenKeysRequestDto,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Delete the inventory records of a key. The key stays in the key storage. A later listing of the key storage offers it for onboarding again. The key history is lost.  A key can be removed when a token holds its private key, the connector of the token can list keys, and none of its items is compromised. Any other key is deleted or destroyed instead.
+     * Remove a key from the inventory
+     */
+    removeKeyFromInventory({ uuid }: RemoveKeyFromInventoryRequest): Observable<void>;
+    removeKeyFromInventory({ uuid }: RemoveKeyFromInventoryRequest, opts?: OperationOpts): Observable<void | AjaxResponse<void>>;
+    removeKeyFromInventory({ uuid }: RemoveKeyFromInventoryRequest, opts?: OperationOpts): Observable<void | AjaxResponse<void>> {
+        throwIfNullOrUndefined(uuid, 'uuid', 'removeKeyFromInventory');
+
+        return this.request<void>(
+            {
+                url: '/v1/keys/{uuid}/removeFromInventory'.replace('{uuid}', encodeURI(uuid)),
+                method: 'PATCH',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Delete the inventory records of the listed keys. The keys stay in the key storage. A later listing of the key storage offers them for onboarding again. Their history is lost.  A key can be removed when a token holds its private key, the connector of the token can list keys, and none of its items is compromised. Any other key, or one not found, is reported and left as it is. A user lacking key delete permission or token members permission on any listed key is refused, and nothing is removed.
+     * Remove keys from the inventory
+     */
+    removeKeysFromInventory({ requestBody }: RemoveKeysFromInventoryRequest): Observable<Array<BulkActionMessageDto>>;
+    removeKeysFromInventory(
+        { requestBody }: RemoveKeysFromInventoryRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<BulkActionMessageDto>>>;
+    removeKeysFromInventory(
+        { requestBody }: RemoveKeysFromInventoryRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<BulkActionMessageDto> | AjaxResponse<Array<BulkActionMessageDto>>> {
+        throwIfNullOrUndefined(requestBody, 'requestBody', 'removeKeysFromInventory');
+
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        return this.request<Array<BulkActionMessageDto>>(
+            {
+                url: '/v1/keys/removeFromInventory',
+                method: 'PATCH',
+                headers,
+                body: requestBody,
             },
             opts?.responseOpts,
         );

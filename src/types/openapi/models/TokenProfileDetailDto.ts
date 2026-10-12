@@ -84,4 +84,10 @@ export interface TokenProfileDetailDto {
      * @memberof TokenProfileDetailDto
      */
     keyTransfer?: KeyTransferCapabilityDto;
+    /**
+     * Whether the key pairs in the key storage of this token profile can be listed and onboarded
+     * @type {boolean}
+     * @memberof TokenProfileDetailDto
+     */
+    keyListAvailable: boolean;
 }

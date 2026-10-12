@@ -92,6 +92,16 @@ test.describe('TextInput', () => {
             await expect(component.locator('#field')).toHaveAttribute('aria-describedby', 'field-help field-error');
             await expect(component.locator('#field-error')).toHaveText('Invalid value');
         });
+
+        test(`names the field with ariaLabel (${type})`, async ({ mount }) => {
+            const component = await mount(
+                <div>
+                    <TextInput id="field" type={type} value="" onChange={() => {}} ariaLabel="Field name" />
+                </div>,
+            );
+
+            await expect(component.locator('#field')).toHaveAttribute('aria-label', 'Field name');
+        });
     }
 
     test('should apply invalid styling when invalid is true', async ({ mount }) => {

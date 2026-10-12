@@ -498,6 +498,8 @@ models/ObjectPermissionsDto.ts
 models/ObjectPermissionsRequestDto.ts
 models/ObjectType.ts
 models/OidCategory.ts
+models/OnboardTokenKeysRequestDto.ts
+models/OnboardTokenKeysResponseDto.ts
 models/OneTimeKeyManagedSigningDto.ts
 models/OneTimeKeyManagedSigningRequestDto.ts
 models/Operation.ts
@@ -683,6 +685,11 @@ models/TokenInstanceRequestDto.ts
 models/TokenInstanceStatus.ts
 models/TokenInstanceStatusComponent.ts
 models/TokenInstanceStatusDetailDto.ts
+models/TokenKeyDto.ts
+models/TokenKeyListResponseDto.ts
+models/TokenKeyOnboardingResultDto.ts
+models/TokenKeySelectionDto.ts
+models/TokenKeyStatus.ts
 models/TokenProfileDetailDto.ts
 models/TokenProfileDto.ts
 models/TokenProfileKeyUsageRequestDto.ts

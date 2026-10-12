@@ -18,6 +18,8 @@ type Props = {
     rows?: number;
     /** Id of an element describing the field (typically an error paragraph) — announced by screen readers. */
     ariaDescribedBy?: string;
+    /** Accessible name for a field shown without a visible label. */
+    ariaLabel?: string;
     /** Id of the error paragraph; derived from `id` when not given. It is named in `aria-describedby` while an error shows. */
     errorId?: string;
     dataTestId?: string;
@@ -37,6 +39,7 @@ function TextArea({
     required = false,
     rows = 3,
     ariaDescribedBy,
+    ariaLabel,
     errorId,
     dataTestId,
 }: Readonly<Props>) {
@@ -70,6 +73,7 @@ function TextArea({
                 rows={rows}
                 aria-invalid={invalid || undefined}
                 aria-describedby={joinAriaIds(ariaDescribedBy, error ? resolvedErrorId : undefined)}
+                aria-label={ariaLabel}
             />
             {error && (
                 <p id={resolvedErrorId} className="mt-1 text-sm text-danger">

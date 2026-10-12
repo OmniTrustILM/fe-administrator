@@ -53,6 +53,16 @@ test.describe('Tooltip', () => {
         await expect(page.locator('[data-side="bottom"]')).toBeVisible();
     });
 
+    test('content has data-side="right" when placed right', async ({ mount, page }) => {
+        await mount(
+            <Tooltip content="Tooltip text" placement="right">
+                <button type="button">Hover me</button>
+            </Tooltip>,
+        );
+        await page.getByRole('button', { name: 'Hover me' }).hover();
+        await expect(page.locator('[data-side="right"]')).toBeVisible();
+    });
+
     test('applies triggerClassName on wrapping span', async ({ mount }) => {
         const component = await mount(
             <Tooltip content="Tooltip text" triggerClassName="custom-trigger">

@@ -92,6 +92,7 @@ export interface ListTokenProfileAttributesRequest {
 export interface ListTokenProfilesRequest {
     enabled?: boolean;
     importable?: Array<string>;
+    keyListable?: boolean;
 }
 
 export interface UpdateKeyUsagesRequest {
@@ -439,16 +440,16 @@ export class TokenProfileManagementApi extends BaseAPI {
     }
 
     /**
-     * With importable, lists only the token profiles whose provider imports every given key type and algorithm, as far as the platform has recorded. A profile whose provider declares key import but whose answer is not recorded yet is listed; the import then checks it.
+     * With importable, lists only the token profiles whose provider imports every given key type and algorithm, as far as the platform has recorded. A profile whose provider declares key import but whose answer is not recorded yet is listed; the import then checks it. With keyListable, lists only the token profiles whose connector can list the key pairs in their key storage.
      * List of available Token Profiles
      */
-    listTokenProfiles({ enabled, importable }: ListTokenProfilesRequest): Observable<Array<TokenProfileDto>>;
+    listTokenProfiles({ enabled, importable, keyListable }: ListTokenProfilesRequest): Observable<Array<TokenProfileDto>>;
     listTokenProfiles(
-        { enabled, importable }: ListTokenProfilesRequest,
+        { enabled, importable, keyListable }: ListTokenProfilesRequest,
         opts?: OperationOpts,
     ): Observable<AjaxResponse<Array<TokenProfileDto>>>;
     listTokenProfiles(
-        { enabled, importable }: ListTokenProfilesRequest,
+        { enabled, importable, keyListable }: ListTokenProfilesRequest,
         opts?: OperationOpts,
     ): Observable<Array<TokenProfileDto> | AjaxResponse<Array<TokenProfileDto>>> {
         const queryParams: HttpQuery = {};
@@ -458,6 +459,9 @@ export class TokenProfileManagementApi extends BaseAPI {
         }
         if (importable != null) {
             queryParams['importable'] = importable;
+        }
+        if (keyListable != null) {
+            queryParams['keyListable'] = keyListable;
         }
 
         return this.request<Array<TokenProfileDto>>(
