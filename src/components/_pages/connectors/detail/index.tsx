@@ -397,7 +397,7 @@ export default function ConnectorDetail() {
             />
             <Widget widgetLockName={LockWidgetNameEnum.ConnectorDetails} busy={isBusy} noBorder>
                 <div className="space-y-4">
-                    <Container className="grid xl:grid-cols-2 items-start">
+                    <Container className="grid grid-cols-1 xl:grid-cols-2 items-start">
                         <Widget
                             title="Connector Details"
                             widgetButtons={widgetButtons}
@@ -417,7 +417,11 @@ export default function ConnectorDetail() {
                         )}
                     </Container>
 
-                    <Container className={connector?.version === ConnectorVersion.V2 ? 'grid gap-6 xl:grid-cols-2' : 'grid gap-6'}>
+                    <Container
+                        className={
+                            connector?.version === ConnectorVersion.V2 ? 'grid grid-cols-1 gap-6 xl:grid-cols-2' : 'grid grid-cols-1 gap-6'
+                        }
+                    >
                         {connector?.version === ConnectorVersion.V2 && connectorInfoData.length > 0 && (
                             <Widget title="Connector Info" busy={isFetchingDetail} titleSize="large">
                                 <CustomTable headers={attributesHeaders} data={connectorInfoData} />

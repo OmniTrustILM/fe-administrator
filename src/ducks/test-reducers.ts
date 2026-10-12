@@ -1,5 +1,6 @@
 import { combineReducers, type UnknownAction } from '@reduxjs/toolkit';
 import type { AttributeDescriptorModel } from 'types/attributes';
+import type { ConnectorResponseModel, HealthModel } from 'types/connectors';
 import type { ConnectInfoDto, ListViewDto } from 'types/openapi';
 import type { EventTriggerAssociationModel, TriggerModel } from 'types/rules';
 
@@ -492,6 +493,8 @@ export type ConnectorsTestState = {
     callbackData: { [key: string]: unknown };
     isRunningCallback: { [key: string]: boolean };
     connectInfo?: ConnectInfoDto[];
+    connector?: ConnectorResponseModel;
+    connectorHealth?: HealthModel;
 };
 
 const connectorsTestInitialState: ConnectorsTestState = {
