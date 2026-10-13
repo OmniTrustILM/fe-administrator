@@ -38,7 +38,6 @@ export default function EvaluationDetailsDialogWithStore({ trigger, hasFilterFie
             isFetchingEventHistory: false,
             isFetchingObjectEventHistory: false,
             conditionFilterFieldsByResource: hasFilterFields ? { [Resource.Certificates]: filterFields } : {},
-            fetchingConditionFilterFieldsFor: [],
         },
     });
 

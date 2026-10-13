@@ -16,14 +16,12 @@ export type State = {
     isFetchingObjectEventHistory: boolean;
     /** Condition filter fields per resource, so a record is only ever rendered with the fields of its own resource. */
     conditionFilterFieldsByResource: Partial<Record<Resource, SearchFieldListModel[]>>;
-    fetchingConditionFilterFieldsFor: Resource[];
 };
 
 export const initialState: State = {
     isFetchingEventHistory: false,
     isFetchingObjectEventHistory: false,
     conditionFilterFieldsByResource: {},
-    fetchingConditionFilterFieldsFor: [],
 };
 
 export const slice = createSlice({
@@ -60,18 +58,11 @@ export const slice = createSlice({
             state.isFetchingObjectEventHistory = false;
         },
 
-        getConditionFilterFields: (state, action: PayloadAction<{ resource: Resource }>) => {
-            if (!state.fetchingConditionFilterFieldsFor.includes(action.payload.resource)) {
-                state.fetchingConditionFilterFieldsFor.push(action.payload.resource);
-            }
-        },
+        getConditionFilterFields: (state, action: PayloadAction<{ resource: Resource }>) => {},
         getConditionFilterFieldsSuccess: (state, action: PayloadAction<{ resource: Resource; filterFields: SearchFieldListModel[] }>) => {
             state.conditionFilterFieldsByResource[action.payload.resource] = action.payload.filterFields;
-            state.fetchingConditionFilterFieldsFor = state.fetchingConditionFilterFieldsFor.filter((r) => r !== action.payload.resource);
         },
-        getConditionFilterFieldsFailure: (state, action: PayloadAction<{ resource: Resource; error: string | undefined }>) => {
-            state.fetchingConditionFilterFieldsFor = state.fetchingConditionFilterFieldsFor.filter((r) => r !== action.payload.resource);
-        },
+        getConditionFilterFieldsFailure: (state, action: PayloadAction<{ resource: Resource; error: string | undefined }>) => {},
 
         resetEventHistory: () => initialState,
     },

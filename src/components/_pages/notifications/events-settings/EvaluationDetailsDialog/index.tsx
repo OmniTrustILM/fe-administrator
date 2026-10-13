@@ -38,7 +38,6 @@ export default function EvaluationDetailsDialog({ isOpen, onClose, objectLabel, 
     const availableFilters = useSelector(selectFilterFields);
 
     // Asked for once per opening: a failed read keeps the recorded text and is tried again when the dialog opens next.
-    // In-flight duplicates are dropped by the epic, so the fetching flag is not consulted here.
     useEffect(() => {
         if (!isOpen || !filtersResource || availableFilters) return;
         dispatch(eventHistoryActions.getConditionFilterFields({ resource: filtersResource }));
