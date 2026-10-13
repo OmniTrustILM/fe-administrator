@@ -76,10 +76,12 @@ export const renderConditionItems = (
             return condition.value.map((v) => `'${formatSingleValue(v, field, platformEnums, condition.operator)}'`).join(' OR ');
         }
 
-        if (condition.value) {
-            return `'${formatSingleValue(condition.value, field, platformEnums, condition.operator)}'`;
+        // Zero and false are values; only an item without one, as under an "is empty" operator, shows none.
+        const value: unknown = condition.value;
+        if (value === undefined || value === null || value === '') {
+            return '';
         }
-        return '';
+        return `'${formatSingleValue(value, field, platformEnums, condition.operator)}'`;
     };
 
     return conditionItems.map((condition, i) => {
