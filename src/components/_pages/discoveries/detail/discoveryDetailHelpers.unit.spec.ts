@@ -12,6 +12,7 @@ import {
     isNotProcessedRun,
     lifecycleActionsForStatus,
     progressRecordedCaption,
+    providerBar,
     resultResources,
     targetsCaption,
     visibleLifecycleActions,
@@ -150,6 +151,62 @@ describe('targetsCaption', () => {
         expect(targetsCaption(12, undefined)).toBe('12 targets');
         expect(targetsCaption(undefined, 30)).toBe('30 targets in total');
         expect(targetsCaption(undefined, undefined)).toBe('No target count reported');
+    });
+});
+
+describe('providerBar', () => {
+    const label = (resource: string) => ({ certificates: 'Certificates', keys: 'Keys' })[resource] ?? resource;
+    const full = { value: 1, max: 1 };
+
+    it('measures targets against the total the Provider sent, running or done', () => {
+        const progress = { targetsProcessed: 12, targetsTotal: 30 };
+
+        expect(providerBar(progress, false, label)).toEqual({ value: 12, max: 30, caption: '12 / 30 targets' });
+        expect(providerBar(progress, true, label)).toEqual({ value: 12, max: 30, caption: '12 / 30 targets' });
+    });
+
+    it('keeps the true ratio of a run that ended partway, rather than filling it', () => {
+        expect(providerBar({ targetsProcessed: 300, targetsTotal: 768 }, true, label)).toMatchObject({ value: 300, max: 768 });
+    });
+
+    it('leaves a bar without a total open while the Provider works, and fills it once the Provider is done', () => {
+        expect(providerBar({ targetsProcessed: 12 }, false, label)).toEqual({ value: 12, max: undefined, caption: '12 targets' });
+        expect(providerBar({ targetsProcessed: 12 }, true, label)).toEqual({ ...full, caption: '12 targets' });
+    });
+
+    it('counts the items of the one resource against its estimate when the Provider counts no targets', () => {
+        const progress = { phase: 'searching', byResource: { certificates: { produced: 3700, totalEstimate: 12000 } } };
+
+        expect(providerBar(progress, false, label)).toEqual({ value: 3700, max: 12000, caption: '3,700 / ~12,000 certificates' });
+        expect(providerBar({ byResource: { certificates: { totalEstimate: 12000 } } }, false, label)).toEqual({
+            value: 0,
+            max: 12000,
+            caption: '0 / ~12,000 certificates',
+        });
+    });
+
+    it('says how many items were found when there is no estimate, filling the bar only once the Provider is done', () => {
+        const progress = { byResource: { certificates: { produced: 1180 } } };
+
+        expect(providerBar(progress, false, label)).toEqual({ value: 1180, max: undefined, caption: '1,180 certificates found' });
+        expect(providerBar(progress, true, label)).toEqual({ ...full, caption: '1,180 certificates found' });
+    });
+
+    it('prefers targets whenever the Provider counts them, whatever it reports per resource', () => {
+        const progress = { targetsProcessed: 4, byResource: { certificates: { produced: 3700, totalEstimate: 12000 } } };
+
+        expect(providerBar(progress, false, label)).toEqual({ value: 4, max: undefined, caption: '4 targets' });
+    });
+
+    it('has no count to draw for no resource, several, or one the Provider did not count', () => {
+        for (const progress of [
+            {},
+            { byResource: { certificates: { produced: 3700 }, keys: { produced: 4 } } },
+            { byResource: { certificates: { phase: 'searching' } } },
+        ]) {
+            expect(providerBar(progress, false, label)).toEqual({ value: undefined, max: undefined, caption: 'No target count reported' });
+            expect(providerBar(progress, true, label)).toEqual({ ...full, caption: 'No target count reported' });
+        }
     });
 });
 

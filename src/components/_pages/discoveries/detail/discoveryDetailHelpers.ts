@@ -1,5 +1,12 @@
+import { progressRatio } from 'components/ProgressBar';
 import type { DiscoveryResponseDetailModel } from 'types/discoveries';
-import { type ConnectorInterfaceDto, DiscoveryStatus, Resource } from 'types/openapi';
+import {
+    type ConnectorInterfaceDto,
+    type DiscoveryProgressDto,
+    type DiscoveryResourceProgressDto,
+    DiscoveryStatus,
+    Resource,
+} from 'types/openapi';
 import { dateFormatter, formatTimeAgo } from 'utils/dateUtil';
 
 export type DiscoveryLifecycleAction = 'stop' | 'resume' | 'cancel';
@@ -108,6 +115,52 @@ export function targetsCaption(targetsProcessed: number | undefined, targetsTota
     if (targetsTotal === undefined) return `${targetsProcessed} targets`;
     if (targetsProcessed === undefined) return `${targetsTotal} targets in total`;
     return `${targetsProcessed} / ${targetsTotal} targets`;
+}
+
+export type ProviderBar = { value?: number; max?: number; caption: string };
+
+/**
+ * The one resource whose items stand in for targets when the Provider counts none, as one whose unit of work would only
+ * be a page of search results does. Several resources have no common unit to draw, and one without a count has nothing
+ * to draw.
+ */
+function itemsProgress(progress: DiscoveryProgressDto): [string, DiscoveryResourceProgressDto] | undefined {
+    if (progress.targetsProcessed !== undefined || progress.targetsTotal !== undefined) return undefined;
+    const entries = Object.entries(progress.byResource ?? {});
+    if (entries.length !== 1) return undefined;
+    const [, counters] = entries[0];
+    return counters.produced === undefined && counters.totalEstimate === undefined ? undefined : entries[0];
+}
+
+function itemsBar({ produced = 0, totalEstimate }: DiscoveryResourceProgressDto, noun: string): ProviderBar {
+    const found = produced.toLocaleString('en-US');
+    return {
+        value: produced,
+        max: totalEstimate,
+        caption: totalEstimate === undefined ? `${found} ${noun} found` : `${found} / ~${totalEstimate.toLocaleString('en-US')} ${noun}`,
+    };
+}
+
+/**
+ * What the Provider's bar draws and the figures beside it: targets when the Provider counts them, else the items of the
+ * run's one resource against the Provider's estimate. Once the Provider is done, a bar with nothing to measure against
+ * is drawn full rather than left moving, since no more work is coming; a known total keeps its true ratio, so a run
+ * cancelled partway shows where it stopped.
+ */
+export function providerBar(
+    progress: DiscoveryProgressDto,
+    providerDone: boolean,
+    resourceLabel: (resource: string) => string,
+): ProviderBar {
+    const items = itemsProgress(progress);
+    const bar: ProviderBar = items
+        ? itemsBar(items[1], resourceLabel(items[0]).toLowerCase())
+        : {
+              value: progress.targetsProcessed,
+              max: progress.targetsTotal,
+              caption: targetsCaption(progress.targetsProcessed, progress.targetsTotal),
+          };
+    return providerDone && progressRatio(bar.value, bar.max) === undefined ? { ...bar, value: 1, max: 1 } : bar;
 }
 
 export type CertificateNote = { kind: 'repeats' | 'notHandedOver'; count: number };
