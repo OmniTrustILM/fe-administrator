@@ -70,7 +70,7 @@ const ExecutionForm = () => {
     const inProgressTitle = 'Creating...';
 
     const onCancel = useCallback(() => {
-        navigate('../actions?tab=executions');
+        void navigate('../actions?tab=executions');
     }, [navigate]);
 
     const methods = useForm<ExecutionFormValues>({

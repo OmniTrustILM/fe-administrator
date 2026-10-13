@@ -223,17 +223,6 @@ export default function RaProfileForm({
         }
     }, [editMode, id, raProfileSelector]);
 
-    const connectorAttributeOptions = useMemo(
-        () =>
-            (raProfileAttributeDescriptors ?? []).map((descriptor) => ({
-                value: descriptor.uuid ?? descriptor.name,
-                label: ('properties' in descriptor ? descriptor.properties?.label : undefined) ?? descriptor.name,
-                // Internal attribute name — the binding name-fallback key (not the display label).
-                description: descriptor.name,
-            })),
-        [raProfileAttributeDescriptors],
-    );
-
     const dispatchCreateRequestAttributes = useCallback(() => {
         if (!pendingCreateAttributes || !createdRaProfileUuid) return;
         const authorityUuid = pendingCreateAuthorityRef.current;
@@ -311,11 +300,6 @@ export default function RaProfileForm({
                 }
             });
             setLocalProfileModifications({ attributes: [] });
-            // Value-source bindings reference the previous authority's connector-attribute descriptor
-            // UUIDs, which are cleared and refetched below. Drop them so stale bindings can't be PATCHed
-            // against the newly selected authority. Authored static attributes are authority-independent
-            // and are preserved.
-            setRequestAttributesForm((prev) => ({ ...prev, valueSourceBindings: [] }));
             dispatch(authoritiesActions.clearRAProfilesAttributesDescriptors());
             dispatch(authoritiesActions.getRAProfilesAttributesDescriptors({ authorityUuid }));
         },
@@ -513,8 +497,7 @@ export default function RaProfileForm({
                                                 value={requestAttributesForm}
                                                 onChange={onChangeRequestAttributes}
                                                 showMergeMode
-                                                showBindings
-                                                connectorAttributeOptions={connectorAttributeOptions}
+                                                showBindings={false}
                                                 rdnOptions={rdnOptions}
                                                 extensionOptions={extensionOptions}
                                                 extendedKeyUsageOptions={extendedKeyUsageOptions}
@@ -539,8 +522,7 @@ export default function RaProfileForm({
                                                 value={requestAttributesForm}
                                                 onChange={setRequestAttributesForm}
                                                 showMergeMode
-                                                showBindings
-                                                connectorAttributeOptions={connectorAttributeOptions}
+                                                showBindings={false}
                                                 rdnOptions={rdnOptions}
                                                 extensionOptions={extensionOptions}
                                                 extendedKeyUsageOptions={extendedKeyUsageOptions}

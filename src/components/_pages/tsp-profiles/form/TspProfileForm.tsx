@@ -156,7 +156,7 @@ export const TspProfileForm = () => {
     // The vault-profile requirement depends on another field, so re-validate it whenever the method selection flips.
     // biome-ignore lint/correctness/useExhaustiveDependencies: basicPasswordSelected is the re-validation trigger, not used in the body
     useEffect(() => {
-        trigger('vaultProfile');
+        void trigger('vaultProfile');
     }, [basicPasswordSelected, trigger]);
 
     const lastResetIdRef = useRef<string | undefined>(undefined);
@@ -215,7 +215,7 @@ export const TspProfileForm = () => {
     );
 
     const onCancel = useCallback(() => {
-        navigate(-1);
+        void navigate(-1);
     }, [navigate]);
 
     return (

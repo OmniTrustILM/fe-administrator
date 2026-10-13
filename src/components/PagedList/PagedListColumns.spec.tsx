@@ -147,9 +147,9 @@ test.describe('PagedList · configurable columns', () => {
 
         await page.getByRole('button', { name: 'Expires At', exact: true }).click();
 
-        await expect
-            .poll(async () => (await lastRequest(page))?.sort)
-            .toEqual({ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'NOT_AFTER', direction: SortDirection.Asc });
+        const expected = { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'NOT_AFTER', direction: SortDirection.Asc };
+        await expect.poll(async () => (await lastRequest(page))?.sort).toEqual(expected);
+        expect((await lastRequest(page))?.sort).toEqual(expected);
     });
 
     test('turns the ordering around on a second click of the same heading', async ({ mount, page }) => {
@@ -161,6 +161,7 @@ test.describe('PagedList · configurable columns', () => {
 
         await heading.click();
         await expect.poll(async () => (await lastRequest(page))?.sort?.direction).toBe(SortDirection.Desc);
+        expect((await lastRequest(page))?.sort?.direction).toBe(SortDirection.Desc);
     });
 
     test('returns to page 1 and clears the selection when the ordering changes, because page 2 of one ordering is not page 2 of another', async ({

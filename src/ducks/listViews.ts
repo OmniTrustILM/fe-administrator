@@ -3,6 +3,7 @@ import type { AppState } from 'ducks';
 import { resetSliceState } from 'ducks/reducerUtils';
 import type { ListViewModel, ListViewRequestModel, ListViewUpdateRequestModel } from 'types/listViews';
 import type { Resource } from 'types/openapi';
+import { withWrittenStatuses } from 'utils/listViews';
 
 /**
  * The uuid a view carries while its create is in flight.
@@ -45,26 +46,16 @@ export interface ResourceViews {
     readEpoch?: number;
     /** Whether the last read was answered but set aside because a write overlapped it, so `views` is not its answer. */
     isStale?: boolean;
-    /** The `dormantFields` keys the update in flight confirms, released only once it succeeds. */
-    confirming?: string[];
 }
 
 export type State = {
     byResource: Partial<Record<Resource, ResourceViews>>;
-    /**
-     * Per-view column keys of attribute fields a stored view held while the catalogue did not publish them. A later
-     * field under the same key is held back until the user confirms it, and that must outlast leaving the page.
-     */
-    dormantFields: Partial<Record<Resource, string[]>>;
     error?: string;
 };
 
 export const initialState: State = {
     byResource: {},
-    dormantFields: {},
 };
-
-const NO_DORMANT_FIELDS: string[] = [];
 
 const EMPTY_RESOURCE_VIEWS: ResourceViews = {
     views: [],
@@ -104,7 +95,6 @@ function beginMutation(state: State, resource: Resource): ResourceViews {
 function endMutation(entry: ResourceViews): void {
     entry.isMutating = false;
     entry.rollback = undefined;
-    entry.confirming = undefined;
     entry.mutationEpoch += 1;
 }
 
@@ -212,16 +202,14 @@ export const slice = createSlice({
             rollBack(state, action.payload.resource, action.payload.error);
         },
 
-        updateView: (
-            state,
-            action: PayloadAction<{ resource: Resource; uuid: string; view: ListViewUpdateRequestModel; confirms?: string[] }>,
-        ) => {
+        updateView: (state, action: PayloadAction<{ resource: Resource; uuid: string; view: ListViewUpdateRequestModel }>) => {
             const entry = beginMutation(state, action.payload.resource);
-            entry.confirming = action.payload.confirms;
             const stored = entry.views.find((view) => view.uuid === action.payload.uuid);
             if (!stored) return;
 
-            Object.assign(stored, action.payload.view, { defaultView: action.payload.view.defaultView === true });
+            Object.assign(stored, withWrittenStatuses(stored, action.payload.view), {
+                defaultView: action.payload.view.defaultView === true,
+            });
             if (stored.defaultView) keepOnePinned(entry.views, stored.uuid);
         },
 
@@ -232,31 +220,11 @@ export const slice = createSlice({
             if (index !== -1) entry.views[index] = action.payload.view;
             if (action.payload.view.defaultView) keepOnePinned(entry.views, action.payload.view.uuid);
 
-            const confirmed = new Set(entry.confirming);
-            const held = state.dormantFields[action.payload.resource];
-            if (held && confirmed.size > 0) state.dormantFields[action.payload.resource] = held.filter((key) => !confirmed.has(key));
-
             endMutation(entry);
         },
 
         updateViewFailure: (state, action: PayloadAction<{ resource: Resource; error: string | undefined }>) => {
             rollBack(state, action.payload.resource, action.payload.error);
-        },
-
-        // A field seen gone again while a save confirming it is out is not the field the user confirmed.
-        markFieldsDormant: (state, action: PayloadAction<{ resource: Resource; keys: string[] }>) => {
-            const held = new Set(state.dormantFields[action.payload.resource] ?? []);
-            for (const key of action.payload.keys) held.add(key);
-            state.dormantFields[action.payload.resource] = [...held];
-
-            const entry = state.byResource[action.payload.resource];
-            if (entry?.confirming) entry.confirming = entry.confirming.filter((key) => !action.payload.keys.includes(key));
-        },
-
-        releaseDormantFields: (state, action: PayloadAction<{ resource: Resource; keys: string[] }>) => {
-            const released = new Set(action.payload.keys);
-            const held = state.dormantFields[action.payload.resource];
-            if (held) state.dormantFields[action.payload.resource] = held.filter((key) => !released.has(key));
         },
 
         deleteView: (state, action: PayloadAction<{ resource: Resource; uuid: string }>) => {
@@ -287,8 +255,6 @@ const isMutating = (resource: Resource) => createSelector(resourceViews(resource
 const isStale = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.isStale ?? false);
 const createdUuid = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.createdUuid);
 const error = createSelector(state, (state) => state?.error);
-const dormantFields = (resource: Resource) => createSelector(state, (state) => state?.dormantFields?.[resource] ?? NO_DORMANT_FIELDS);
-const confirming = (resource: Resource) => createSelector(resourceViews(resource), (entry) => entry.confirming ?? NO_DORMANT_FIELDS);
 
 export const selectors = {
     state,
@@ -300,8 +266,6 @@ export const selectors = {
     isStale,
     createdUuid,
     error,
-    dormantFields,
-    confirming,
 };
 
 export const actions = slice.actions;

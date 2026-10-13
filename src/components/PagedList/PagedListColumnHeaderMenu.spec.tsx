@@ -655,6 +655,7 @@ test.describe('PagedList · column header menu', () => {
 
         await page.getByRole('button', { name: 'Expires At', exact: true }).click();
         await expect.poll(async () => (await lastRequest(page))?.sort?.direction).toBe('desc');
+        expect((await lastRequest(page))?.sort?.direction).toBe('desc');
     });
 
     test('re-lists nothing for a reorder, so the rows the user ticked survive it', async ({ mount, page }) => {

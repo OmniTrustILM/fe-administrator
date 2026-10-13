@@ -538,7 +538,7 @@ export default function SigningProfileForm() {
     );
 
     const onCancel = useCallback(() => {
-        navigate(-1);
+        void navigate(-1);
     }, [navigate]);
 
     // ─────────────────────────────────────────────────────────────────────────

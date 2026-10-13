@@ -8,7 +8,7 @@ import { extractError } from 'utils/net';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { actions as userInterfaceActions } from './user-interface';
-import { actions as pagingActions, entityListParams } from './paging';
+import { actions as pagingActions } from './paging';
 import { EntityType } from './filters';
 
 import { slice } from './connectors';

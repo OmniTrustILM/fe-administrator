@@ -85,7 +85,7 @@ function HorizontalBarChart({ title, data = {}, entity, redirect, onSetFilter, o
 
     const openFiltered = (label: string) => {
         dispatch(filterActions.setDrillDownFilters({ entity, filters: onSetFilter(label), path: destination }));
-        navigate(redirect);
+        void navigate(redirect);
     };
 
     const handleBarClick = (index: number) => {

@@ -4,6 +4,7 @@ import { createRoot, type Root } from 'react-dom/client';
 
 import DiscoveryDetail from './index';
 import { DiscoveryStatus, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { LockWidgetNameEnum } from 'types/user-interface';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
 import { useDispatchMock, useSelectorMock } from '../../test-utils/reactReduxMockModule';
 
@@ -269,12 +270,12 @@ describe('DiscoveryDetail', () => {
             expect(deleteButton()?.title).toBe('Delete');
         });
 
-        it('refreshes a widget in place, keeping the run that is on screen', async () => {
+        it('refreshes the page in place from Discovery Details, keeping the run that is on screen', async () => {
             await render(buildState(v2Run));
             dispatch.mockClear();
 
             await act(async () => {
-                container.querySelector<HTMLButtonElement>('[data-testid="refresh-Progress"]')?.click();
+                container.querySelector<HTMLButtonElement>('[data-testid="refresh-Discovery Details"]')?.click();
             });
 
             const actions = dispatch.mock.calls.map((call) => call[0]);
@@ -366,6 +367,7 @@ describe('DiscoveryDetail', () => {
             expect(bar?.getAttribute('aria-valuenow')).toBe('5');
             expect(bar?.getAttribute('aria-valuemax')).toBe('7');
             expect(container.querySelector('[data-testid="import-progress"]')?.textContent).toContain('1 waiting, 1 not imported');
+            expect(container.querySelector('[data-testid="import-progress"]')?.textContent).not.toContain('counted on every read');
         });
 
         it('says one target failed without a plural', async () => {
@@ -384,6 +386,29 @@ describe('DiscoveryDetail', () => {
             expect(container.querySelector('[data-testid="import-progress"]')?.textContent).toContain('Nothing to import');
         });
 
+        it('keeps its place for a v2 run whose Provider has reported nothing yet, and says so', async () => {
+            await render(buildState({ ...v2Run, progress: undefined }));
+
+            expect(container.querySelector('[data-testid="widget-Progress"]')?.textContent).toContain('No progress reported yet.');
+            expect(container.querySelector('[data-testid="provider-progress"]')).toBeNull();
+        });
+
+        it('says no progress was reported once the Provider is done with a run that never reported any', async () => {
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Completed, progress: undefined }));
+
+            expect(container.querySelector('[data-testid="widget-Progress"]')?.textContent).toContain(
+                'The Discovery Provider reported no progress for this run.',
+            );
+        });
+
+        it('lets Progress and Import summary shrink to share their row, so a table measured at full width cannot hold it', async () => {
+            await render(buildState(v2Run));
+
+            for (const title of ['Progress', 'Import summary']) {
+                expect(container.querySelector(`[data-testid="widget-${title}"]`)?.className).toContain('md:min-w-0');
+            }
+        });
+
         it('lists the per-resource breakdown by resource label', async () => {
             await render(buildState(v2Run));
 
@@ -399,8 +424,8 @@ describe('DiscoveryDetail', () => {
             expect(rowText('itemsDiscovered')).toBe('Items received52');
             expect(rowText('itemsNewlyDiscovered')).toBe('New to the inventory7');
             expect(container.querySelector('[data-testid="items-failed"]')?.textContent).toBe('1');
-            expect(container.querySelector('[data-testid="widget-Results"]')?.textContent).toContain('All resources');
-            expect(container.querySelector('[data-testid="widget-Results"]')?.textContent).toContain('Certificates only');
+            expect(container.querySelector('[data-testid="widget-Import summary"]')?.textContent).toContain('All resources');
+            expect(container.querySelector('[data-testid="widget-Import summary"]')?.textContent).toContain('Certificates only');
         });
 
         it('explains a provider figure above the saved one as repeats on a completed certificates-only run', async () => {
@@ -472,8 +497,8 @@ describe('DiscoveryDetail', () => {
         it('omits the certificate counters for a run that never targeted certificates', async () => {
             await render(buildState({ ...v2Run, resources: [Resource.Keys] }));
 
-            expect(container.querySelector('[data-testid="widget-Results"]')?.textContent).toContain('All resources');
-            expect(container.querySelector('[data-testid="widget-Results"]')?.textContent).not.toContain('Certificates only');
+            expect(container.querySelector('[data-testid="widget-Import summary"]')?.textContent).toContain('All resources');
+            expect(container.querySelector('[data-testid="widget-Import summary"]')?.textContent).not.toContain('Certificates only');
         });
 
         it('names the ending in words rather than the wire code', async () => {
@@ -506,6 +531,28 @@ describe('DiscoveryDetail', () => {
     });
 
     describe('refreshing', () => {
+        it('has one refresh button, on Discovery Details, which re-reads the trigger summary too', async () => {
+            const state = buildState(v2Run);
+            (state.rules as any).triggerHistorySummary = {
+                associationObjectUuid: 'disc-1',
+                objectsEvaluated: 1,
+                objectsMatched: 1,
+                objectsIgnored: 0,
+            };
+            await render(state);
+
+            expect(container.querySelector('[data-testid="widget-Triggers summary"]')).not.toBeNull();
+            expect(Array.from(container.querySelectorAll('[data-testid^="refresh-"]')).map((b) => b.getAttribute('data-testid'))).toEqual([
+                'refresh-Discovery Details',
+            ]);
+
+            dispatch.mockClear();
+            await act(async () => {
+                container.querySelector<HTMLButtonElement>('[data-testid="refresh-Discovery Details"]')?.click();
+            });
+            expect(dispatch.mock.calls.map((call) => call[0]?.type)).toContain('rules/getTriggerHistorySummary');
+        });
+
         it('keeps the page while a refresh is in flight and shows the skeleton only before the first load', async () => {
             const refreshing = buildState(v2Run);
             refreshing.discoveries.isFetchingDetail = true;
@@ -517,6 +564,120 @@ describe('DiscoveryDetail', () => {
             firstLoad.discoveries.isFetchingDetail = true;
             await render(firstLoad);
             expect(container.querySelector('[data-testid="skeleton"]')).not.toBeNull();
+        });
+    });
+
+    describe('re-reading a live run on its own', () => {
+        const POLL = 10_000;
+
+        beforeEach(() => {
+            vi.useFakeTimers();
+            vi.spyOn(document, 'visibilityState', 'get').mockReturnValue('visible');
+            vi.spyOn(document, 'hasFocus').mockReturnValue(true);
+        });
+
+        afterEach(() => {
+            vi.useRealTimers();
+            vi.restoreAllMocks();
+        });
+
+        const dispatched = () => dispatch.mock.calls.map((call) => call[0]);
+        const polls = () => dispatched().filter((action) => action?.type === 'discoveries/getDiscoveryDetail' && action.payload.poll);
+        const tick = async () => {
+            await act(async () => {
+                vi.advanceTimersByTime(POLL);
+            });
+        };
+
+        it('polls the run in place every ten seconds, and nothing else, while it is live', async () => {
+            await render(buildState(v2Run));
+            dispatch.mockClear();
+
+            await act(async () => {
+                vi.advanceTimersByTime(POLL - 1);
+            });
+            expect(polls()).toHaveLength(0);
+
+            await act(async () => {
+                vi.advanceTimersByTime(1);
+            });
+            expect(dispatched()).toEqual([{ type: 'discoveries/getDiscoveryDetail', payload: { uuid: 'disc-1', poll: true } }]);
+        });
+
+        it('keeps polling while the platform imports what the Provider found', async () => {
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Processing }));
+            dispatch.mockClear();
+
+            await tick();
+            expect(polls()).toHaveLength(1);
+        });
+
+        it('leaves a run alone once it has ended, and while it is stopped', async () => {
+            for (const status of [DiscoveryStatus.Completed, DiscoveryStatus.Stopped]) {
+                await render(buildState({ ...v2Run, status }));
+                dispatch.mockClear();
+
+                await tick();
+                expect(polls()).toHaveLength(0);
+            }
+        });
+
+        it('skips a tick while a read or a lifecycle call is in flight, whose own answer is newer', async () => {
+            for (const flag of ['isFetchingDetail', 'isPollingDetail', 'isStopping']) {
+                const state = buildState(v2Run);
+                (state.discoveries as any)[flag] = true;
+                await render(state);
+                dispatch.mockClear();
+
+                await tick();
+                expect(polls()).toHaveLength(0);
+            }
+        });
+
+        it('stops on a locked page, which has nothing to show an answer on', async () => {
+            const state: any = buildState(v2Run);
+            state.userInterface = { widgetLocks: [{ widgetName: LockWidgetNameEnum.DiscoveryDetails }] };
+            await render(state);
+            dispatch.mockClear();
+
+            await tick();
+            expect(polls()).toHaveLength(0);
+        });
+
+        it('re-reads the trigger summary once, when the run on screen reaches its end', async () => {
+            await render(buildState(v2Run));
+            dispatch.mockClear();
+
+            await tick();
+            expect(dispatched().map((action) => action?.type)).not.toContain('rules/getTriggerHistorySummary');
+
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Completed }));
+            expect(dispatched().filter((action) => action?.type === 'rules/getTriggerHistorySummary')).toEqual([
+                { type: 'rules/getTriggerHistorySummary', payload: { triggerObjectUuid: 'disc-1' } },
+            ]);
+        });
+
+        it('follows a v1 run through the overrun warning Core gives while its Provider is still working', async () => {
+            await render(buildState({ ...v1Run, status: DiscoveryStatus.InProgress, connectorStatus: DiscoveryStatus.InProgress }));
+            dispatch.mockClear();
+
+            // Past its wait limit Core marks a v1 run Warning and keeps waiting on the Provider: the run has not ended.
+            await render(buildState({ ...v1Run, status: DiscoveryStatus.Warning, connectorStatus: DiscoveryStatus.InProgress }));
+            expect(dispatched().map((action) => action?.type)).not.toContain('rules/getTriggerHistorySummary');
+
+            await tick();
+            expect(polls()).toHaveLength(1);
+
+            await render(buildState({ ...v1Run, status: DiscoveryStatus.Completed }));
+            expect(dispatched().filter((action) => action?.type === 'rules/getTriggerHistorySummary')).toHaveLength(1);
+        });
+
+        it('leaves the trigger summary alone when a stopped run is cancelled, since no triggers ran', async () => {
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Stopped }));
+            dispatch.mockClear();
+
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Cancelled }));
+            expect(dispatched().map((action) => action?.type)).not.toContain('rules/getTriggerHistorySummary');
         });
     });
 

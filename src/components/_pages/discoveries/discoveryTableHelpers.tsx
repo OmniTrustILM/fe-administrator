@@ -3,15 +3,16 @@ import Badge from 'components/Badge';
 import ConnectorLink from 'components/ConnectorLink';
 import type { CellRegistry } from 'components/CustomTable/columns';
 import type { DiscoveryResponseModel } from 'types/discoveries';
-import { FilterFieldSource, FilterFieldType } from 'types/openapi';
+import { FilterFieldSource, FilterFieldType, type Resource } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
 import type { ColumnSort } from 'utils/tableColumns';
 import DiscoveryStatus from './DiscoveryStatus';
-import { connectorInterfaceVersion } from './detail/discoveryDetailHelpers';
+import { connectorInterfaceVersion, resultResources } from './detail/discoveryDetailHelpers';
 
 export interface BuildDiscoveryCellsOpts {
     dateFormatter: (date: string | Date) => string;
     durationFormatter: (start?: string | null, end?: string | null) => string;
+    resourceLabel: (resource: Resource) => string;
 }
 
 /** The ordering the inventory opens on, which it sorted client-side before it was column-driven. */
@@ -57,6 +58,13 @@ export const DISCOVERY_COLUMNS: ColumnDefinition[] = [
     },
     {
         fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'DISCOVERY_RESOURCES',
+        catalogueLabel: 'Resources',
+        type: FilterFieldType.List,
+        align: 'center',
+    },
+    {
+        fieldSource: FilterFieldSource.Property,
         fieldIdentifier: 'DISCOVERY_START_TIME',
         catalogueLabel: 'Start time',
         type: FilterFieldType.Date,
@@ -78,6 +86,14 @@ export const DISCOVERY_COLUMNS: ColumnDefinition[] = [
     },
     {
         fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'DISCOVERY_TOTAL_ITEMS_DISCOVERED',
+        catalogueLabel: 'Total items discovered',
+        label: 'Total Items',
+        type: FilterFieldType.Number,
+        align: 'center',
+    },
+    {
+        fieldSource: FilterFieldSource.Property,
         fieldIdentifier: 'DISCOVERY_TOTAL_CERT_DISCOVERED',
         catalogueLabel: 'Total certificate discovered',
         label: 'Total Certificates',
@@ -89,6 +105,7 @@ export const DISCOVERY_COLUMNS: ColumnDefinition[] = [
 export function buildDiscoveryCellRegistry({
     dateFormatter,
     durationFormatter,
+    resourceLabel,
 }: BuildDiscoveryCellsOpts): CellRegistry<DiscoveryResponseModel> {
     return {
         'property:DISCOVERY_NAME': (discovery) => <Link to={`./detail/${discovery.uuid}`}>{discovery.name}</Link>,
@@ -110,6 +127,16 @@ export function buildDiscoveryCellRegistry({
             return duration ? <span className="whitespace-nowrap">{duration}</span> : null;
         },
         'property:DISCOVERY_STATUS': (discovery) => <DiscoveryStatus status={discovery.status} />,
+        'property:DISCOVERY_RESOURCES': (discovery) => (
+            <span className="inline-flex flex-wrap justify-center gap-1">
+                {resultResources(discovery.resources).map((resource) => (
+                    <Badge key={resource} color="gray">
+                        {resourceLabel(resource)}
+                    </Badge>
+                ))}
+            </span>
+        ),
+        'property:DISCOVERY_TOTAL_ITEMS_DISCOVERED': (discovery) => String(discovery.totalItemsDiscovered),
         'property:DISCOVERY_TOTAL_CERT_DISCOVERED': (discovery) => discovery.totalCertificatesDiscovered?.toString() ?? '0',
         // Beyond the default set: catalogued and renderable, so the picker offers it.
         'property:DISCOVERY_END_TIME': (discovery) =>

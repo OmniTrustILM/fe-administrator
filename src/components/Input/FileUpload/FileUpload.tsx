@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import TextInput from 'components/TextInput';
 import TextArea from 'components/TextArea';
 import Button from 'components/Button';
+import { utf8ToBase64 } from 'utils/common-utils';
 
 type Props = {
     onFileContentLoaded: (fileContent: string) => void;
@@ -13,6 +14,7 @@ type Props = {
      */
     onContentChange?: () => void;
     id?: string;
+    contentTestId?: string;
     fileType?: string;
     showContent?: boolean;
     showFileInfo?: boolean;
@@ -25,6 +27,7 @@ type Props = {
 
 export default function FileUpload({
     id = '',
+    contentTestId,
     fileType = '',
     editable,
     onFileContentLoaded,
@@ -117,7 +120,7 @@ export default function FileUpload({
             // Text typed in replaces the file: a read still running for it is ignored, and a failed read's error is cleared.
             readerRef.current = undefined;
             setReadError(undefined);
-            reportedContentRef.current = fileContentLatest ? btoa(fileContentLatest) : '';
+            reportedContentRef.current = fileContentLatest ? utf8ToBase64(fileContentLatest) : '';
             setFileContent(fileContentLatest);
             onContentChange?.();
             if (fileContentLatest) {
@@ -171,6 +174,7 @@ export default function FileUpload({
                 <div className="mb-4">
                     <TextArea
                         id={`${id}__fileUpload__fileContent`}
+                        dataTestId={contentTestId}
                         label="File content"
                         rows={3}
                         placeholder={resolvedContentPlaceholderText}

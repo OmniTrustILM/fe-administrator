@@ -58,7 +58,7 @@ export const ProxyForm = ({ onCancel, onSuccess }: ProxyFormProps = {}) => {
         if (onCancel) {
             onCancel();
         } else {
-            navigate('../proxies');
+            void navigate('../proxies');
         }
     }, [navigate, onCancel]);
 

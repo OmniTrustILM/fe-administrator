@@ -506,11 +506,11 @@ export default function CbomDetail() {
             if (!selectedValue || !id) return;
 
             if (selectedValue === VERSION_HISTORY_OPTION_VALUE) {
-                navigate(`/cboms/detail/${id}/versions`);
+                void navigate(`/cboms/detail/${id}/versions`);
                 return;
             }
 
-            navigate(`/cboms/detail/${selectedValue}`);
+            void navigate(`/cboms/detail/${selectedValue}`);
             setSelectedVersionUuid(selectedValue);
         },
         [navigate, id],

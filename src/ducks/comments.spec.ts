@@ -104,10 +104,15 @@ describe('comments slice: threads', () => {
         expect(state.threads[key].comments.map((c) => c.uuid)).toEqual(['r9']);
     });
 
-    test('a list starts in the user direction, newest-first by default, then holds the direction it was loaded in', () => {
-        expect(initialState.sortDirection).toBe(SortDirection.Desc);
+    test('a list starts in the direction chosen for its object, newest-first by default, then holds the one it was loaded in', () => {
+        expect(initialState.sortDirections).toEqual({});
         const listing = reducer(initialState, actions.listThreads({ resource, objectUuid, pageNumber: 1 }));
         expect(listing.threads[key].sortDirection).toBe(SortDirection.Desc);
+        const chosen = reducer(
+            { ...initialState, sortDirections: { [key]: SortDirection.Asc } },
+            actions.listThreads({ resource, objectUuid, pageNumber: 1 }),
+        );
+        expect(chosen.threads[key].sortDirection).toBe(SortDirection.Asc);
         expect(withThreads([comment('r1')]).threads[key].sortDirection).toBe(SortDirection.Asc);
         const state = reducer(
             initialState,
@@ -235,7 +240,7 @@ describe('comments slice: threads', () => {
 
 describe('comments slice: replies', () => {
     test('listReplies then listRepliesSuccess populates the thread', () => {
-        let state = reducer(initialState, actions.listReplies({ rootUuid: 'r1', pageNumber: 1 }));
+        let state = reducer(initialState, actions.listReplies({ resource, objectUuid, rootUuid: 'r1', pageNumber: 1 }));
         expect(state.replies.r1).toMatchObject({ isFetching: true, itemsPerPage: REPLIES_PAGE_SIZE });
         state = reducer(
             state,
@@ -302,12 +307,12 @@ describe('comments slice: replies', () => {
             }),
         );
         expect(state.replies.r1.missingAnchor).toBe('gone');
-        state = reducer(state, actions.listReplies({ rootUuid: 'r1', pageNumber: 1 }));
+        state = reducer(state, actions.listReplies({ resource, objectUuid, rootUuid: 'r1', pageNumber: 1 }));
         expect(state.replies.r1.missingAnchor).toBeUndefined();
     });
 
     test('replies start in the user direction and a page read the other way round replaces the thread', () => {
-        let state = reducer(initialState, actions.listReplies({ rootUuid: 'r1', pageNumber: 1 }));
+        let state = reducer(initialState, actions.listReplies({ resource, objectUuid, rootUuid: 'r1', pageNumber: 1 }));
         expect(state.replies.r1.sortDirection).toBe(SortDirection.Desc);
         state = reducer(
             state,
@@ -330,7 +335,7 @@ describe('comments slice: replies', () => {
     });
 
     test('listRepliesFailure stops fetching, and a thread that is gone reads as a missing anchor', () => {
-        const fetching = reducer(initialState, actions.listReplies({ rootUuid: 'r1', pageNumber: 1 }));
+        const fetching = reducer(initialState, actions.listReplies({ resource, objectUuid, rootUuid: 'r1', pageNumber: 1 }));
         expect(reducer(fetching, actions.listRepliesFailure({ rootUuid: 'r1' })).replies.r1).toMatchObject({
             isFetching: false,
             missingAnchor: undefined,
@@ -340,11 +345,21 @@ describe('comments slice: replies', () => {
 });
 
 describe('comments slice: sort direction', () => {
-    test('changing it sets the user direction and leaves the lists the epic re-reads in place', () => {
+    test('changing it sets the direction of that object alone and leaves the lists the epic re-reads in place', () => {
         const loaded = withThreads([comment('r1')]);
         const state = reducer(loaded, actions.changeSortDirection({ resource, objectUuid, sortDirection: SortDirection.Asc }));
-        expect(state.sortDirection).toBe(SortDirection.Asc);
+        expect(state.sortDirections).toEqual({ [key]: SortDirection.Asc });
         expect(state.threads[key]).toEqual(loaded.threads[key]);
+    });
+
+    test('a thread that is not loaded yet starts in the direction chosen for its object', () => {
+        const state = reducer(
+            { ...initialState, sortDirections: { [key]: SortDirection.Asc } },
+            actions.listReplies({ resource, objectUuid, rootUuid: 'r1', pageNumber: 1 }),
+        );
+        expect(state.replies.r1.sortDirection).toBe(SortDirection.Asc);
+        const other = reducer(state, actions.listReplies({ resource, objectUuid: 'obj-2', rootUuid: 'r2', pageNumber: 1 }));
+        expect(other.replies.r2.sortDirection).toBe(SortDirection.Desc);
     });
 
     test('changing it drops the replies of a thread the roots list no longer holds, and nothing else', () => {
@@ -362,15 +377,17 @@ describe('comments slice: sort direction', () => {
         expect(state.replies.other).toBeDefined();
     });
 
-    test('it outlives the panel, so the next panel starts in it', () => {
+    test('it outlives the panel and stays with the object: the same object comes back in it, another object does not', () => {
         let state = reducer(
             withThreads([comment('r1')]),
             actions.changeSortDirection({ resource, objectUuid, sortDirection: SortDirection.Asc }),
         );
         state = reducer(state, actions.clearPanel({ resource, objectUuid }));
-        expect(state.sortDirection).toBe(SortDirection.Asc);
+        expect(state.sortDirections).toEqual({ [key]: SortDirection.Asc });
+        state = reducer(state, actions.listThreads({ resource, objectUuid, pageNumber: 1 }));
+        expect(state.threads[key].sortDirection).toBe(SortDirection.Asc);
         state = reducer(state, actions.listThreads({ resource, objectUuid: 'obj-2', pageNumber: 1 }));
-        expect(state.threads[panelKey(resource, 'obj-2')].sortDirection).toBe(SortDirection.Asc);
+        expect(state.threads[panelKey(resource, 'obj-2')].sortDirection).toBe(SortDirection.Desc);
     });
 });
 
@@ -452,7 +469,10 @@ describe('comments selectors', () => {
         expect(selectors.threads(key)(root)?.comments).toHaveLength(1);
         expect(selectors.replies('r1')(root)?.comments).toHaveLength(1);
         expect(selectors.busy(root)).toEqual({ r1: true });
-        expect(selectors.sortDirection(root)).toBe(SortDirection.Desc);
+        expect(selectors.sortDirection(key)(root)).toBe(SortDirection.Desc);
+        expect(selectors.sortDirection(key)({ comments: { ...state, sortDirections: { [key]: SortDirection.Asc } } } as typeof root)).toBe(
+            SortDirection.Asc,
+        );
         expect(selectors.state({} as Parameters<typeof selectors.state>[0])).toEqual(initialState);
     });
 });

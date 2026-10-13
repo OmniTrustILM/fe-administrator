@@ -3,7 +3,7 @@ import { test, expect } from '../../../playwright/ct-test';
 import { withProviders } from 'utils/test-helpers';
 import RequestAttributeAuthoringEditorHarness from './RequestAttributeAuthoringEditorHarness';
 import { emptyAuthoringForm, emptyAuthoredAttribute } from 'utils/requestAttributeAuthoring';
-import { FieldSource, FieldType, GeneralNameType, ObjectType } from 'types/openapi';
+import { FieldSource, FieldType, GeneralNameType, ObjectType, ValueSourceType } from 'types/openapi';
 
 /**
  * Every definition must carry a mapping target, so a test that is not about mapping still has to
@@ -520,29 +520,30 @@ test.describe('RequestAttributeAuthoringEditor', () => {
         expect(JSON.parse(json ?? '{}').valueSourceBindings[0].attributeName).toBe('datacenter');
     });
 
-    test('hides the value-source bindings section when showBindings is false', async ({ mount }) => {
-        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showBindings={false} />));
-        await expect(component.getByTestId('request-attribute-authoring-bindings')).toHaveCount(0);
-        await expect(component.getByTestId('request-attribute-authoring-attributes')).toBeVisible();
-    });
-
-    test('binding uses the internal attribute name (option description), not the display label', async ({ mount, page }) => {
+    test('removing the last binding leaves an explicit empty list', async ({ mount, page }) => {
         const component = await mount(
             withProviders(
                 <RequestAttributeAuthoringEditorHarness
-                    connectorAttributeOptions={[{ value: 'uuid-123', label: 'Datacenter (friendly)', description: 'datacenter' }]}
+                    initialValue={{
+                        ...emptyAuthoringForm(),
+                        valueSourceBindings: [{ attributeName: 'datacenter', valueSourceType: ValueSourceType.None }],
+                    }}
                 />,
             ),
         );
 
-        await component.getByTestId('request-attribute-authoring-binding-add').click();
-        await page.getByTestId('select-ra-binding-connector-attr-trigger').click();
-        await page.getByRole('option', { name: 'Datacenter (friendly)' }).click();
-        await page.getByRole('button', { name: 'Save' }).click();
+        await expect(component.getByTestId('request-attribute-authoring-binding-row')).toHaveCount(1);
+        await component.getByTestId('request-attribute-authoring-binding-remove').click();
 
-        const binding = JSON.parse((await component.getByTestId('value-json').textContent()) ?? '{}').valueSourceBindings[0];
-        expect(binding.attributeUuid).toBe('uuid-123');
-        expect(binding.attributeName).toBe('datacenter'); // internal name, not "Datacenter (friendly)"
+        await expect(component.getByTestId('request-attribute-authoring-binding-row')).toHaveCount(0);
+        await expect(page.getByTestId('request-attribute-authoring-bindings-empty')).toBeVisible();
+        expect(JSON.parse((await component.getByTestId('value-json').textContent()) ?? '{}').valueSourceBindings).toEqual([]);
+    });
+
+    test('hides the value-source bindings section when showBindings is false', async ({ mount }) => {
+        const component = await mount(withProviders(<RequestAttributeAuthoringEditorHarness showBindings={false} />));
+        await expect(component.getByTestId('request-attribute-authoring-bindings')).toHaveCount(0);
+        await expect(component.getByTestId('request-attribute-authoring-attributes')).toBeVisible();
     });
 
     test('blocks saving an attribute whose name duplicates an existing one', async ({ mount, page }) => {

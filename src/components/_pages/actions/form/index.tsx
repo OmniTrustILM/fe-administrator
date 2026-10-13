@@ -100,7 +100,7 @@ const ActionsForm = ({ onCancel, onSuccess }: ActionsFormProps = {}) => {
         if (onCancel) {
             onCancel();
         } else {
-            navigate('../actions');
+            void navigate('../actions');
         }
     }, [navigate, onCancel]);
 

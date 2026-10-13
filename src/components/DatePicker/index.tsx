@@ -42,7 +42,8 @@ function DatePicker({
     errorId,
 }: Readonly<Props>) {
     const generatedId = useId();
-    const resolvedErrorId = errorId ?? `${id ?? `datepicker-${generatedId.replaceAll(':', '')}`}-error`;
+    const errorIdPrefix = id ?? `datepicker-${generatedId.replaceAll(':', '')}`;
+    const resolvedErrorId = errorId ?? `${errorIdPrefix}-error`;
     const [isOpen, setIsOpen] = useState(false);
     const [selectedDate, setSelectedDate] = useState<Date | null>(value ? new Date(value) : null);
     const [selectedTime, setSelectedTime] = useState<{ hours: number; minutes: number; seconds: number }>(() => {

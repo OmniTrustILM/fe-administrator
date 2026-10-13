@@ -52,7 +52,7 @@ export default function SigningRecordDetail() {
 
     // Navigate back to the list only once the delete has succeeded (the epic surfaces an error alert on failure).
     useRunOnSuccessfulFinish(isDeleting, !!id && deletedSigningRecordUuids.includes(id), () => {
-        navigate(`/${Resource.SigningRecords.toLowerCase()}`);
+        void navigate(`/${Resource.SigningRecords.toLowerCase()}`);
     });
 
     const headerButtons: WidgetButtonProps[] = useMemo(

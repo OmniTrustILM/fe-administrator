@@ -2,14 +2,12 @@ import RequestAttributeAuthoringEditor from 'components/RequestAttributes/Reques
 import ResolvedRequestAttributesPreview from 'components/RequestAttributes/ResolvedRequestAttributesPreview';
 import { useKeyUsageOptions } from 'components/RequestAttributes/useKeyUsageOptions';
 import { useOidMappingOptions } from 'components/RequestAttributes/useOidMappingOptions';
-import { actions as authoritiesActions, selectors as authoritiesSelectors } from 'ducks/authorities';
 import { actions as certificatesActions, selectors as certificatesSelectors } from 'ducks/certificates';
 import { actions as requestAttributesActions, selectors as requestAttributesSelectors } from 'ducks/raProfileRequestAttributes';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router';
 import type { RaProfileCertificateRequestAttributesDto } from 'types/openapi';
-import { isGroupAttributeModel } from 'types/attributes';
 import { useRunOnFailedFinish, useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import {
     buildRaProfileRequestAttributesUpdateDto,
@@ -46,8 +44,6 @@ export default function RaProfileRequestAttributesWidget({
     } = useOidMappingOptions();
     const keyUsageOptions = useKeyUsageOptions();
 
-    const raProfileAttributeDescriptors = useSelector(authoritiesSelectors.raProfileAttributeDescriptors);
-
     const isUpdating = useSelector(requestAttributesSelectors.isUpdatingRaProfileSet);
     const updateSucceeded = useSelector(requestAttributesSelectors.updateRaProfileSetSucceeded);
     const updateError = useSelector(requestAttributesSelectors.updateRaProfileSetError);
@@ -61,29 +57,10 @@ export default function RaProfileRequestAttributesWidget({
     );
     const [dirty, setDirty] = useState(false);
 
-    // The descriptors live in a shared slice, so drop the previous authority's set before fetching:
-    // otherwise the binding picker offers the old connector's fields until the new response lands.
-    useEffect(() => {
-        if (authorityUuid) {
-            dispatch(authoritiesActions.clearRAProfilesAttributesDescriptors());
-            dispatch(authoritiesActions.getRAProfilesAttributesDescriptors({ authorityUuid }));
-        }
-    }, [dispatch, authorityUuid]);
-
     useEffect(() => {
         if (dirty) return;
         setForm(parseRaProfileRequestAttributesDto(certificateRequestAttributes));
     }, [certificateRequestAttributes, dirty]);
-
-    const connectorAttributeOptions = useMemo(
-        () =>
-            (raProfileAttributeDescriptors ?? []).map((descriptor) => ({
-                value: descriptor.uuid ?? descriptor.name,
-                label: isGroupAttributeModel(descriptor) ? descriptor.name : (descriptor.properties?.label ?? descriptor.name),
-                description: descriptor.name,
-            })),
-        [raProfileAttributeDescriptors],
-    );
 
     const showPlatformDefaultNote = useMemo(() => !hasAuthoredRequestAttributes(form), [form]);
 
@@ -155,8 +132,7 @@ export default function RaProfileRequestAttributesWidget({
                 value={form}
                 onChange={onChange}
                 showMergeMode
-                showBindings
-                connectorAttributeOptions={connectorAttributeOptions}
+                showBindings={false}
                 rdnOptions={rdnOptions}
                 extensionOptions={extensionOptions}
                 extendedKeyUsageOptions={extendedKeyUsageOptions}

@@ -413,7 +413,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const raProfileOptions = useMemo(
         () =>
             raProfiles
-                .filter((profile) => profile.authorityInstanceUuid)
+                .filter((profile) => profile.enabled && profile.authorityInstanceUuid)
                 .map((profile) => ({
                     label: profile.name,
                     value: profile.uuid,

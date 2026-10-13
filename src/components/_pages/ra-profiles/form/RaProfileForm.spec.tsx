@@ -65,14 +65,10 @@ async function authorAttribute(page: Page, name: string, label: string): Promise
 
 const PATCH_ACTION = 'raProfileRequestAttributes/updateRaProfileRequestAttributes';
 
-async function authorMergeWithBinding(page: Page, attributeName: string): Promise<void> {
+async function authorMergeMode(page: Page): Promise<void> {
     await page.getByRole('tab', { name: 'Request Attributes' }).click();
     await page.getByTestId('request-attribute-authoring-merge-merge').click();
-    await page.getByTestId('request-attribute-authoring-binding-add').click();
-    await page.locator('#ra-binding-name').click();
-    await page.locator('#ra-binding-name').fill(attributeName);
-    await page.getByRole('button', { name: 'Save' }).click();
-    await expect(page.getByTestId('request-attribute-authoring-binding-row')).toHaveCount(1);
+    await expect(page.getByTestId('request-attribute-authoring-merge-mode').getByRole('radio', { name: /^Merge/ })).toBeChecked();
 }
 
 /** Submits the form, stands in for the create epic's success and returns the follow-up request-attributes PATCH. */
@@ -105,7 +101,10 @@ test.describe('RaProfileForm (create mode) request-attributes chain', () => {
         await expect(component.getByTestId('request-attribute-authoring-attribute-add')).toBeEnabled();
     });
 
-    test('shows the merge-mode selector, defaulting to Static only, and the value-source bindings section', async ({ mount, page }) => {
+    test('shows the merge-mode selector, defaulting to Static only, and hides the value-source bindings section', async ({
+        mount,
+        page,
+    }) => {
         const component = await mount(<RaProfileFormCreateWithStore />);
 
         await page.getByRole('tab', { name: 'Request Attributes' }).click();
@@ -114,20 +113,18 @@ test.describe('RaProfileForm (create mode) request-attributes chain', () => {
         const mergeMode = page.getByTestId('request-attribute-authoring-merge-mode');
         await expect(mergeMode).toBeVisible();
         await expect(mergeMode.getByRole('radio', { name: /Static only/ })).toBeChecked();
-        await expect(page.getByTestId('request-attribute-authoring-bindings-empty')).toBeVisible();
+        await expect(page.getByTestId('request-attribute-authoring-bindings')).toHaveCount(0);
+        await expect(page.getByTestId('request-attribute-authoring-binding-add')).toHaveCount(0);
     });
 
-    test('a chosen merge mode and value-source binding count as authored and ride the follow-up PATCH', async ({ mount, page }) => {
+    test('a chosen merge mode counts as authored and rides the follow-up PATCH', async ({ mount, page }) => {
         await mount(<RaProfileFormCreateWithStore />);
 
-        await fillName(page, 'ProfileWithBinding');
-        await authorMergeWithBinding(page, 'datacenter');
+        await fillName(page, 'ProfileWithMergeMode');
+        await authorMergeMode(page);
 
         const patch = await createAndAwaitPatch(page);
-        expect(patch?.payload?.data).toMatchObject({
-            mergeMode: 'merge',
-            valueSourceBindings: [{ attributeName: 'datacenter', valueSourceType: 'none' }],
-        });
+        expect(patch?.payload?.data).toMatchObject({ mergeMode: 'merge', valueSourceBindings: [] });
     });
 
     test('attribute tabs are disabled until an authority is selected', async ({ mount, page }) => {
@@ -166,7 +163,7 @@ test.describe('RaProfileForm (create mode) request-attributes chain', () => {
 
     // A connector that supplies its own RA-profile attributes (an info guidance box plus a required
     // field) is the shape the create modal actually runs in. Covers the whole chain in that shape:
-    // authoring only a merge mode and a binding must still submit, and a rejected follow-up PATCH must
+    // authoring only a merge mode must still submit, and a rejected follow-up PATCH must
     // still release the modal rather than leave it open with the profile already created.
     test('with connector attributes present, a merge-mode-only set still creates and settles on a rejected PATCH', async ({
         mount,
@@ -188,7 +185,7 @@ test.describe('RaProfileForm (create mode) request-attributes chain', () => {
         await template.click();
         await template.fill('Roman');
 
-        await authorMergeWithBinding(page, 'info_raProfileGuidance');
+        await authorMergeMode(page);
 
         await expect(page.getByTestId('progress-button')).toBeEnabled();
         await createAndAwaitPatch(page);
@@ -270,6 +267,31 @@ test.describe('RaProfileForm (edit mode) save chain', () => {
         await expect.poll(async () => (await capturedActions(page)).some((a) => a.type === UPDATE_PROFILE_ACTION)).toBe(true);
         const update = (await capturedActions(page)).find((a) => a.type === UPDATE_PROFILE_ACTION);
         expect(update?.payload?.profileUuid).toBe('profile-1');
+    });
+
+    test('changing the authority keeps the stored value-source bindings in the save', async ({ mount, page }) => {
+        await mount(
+            <RaProfileFormCreateWithStore
+                raProfileId="profile-1"
+                preloadedState={{
+                    ...editModeState,
+                    authorities: {
+                        ...editModeState.authorities,
+                        authorities: [...editModeState.authorities.authorities, { uuid: 'auth-2', name: 'Authority Two' }],
+                    },
+                }}
+            />,
+        );
+
+        await page.getByTestId('select-authoritySelect-trigger').click();
+        await page.getByRole('option', { name: 'Authority Two' }).click();
+        await changeMergeModeAndSave(page);
+
+        const patch = (await capturedActions(page)).find((a) => a.type === PATCH_ACTION);
+        expect(patch?.payload?.data).toMatchObject({
+            mergeMode: 'staticOnly',
+            valueSourceBindings: [{ attributeName: 'datacenter', valueSourceType: 'none' }],
+        });
     });
 
     test('a rejected PATCH withholds the profile save and leaves the form open for a retry', async ({ mount, page }) => {

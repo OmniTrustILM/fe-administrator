@@ -55,6 +55,7 @@ type FieldRowProps = Readonly<{
 }>;
 
 function FieldRow({ field, isSelected, sourceLabel, lockReason, withSourceBadge, itemClassName, onToggle, dataTestId }: FieldRowProps) {
+    const sourceAndLockReason = lockReason ? `${sourceLabel}. ${lockReason}` : sourceLabel;
     return (
         <li className={itemClassName}>
             <label
@@ -76,7 +77,7 @@ function FieldRow({ field, isSelected, sourceLabel, lockReason, withSourceBadge,
                 {withSourceBadge && <SourceBadge source={field.fieldSource} label={sourceLabel} />}
                 {/* The source is what tells two like-named fields apart, so it belongs in the accessible
                     name of every checkbox — carried by the badge where one is rendered. */}
-                <span className="sr-only">{withSourceBadge ? lockReason : lockReason ? `${sourceLabel}. ${lockReason}` : sourceLabel}</span>
+                <span className="sr-only">{withSourceBadge ? lockReason : sourceAndLockReason}</span>
             </label>
         </li>
     );
@@ -138,7 +139,9 @@ export default function AddColumnMenu({
 
     // The rule in force, named once where it can be read: a disabled checkbox is out of the tab
     // order, so a keyboard user never reaches whatever the control itself might say.
-    const lockNotice = isLocked ? LOCKED_WHILE_LOADING : isAtLastColumn ? LOCKED_AT_LAST_COLUMN : undefined;
+    let lockNotice: string | undefined;
+    if (isLocked) lockNotice = LOCKED_WHILE_LOADING;
+    else if (isAtLastColumn) lockNotice = LOCKED_AT_LAST_COLUMN;
 
     return (
         <Popover.Root open={isOpen} onOpenChange={onOpenChange} modal>

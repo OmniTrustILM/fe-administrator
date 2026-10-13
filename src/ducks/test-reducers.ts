@@ -1,7 +1,11 @@
 import { combineReducers, type UnknownAction } from '@reduxjs/toolkit';
 import type { AttributeDescriptorModel } from 'types/attributes';
+import type { AuthResourceModel } from 'types/auth';
+import type { NameAndUuidModel } from 'types/locations';
+import type { RoleDetailModel, SubjectPermissionsModel } from 'types/roles';
 import type { ConnectInfoDto, ListViewDto } from 'types/openapi';
 import type { EventTriggerAssociationModel, TriggerModel } from 'types/rules';
+import { toRoutePath } from 'utils/route-path';
 
 // IMPORTANT: This file is used ONLY in component tests (Playwright CT).
 // It must NOT import the real duck modules
@@ -243,8 +247,8 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
         return update(payload.entity, (filter) => ({
             ...filter,
             leftList: {
-                path: (payload.path ?? '').replace(/(.)\/+$/, '$1'),
-                scope: (payload.scope ?? '').replace(/(.)\/+$/, '$1'),
+                path: toRoutePath(payload.path ?? ''),
+                scope: toRoutePath(payload.scope ?? ''),
                 filters: filter.currentFilters,
                 position: filter.viewPosition,
                 sort: payload.sort,
@@ -254,7 +258,7 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
         }));
     }
     if (a.type === 'filters/routeChanged') {
-        const pathname = (a.payload as unknown as { pathname: string }).pathname.replace(/(.)\/+$/, '$1');
+        const pathname = toRoutePath((a.payload as unknown as { pathname: string }).pathname);
         return {
             filters: state.filters.map((current) => {
                 const handedIn = current.filter.handedIn;
@@ -273,11 +277,7 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
     if (a.type === 'filters/returnToList') {
         return update(payload.entity, (filter) => {
             const left = filter.leftList;
-            if (
-                !left?.hasGoneAway ||
-                left.path !== (payload.path ?? '').replace(/(.)\/+$/, '$1') ||
-                filter.handedIn?.source === 'drill-down'
-            )
+            if (!left?.hasGoneAway || left.path !== toRoutePath(payload.path ?? '') || filter.handedIn?.source === 'drill-down')
                 return { ...filter, leftList: undefined };
             return {
                 ...filter,
@@ -340,6 +340,9 @@ export type AuthTestState = {
             allowedActions?: { resource: string; actions?: string[] }[];
         };
     };
+    resources?: AuthResourceModel[];
+    objects?: NameAndUuidModel[];
+    isFetchingObjects?: boolean;
 };
 
 const authTestInitialState: AuthTestState = {
@@ -1147,6 +1150,28 @@ function usersTestReducer(state: UsersTestState | undefined, _action: UnknownAct
     return state ?? usersTestInitialState;
 }
 
+export type RolesTestState = {
+    role?: RoleDetailModel;
+    rolePermissions?: { uuid: string; permissions: SubjectPermissionsModel };
+    isFetchingDetail: boolean;
+    isFetchingPermissions: boolean;
+    isCreating: boolean;
+    isUpdating: boolean;
+    isUpdatingPermissions: boolean;
+};
+
+const rolesTestInitialState: RolesTestState = {
+    isFetchingDetail: false,
+    isFetchingPermissions: false,
+    isCreating: false,
+    isUpdating: false,
+    isUpdatingPermissions: false,
+};
+
+function rolesTestReducer(state: RolesTestState | undefined, _action: UnknownAction): RolesTestState {
+    return state ?? rolesTestInitialState;
+}
+
 // Reducer key must match the real slice.name ('certificateGroups') so the real
 // certificate-group selectors (used by the certificate form's optional groups field) can find this state.
 export type CertificateGroupsTestState = {
@@ -1353,7 +1378,8 @@ export type CommentsTestState = {
     threads: Record<string, CommentsTestPage & { lock?: unknown }>;
     replies: Record<string, CommentsTestPage>;
     busy: Record<string, boolean>;
-    sortDirection?: string;
+    /** The direction chosen per panel key, as the real slice holds it. */
+    sortDirections: Record<string, string>;
     /** Every `comments/*` action the panel dispatched, so a test can assert the request without an epic. */
     dispatched: Array<{ type: string; payload?: unknown }>;
 };
@@ -1362,7 +1388,7 @@ const commentsTestInitialState: CommentsTestState = {
     threads: {},
     replies: {},
     busy: {},
-    sortDirection: 'desc',
+    sortDirections: {},
     dispatched: [],
 };
 
@@ -1397,7 +1423,7 @@ function withPage(state: CommentsTestState, payload: CommentsPagePayload): Comme
     const isThreads = payload.rootUuid === undefined;
     const id = payload.rootUuid ?? payload.key ?? '';
     const target = (isThreads ? state.threads[id] : state.replies[id]) ?? emptyCommentsTestPage;
-    const sameOrder = payload.sortDirection === (target.sortDirection ?? state.sortDirection);
+    const sameOrder = payload.sortDirection === (target.sortDirection ?? (isThreads ? state.sortDirections[id] : undefined) ?? 'desc');
     const append = page.pageNumber > 1 && anchorUuid === undefined && sameOrder;
     const loaded = append ? target.comments : [];
     const seen = new Set(loaded.map((comment) => comment.uuid));
@@ -1435,7 +1461,8 @@ function commentsTestReducer(state: CommentsTestState | undefined, action: Unkno
     if (action.type === 'comments/createComment') return withPostState(recorded, payload, { isPosting: true, postSucceeded: false });
     if (action.type === 'comments/createCommentSuccess') return withPostState(recorded, payload, { isPosting: false, postSucceeded: true });
     if (action.type === 'comments/changeSortDirection') {
-        return { ...recorded, sortDirection: (action.payload as { sortDirection: string }).sortDirection };
+        const { resource, objectUuid, sortDirection } = action.payload as { resource: string; objectUuid: string; sortDirection: string };
+        return { ...recorded, sortDirections: { ...recorded.sortDirections, [`${resource}/${objectUuid}`]: sortDirection } };
     }
     if (action.type === 'comments/listThreadsSuccess' || action.type === 'comments/listRepliesSuccess') {
         return withPage(recorded, action.payload as CommentsPagePayload);
@@ -1464,10 +1491,8 @@ export type ListViewsTestState = {
             isStale?: boolean;
             createdUuid?: string;
             rollback?: ListViewDto[];
-            confirming?: string[];
         }
     >;
-    dormantFields?: Record<string, string[]>;
     error?: string;
     dispatched: Array<{ type: string; payload?: unknown }>;
 };
@@ -1481,6 +1506,31 @@ const listViewsTestInitialState: ListViewsTestState = {
 // out rather than imported, because this file must not pull in the real ducks.
 const PENDING_LIST_VIEW_UUID = 'pending-view';
 
+type StatusedEntry = {
+    fieldSource: string;
+    fieldIdentifier: string;
+    condition?: string;
+    value?: unknown;
+    status?: string;
+    rebind?: boolean;
+};
+
+// Mirrors withWrittenStatuses in src/utils/listViews.ts, spelt out for the same reason: a spec loads this file in Node,
+// where importing utils/listViews fails on the generated types' directory import.
+function settleWrittenStatuses(entries: StatusedEntry[] | undefined, previous: StatusedEntry[] | undefined): StatusedEntry[] | undefined {
+    const keyOf = (entry: StatusedEntry) =>
+        JSON.stringify([entry.fieldSource, entry.fieldIdentifier, entry.condition, entry.value ?? null]);
+    const statuses = new Map((previous ?? []).map((entry) => [keyOf(entry), entry.status]));
+    return entries?.map(({ rebind, status, ...entry }) => {
+        const settled = rebind ? 'available' : (statuses.get(keyOf(entry)) ?? status);
+        return settled ? { ...entry, status: settled } : entry;
+    });
+}
+
+function withoutRebind<T extends { rebind?: boolean }>({ rebind, ...sort }: T): Omit<T, 'rebind'> {
+    return sort;
+}
+
 function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialState, action: UnknownAction): ListViewsTestState {
     const a = action as { type: string; payload?: { resource?: string; view?: Partial<ListViewDto> } };
     if (!a.type.startsWith('listViews/')) return state;
@@ -1489,21 +1539,6 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
 
     const resource = a.payload?.resource;
     if (!resource) return recorded;
-
-    const keys = (a.payload as { keys?: string[] }).keys ?? [];
-    const dormant = recorded.dormantFields?.[resource] ?? [];
-
-    if (a.type === 'listViews/markFieldsDormant') {
-        const marked = { ...recorded, dormantFields: { ...recorded.dormantFields, [resource]: [...new Set([...dormant, ...keys])] } };
-        const held = recorded.byResource[resource];
-        if (!held?.confirming) return marked;
-        const confirming = held.confirming.filter((key) => !keys.includes(key));
-        return { ...marked, byResource: { ...recorded.byResource, [resource]: { ...held, confirming } } };
-    }
-
-    if (a.type === 'listViews/releaseDormantFields') {
-        return { ...recorded, dormantFields: { ...recorded.dormantFields, [resource]: dormant.filter((key) => !keys.includes(key)) } };
-    }
 
     const view = a.payload?.view;
     const entry = recorded.byResource[resource] ?? { views: [], isFetching: false, hasLoaded: false, isMutating: false };
@@ -1562,27 +1597,32 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
         return withEntry({ isMutating: false, views: entry.rollback ?? entry.views, rollback: undefined });
     }
 
-    // An update is applied optimistically and held in flight until a test answers it, as the real reducer does, and
-    // releases the dormant fields it confirms only on success.
+    // An update is applied optimistically and held in flight until a test answers it, as the real reducer does.
     if (a.type === 'listViews/updateView' && uuid && view) {
         const updated = withEntry({
             isMutating: true,
             rollback: entry.views,
-            confirming: (a.payload as { confirms?: string[] }).confirms,
-            views: entry.views.map((each) => (each.uuid === uuid ? ({ ...each, ...view } as ListViewDto) : each)),
+            views: entry.views.map((each) =>
+                each.uuid === uuid
+                    ? ({
+                          ...each,
+                          ...view,
+                          columns: settleWrittenStatuses(view.columns as StatusedEntry[], each.columns as StatusedEntry[]),
+                          filters: settleWrittenStatuses(view.filters as StatusedEntry[], each.filters as StatusedEntry[]),
+                          sort: view.sort && withoutRebind(view.sort as { rebind?: boolean }),
+                      } as ListViewDto)
+                    : each,
+            ),
         });
         return { ...updated, error: undefined };
     }
 
     if (a.type === 'listViews/updateViewSuccess' && view) {
-        const confirmed = entry.confirming ?? [];
-        const saved = withEntry({
+        return withEntry({
             isMutating: false,
             rollback: undefined,
-            confirming: undefined,
             views: entry.views.map((each) => (each.uuid === view.uuid ? (view as ListViewDto) : each)),
         });
-        return { ...saved, dormantFields: { ...saved.dormantFields, [resource]: dormant.filter((key) => !confirmed.includes(key)) } };
     }
 
     // The real slice keeps one error for every resource, so a failed read of another resource sets it too.
@@ -1591,7 +1631,7 @@ function listViewsTestReducer(state: ListViewsTestState = listViewsTestInitialSt
     }
 
     if (a.type === 'listViews/updateViewFailure') {
-        const failed = withEntry({ isMutating: false, views: entry.rollback ?? entry.views, rollback: undefined, confirming: undefined });
+        const failed = withEntry({ isMutating: false, views: entry.rollback ?? entry.views, rollback: undefined });
         return { ...failed, error: (a.payload as { error?: string }).error };
     }
 
@@ -1629,6 +1669,7 @@ export const testReducers = combineReducers({
     tokens: tokensTestReducer,
     cryptographicKeys: cryptographicKeysTestReducer,
     users: usersTestReducer,
+    roles: rolesTestReducer,
     certificateGroups: certificateGroupsTestReducer,
     approvals: approvalsTestReducer,
     discoveries: discoveriesTestReducer,
@@ -1671,6 +1712,7 @@ export const testInitialState = {
     tokens: tokensTestInitialState,
     cryptographicKeys: cryptographicKeysTestInitialState,
     users: usersTestInitialState,
+    roles: rolesTestInitialState,
     certificateGroups: certificateGroupsTestInitialState,
     approvals: approvalsTestInitialState,
     discoveries: discoveriesTestInitialState,

@@ -5,7 +5,7 @@ import { AjaxError } from 'rxjs/ajax';
 import { catchError, filter, groupBy, map, mergeMap, switchMap } from 'rxjs/operators';
 import type { Resource, SortDirection } from 'types/openapi';
 import { LockTypeEnum, type WidgetLockErrorModel } from 'types/user-interface';
-import { DEFAULT_COMMENT_SORT, storeCommentSort } from 'utils/comment-sort';
+import { storeCommentSort } from 'utils/comment-sort';
 import { extractError, getLockWidgetObject } from 'utils/net';
 import { actions as alertActions } from './alerts';
 import {
@@ -13,6 +13,7 @@ import {
     loadedWindow,
     type PagedComments,
     panelKey,
+    preferredSortDirection,
     refreshPanel as refreshPanelAction,
     REPLIES_PAGE_SIZE,
     slice,
@@ -39,10 +40,14 @@ const deniedMessage = (err: unknown, fallback: string) =>
 
 /**
  * A request that names no direction keeps the one its list holds, so a refresh never flips the order. An empty list
- * shows no order to keep, and its direction may predate the user's latest choice.
+ * shows no order to keep, and its direction may predate the user's latest choice for the object.
  */
-const directionFor = (state: AppState, requested?: SortDirection, list?: PagedComments & { sortDirection: SortDirection }): SortDirection =>
-    requested ?? (list?.comments.length ? list.sortDirection : undefined) ?? state.comments?.sortDirection ?? DEFAULT_COMMENT_SORT;
+const directionFor = (
+    state: AppState,
+    key: string,
+    requested?: SortDirection,
+    list?: PagedComments & { sortDirection: SortDirection },
+): SortDirection => requested ?? (list?.comments.length ? list.sortDirection : undefined) ?? preferredSortDirection(state.comments, key);
 
 /**
  * Thread roots are loaded incrementally, so a refresh re-reads everything shown so far as one first page. `extra`
@@ -58,15 +63,21 @@ const refreshThreads = (state: AppState, resource: Resource, objectUuid: string,
  * Replies are loaded incrementally, so a refresh re-reads everything shown so far as one first page. `extra` widens the
  * window by the replies just added, so a reply the user posted onto a full window is not left on an unloaded page.
  */
-const refreshReplies = (state: AppState, rootUuid: string, extra = 0): UnknownAction => {
+const refreshReplies = (state: AppState, resource: Resource, objectUuid: string, rootUuid: string, extra = 0): UnknownAction => {
     const replies = state.comments?.replies[rootUuid];
     const loaded = replies ? loadedWindow(replies) : 0;
-    return slice.actions.listReplies({ rootUuid, pageNumber: 1, itemsPerPage: Math.max(REPLIES_PAGE_SIZE, loaded + extra) });
+    return slice.actions.listReplies({
+        resource,
+        objectUuid,
+        rootUuid,
+        pageNumber: 1,
+        itemsPerPage: Math.max(REPLIES_PAGE_SIZE, loaded + extra),
+    });
 };
 
 /** Everything that changed: the thread of a reply (if any) and always the root list, whose replyCount moved too. */
 const refreshAfterChange = (state: AppState, resource: Resource, objectUuid: string, parentUuid?: string): UnknownAction[] => [
-    ...(parentUuid ? [refreshReplies(state, parentUuid)] : []),
+    ...(parentUuid ? [refreshReplies(state, resource, objectUuid, parentUuid)] : []),
     refreshThreads(state, resource, objectUuid),
 ];
 
@@ -83,7 +94,10 @@ const refreshPanel: AppEpic = (action$, state$) => {
             const { resource, objectUuid } = action.payload;
             const state = state$.value;
             const opened = openedThreads(state, resource, objectUuid);
-            return of(refreshThreads(state, resource, objectUuid), ...opened.map((rootUuid) => refreshReplies(state, rootUuid)));
+            return of(
+                refreshThreads(state, resource, objectUuid),
+                ...opened.map((rootUuid) => refreshReplies(state, resource, objectUuid, rootUuid)),
+            );
         }),
     );
 };
@@ -94,11 +108,11 @@ const changeSortDirection: AppEpic = (action$, state$) => {
         filter(slice.actions.changeSortDirection.match),
         mergeMap((action) => {
             const { resource, objectUuid, sortDirection } = action.payload;
-            storeCommentSort(sortDirection);
+            storeCommentSort(panelKey(resource, objectUuid), sortDirection);
             const opened = openedThreads(state$.value, resource, objectUuid);
             return of(
                 slice.actions.listThreads({ resource, objectUuid, pageNumber: 1, sortDirection }),
-                ...opened.map((rootUuid) => slice.actions.listReplies({ rootUuid, pageNumber: 1, sortDirection })),
+                ...opened.map((rootUuid) => slice.actions.listReplies({ resource, objectUuid, rootUuid, pageNumber: 1, sortDirection })),
             );
         }),
     );
@@ -115,7 +129,12 @@ const listThreads: AppEpic = (action$, state$, deps) => {
                 switchMap((action) => {
                     const { resource, objectUuid, pageNumber, itemsPerPage = THREADS_PAGE_SIZE, anchorUuid } = action.payload;
                     const key = panelKey(resource, objectUuid);
-                    const sortDirection = directionFor(state$.value, action.payload.sortDirection, state$.value.comments?.threads[key]);
+                    const sortDirection = directionFor(
+                        state$.value,
+                        key,
+                        action.payload.sortDirection,
+                        state$.value.comments?.threads[key],
+                    );
                     return deps.apiClients.comments
                         .listComments({ resource, objectUuid, pageNumber, itemsPerPage, sortDirection, anchorUuid })
                         .pipe(
@@ -146,9 +165,10 @@ const listReplies: AppEpic = (action$, state$, deps) => {
         mergeMap((thread$) =>
             thread$.pipe(
                 switchMap((action) => {
-                    const { rootUuid, pageNumber, itemsPerPage = REPLIES_PAGE_SIZE, anchorUuid } = action.payload;
+                    const { resource, objectUuid, rootUuid, pageNumber, itemsPerPage = REPLIES_PAGE_SIZE, anchorUuid } = action.payload;
                     const sortDirection = directionFor(
                         state$.value,
+                        panelKey(resource, objectUuid),
                         action.payload.sortDirection,
                         state$.value.comments?.replies[rootUuid],
                     );
@@ -183,7 +203,9 @@ const createComment: AppEpic = (action$, state$, deps) => {
                 mergeMap((comment) =>
                     of(
                         slice.actions.createCommentSuccess({ key, comment, parentUuid }),
-                        parentUuid ? refreshReplies(state$.value, parentUuid, 1) : refreshThreads(state$.value, resource, objectUuid, 1),
+                        parentUuid
+                            ? refreshReplies(state$.value, resource, objectUuid, parentUuid, 1)
+                            : refreshThreads(state$.value, resource, objectUuid, 1),
                     ),
                 ),
                 catchError((err) =>

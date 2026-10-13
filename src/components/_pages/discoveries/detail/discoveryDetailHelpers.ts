@@ -55,6 +55,19 @@ export function isTerminalRun(status: DiscoveryStatus | undefined): boolean {
 }
 
 /**
+ * A run whose figures are still moving: the Provider is working, or the platform is importing what it found. Core marks
+ * a v1 run that outlives its wait limit as Warning and goes on waiting for the Provider, so such a run is live for as
+ * long as its Provider reports it in progress. Core treats a v2 Warning as the end.
+ */
+export function isLiveRun(
+    run: Pick<DiscoveryResponseDetailModel, 'status' | 'connectorStatus' | 'connectorInterface'> | undefined,
+): boolean {
+    if (!run) return false;
+    if (run.status === DiscoveryStatus.InProgress || run.status === DiscoveryStatus.Processing) return true;
+    return !run.connectorInterface && run.status === DiscoveryStatus.Warning && run.connectorStatus === DiscoveryStatus.InProgress;
+}
+
+/**
  * What the delete button says when Core will refuse the call. Cancel is itself refused once the run is processing -
  * the Provider is done and the remaining import is not abortable - so the only way out of that state is waiting.
  */

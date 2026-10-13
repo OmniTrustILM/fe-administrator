@@ -12,7 +12,7 @@ import { EnumColumnDescription } from 'components/EnumDescription';
 import { selectors as authSelectors } from 'ducks/auth';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { DiscoveryMessageSeverity, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import ConnectorLink from 'components/ConnectorLink';
@@ -22,6 +22,7 @@ import Label from 'components/Label';
 import CustomAttributeWidget from 'components/Attributes/CustomAttributeWidget';
 import TabLayout from 'components/Layout/TabLayout';
 import { actions as rulesActions, selectors as ruleSelectors } from 'ducks/rules';
+import { selectors as userInterfaceSelectors } from 'ducks/user-interface';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { dateFormatter, durationFormatter } from 'utils/dateUtil';
 import { hasResourceAction } from 'utils/permissions';
@@ -34,6 +35,7 @@ import {
     connectorInterfaceLabel,
     deleteTooltip,
     type DiscoveryLifecycleAction,
+    isLiveRun,
     isTerminalRun,
     resultResources,
     visibleLifecycleActions,
@@ -43,12 +45,15 @@ import { createWidgetDetailHeaders } from 'utils/widget';
 import Breadcrumb from 'components/Breadcrumb';
 import Container from 'components/Container';
 import CommentPanel from 'components/CommentPanel';
+import { usePollWhileAttended } from './usePollWhileAttended';
 
 const LIFECYCLE_PERMISSION: Record<DiscoveryLifecycleAction, ResourceAction> = {
     stop: ResourceAction.Stop,
     resume: ResourceAction.Resume,
     cancel: ResourceAction.Cancel,
 };
+
+const LIVE_RUN_POLL_INTERVAL_MS = 10_000;
 
 export default function DiscoveryDetail() {
     const dispatch = useDispatch();
@@ -60,6 +65,8 @@ export default function DiscoveryDetail() {
     const profile = useSelector(authSelectors.profile);
 
     const isFetching = useSelector(selectors.isFetchingDetail);
+    const isPolling = useSelector(selectors.isPollingDetail);
+    const widgetLocks = useSelector(userInterfaceSelectors.selectWidgetLocks);
     const isDeleting = useSelector(selectors.isDeleting);
     const isStopping = useSelector(selectors.isStopping);
     const isResuming = useSelector(selectors.isResuming);
@@ -97,8 +104,9 @@ export default function DiscoveryDetail() {
         dispatch(rulesActions.getTriggerHistorySummary({ triggerObjectUuid: id }));
     }, [id, dispatch]);
 
-    // What a refresh button does: re-read the run that is already on screen and leave it standing, as the lifecycle
-    // epic does. Resetting first would blank the page and show the full skeleton for a re-read of one widget.
+    // The page's one refresh button, on Discovery Details as on the other detail pages. It re-reads the run that is
+    // already on screen and leaves it standing, as the lifecycle epic does. Resetting first would blank the page and
+    // show the full skeleton.
     const refreshDiscoveryDetails = useCallback(() => {
         if (!id) return;
         dispatch(actions.getDiscoveryDetail({ uuid: id, keepCurrent: true }));
@@ -108,6 +116,30 @@ export default function DiscoveryDetail() {
     useEffect(() => {
         getFreshDiscoveryDetails();
     }, [id, getFreshDiscoveryDetails]);
+
+    // While a run is live the page re-reads it on its own, so its progress moves without the user clicking. A tick is
+    // skipped while a read or a lifecycle call is in flight, since that call's own re-read is the newer answer. A
+    // locked page has nothing to show a poll's answer on.
+    const pollDiscoveryDetails = useCallback(() => {
+        if (!id || isFetching || isPolling || isMutating) return;
+        dispatch(actions.getDiscoveryDetail({ uuid: id, poll: true }));
+    }, [id, isFetching, isPolling, isMutating, dispatch]);
+    const isLocked = widgetLocks.some((lock) => lock.widgetName === LockWidgetNameEnum.DiscoveryDetails);
+    usePollWhileAttended(pollDiscoveryDetails, isLiveRun(discovery) && !isLocked, LIVE_RUN_POLL_INTERVAL_MS);
+
+    // Triggers run on a run's results as it ends, so polls leave the trigger summary alone, and it is re-read once
+    // when the run on screen reaches its end.
+    const runUuid = discovery?.uuid;
+    const runStatus = discovery?.status;
+    const runLive = isLiveRun(discovery);
+    const lastSeenRun = useRef<{ uuid?: string; live: boolean }>({ live: false });
+    useEffect(() => {
+        const previous = lastSeenRun.current;
+        lastSeenRun.current = { uuid: runUuid, live: runLive };
+        if (runUuid && previous.uuid === runUuid && previous.live && !runLive && isTerminalRun(runStatus)) {
+            getFreshTriggerHistorySummary();
+        }
+    }, [runUuid, runLive, runStatus, getFreshTriggerHistorySummary]);
 
     const onDeleteConfirmed = useCallback(() => {
         if (!discovery) return;
@@ -401,15 +433,14 @@ export default function DiscoveryDetail() {
 
                                     {discovery && (
                                         <Container marginTop className="md:flex-row items-start">
-                                            <DiscoveryProgressWidget
-                                                discovery={discovery}
-                                                onRefresh={refreshDiscoveryDetails}
-                                                className="w-full md:flex-1"
-                                            />
+                                            {/* min-w-0: a table records its width when it first renders, and a flex
+                                                item that cannot shrink below it keeps that width when a neighbour
+                                                arrives later. */}
+                                            <DiscoveryProgressWidget discovery={discovery} className="w-full md:flex-1 md:min-w-0" />
                                             <DiscoveryResultsSummary
                                                 discovery={discovery}
                                                 headers={detailHeaders}
-                                                className="w-full md:flex-1"
+                                                className="w-full md:flex-1 md:min-w-0"
                                             />
                                         </Container>
                                     )}
@@ -420,12 +451,7 @@ export default function DiscoveryDetail() {
                                         </Widget>
 
                                         {triggerHistorySummary?.associationObjectUuid === id && (
-                                            <Widget
-                                                title="Triggers summary"
-                                                titleSize="large"
-                                                busy={isFetchingTriggerSummary}
-                                                refreshAction={getFreshTriggerHistorySummary}
-                                            >
+                                            <Widget title="Triggers summary" titleSize="large" busy={isFetchingTriggerSummary}>
                                                 <CustomTable headers={detailHeaders} data={triggersSummary} />
                                             </Widget>
                                         )}

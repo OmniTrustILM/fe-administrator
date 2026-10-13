@@ -97,13 +97,15 @@ const inventories = [
         module: './discoveries/discoveryTableHelpers.tsx',
         resource: Resource.Discoveries,
         columns: DISCOVERY_COLUMNS,
-        registry: buildDiscoveryCellRegistry(enums),
+        registry: buildDiscoveryCellRegistry({ ...enums, resourceLabel: noop }),
         catalogued: [
             'DISCOVERY_NAME',
             'DISCOVERY_START_TIME',
             'DISCOVERY_END_TIME',
             'DISCOVERY_STATUS',
+            'DISCOVERY_TOTAL_ITEMS_DISCOVERED',
             'DISCOVERY_TOTAL_CERT_DISCOVERED',
+            'DISCOVERY_RESOURCES',
             'DISCOVERY_CONNECTOR_NAME',
             'DISCOVERY_KIND',
         ],
@@ -301,7 +303,11 @@ describe('cells whose value can be absent', () => {
         getEnumLabel: noop,
         onOverflowClick: () => undefined,
     });
-    const discoveryRegistry = buildDiscoveryCellRegistry({ dateFormatter: () => 'a date', durationFormatter });
+    const discoveryRegistry = buildDiscoveryCellRegistry({
+        dateFormatter: () => 'a date',
+        durationFormatter,
+        resourceLabel: (resource) => `label of ${resource}`,
+    });
 
     function render<TRow extends object>(row: TRow, columns: ColumnDefinition[], registry: CellRegistry<TRow>, identifier: string) {
         const column = columns.find((candidate) => candidate.fieldIdentifier === identifier);
@@ -354,6 +360,26 @@ describe('cells whose value can be absent', () => {
                 connectorInterface: { uuid: 'iface-1', code: 'discovery' as any, version: 'v2' },
             }),
         ).not.toContain('IP-HostName');
+    });
+
+    it('shows every item a run found, keys included, beside its certificates', () => {
+        const items = (discovery: Partial<DiscoveryResponseModel>) =>
+            render(discovery as DiscoveryResponseModel, DISCOVERY_COLUMNS, discoveryRegistry, 'DISCOVERY_TOTAL_ITEMS_DISCOVERED');
+
+        expect(items({ uuid: 'discovery-1', totalItemsDiscovered: 52, totalCertificatesDiscovered: 48 })).toContain('52');
+        expect(items({ uuid: 'discovery-1', totalItemsDiscovered: 0 })).toContain('0');
+    });
+
+    it('names each resource a run targets', () => {
+        const markup = render(
+            { uuid: 'discovery-1', resources: [Resource.Certificates, Resource.Keys] } as DiscoveryResponseModel,
+            DISCOVERY_COLUMNS,
+            discoveryRegistry,
+            'DISCOVERY_RESOURCES',
+        );
+
+        expect(markup).toContain(`label of ${Resource.Certificates}`);
+        expect(markup).toContain(`label of ${Resource.Keys}`);
     });
 
     it('shows the duration a started discovery has run for', () => {

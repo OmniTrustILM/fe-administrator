@@ -6,11 +6,10 @@ import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import type { DiscoveryResponseDetailModel } from 'types/discoveries';
 import { DiscoveryStatus, PlatformEnum } from 'types/openapi';
-import { importRemainder, progressRecordedCaption, targetsCaption } from './discoveryDetailHelpers';
+import { importRemainder, isTerminalRun, progressRecordedCaption, targetsCaption } from './discoveryDetailHelpers';
 
 type Props = Readonly<{
     discovery: DiscoveryResponseDetailModel;
-    onRefresh?: () => void;
     className?: string;
 }>;
 
@@ -25,9 +24,10 @@ const BY_RESOURCE_HEADERS: TableHeader[] = [
  * Two bars for two phases, each labelled with whose work it is. The Provider's bar counts targets and is only as fresh
  * as Core's last poll of the Provider, which is what the caption dates. The platform's bar counts items, appears only
  * while the run is processing, and is counted from the platform's own rows on every read. A run against a v1 Provider
- * reports no progress at all, and then this widget renders nothing.
+ * reports no progress at all, and then this widget renders nothing. A v2 run always gets the widget, so the row it shares
+ * keeps its shape when the first report arrives.
  */
-export default function DiscoveryProgressWidget({ discovery, onRefresh, className }: Props) {
+export default function DiscoveryProgressWidget({ discovery, className }: Props) {
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
 
     const progress = discovery.progress;
@@ -47,7 +47,9 @@ export default function DiscoveryProgressWidget({ discovery, onRefresh, classNam
         [progress?.byResource, resourceEnum],
     );
 
-    if (!progress && !processing) return null;
+    if (!discovery.connectorInterface && !progress && !processing) return null;
+
+    const providerDone = processing || isTerminalRun(discovery.status);
 
     const recorded = progressRecordedCaption(progress?.updatedAt);
     const remaining = importRemainder(discovery);
@@ -60,7 +62,7 @@ export default function DiscoveryProgressWidget({ discovery, onRefresh, classNam
     const importCaption = nothingToImport ? 'Nothing to import' : `${remaining} waiting${notImported}`;
 
     return (
-        <Widget title="Progress" titleSize="large" refreshAction={onRefresh} className={className} dataTestId="discovery-progress">
+        <Widget title="Progress" titleSize="large" className={className} dataTestId="discovery-progress">
             <div className="flex flex-col gap-4">
                 {progress ? (
                     <div data-testid="provider-progress">
@@ -90,7 +92,11 @@ export default function DiscoveryProgressWidget({ discovery, onRefresh, classNam
                             </p>
                         ) : null}
                     </div>
-                ) : null}
+                ) : (
+                    <p className="text-sm text-content-muted" data-testid="no-provider-progress">
+                        {providerDone ? 'The Discovery Provider reported no progress for this run.' : 'No progress reported yet.'}
+                    </p>
+                )}
 
                 {processing ? (
                     <div data-testid="import-progress">
@@ -108,7 +114,7 @@ export default function DiscoveryProgressWidget({ discovery, onRefresh, classNam
                                     </span>
                                 </>
                             }
-                            caption={<span>{importCaption} — counted on every read</span>}
+                            caption={<span>{importCaption}</span>}
                         />
                     </div>
                 ) : null}

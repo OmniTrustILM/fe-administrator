@@ -7,7 +7,7 @@ import * as React from 'react';
 
 type Padding<T> = T | { top?: T; right?: T; bottom?: T; left?: T };
 
-type Props = React.HTMLAttributes<HTMLDivElement> & {
+type Props = Omit<React.HTMLAttributes<HTMLDivElement>, 'autoFocus'> & {
     highlight: (value: string) => string | React.ReactNode;
     ignoreTabKey?: boolean;
     insertSpaces?: boolean;
@@ -17,7 +17,6 @@ type Props = React.HTMLAttributes<HTMLDivElement> & {
     tabSize?: number;
     value: string;
 
-    autoFocus?: boolean;
     disabled?: boolean;
     form?: string;
     maxLength?: number;
@@ -102,7 +101,6 @@ const cssText = /* CSS */ `
 
 const CodeEditor = React.forwardRef(function CodeEditor(props: Props, ref: React.Ref<null | { session: { history: History } }>) {
     const {
-        autoFocus,
         disabled,
         form,
         highlight,
@@ -491,8 +489,6 @@ const CodeEditor = React.forwardRef(function CodeEditor(props: Props, ref: React
                 placeholder={placeholder}
                 readOnly={readOnly}
                 required={required}
-                // biome-ignore lint/a11y/noAutofocus: opt-in prop forwarded from the parent component
-                autoFocus={autoFocus}
                 autoCapitalize="off"
                 autoComplete="off"
                 autoCorrect="off"

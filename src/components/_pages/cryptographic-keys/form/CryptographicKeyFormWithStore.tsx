@@ -56,7 +56,7 @@ export type CryptographicKeyFormWithStoreProps = Readonly<{
     keyTransferByProfile?: Record<string, KeyTransferCapabilityDto>;
     /** The answers to `getTokenProfileDetail`, taken in order; each is `loaded` unless given. */
     tokenProfileDetailAnswers?: TokenProfileDetailAnswer[];
-    keyDetail?: KeyState['cryptographicKey'];
+    keyDetail?: NonNullable<KeyState['cryptographicKey']>;
     attributeDescriptors?: AttributeDescriptorModel[];
     /** Whether the signed-in user holds the key import permission. */
     canImportKeys?: boolean;

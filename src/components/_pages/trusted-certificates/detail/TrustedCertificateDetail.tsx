@@ -42,7 +42,7 @@ export const TrustedCertificateDetail = () => {
         setConfirmDelete(false);
 
         if (deleteSubmitted && !trustedCertificate) {
-            navigate(`/${Resource.TrustedCertificates.toLowerCase()}`);
+            void navigate(`/${Resource.TrustedCertificates.toLowerCase()}`);
         }
 
         setDeleteSubmitted(false);
