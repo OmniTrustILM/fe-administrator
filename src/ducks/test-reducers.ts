@@ -1,6 +1,9 @@
 import { combineReducers, type UnknownAction } from '@reduxjs/toolkit';
 import type { AttributeDescriptorModel } from 'types/attributes';
+import type { AuthResourceModel } from 'types/auth';
 import type { ConnectorResponseModel, HealthModel } from 'types/connectors';
+import type { NameAndUuidModel } from 'types/locations';
+import type { RoleDetailModel, SubjectPermissionsModel } from 'types/roles';
 import type { ConnectInfoDto, ListViewDto } from 'types/openapi';
 import type { EventTriggerAssociationModel, TriggerModel } from 'types/rules';
 
@@ -341,6 +344,9 @@ export type AuthTestState = {
             allowedActions?: { resource: string; actions?: string[] }[];
         };
     };
+    resources?: AuthResourceModel[];
+    objects?: NameAndUuidModel[];
+    isFetchingObjects?: boolean;
 };
 
 const authTestInitialState: AuthTestState = {
@@ -1150,6 +1156,28 @@ function usersTestReducer(state: UsersTestState | undefined, _action: UnknownAct
     return state ?? usersTestInitialState;
 }
 
+export type RolesTestState = {
+    role?: RoleDetailModel;
+    rolePermissions?: { uuid: string; permissions: SubjectPermissionsModel };
+    isFetchingDetail: boolean;
+    isFetchingPermissions: boolean;
+    isCreating: boolean;
+    isUpdating: boolean;
+    isUpdatingPermissions: boolean;
+};
+
+const rolesTestInitialState: RolesTestState = {
+    isFetchingDetail: false,
+    isFetchingPermissions: false,
+    isCreating: false,
+    isUpdating: false,
+    isUpdatingPermissions: false,
+};
+
+function rolesTestReducer(state: RolesTestState | undefined, _action: UnknownAction): RolesTestState {
+    return state ?? rolesTestInitialState;
+}
+
 // Reducer key must match the real slice.name ('certificateGroups') so the real
 // certificate-group selectors (used by the certificate form's optional groups field) can find this state.
 export type CertificateGroupsTestState = {
@@ -1647,6 +1675,7 @@ export const testReducers = combineReducers({
     tokens: tokensTestReducer,
     cryptographicKeys: cryptographicKeysTestReducer,
     users: usersTestReducer,
+    roles: rolesTestReducer,
     certificateGroups: certificateGroupsTestReducer,
     approvals: approvalsTestReducer,
     discoveries: discoveriesTestReducer,
@@ -1689,6 +1718,7 @@ export const testInitialState = {
     tokens: tokensTestInitialState,
     cryptographicKeys: cryptographicKeysTestInitialState,
     users: usersTestInitialState,
+    roles: rolesTestInitialState,
     certificateGroups: certificateGroupsTestInitialState,
     approvals: approvalsTestInitialState,
     discoveries: discoveriesTestInitialState,

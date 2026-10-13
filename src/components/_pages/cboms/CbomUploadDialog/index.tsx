@@ -7,6 +7,7 @@ import Button from 'components/Button';
 import ProgressButton from 'components/ProgressButton';
 import { actions as alertActions } from 'ducks/alerts';
 import { selectors as cbomSelectors } from 'ducks/cbom';
+import { base64ToUtf8 } from 'utils/common-utils';
 
 type Props = {
     onCancel: () => void;
@@ -49,16 +50,7 @@ export default function CbomUploadDialog({ onCancel, onUpload, okButtonTitle = '
         [dispatch],
     );
 
-    const onFileContentLoaded = useCallback((base64Content: string) => {
-        try {
-            // base64 -> string
-            const decoded = atob(base64Content);
-            setFileContent(decoded);
-        } catch {
-            // fallback: keep raw
-            setFileContent(base64Content);
-        }
-    }, []);
+    const onFileContentLoaded = useCallback((base64Content: string) => setFileContent(base64ToUtf8(base64Content)), []);
 
     const onSubmit = useCallback(async () => {
         if (!fileContent) return;

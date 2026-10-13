@@ -22,7 +22,7 @@ const csrDataDescriptor: AttributeDescriptorModel = {
     properties: { label: 'Data Field', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
 } as AttributeDescriptorModel;
 
-// A selectable RA Profile: raProfileOptions filters to profiles that carry an authorityInstanceUuid.
+// A selectable RA Profile: raProfileOptions filters to enabled profiles that carry an authorityInstanceUuid.
 const selectableRaProfile = {
     uuid: 'ra-1',
     name: 'RA One',
@@ -384,6 +384,21 @@ test.describe('CertificateForm', () => {
         await page.getByRole('option', { name: 'RA One' }).click();
 
         await expect(page.getByRole('button', { name: 'Create' })).toBeEnabled();
+    });
+
+    test('a disabled RA Profile is not offered', async ({ mount, page }) => {
+        const disabledRaProfile = { uuid: 'ra-off', name: 'RA Disabled', authorityInstanceUuid: 'auth-1', enabled: false } as any;
+
+        await mount(
+            <CertificateFormTestWrapper
+                preloadedState={{ raprofiles: { ...testInitialState.raprofiles, raProfiles: [disabledRaProfile, selectableRaProfile] } }}
+            />,
+        );
+
+        await page.getByTestId('select-raProfile-trigger').click();
+
+        await expect(page.getByRole('option', { name: 'RA One' })).toBeVisible();
+        await expect(page.getByRole('option', { name: 'RA Disabled' })).toHaveCount(0);
     });
 
     test('selecting another RA Profile refetches the resolved request-attribute set for that profile', async ({ mount, page }) => {
