@@ -12,11 +12,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router';
 import Badge from 'components/Badge';
 import Switch from 'components/Switch';
-import { PlatformEnum, Resource, SchedulerJobExecutionStatus } from 'types/openapi';
+import { PlatformEnum, Resource } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { describeCronSchedule } from 'utils/cronSchedule';
 import { dateFormatter } from 'utils/dateUtil';
-import { getScheduleStateBadgeColor } from 'utils/scheduler';
+import { getExecutionStatusBadgeColor, getScheduleStateBadgeColor } from 'utils/scheduler';
 import CronBuilder from 'components/CronBuilder';
 import CronScheduleHint from 'components/CronScheduleHint';
 import { validateQuartzCronExpression, validateRequired } from 'utils/validators';
@@ -312,14 +312,7 @@ export default function SchedulerJobDetail() {
                           columns: [
                               'Last Execution Status',
                               <span key="lastExecutionStatus" className="inline-flex items-center gap-1">
-                                  <Badge
-                                      color={(() => {
-                                          if (schedulerJob.lastExecutionStatus === SchedulerJobExecutionStatus.Failed) return 'danger';
-                                          return schedulerJob.lastExecutionStatus === SchedulerJobExecutionStatus.Succeeded
-                                              ? 'success'
-                                              : 'primary';
-                                      })()}
-                                  >
+                                  <Badge color={getExecutionStatusBadgeColor(schedulerJob.lastExecutionStatus)}>
                                       {getEnumLabel(schedulerJobExecutionStatusEnum, schedulerJob.lastExecutionStatus)}
                                   </Badge>
                                   <EnumValueDescription

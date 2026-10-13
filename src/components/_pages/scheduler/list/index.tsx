@@ -14,11 +14,11 @@ import type { TableDataRow, TableHeader } from 'components/CustomTable';
 import PagedList from 'components/PagedList/PagedList';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import type { SearchRequestModel } from 'types/certificate';
-import { PlatformEnum, SchedulerJobExecutionStatus } from 'types/openapi';
+import { PlatformEnum } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { describeCronSchedule } from 'utils/cronSchedule';
 import { dateFormatter } from 'utils/dateUtil';
-import { getScheduleStateBadgeColor } from 'utils/scheduler';
+import { getExecutionStatusBadgeColor, getScheduleStateBadgeColor } from 'utils/scheduler';
 
 function SchedulerJobsList() {
     const dispatch = useDispatch();
@@ -145,13 +145,7 @@ function SchedulerJobsList() {
                         {getEnumLabel(scheduleStateEnum, schedulerJob.scheduleState)}
                     </Badge>,
                     schedulerJob.previousFireTime ? dateFormatter(schedulerJob.previousFireTime) : '',
-                    <Badge
-                        key="status"
-                        color={(() => {
-                            if (schedulerJob.lastExecutionStatus === SchedulerJobExecutionStatus.Failed) return 'danger';
-                            return schedulerJob.lastExecutionStatus === SchedulerJobExecutionStatus.Succeeded ? 'success' : 'primary';
-                        })()}
-                    >
+                    <Badge key="status" color={getExecutionStatusBadgeColor(schedulerJob.lastExecutionStatus)}>
                         {getEnumLabel(schedulerJobExecutionStatusEnum, schedulerJob.lastExecutionStatus)}
                     </Badge>,
                     <BooleanBadge key="system" value={schedulerJob.system} />,
