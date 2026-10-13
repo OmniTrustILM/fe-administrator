@@ -160,11 +160,9 @@ export default function DiscoveryCertificates({ id, triggerHistorySummary }: Pro
 
     const pagedTable = (
         <PagedCustomTable
-            // Remounting is what re-issues onReloadData with the new newlyDiscovered value:
-            // PagedCustomTable holds onReloadData in a ref and only re-fetches on [pageSize, pageNumber].
-            key={activeTab.tabKey}
             // The tab lives in the query string, so the default pathname-only pagination key would be
             // shared by all three tabs and a tab switch would restore the previous tab's page number.
+            // A change of this key is also what reloads the table with the new newlyDiscovered value.
             stateKey={`${pathname}:${activeTab.tabKey}`}
             headers={discoveryCertificatesHeaders}
             data={discoveryCertificatesData}

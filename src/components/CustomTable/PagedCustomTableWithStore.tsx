@@ -27,6 +27,7 @@ function Tables({ replaceOnMount }: Readonly<{ replaceOnMount: boolean }>) {
     const otherStored = useSelector(selectOtherStored);
     const [stateKey, setStateKey] = useState(STATE_KEY);
     const [loadedPages, setLoadedPages] = useState<number[]>([]);
+    const [loadedFor, setLoadedFor] = useState<string[]>([]);
     const [isReplaced, setIsReplaced] = useState(false);
 
     useEffect(() => {
@@ -41,9 +42,13 @@ function Tables({ replaceOnMount }: Readonly<{ replaceOnMount: boolean }>) {
                 headers={headers}
                 data={data}
                 totalItems={25}
-                onReloadData={(_, pageNumber) => setLoadedPages((pages) => [...pages, pageNumber])}
+                onReloadData={(_, pageNumber) => {
+                    setLoadedPages((pages) => [...pages, pageNumber]);
+                    setLoadedFor((keys) => [...keys, stateKey]);
+                }}
             />
             <output data-testid="loaded-pages">{loadedPages.join(', ')}</output>
+            <output data-testid="loaded-for">{loadedFor.join(', ')}</output>
             <output data-testid="stored-page">{stored.page}</output>
             <output data-testid="other-stored-page">{otherStored.page}</output>
             <button type="button" onClick={() => setStateKey(OTHER_STATE_KEY)}>
