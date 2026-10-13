@@ -20,7 +20,7 @@ import type { DiscoveryResourceProgressDto } from './';
  */
 export interface DiscoveryProgressDto {
     /**
-     * Targets attempted so far, whatever their outcome. A target is a unit of work a person would recognise, such as an address and port, a CA, a CA and template, a mount or a report. Omitted if the provider cannot count its work. A provider whose unit would only be a page of search results omits all target counters and reports byResource instead.
+     * Targets attempted so far, whatever their outcome. A target is a unit of work a person would recognise, such as an address and port, a CA, a CA and template, a mount or a report. Targets that yielded items are the remainder after targetsEmpty and targetsFailed. Omitted if the provider cannot count its work. A provider whose unit would only be a page of search results omits all target counters and reports byResource and phase instead.
      * @type {number}
      * @memberof DiscoveryProgressDto
      */
@@ -32,13 +32,13 @@ export interface DiscoveryProgressDto {
      */
     targetsTotal?: number;
     /**
-     * Targets the provider expected to read and could not, such as access refused, the source unreachable or an unreadable answer. Part of targetsProcessed, never also counted as empty. The discovery does not fail for them, but ends with a warning.
+     * Targets the provider expected to read and could not, such as access refused, a source it was configured to read being unreachable, or an unreadable answer. Part of targetsProcessed, never also counted as empty. The discovery does not fail for them, but a run that otherwise completes ends with a warning.
      * @type {number}
      * @memberof DiscoveryProgressDto
      */
     targetsFailed?: number;
     /**
-     * Targets attempted that held nothing to discover, such as an address with nothing listening or an empty mount, template or report. Part of targetsProcessed, never also counted as failed: an empty target is a normal outcome. Omitted if the provider does not tell empty targets apart.
+     * Targets attempted that held nothing to discover, such as an empty mount, template or report, or a target the provider only guessed at, like an address in a swept range, that does not answer. Part of targetsProcessed, never also counted as failed: an empty target is a normal outcome. Omitted if the provider does not tell empty targets apart.
      * @type {number}
      * @memberof DiscoveryProgressDto
      */

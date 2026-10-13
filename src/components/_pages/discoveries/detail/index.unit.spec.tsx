@@ -419,6 +419,49 @@ describe('DiscoveryDetail', () => {
             }
         });
 
+        it('stops moving once the Provider reports completion, while Core still drains its last items', async () => {
+            await render(
+                buildState({
+                    ...v2Run,
+                    connectorStatus: DiscoveryStatus.Completed,
+                    progress: { ...v2Run.progress, targetsTotal: undefined },
+                }),
+            );
+
+            const bar = container.querySelector('[data-testid="provider-progress-bar"] [role="progressbar"]');
+            expect(bar?.hasAttribute('data-indeterminate')).toBe(false);
+            expect(bar?.getAttribute('aria-valuenow')).toBe(bar?.getAttribute('aria-valuemax'));
+        });
+
+        it('holds a paused run without a total still and empty, rather than moving or full', async () => {
+            await render(
+                buildState({
+                    ...v2Run,
+                    status: DiscoveryStatus.Stopped,
+                    connectorStatus: DiscoveryStatus.Stopped,
+                    progress: { ...v2Run.progress, targetsTotal: undefined },
+                }),
+            );
+
+            const bar = container.querySelector('[data-testid="provider-progress-bar"] [role="progressbar"]');
+            expect(bar?.hasAttribute('data-indeterminate')).toBe(false);
+            expect(bar?.getAttribute('aria-valuenow')).toBe('0');
+        });
+
+        it('draws a run that ended early in the tone of how it ended, not as a clean finish', async () => {
+            const fill = () => container.querySelector('[data-testid="provider-progress-bar"] [data-testid="progress-bar-fill"]');
+
+            await render(
+                buildState({ ...v2Run, status: DiscoveryStatus.Failed, progress: { ...v2Run.progress, targetsTotal: undefined } }),
+            );
+            expect(fill()?.className).toContain('bg-warning-solid');
+
+            await render(
+                buildState({ ...v2Run, status: DiscoveryStatus.Cancelled, progress: { ...v2Run.progress, targetsTotal: undefined } }),
+            );
+            expect(fill()?.className).toContain('bg-info-solid');
+        });
+
         it('keeps the true ratio of a run cancelled partway through a known total', async () => {
             await render(
                 buildState({
@@ -453,7 +496,7 @@ describe('DiscoveryDetail', () => {
                 expect(bar?.getAttribute('aria-valuenow')).toBe('3700');
                 expect(bar?.getAttribute('aria-valuemax')).toBe('12000');
                 expect(container.querySelector('[data-testid="targets-caption"]')?.textContent).toBe('3,700 / ~12,000 certificates');
-                expect(rowText('certificates')).toBe('Certificate3700~12000—');
+                expect(rowText('certificates')).toBe('Certificate3,700~12,000—');
             });
 
             it('says how many items it found when it has no estimate, and fills the bar only once it is done', async () => {
@@ -474,6 +517,17 @@ describe('DiscoveryDetail', () => {
                 expect(container.querySelector('[data-testid="targets-caption"]')?.textContent).toBe('1,180 certificates found');
             });
 
+            it('draws no items count for a run of several resources while its Provider has reported only one', async () => {
+                await render(
+                    buildState({
+                        ...v2Run,
+                        progress: searchProgress({ certificates: { produced: 3700, totalEstimate: 12000 } }),
+                    }),
+                );
+
+                expect(container.querySelector('[data-testid="targets-caption"]')?.textContent).toBe('No target count reported');
+            });
+
             it('reports no count for a run with several resources, which has no single count to draw', async () => {
                 await render(
                     buildState({
@@ -485,7 +539,7 @@ describe('DiscoveryDetail', () => {
                 const bar = container.querySelector('[data-testid="provider-progress-bar"] [role="progressbar"]');
                 expect(bar?.getAttribute('data-indeterminate')).toBe('true');
                 expect(container.querySelector('[data-testid="targets-caption"]')?.textContent).toBe('No target count reported');
-                expect(rowText('certificates')).toBe('Certificate3700~12000—');
+                expect(rowText('certificates')).toBe('Certificate3,700~12,000—');
                 expect(rowText('keys')).toBe('Key4——');
             });
         });
