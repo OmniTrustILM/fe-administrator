@@ -1,6 +1,6 @@
-import type { Locator, Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 import { LockTypeEnum } from 'types/user-interface';
-import { relativeLuminance } from 'utils/contrast';
+import { textContrast } from '../../../playwright/contrast';
 import { expect, test } from '../../../playwright/ct-test';
 import CommentPanelWithStore from './CommentPanelWithStore';
 
@@ -42,20 +42,6 @@ const apiPage = (comments: Array<{ uuid: string }>, overrides: Record<string, un
 const dispatched = async (page: Page) => {
     const raw = await page.getByTestId('comments-dispatch-probe').getAttribute('data-actions');
     return JSON.parse(raw ?? '[]') as Array<{ type: string; payload?: Record<string, unknown> }>;
-};
-
-const luminanceOf = (cssColour: string) => {
-    const [r, g, b] = (cssColour.match(/\d+(\.\d+)?/g) ?? []).map(Number);
-    return relativeLuminance({ r, g, b });
-};
-
-const textContrast = async (locator: Locator) => {
-    const { colour, background } = await locator.evaluate((node) => {
-        const style = getComputedStyle(node);
-        return { colour: style.color, background: style.backgroundColor };
-    });
-    const [darker, lighter] = [luminanceOf(colour), luminanceOf(background)].sort((a, b) => a - b);
-    return (lighter + 0.05) / (darker + 0.05);
 };
 
 test.describe('CommentPanel', () => {
