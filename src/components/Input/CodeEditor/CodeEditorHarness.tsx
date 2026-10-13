@@ -20,7 +20,6 @@ type HarnessProps = {
     padding?: number | { top?: number; right?: number; bottom?: number; left?: number };
     highlightAs?: 'string' | 'node';
     name?: string;
-    autoFocus?: boolean;
 };
 
 export function Harness({ initial = '', highlightAs = 'string', onValueChange, ...rest }: Readonly<HarnessProps>) {

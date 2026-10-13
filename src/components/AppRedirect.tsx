@@ -14,7 +14,7 @@ export default function AppRedirect() {
     useEffect(() => {
         if (!goBack) return;
         dispatch(actions.clearGoBack());
-        navigate(-1);
+        void navigate(-1);
     }, [dispatch, goBack, navigate]);
 
     useEffect(() => {
@@ -24,14 +24,14 @@ export default function AppRedirect() {
         const url = globalThis.location.toString().substring(globalThis.location.origin.length);
         if (!url.includes('#/login?redirect=')) {
             const redirect = encodeURIComponent(url);
-            navigate(`/login?redirect=${redirect}`);
+            void navigate(`/login?redirect=${redirect}`);
         }
     }, [dispatch, navigate, unauthorized]);
 
     useEffect(() => {
         if (!redirectUrl) return;
         dispatch(actions.clearRedirectUrl());
-        navigate(redirectUrl, { relative: 'path' });
+        void navigate(redirectUrl, { relative: 'path' });
     }, [dispatch, navigate, redirectUrl]);
 
     return null;

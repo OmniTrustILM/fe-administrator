@@ -156,15 +156,17 @@ function CryptoAssetsDashboard() {
                     {completeness.lastCompletedSyncAt &&
                         caption(`Latest successful asset sync ${dateFormatter(completeness.lastCompletedSyncAt)}`)}
                 </div>
-                {cbomCountUnavailable ? (
+                {cbomCountUnavailable && (
                     <p className="mt-2 text-sm text-content-muted" data-testid="crypto-assets-dashboard-coverage-unavailable">
                         CBOM inventory coverage is not available with your permissions.
                     </p>
-                ) : completeness.total === 0 ? (
+                )}
+                {!cbomCountUnavailable && completeness.total === 0 && (
                     <p className="mt-2 text-sm text-content-muted" data-testid="crypto-assets-dashboard-coverage-empty">
                         The asset counts are empty until a CBOM document has been synced into the inventory.
                     </p>
-                ) : (
+                )}
+                {!cbomCountUnavailable && completeness.total !== 0 && (
                     <>
                         <p className="mt-2 text-sm text-content" data-testid="crypto-assets-dashboard-coverage-summary">
                             {`Synced ${completeness.synced.toLocaleString()} of ${completeness.total.toLocaleString()} CBOM documents`}

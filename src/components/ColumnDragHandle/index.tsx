@@ -102,7 +102,8 @@ export default function ColumnDragHandle({ columnKey, label, columnKeys, onMove,
     const onPointerMove = useCallback(
         (event: React.PointerEvent<HTMLButtonElement>) => {
             const current = gesture.current;
-            if (!current || current.pointerId !== event.pointerId) return;
+            if (!current) return;
+            if (current.pointerId !== event.pointerId) return;
 
             if (!current.cells) {
                 if (Math.hypot(event.clientX - current.startX, event.clientY - current.startY) < DRAG_THRESHOLD_PX) return;
@@ -118,7 +119,7 @@ export default function ColumnDragHandle({ columnKey, label, columnKeys, onMove,
             current.slot = slot;
 
             setIndicator({
-                left: slot < rects.length ? rects[slot].left : rects[rects.length - 1].right,
+                left: slot < rects.length ? rects[slot].left : rects.at(-1)!.right,
                 top: rects[0].top,
                 height: rects[0].height,
             });
@@ -129,7 +130,8 @@ export default function ColumnDragHandle({ columnKey, label, columnKeys, onMove,
     const onPointerUp = useCallback(
         (event: React.PointerEvent<HTMLButtonElement>) => {
             const current = gesture.current;
-            if (!current || current.pointerId !== event.pointerId) return;
+            if (!current) return;
+            if (current.pointerId !== event.pointerId) return;
 
             endGesture();
 

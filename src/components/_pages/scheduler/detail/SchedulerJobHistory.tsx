@@ -103,7 +103,7 @@ function SchedulerJobHistory({ uuid }: Props) {
                                 title="Go to details"
                                 className="!p-1"
                                 onClick={() => {
-                                    navigate(
+                                    void navigate(
                                         `../../${history.resultObjectType}/detail/${history.resultObjectIdentification?.reduce(
                                             (prev, curr) => prev + '/' + curr,
                                         )}`,

@@ -92,7 +92,7 @@ const readUint32 = (bytes: Uint8Array, offset: number): number =>
     ((bytes[offset] << 24) | (bytes[offset + 1] << 16) | (bytes[offset + 2] << 8) | bytes[offset + 3]) >>> 0;
 
 const chunkType = (bytes: Uint8Array, offset: number): string =>
-    String.fromCharCode(...bytes.subarray(offset, offset + PNG_CHUNK_TYPE_LENGTH));
+    String.fromCodePoint(...bytes.subarray(offset, offset + PNG_CHUNK_TYPE_LENGTH));
 
 /**
  * Mirrors `BrandingLogoValidator.pngDimensions`: IHDR first at its declared length, every chunk's CRC intact, image
@@ -183,7 +183,9 @@ const fatalDecoder = (encoding: string): TextDecoder | undefined => {
  */
 const decodeXml = (bytes: Uint8Array): string | undefined => {
     const [first, second] = [bytes[0], bytes[1]];
-    const bom = first === 0xff && second === 0xfe ? 'utf-16le' : first === 0xfe && second === 0xff ? 'utf-16be' : undefined;
+    let bom: 'utf-16le' | 'utf-16be' | undefined;
+    if (first === 0xff && second === 0xfe) bom = 'utf-16le';
+    else if (first === 0xfe && second === 0xff) bom = 'utf-16be';
     const declared = bom ?? DECLARED_ENCODING.exec(new TextDecoder('ascii').decode(bytes.slice(0, DECLARATION_BYTES)))?.[1];
 
     // A label nothing knows falls back to UTF-8; bytes that are wrong for a label we do know do not. Letting the
@@ -340,7 +342,7 @@ const decodeDataUri = (dataUri: string): Uint8Array | undefined => {
     }
 
     try {
-        return Uint8Array.from(atob(dataUri.slice(payloadStart)), (character) => character.charCodeAt(0));
+        return Uint8Array.from(atob(dataUri.slice(payloadStart)), (character) => character.codePointAt(0) as number);
     } catch {
         return undefined;
     }

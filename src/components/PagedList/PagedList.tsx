@@ -22,7 +22,7 @@ import Dialog from 'components/Dialog';
 import FilterWidget from 'components/FilterWidget';
 import ViewTabs, { isViewStripReady } from 'components/ViewTabs';
 import Widget from 'components/Widget';
-import type { ReactNode } from 'react';
+import type { ReactNode, RefObject } from 'react';
 import { selectors as listViewSelectors } from 'ducks/listViews';
 import type { ViewSlice } from 'types/listViews';
 import type { Resource } from 'types/openapi';
@@ -110,6 +110,30 @@ const EMPTY_ROWS: TableDataRow[] = [];
 const PROJECTION_SEPARATOR = '\u0000';
 
 const NO_COLUMNS: ColumnDefinition[] = [];
+
+/**
+ * The rows last answered for, held while the next answer is out.
+ *
+ * A listing duck empties its array as the request goes out, so without this the table blanks on
+ * every page, ordering and filter change — and a column added to a table with nothing on it would
+ * take the header down with it, closing the menu the change was made from. They are held as the
+ * answered rows rather than as built cells, so the held page rebuilds against the columns now on
+ * the table: a newly added attribute column reads empty until its values arrive, under the busy
+ * overlay that says so.
+ */
+function useHeldRows<TRow>(columnsRows: TRow[] | undefined, isFetchingList: boolean, projectedKeys: RefObject<string[]>) {
+    const wasFetchingList = useRef(false);
+    const lastAnsweredRows = useRef(columnsRows);
+    if (!isFetchingList) lastAnsweredRows.current = columnsRows;
+
+    // A request that ended with nothing projected nothing, so the cache gives its claim back — otherwise
+    // a failed listing would leave it insisting the attributes it asked for had arrived, and taking such
+    // a column away and putting it back would suppress the one request able to fetch them. Only on the
+    // way out of a fetch: a page that is simply empty needs no request when its projection shrinks.
+    if (wasFetchingList.current && !isFetchingList && (columnsRows?.length ?? 0) === 0) projectedKeys.current = [];
+    wasFetchingList.current = isFetchingList;
+    return isFetchingList && (columnsRows?.length ?? 0) === 0 ? lastAnsweredRows.current : columnsRows;
+}
 
 function PagedList<TRow extends object>({
     headers,
@@ -563,27 +587,7 @@ function PagedList<TRow extends object>({
         [isColumnDriven, appliedColumns, appliedSort, headerInfo, headers],
     );
 
-    /**
-     * The rows last answered for, held while the next answer is out.
-     *
-     * A listing duck empties its array as the request goes out, so without this the table blanks on
-     * every page, ordering and filter change — and a column added to a table with nothing on it would
-     * take the header down with it, closing the menu the change was made from. They are held as the
-     * answered rows rather than as built cells, so the held page rebuilds against the columns now on
-     * the table: a newly added attribute column reads empty until its values arrive, under the busy
-     * overlay that says so.
-     */
-    const wasFetchingList = useRef(false);
-    const lastAnsweredRows = useRef(columnsRows);
-    if (!isFetchingList) lastAnsweredRows.current = columnsRows;
-
-    // A request that ended with nothing projected nothing, so the cache gives its claim back — otherwise
-    // a failed listing would leave it insisting the attributes it asked for had arrived, and taking such
-    // a column away and putting it back would suppress the one request able to fetch them. Only on the
-    // way out of a fetch: a page that is simply empty needs no request when its projection shrinks.
-    if (wasFetchingList.current && !isFetchingList && (columnsRows?.length ?? 0) === 0) projectedKeys.current = [];
-    wasFetchingList.current = isFetchingList;
-    const heldRows = isFetchingList && (columnsRows?.length ?? 0) === 0 ? lastAnsweredRows.current : columnsRows;
+    const heldRows = useHeldRows(columnsRows, isFetchingList, projectedKeys);
 
     const columnRows = useMemo(
         () =>

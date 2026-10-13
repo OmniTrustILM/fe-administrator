@@ -99,28 +99,36 @@ export default function SuccessorRegistrationFields({ successor }: Readonly<Prop
             />
 
             <Widget title="Connector Attributes" titleSize="large" noBorder busy={successor.isFetchingAttributes}>
-                {successor.descriptors.length > 0 ? (
-                    <AttributeEditor
-                        id="register_attributes"
-                        attributeDescriptors={successor.descriptors}
-                        callbackParentUuid={successor.raProfileUuid}
-                        callbackResource={Resource.Certificates}
-                        groupAttributesCallbackAttributes={successor.callbackAttributes}
-                        setGroupAttributesCallbackAttributes={successor.setCallbackAttributes}
-                    />
-                ) : successor.schemaLoaded || successor.isFetchingAttributes ? (
-                    <span className="text-content-subtle">This RA Profile has no connector attributes.</span>
-                ) : (
-                    <Container className="flex-row items-center" gap={4}>
-                        <span className="text-sm text-danger" data-testid="registerAttributesNotLoaded">
-                            Connector attributes could not be loaded.
-                        </span>
-                        <Button variant="outline" type="button" onClick={successor.loadSchema}>
-                            Retry
-                        </Button>
-                    </Container>
-                )}
+                <ConnectorAttributes successor={successor} />
             </Widget>
         </>
+    );
+}
+
+function ConnectorAttributes({ successor }: Readonly<Props>) {
+    if (successor.descriptors.length > 0) {
+        return (
+            <AttributeEditor
+                id="register_attributes"
+                attributeDescriptors={successor.descriptors}
+                callbackParentUuid={successor.raProfileUuid}
+                callbackResource={Resource.Certificates}
+                groupAttributesCallbackAttributes={successor.callbackAttributes}
+                setGroupAttributesCallbackAttributes={successor.setCallbackAttributes}
+            />
+        );
+    }
+    if (successor.schemaLoaded || successor.isFetchingAttributes) {
+        return <span className="text-content-subtle">This RA Profile has no connector attributes.</span>;
+    }
+    return (
+        <Container className="flex-row items-center" gap={4}>
+            <span className="text-sm text-danger" data-testid="registerAttributesNotLoaded">
+                Connector attributes could not be loaded.
+            </span>
+            <Button variant="outline" type="button" onClick={successor.loadSchema}>
+                Retry
+            </Button>
+        </Container>
     );
 }

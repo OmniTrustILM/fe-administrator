@@ -41,7 +41,8 @@ function TextArea({
     dataTestId,
 }: Readonly<Props>) {
     const generatedId = useId();
-    const resolvedErrorId = errorId ?? `${id ?? `textarea-${generatedId.replaceAll(':', '')}`}-error`;
+    const errorIdPrefix = id ?? `textarea-${generatedId.replaceAll(':', '')}`;
+    const resolvedErrorId = errorId ?? `${errorIdPrefix}-error`;
     return (
         <>
             {label && (

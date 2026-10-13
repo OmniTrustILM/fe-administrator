@@ -47,7 +47,7 @@ function RolePermissionsForm() {
 
     useEffect(() => {
         if (wasUpdating.current && !isUpdatingRolePermissions) {
-            navigate(-1);
+            void navigate(-1);
         }
         wasUpdating.current = isUpdatingRolePermissions;
     }, [isUpdatingRolePermissions, navigate]);
@@ -77,7 +77,7 @@ function RolePermissionsForm() {
     }, [dispatch, id, patchPermissions, permissions]);
 
     const handleCancel = useCallback(() => {
-        navigate(-1);
+        void navigate(-1);
     }, [navigate]);
 
     return (

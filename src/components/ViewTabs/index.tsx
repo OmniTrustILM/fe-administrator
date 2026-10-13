@@ -457,7 +457,10 @@ export default function ViewTabs({
         // Handed-in filters only ever land on Standard or on the view they were left on. Put on any other
         // view, they would read as that view's unsaved changes and Save to view would write them into it.
         const returnsToView = !isDrillDown && position !== undefined && views.some((view) => view.uuid === position.viewId);
-        const initial = handedIn ? (returnsToView ? position.viewId : STANDARD_VIEW_ID) : resolveInitialViewId(views);
+        let initial: string;
+        if (!handedIn) initial = resolveInitialViewId(views);
+        else if (returnsToView) initial = position.viewId;
+        else initial = STANDARD_VIEW_ID;
         const opening =
             initial === STANDARD_VIEW_ID
                 ? toStandardSlice(standardColumns, standardSort)

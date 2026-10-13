@@ -93,6 +93,11 @@ const TRAILING_ACTION_CELL = 'sticky right-0 z-10 w-px p-2.5 border-l border-div
 // arrow and the options menu needs this much more, or those leave it no room to be read.
 const HEADER_CONTROLS_WIDTH = 100;
 
+const headerMaxWidth = (maxWidth: number | undefined, hasControls: boolean) => {
+    if (maxWidth == null) return undefined;
+    return hasControls ? maxWidth + HEADER_CONTROLS_WIDTH : maxWidth;
+};
+
 // ARIA asks for aria-sort on the sorted header only, so an unsorted column carries no attribute
 // rather than an explicit "none" — otherwise every sortable header announces a sort state at once.
 const ariaSortValue = (sort: SortDirection | undefined) => {
@@ -166,6 +171,7 @@ function CustomTable({
     // held here rather than by each caller: a table whose rows are a skeleton has nothing to select, and
     // twelve pages pass `isLoading` without disabling selection because the whole table used to vanish.
     const disableSelectionControls = callerDisablesSelection || isLoading;
+    const hasRows = paginationData ? paginationData.totalItems > 0 : (tblData?.length ?? 0) > 0;
 
     const tableSignature = useMemo(() => {
         if (paginationStateKey) {
@@ -657,7 +663,7 @@ function CustomTable({
             const isCheckboxColumn = header.id === '__checkbox__';
             const action = isCheckboxColumn ? undefined : renderHeaderAction?.(header);
             const lead = isCheckboxColumn ? undefined : renderHeaderLead?.(header);
-            const maxWidth = header.maxWidth == null ? undefined : header.maxWidth + (action || lead ? HEADER_CONTROLS_WIDTH : 0);
+            const maxWidth = headerMaxWidth(header.maxWidth, !!(action || lead));
 
             return (
                 <Fragment key={header.id}>
@@ -959,7 +965,7 @@ function CustomTable({
             {hasPagination && (
                 <div className="flex justify-between items-center gap-2 mt-6">
                     <div>
-                        {(paginationData ? paginationData.totalItems > 0 : (tblData?.length ?? 0) > 0) && (
+                        {hasRows && (
                             <Select
                                 id="pageSize"
                                 options={(paginationData?.itemsPerPageOptions || itemsPerPageOptions || DEFAULT_ITEMS_PER_PAGE_OPTIONS).map(
@@ -985,7 +991,7 @@ function CustomTable({
                         />
                     )}
 
-                    {(paginationData ? paginationData.totalItems > 0 : !!tblData?.length) && (
+                    {hasRows && (
                         <div className="text-sm">
                             {paginationData ? (
                                 <div>

@@ -91,7 +91,7 @@ const ConditionForm = ({ onCancel, onSuccess }: ConditionFormProps = {}) => {
         if (onCancel) {
             onCancel();
         } else {
-            navigate('../rules?tab=conditions');
+            void navigate('../rules?tab=conditions');
         }
     }, [navigate, onCancel]);
 

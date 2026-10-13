@@ -101,7 +101,7 @@ export default function ViewTabsWithStore({
 
     const answerUpdate = () => {
         const { listViews } = store.getState();
-        const update = listViews.dispatched.filter((each) => each.type === 'listViews/updateView').at(-1);
+        const update = listViews.dispatched.findLast((each) => each.type === 'listViews/updateView');
         const uuid = (update?.payload as { uuid?: string } | undefined)?.uuid;
         const row = listViews.byResource[resource]?.views.find((each) => each.uuid === uuid);
         if (row) store.dispatch({ type: 'listViews/updateViewSuccess', payload: { resource, view: row } });

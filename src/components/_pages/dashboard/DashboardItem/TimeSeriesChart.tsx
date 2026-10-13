@@ -73,7 +73,7 @@ function TimeSeriesChart({
         if (index < 0 || index >= isoKeys.length) return;
         const filters = onSetFilter(isoKeys[index], bucketEndIso(index));
         dispatch(filterActions.setDrillDownFilters({ entity, filters, path: destination }));
-        navigate(redirect);
+        void navigate(redirect);
     };
 
     const renderActiveDot = ({ cx, cy, index }: { cx?: number; cy?: number; index?: number }) => {

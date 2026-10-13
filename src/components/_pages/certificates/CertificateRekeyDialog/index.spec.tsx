@@ -233,9 +233,10 @@ test.describe('CertificateRekeyDialog — Register switch', () => {
         await mount(<CertificateRekeyDialogTestWrapper />);
         await switchToRegister(page);
 
-        await expect
-            .poll(async () => (await dispatched(page)).find((action) => action.type === 'certificates/getRegisterAttributes')?.payload)
-            .toEqual({ raProfileUuid: 'ra-profile-uuid', authorityUuid: 'authority-uuid' });
+        const registerAttributesRequest = async () =>
+            (await dispatched(page)).find((action) => action.type === 'certificates/getRegisterAttributes')?.payload;
+        await expect.poll(registerAttributesRequest).toEqual({ raProfileUuid: 'ra-profile-uuid', authorityUuid: 'authority-uuid' });
+        expect(await registerAttributesRequest()).toEqual({ raProfileUuid: 'ra-profile-uuid', authorityUuid: 'authority-uuid' });
     });
 
     test('an Active source requires a challenge for the successor and sends it', async ({ mount, page }) => {
@@ -355,12 +356,10 @@ test.describe('CertificateRekeyDialog — Register switch', () => {
         await switchToRegister(page);
         await switchToRegister(page);
 
-        await expect
-            .poll(
-                async () =>
-                    (await dispatched(page)).filter((a) => a.type === 'cryptographicKeys/listCryptographicKeyPairs').at(-1)?.payload,
-            )
-            .toEqual({ tokenProfileUuid: 'current-token-profile-uuid', store: 'normal' });
+        const lastKeyPairsRequest = async () =>
+            (await dispatched(page)).findLast((a) => a.type === 'cryptographicKeys/listCryptographicKeyPairs')?.payload;
+        await expect.poll(lastKeyPairsRequest).toEqual({ tokenProfileUuid: 'current-token-profile-uuid', store: 'normal' });
+        expect(await lastKeyPairsRequest()).toEqual({ tokenProfileUuid: 'current-token-profile-uuid', store: 'normal' });
     });
 
     test('switching back to rekey clears the registration error and restores the key source', async ({ mount, page }) => {

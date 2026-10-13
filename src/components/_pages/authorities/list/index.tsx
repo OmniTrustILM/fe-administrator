@@ -49,7 +49,7 @@ function AuthorityList() {
     }, [bulkDeleteErrorMessages]);
 
     const onAddClick = useCallback(() => {
-        navigate('./add');
+        void navigate('./add');
     }, [navigate]);
 
     const setCheckedRows = useCallback(

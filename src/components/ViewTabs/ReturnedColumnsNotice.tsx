@@ -33,12 +33,9 @@ export default function ReturnedColumnsNotice({ returned, unfiltered = [], onSho
         names.length === 1
             ? 'may be a different attribute with the same name and content type'
             : 'may be different attributes with the same names and content types';
-    const withheld =
-        unfiltered.length === 0
-            ? `showing ${pronoun}`
-            : unfiltered.length === returned.length
-              ? `showing or filtering by ${pronoun}`
-              : `showing ${pronoun}, and is not filtering by ${list(unfiltered.map(getColumnHeading))}`;
+    let withheld = `showing ${pronoun}, and is not filtering by ${list(unfiltered.map(getColumnHeading))}`;
+    if (unfiltered.length === 0) withheld = `showing ${pronoun}`;
+    else if (unfiltered.length === returned.length) withheld = `showing or filtering by ${pronoun}`;
     const message = `${subject} available again, but ${identity}, so this view is not ${withheld}.`;
 
     return (

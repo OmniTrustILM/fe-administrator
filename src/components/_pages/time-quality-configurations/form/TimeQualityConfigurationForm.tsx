@@ -186,7 +186,7 @@ export const TimeQualityConfigurationForm = () => {
     );
 
     const onCancel = useCallback(() => {
-        navigate(-1);
+        void navigate(-1);
     }, [navigate]);
 
     return (

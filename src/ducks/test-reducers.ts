@@ -5,6 +5,7 @@ import type { NameAndUuidModel } from 'types/locations';
 import type { RoleDetailModel, SubjectPermissionsModel } from 'types/roles';
 import type { ConnectInfoDto, ListViewDto } from 'types/openapi';
 import type { EventTriggerAssociationModel, TriggerModel } from 'types/rules';
+import { toRoutePath } from 'utils/route-path';
 
 // IMPORTANT: This file is used ONLY in component tests (Playwright CT).
 // It must NOT import the real duck modules
@@ -246,8 +247,8 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
         return update(payload.entity, (filter) => ({
             ...filter,
             leftList: {
-                path: (payload.path ?? '').replace(/(.)\/+$/, '$1'),
-                scope: (payload.scope ?? '').replace(/(.)\/+$/, '$1'),
+                path: toRoutePath(payload.path ?? ''),
+                scope: toRoutePath(payload.scope ?? ''),
                 filters: filter.currentFilters,
                 position: filter.viewPosition,
                 sort: payload.sort,
@@ -257,7 +258,7 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
         }));
     }
     if (a.type === 'filters/routeChanged') {
-        const pathname = (a.payload as unknown as { pathname: string }).pathname.replace(/(.)\/+$/, '$1');
+        const pathname = toRoutePath((a.payload as unknown as { pathname: string }).pathname);
         return {
             filters: state.filters.map((current) => {
                 const handedIn = current.filter.handedIn;
@@ -276,11 +277,7 @@ function filtersTestReducer(state: FiltersTestState = filtersTestInitialState, a
     if (a.type === 'filters/returnToList') {
         return update(payload.entity, (filter) => {
             const left = filter.leftList;
-            if (
-                !left?.hasGoneAway ||
-                left.path !== (payload.path ?? '').replace(/(.)\/+$/, '$1') ||
-                filter.handedIn?.source === 'drill-down'
-            )
+            if (!left?.hasGoneAway || left.path !== toRoutePath(payload.path ?? '') || filter.handedIn?.source === 'drill-down')
                 return { ...filter, leftList: undefined };
             return {
                 ...filter,

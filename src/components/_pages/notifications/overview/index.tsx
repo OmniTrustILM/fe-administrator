@@ -46,7 +46,7 @@ function NotificationsOverview() {
                                               color="secondary"
                                               className="!rounded-full !p-0.5 relative top-[1px]"
                                               onClick={() => {
-                                                  navigate(targetPath);
+                                                  void navigate(targetPath);
                                                   setOpen(false);
                                               }}
                                           >

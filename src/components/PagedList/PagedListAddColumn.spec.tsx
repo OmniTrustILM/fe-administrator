@@ -104,13 +104,13 @@ test.describe('PagedList · add column menu', () => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
 
         await expect.poll(() => headings(page)).toHaveLength(2);
-        await expect
-            .poll(async () => {
-                const headerCells = await page.locator('thead th').count();
-                const bodyCells = await page.locator('tbody tr').first().locator('td').count();
-                return { headerCells, bodyCells };
-            })
-            .toEqual({ headerCells: 4, bodyCells: 4 });
+        const cellCounts = async () => {
+            const headerCells = await page.locator('thead th').count();
+            const bodyCells = await page.locator('tbody tr').first().locator('td').count();
+            return { headerCells, bodyCells };
+        };
+        await expect.poll(cellCounts).toEqual({ headerCells: 4, bodyCells: 4 });
+        expect(await cellCounts()).toEqual({ headerCells: 4, bodyCells: 4 });
     });
 
     test('offers only the property columns the page can render', async ({ mount, page }) => {

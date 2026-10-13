@@ -46,7 +46,7 @@ export const TimeQualityConfigurationDetail = () => {
 
     const onEditClick = useCallback(() => {
         if (!timeQualityConfiguration) return;
-        navigate(`../${Resource.TimeQualityConfigurations.toLowerCase()}/edit/${timeQualityConfiguration.uuid}`);
+        void navigate(`../${Resource.TimeQualityConfigurations.toLowerCase()}/edit/${timeQualityConfiguration.uuid}`);
     }, [timeQualityConfiguration, navigate]);
 
     const onDeleteConfirmed = useCallback(() => {
