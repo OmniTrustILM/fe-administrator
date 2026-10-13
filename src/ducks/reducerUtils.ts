@@ -13,5 +13,5 @@ export function resetSliceState<S extends object>(state: Draft<S>, initialState:
             (state as Record<string, unknown>)[key] = undefined;
         }
     }
-    Object.assign(state, initialState);
+    Object.assign(state as Record<string, unknown>, initialState);
 }

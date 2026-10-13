@@ -107,7 +107,7 @@ function LocationPushForm({
         if (previousIsPushingRef.current !== isPushing) {
             previousIsPushingRef.current = isPushing;
             if (locationAttributeDescriptors) {
-                trigger();
+                void trigger();
             }
         }
     }, [isPushing, locationAttributeDescriptors, trigger]);

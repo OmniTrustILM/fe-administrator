@@ -68,6 +68,7 @@ test.describe('AddColumnMenu', () => {
         await page.getByTestId('add-column-menu-field-custom:costCentre|STRING').check();
 
         await expect.poll(() => appliedColumns(page)).toEqual(['custom:costCentre|STRING', 'property:COMMON_NAME', 'property:NOT_AFTER']);
+        expect(await appliedColumns(page)).toEqual(['custom:costCentre|STRING', 'property:COMMON_NAME', 'property:NOT_AFTER']);
     });
 
     test('stays open across a toggle, so several fields can be checked in one visit', async ({ mount, page }) => {
@@ -209,6 +210,7 @@ test.describe('AddColumnMenu', () => {
         await page.getByTestId('add-column-menu-field-property:NOT_AFTER').uncheck();
 
         await expect.poll(() => appliedColumns(page)).toEqual(['property:COMMON_NAME']);
+        expect(await appliedColumns(page)).toEqual(['property:COMMON_NAME']);
     });
 
     test('will not let the last remaining column be unchecked', async ({ mount, page }) => {
@@ -288,6 +290,7 @@ test.describe('AddColumnMenu', () => {
         await page.keyboard.press('Space');
 
         await expect.poll(() => appliedColumns(page)).toContain('custom:costCentre|STRING');
+        expect(await appliedColumns(page)).toContain('custom:costCentre|STRING');
     });
 
     test('names the locked checkbox with the reason it cannot be unchecked', async ({ mount, page }) => {
@@ -327,6 +330,7 @@ test.describe('AddColumnMenu', () => {
         await page.getByTestId('add-column-menu-field-custom:costCentre|STRING').click();
 
         await expect.poll(() => appliedColumns(page)).toEqual(['property:COMMON_NAME']);
+        expect(await appliedColumns(page)).toEqual(['property:COMMON_NAME']);
     });
 
     test('shows the reason the last checkbox is locked where a sighted keyboard user can read it', async ({ mount, page }) => {

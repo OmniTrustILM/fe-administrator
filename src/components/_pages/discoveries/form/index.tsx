@@ -180,6 +180,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
         control,
         name: 'interfaceUuid',
     });
+    const watchedProviderTarget = isV2Provider ? watchedInterfaceUuid : watchedStoreKind;
 
     const watchedResources = useWatch({
         control,
@@ -723,7 +724,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
                                     title: 'Connector Attributes',
                                     content:
                                         discoveryProvider &&
-                                        (isV2Provider ? watchedInterfaceUuid : watchedStoreKind) &&
+                                        watchedProviderTarget &&
                                         discoveryProviderAttributeDescriptors &&
                                         discoveryProviderAttributeDescriptors.length > 0 ? (
                                             <AttributeEditor

@@ -140,7 +140,7 @@ export default function SigningProfileDetail() {
 
     const onEditClick = useCallback(() => {
         if (!signingProfile) return;
-        navigate(`../../${Resource.SigningProfiles.toLowerCase()}/edit/${signingProfile.uuid}`);
+        void navigate(`../../${Resource.SigningProfiles.toLowerCase()}/edit/${signingProfile.uuid}`);
     }, [signingProfile, navigate]);
 
     const onEnableClick = useCallback(() => {

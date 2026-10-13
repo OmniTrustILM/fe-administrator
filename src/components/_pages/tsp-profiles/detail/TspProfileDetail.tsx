@@ -71,7 +71,7 @@ export const TspProfileDetail = () => {
 
     const onEditClick = useCallback(() => {
         if (!tspProfile) return;
-        navigate(`../${Resource.TspProfiles.toLowerCase()}/edit/${tspProfile.uuid}`);
+        void navigate(`../${Resource.TspProfiles.toLowerCase()}/edit/${tspProfile.uuid}`);
     }, [tspProfile, navigate]);
 
     const onEnableClick = useCallback(() => {

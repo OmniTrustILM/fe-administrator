@@ -172,12 +172,12 @@ function LogoSlot({ id, label, value, fileName, ratio, error, onSelect, onDelete
 
             {/*
                 Mounted empty rather than conditionally: a polite region inserted together with its text is not
-                announced. `empty:sr-only` takes the empty paragraph out of the flex flow so it draws no gap; `hidden`
+                announced. `empty:sr-only` takes the empty region out of the flex flow so it draws no gap; `hidden`
                 would drop the region from the accessible tree and bring the silence back.
             */}
-            <p id={ratioNoteId} className="text-xs text-warning empty:sr-only" role="status" data-testid={`logo-ratio-note-${id}`}>
+            <output id={ratioNoteId} className="block text-xs text-warning empty:sr-only" data-testid={`logo-ratio-note-${id}`}>
                 {hasUnusualRatio && RATIO_NOTE}
-            </p>
+            </output>
         </div>
     );
 }

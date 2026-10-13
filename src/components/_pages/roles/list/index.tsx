@@ -77,7 +77,7 @@ export default function RolesList() {
 
     const onEditRolePermissionsClick = useCallback(() => {
         if (checkedRows.length !== 1) return;
-        navigate(`./permissions/${checkedRows[0]}`);
+        void navigate(`./permissions/${checkedRows[0]}`);
     }, [checkedRows, navigate]);
 
     const onDeleteConfirmed = useCallback(() => {

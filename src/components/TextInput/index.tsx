@@ -54,7 +54,8 @@ function TextInput({
 }: Readonly<Props>) {
     const inputRef = useRef<HTMLInputElement>(null);
     const generatedId = useId();
-    const errorId = `${id ?? `text-input-${generatedId.replaceAll(':', '')}`}-error`;
+    const errorIdPrefix = id ?? `text-input-${generatedId.replaceAll(':', '')}`;
+    const errorId = `${errorIdPrefix}-error`;
     // The error paragraph is always announced; a caller's own describing element (help text) comes along with it.
     // DatePicker and TextArea compose the same way themselves, so they get the raw ids and no repeated token.
     const describedBy = joinAriaIds(ariaDescribedBy, error ? errorId : undefined);

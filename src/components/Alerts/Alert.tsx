@@ -85,7 +85,7 @@ function Alert({ alert, autoDismissMs = AUTO_DISMISS_MS }: Readonly<Props>) {
 
         let disposed = false;
         window.addEventListener('resize', measureOverflow);
-        document.fonts?.ready.then(() => {
+        void document.fonts?.ready.then(() => {
             if (!disposed) measureOverflow();
         });
         return () => {

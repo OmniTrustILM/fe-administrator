@@ -49,7 +49,7 @@ export default function PreauthorizedIdentifiersFields({ disabled }: Props) {
     );
 
     const revalidateMode = () => {
-        trigger('identifierAuthorizationMode');
+        void trigger('identifierAuthorizationMode');
     };
 
     return (

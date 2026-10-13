@@ -183,7 +183,7 @@ function DonutChart({
                                                 path: destination,
                                             }),
                                         );
-                                        navigate(redirect);
+                                        void navigate(redirect);
                                     }}
                                 >
                                     <div

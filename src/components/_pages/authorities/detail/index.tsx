@@ -50,7 +50,7 @@ export default function AuthorityDetail() {
 
     const onEditClick = useCallback(() => {
         if (!authority) return;
-        navigate(`/authorities/edit/${authority.uuid}`);
+        void navigate(`/authorities/edit/${authority.uuid}`);
     }, [authority, navigate]);
 
     const onDeleteConfirmed = useCallback(() => {

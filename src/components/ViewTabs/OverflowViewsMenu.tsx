@@ -70,9 +70,9 @@ export default function OverflowViewsMenu({ tabs, viewCount, onSelect, actionsFo
                                         </DropdownMenu.SubTrigger>
                                         <DropdownMenu.Portal>
                                             <DropdownMenu.SubContent className={contentClassName} sideOffset={4}>
-                                                {actions.map((action) => (
+                                                {actions.map((action, index) => (
                                                     <DropdownMenu.Item
-                                                        key={String(action.title)}
+                                                        key={typeof action.title === 'string' ? action.title : `view-action-${index}`}
                                                         className={itemClassName}
                                                         onSelect={() => action.onClick()}
                                                     >

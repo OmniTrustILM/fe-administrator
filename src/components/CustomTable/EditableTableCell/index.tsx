@@ -95,7 +95,7 @@ const EditableTableCellInner = <TValue,>({
                                 onKeyDown={(e: React.KeyboardEvent<HTMLInputElement>) => {
                                     if (e.key === 'Enter') {
                                         e.preventDefault();
-                                        handleSubmit(onSubmit)();
+                                        void handleSubmit(onSubmit)();
                                     }
                                 }}
                             />

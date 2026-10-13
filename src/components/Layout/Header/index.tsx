@@ -75,7 +75,7 @@ function Header({ sidebarToggle }: Readonly<Props>) {
                             {
                                 title: 'Profile',
                                 onClick: () => {
-                                    navigate('/userprofile');
+                                    void navigate('/userprofile');
                                 },
                             },
                             {

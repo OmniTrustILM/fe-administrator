@@ -4,6 +4,7 @@ import type { Observable } from 'rxjs';
 import type { ApiClients } from '../api';
 import type { AppState } from 'ducks';
 import type { SearchFieldListModel, SearchFilterModel } from 'types/certificate';
+import { toRoutePath } from 'utils/route-path';
 import type { ColumnSort } from 'utils/tableColumns';
 
 export enum EntityType {
@@ -72,9 +73,6 @@ type LeftList = {
     /** Whether a route other than the list's own has been visited since; a remount in place has not. */
     hasGoneAway: boolean;
 };
-
-// React Router matches `/secrets/` and `/secrets` alike, so a record must compare them alike too.
-const toRoutePath = (path: string) => path.replace(/(.)\/+$/, '$1');
 
 const isInScope = (pathname: string, scope: string) => pathname === scope || pathname.startsWith(`${scope}/`);
 

@@ -152,9 +152,9 @@ const COLOR_UTILITY_PREFIXES = [
  */
 const BRANDED_UTILITY = (() => {
     const tokens = BRAND_TOKEN_RULES.map(({ token }) => token).join('|');
-    const value = `(?:${tokens})|\\(--(?:${tokens})\\)|\\[var\\(--(?:${tokens})\\)\\]`;
+    const value = String.raw`(?:${tokens})|\(--(?:${tokens})\)|\[var\(--(?:${tokens})\)\]`;
 
-    return new RegExp(`(^|:)!?(${COLOR_UTILITY_PREFIXES.join('|')})(-(x|y|s|e|t|r|b|l))?-(${value})(\\/|$)`);
+    return new RegExp(String.raw`(^|:)!?(${COLOR_UTILITY_PREFIXES.join('|')})(-(x|y|s|e|t|r|b|l))?-(${value})(\/|$)`);
 })();
 
 export const isBrandedUtility = (utility: string): boolean => BRANDED_UTILITY.test(utility);

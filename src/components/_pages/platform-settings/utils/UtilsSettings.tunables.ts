@@ -73,7 +73,7 @@ export const parseOptionalInteger = (value?: string): number | undefined =>
     value === undefined || value === '' ? undefined : Number.parseInt(value, 10);
 
 /** What the read view shows: the value with its unit, or the platform default while nothing is set. */
-export const describeTunable = (tunable: CbomSyncTunable, value: number | undefined): string =>
-    value == null
-        ? `platform default (${tunable.defaultValue} ${tunable.unit})`
-        : `${value} ${value === 1 ? tunable.unitOne : tunable.unit}`;
+export const describeTunable = (tunable: CbomSyncTunable, value: number | undefined): string => {
+    if (value == null) return `platform default (${tunable.defaultValue} ${tunable.unit})`;
+    return `${value} ${value === 1 ? tunable.unitOne : tunable.unit}`;
+};

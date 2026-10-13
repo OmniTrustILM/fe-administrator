@@ -150,7 +150,7 @@ export default function ApprovalDetails() {
                                       title="Go to details"
                                       className="!p-1 ml-1"
                                       onClick={() => {
-                                          navigate(`../../${approvalDetails.resource}/detail/${approvalDetails.objectUuid}`);
+                                          void navigate(`../../${approvalDetails.resource}/detail/${approvalDetails.objectUuid}`);
                                       }}
                                   >
                                       <ArrowRightCircle size={16} />

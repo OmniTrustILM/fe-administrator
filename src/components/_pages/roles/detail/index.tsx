@@ -88,7 +88,7 @@ export default function UserDetail() {
     }, [getFreshDetails]);
 
     const onEditRolePermissionsClick = useCallback(() => {
-        navigate(`../../roles/permissions/${role?.uuid}`);
+        void navigate(`../../roles/permissions/${role?.uuid}`);
     }, [navigate, role?.uuid]);
 
     const onDeleteConfirmed = useCallback(() => {

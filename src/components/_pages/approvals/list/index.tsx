@@ -186,7 +186,7 @@ export default function ApprovalsList() {
                         title="Go to details"
                         className="!p-1"
                         onClick={() => {
-                            navigate(`../../${approval.resource}/detail/${approval.objectUuid}`);
+                            void navigate(`../../${approval.resource}/detail/${approval.objectUuid}`);
                         }}
                     >
                         <ArrowRight size={16} strokeWidth={1.5} />
