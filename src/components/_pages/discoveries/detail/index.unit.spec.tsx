@@ -145,8 +145,8 @@ function buildState(discovery: any, allowedActions: ResourceAction[] = allDiscov
             platformEnums: {
                 [PlatformEnum.Resource]: {
                     [Resource.Discoveries]: { label: 'Discoveries' },
-                    [Resource.Certificates]: { label: 'Certificates' },
-                    [Resource.Keys]: { label: 'Keys' },
+                    [Resource.Certificates]: { label: 'Certificate' },
+                    [Resource.Keys]: { label: 'Key' },
                 },
                 [PlatformEnum.TriggerType]: {},
                 [PlatformEnum.ResourceEvent]: {},
@@ -222,14 +222,14 @@ describe('DiscoveryDetail', () => {
         it('says which resources the run targeted', async () => {
             await render(buildState(v2Run));
 
-            expect(rowText('resources')).toBe('ResourcesCertificatesKeys');
+            expect(rowText('resources')).toBe('ResourcesCertificateKey');
         });
 
         it('names certificates for a v1 run, which can target nothing else', async () => {
             // Core synthesizes the list for a v1 run, so the row is never blank and never says "unknown".
             await render(buildState(v1Run));
 
-            expect(rowText('resources')).toBe('ResourcesCertificates');
+            expect(rowText('resources')).toBe('ResourcesCertificate');
         });
     });
 
@@ -453,7 +453,7 @@ describe('DiscoveryDetail', () => {
                 expect(bar?.getAttribute('aria-valuenow')).toBe('3700');
                 expect(bar?.getAttribute('aria-valuemax')).toBe('12000');
                 expect(container.querySelector('[data-testid="targets-caption"]')?.textContent).toBe('3,700 / ~12,000 certificates');
-                expect(rowText('certificates')).toBe('Certificates3700~12000—');
+                expect(rowText('certificates')).toBe('Certificate3700~12000—');
             });
 
             it('says how many items it found when it has no estimate, and fills the bar only once it is done', async () => {
@@ -485,8 +485,8 @@ describe('DiscoveryDetail', () => {
                 const bar = container.querySelector('[data-testid="provider-progress-bar"] [role="progressbar"]');
                 expect(bar?.getAttribute('data-indeterminate')).toBe('true');
                 expect(container.querySelector('[data-testid="targets-caption"]')?.textContent).toBe('No target count reported');
-                expect(rowText('certificates')).toBe('Certificates3700~12000—');
-                expect(rowText('keys')).toBe('Keys4——');
+                expect(rowText('certificates')).toBe('Certificate3700~12000—');
+                expect(rowText('keys')).toBe('Key4——');
             });
         });
 
@@ -526,8 +526,8 @@ describe('DiscoveryDetail', () => {
         it('lists the per-resource breakdown by resource label', async () => {
             await render(buildState(v2Run));
 
-            expect(rowText('certificates')).toBe('Certificates48~120collecting');
-            expect(rowText('keys')).toBe('Keys4——');
+            expect(rowText('certificates')).toBe('Certificate48~120collecting');
+            expect(rowText('keys')).toBe('Key4——');
         });
     });
 

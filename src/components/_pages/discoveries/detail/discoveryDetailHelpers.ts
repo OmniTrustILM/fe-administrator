@@ -132,12 +132,18 @@ function itemsProgress(progress: DiscoveryProgressDto): [string, DiscoveryResour
     return counters.produced === undefined && counters.totalEstimate === undefined ? undefined : entries[0];
 }
 
-function itemsBar({ produced = 0, totalEstimate }: DiscoveryResourceProgressDto, noun: string): ProviderBar {
+/** The platform serves a resource's label in the singular ("Certificate"), so the plural is made from it. */
+const itemNoun = (singular: string, count: number) => (count === 1 ? singular : `${singular}s`);
+
+function itemsBar({ produced = 0, totalEstimate }: DiscoveryResourceProgressDto, singular: string): ProviderBar {
     const found = produced.toLocaleString('en-US');
     return {
         value: produced,
         max: totalEstimate,
-        caption: totalEstimate === undefined ? `${found} ${noun} found` : `${found} / ~${totalEstimate.toLocaleString('en-US')} ${noun}`,
+        caption:
+            totalEstimate === undefined
+                ? `${found} ${itemNoun(singular, produced)} found`
+                : `${found} / ~${totalEstimate.toLocaleString('en-US')} ${itemNoun(singular, totalEstimate)}`,
     };
 }
 

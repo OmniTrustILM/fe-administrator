@@ -155,7 +155,8 @@ describe('targetsCaption', () => {
 });
 
 describe('providerBar', () => {
-    const label = (resource: string) => ({ certificates: 'Certificates', keys: 'Keys' })[resource] ?? resource;
+    // Singular, as the platform serves resource labels.
+    const label = (resource: string) => ({ certificates: 'Certificate', keys: 'Key' })[resource] ?? resource;
     const full = { value: 1, max: 1 };
 
     it('measures targets against the total the Provider sent, running or done', () => {
@@ -190,6 +191,11 @@ describe('providerBar', () => {
 
         expect(providerBar(progress, false, label)).toEqual({ value: 1180, max: undefined, caption: '1,180 certificates found' });
         expect(providerBar(progress, true, label)).toEqual({ ...full, caption: '1,180 certificates found' });
+    });
+
+    it('names one item in the singular', () => {
+        expect(providerBar({ byResource: { keys: { produced: 1 } } }, false, label).caption).toBe('1 key found');
+        expect(providerBar({ byResource: { keys: { produced: 0, totalEstimate: 1 } } }, false, label).caption).toBe('0 / ~1 key');
     });
 
     it('prefers targets whenever the Provider counts them, whatever it reports per resource', () => {
