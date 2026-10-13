@@ -20,7 +20,7 @@ import type { DiscoveryResourceProgressDto } from './';
  */
 export interface DiscoveryProgressDto {
     /**
-     * How many targets the provider has attempted so far, including ones that failed. A target is one unit of the provider\'s work — one address and port, one inventory entry, one keystore alias — and can yield many items or none. Omitted if the provider cannot count its work.
+     * How many targets the provider has attempted so far, whatever came of them. A target is one unit of the provider\'s work that a person would recognise — an address and port, a CA, a CA and certificate template, a secrets mount, a report — and can yield many items or none. Omitted if the provider cannot count its work. A provider whose unit of work would only be a page of search results leaves all target counters out and reports byResource and phase instead.
      * @type {number}
      * @memberof DiscoveryProgressDto
      */
@@ -32,11 +32,17 @@ export interface DiscoveryProgressDto {
      */
     targetsTotal?: number;
     /**
-     * How many targets could not be examined — an unreachable host, a refused connection, a target that answered nothing usable. Included in targetsProcessed, not added to it, so a mostly dark range still reaches its total. Failures here do not make the discovery itself fail.
+     * How many targets the provider expected to read and could not — access refused, the source unreachable, an answer it could not read. Included in targetsProcessed, not added to it, and never counted in targetsEmpty too. Failed targets do not make the discovery itself fail, but part of what it was asked to examine went unexamined, and the platform reports that.
      * @type {number}
      * @memberof DiscoveryProgressDto
      */
     targetsFailed?: number;
+    /**
+     * How many targets were attempted and held nothing to discover — an address with nothing listening, a CA or template with no certificates, an empty mount or report. Included in targetsProcessed, not added to it, and never counted in targetsFailed too: a target the provider had to try to learn it was empty is a normal outcome, not a failure. Omitted if the provider does not tell empty targets apart.
+     * @type {number}
+     * @memberof DiscoveryProgressDto
+     */
+    targetsEmpty?: number;
     /**
      * Free-text label for what the provider is doing (e.g. \"scanning\", \"enumerating\"); omitted if it has none
      * @type {string}
