@@ -14,49 +14,49 @@
 import type { DiscoveryResourceProgressDto } from './';
 
 /**
- * How far a discovery has got: how much of the provider\'s work is done, and optionally how many items it has found per resource type.
+ * How far a discovery has got: the provider\'s work done so far, and optionally the items found per resource type.
  * @export
  * @interface DiscoveryProgressDto
  */
 export interface DiscoveryProgressDto {
     /**
-     * How many targets the provider has attempted so far, whatever came of them. A target is one unit of the provider\'s work that a person would recognise — an address and port, a CA, a CA and certificate template, a secrets mount, a report — and can yield many items or none. Omitted if the provider cannot count its work. A provider whose unit of work would only be a page of search results leaves all target counters out and reports byResource and phase instead.
+     * Targets attempted so far, whatever their outcome. A target is a unit of work a person would recognise, such as an address and port, a CA, a CA and template, a mount or a report. Omitted if the provider cannot count its work. A provider whose unit would only be a page of search results omits all target counters and reports byResource instead.
      * @type {number}
      * @memberof DiscoveryProgressDto
      */
     targetsProcessed?: number;
     /**
-     * How many targets this discovery will attempt in total — exact if the provider knows, an estimate otherwise, and it may change as the run goes on. Use it with targetsProcessed to show progress. Omitted when the provider cannot know the total; there is then no percentage to show, and clients must not guess one.
+     * Targets the discovery will attempt in total: exact, or an estimate that may change. Omitted when unknown, and a client must then not guess a percentage.
      * @type {number}
      * @memberof DiscoveryProgressDto
      */
     targetsTotal?: number;
     /**
-     * How many targets the provider expected to read and could not — access refused, the source unreachable, an answer it could not read. Included in targetsProcessed, not added to it, and never counted in targetsEmpty too. Failed targets do not make the discovery itself fail, but part of what it was asked to examine went unexamined, and the platform reports that.
+     * Targets the provider expected to read and could not, such as access refused, the source unreachable or an unreadable answer. Part of targetsProcessed, never also counted as empty. The discovery does not fail for them, but ends with a warning.
      * @type {number}
      * @memberof DiscoveryProgressDto
      */
     targetsFailed?: number;
     /**
-     * How many targets were attempted and held nothing to discover — an address with nothing listening, a CA or template with no certificates, an empty mount or report. Included in targetsProcessed, not added to it, and never counted in targetsFailed too: a target the provider had to try to learn it was empty is a normal outcome, not a failure. Omitted if the provider does not tell empty targets apart.
+     * Targets attempted that held nothing to discover, such as an address with nothing listening or an empty mount, template or report. Part of targetsProcessed, never also counted as failed: an empty target is a normal outcome. Omitted if the provider does not tell empty targets apart.
      * @type {number}
      * @memberof DiscoveryProgressDto
      */
     targetsEmpty?: number;
     /**
-     * Free-text label for what the provider is doing (e.g. \"scanning\", \"enumerating\"); omitted if it has none
+     * What the provider is doing, as free text (e.g. \"scanning\"). Omitted if it has none.
      * @type {string}
      * @memberof DiscoveryProgressDto
      */
     phase?: string;
     /**
-     * How many items were found, broken down by resource type. Present only if the provider reports the breakdown.
+     * Items found per resource type. Present only if the provider reports the breakdown.
      * @type {{ [key: string]: DiscoveryResourceProgressDto; }}
      * @memberof DiscoveryProgressDto
      */
     byResource?: { [key: string]: DiscoveryResourceProgressDto };
     /**
-     * When the platform recorded this report. A discovery is polled on a backoff that settles at several minutes, so counters can be older than the response carrying them; this says how much older. Set by the platform — a value sent by a Discovery Provider is ignored.
+     * When the platform recorded this report. Polling backs off to several minutes, so the counters can be older than the response carrying them. Set by the platform; a value sent by the provider is ignored.
      * @type {string}
      * @memberof DiscoveryProgressDto
      */
