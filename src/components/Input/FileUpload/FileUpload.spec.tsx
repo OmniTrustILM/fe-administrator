@@ -92,6 +92,15 @@ test.describe('FileUpload', () => {
         expect(calls.at(-1)).toBe(btoa('hello'));
     });
 
+    test('keeps pasted text outside Latin-1 and reports it base64-encoded as UTF-8', async ({ mount }) => {
+        const { component, calls } = await mountEditableFileUpload(mount);
+        const textarea = component.locator('textarea');
+        const text = '{"name": "Příklad Пример 🔐"}';
+        await textarea.fill(text);
+        await expect(textarea).toHaveValue(text);
+        expect(calls.at(-1)).toBe(base64(text));
+    });
+
     test('should also call onFileContentLoaded on blur (regression guard for existing flow)', async ({ mount }) => {
         const { component, calls } = await mountEditableFileUpload(mount);
         const textarea = component.locator('textarea');
