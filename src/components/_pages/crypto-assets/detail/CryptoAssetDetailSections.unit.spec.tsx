@@ -102,6 +102,7 @@ const detail = (overrides: Partial<CryptographicAssetDetailDto> = {}): Cryptogra
     sourceCbomCount: 2,
     occurrenceCount: 1321,
     quarantined: false,
+    customAttributes: [],
     verdict: {
         ruleId: 'CLASSICAL-SHOR',
         reason: 'Security rests on factorisation or a discrete logarithm',
