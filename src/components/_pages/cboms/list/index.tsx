@@ -158,6 +158,7 @@ function CbomsList() {
 
     const isUploading = useSelector(selectors.selectIsUploading);
     const isUploadSuccess = useSelector(selectors.selectIsUploadSuccess);
+    const uploadedCbomUuid = useSelector(selectors.selectUploadedCbomUuid);
     const syncSucceeded = useSelector(selectors.selectSyncSucceeded);
 
     // Back to an unfiltered first page, so the CBOM the upload produced is on it. The refresh goes
@@ -175,7 +176,7 @@ function CbomsList() {
 
     useRunOnSuccessfulFinish(isUploading, isUploadSuccess, () => {
         setIsUploadOpen(false);
-        setHighlightedCbomUuid(cboms[0]?.uuid);
+        setHighlightedCbomUuid(uploadedCbomUuid);
         refreshFromFirstPage();
     });
 

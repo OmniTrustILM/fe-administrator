@@ -87,4 +87,43 @@ describe('CBOM list upload', () => {
         expect(document.body.querySelector('textarea')).toBeNull();
         expect(dispatch).toHaveBeenCalledWith(pagingActions.resetPaging({ entity: EntityType.CBOM }));
     });
+
+    test('highlights the CBOM Core stored without its custom attributes, not the first row', async () => {
+        const { store } = await openUploadWithDocument();
+        const row = (uuid: string) => ({
+            uuid,
+            serialNumber: `urn:uuid:${uuid}`,
+            version: 1,
+            specVersion: '1.6',
+            createdAt: '2026-10-14T00:00:00Z',
+            timestamp: '2026-10-14T00:00:00Z',
+            source: 'CBOM-Lens',
+            algorithms: 0,
+            certificates: 0,
+            protocols: 0,
+            cryptoMaterial: 0,
+            totalAssets: 0,
+        });
+        const listed = (...uuids: string[]) =>
+            cbomActions.listCbomsSuccess({
+                data: { items: uuids.map(row), totalItems: uuids.length, pageNumber: 1, itemsPerPage: 10, totalPages: 1 },
+            });
+        await act(async () => {
+            store.dispatch(listed('older-1'));
+        });
+
+        await act(async () => {
+            store.dispatch(cbomActions.uploadCbom({ content: cbom, customAttributes: [] }));
+        });
+        await act(async () => {
+            store.dispatch(cbomActions.uploadCbomStoredWithoutAttributes({ error: 'attributes refused', uuid: 'stored-1' }));
+        });
+        // The list reads the CBOMs again after the upload; the stored CBOM is among them now.
+        await act(async () => {
+            store.dispatch(listed('older-1', 'stored-1'));
+        });
+
+        expect(document.body.querySelector('tr[data-id="stored-1"]')?.className).toContain('bg-success-surface');
+        expect(document.body.querySelector('tr[data-id="older-1"]')?.className).not.toContain('bg-success-surface');
+    });
 });

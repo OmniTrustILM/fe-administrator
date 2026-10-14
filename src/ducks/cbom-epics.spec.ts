@@ -358,7 +358,10 @@ describe('cbom epics', () => {
         const emitted = await firstValueFrom(output$.pipe(toArray()));
 
         const shown = `Failed to store the custom attributes of the uploaded CBOM (422): ${message}`;
-        expect(emitted).toEqual([slice.actions.uploadCbomStoredWithoutAttributes({ error: shown }), alertsSlice.actions.error(shown)]);
+        expect(emitted).toEqual([
+            slice.actions.uploadCbomStoredWithoutAttributes({ error: shown, uuid: '3f2c9a64-1b7e-4c55-9d2a-6f1e0b8c4d21' }),
+            alertsSlice.actions.error(shown),
+        ]);
         expect(uploads).toBe(1);
     });
 

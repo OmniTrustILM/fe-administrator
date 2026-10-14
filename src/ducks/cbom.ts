@@ -30,6 +30,8 @@ export type State = {
     isFetchingSearchableFields: boolean;
     isUploading: boolean;
     isUploadSuccess: boolean;
+    /** The CBOM the last finished upload stored, for the list to highlight; unknown when Core did not name it. */
+    uploadedCbomUuid?: string;
     isDeleting: boolean;
     isBulkDeleting: boolean;
     isSyncing: boolean;
@@ -170,11 +172,13 @@ export const slice = createSlice({
         uploadCbom: (state, action: PayloadAction<CbomUploadRequestDto>) => {
             state.isUploading = true;
             state.isUploadSuccess = false;
+            state.uploadedCbomUuid = undefined;
         },
 
         uploadCbomSuccess: (state, action: PayloadAction<{ cbom: CbomDto }>) => {
             state.isUploading = false;
             state.isUploadSuccess = true;
+            state.uploadedCbomUuid = action.payload.cbom.uuid;
             if (state.cbomsData) {
                 state.cbomsData.items.unshift(action.payload.cbom);
             }
@@ -187,9 +191,10 @@ export const slice = createSlice({
 
         // Core stored the document but not its custom attributes: the upload is over, so the list closes the dialog and
         // re-reads, and the CBOM is not sent again.
-        uploadCbomStoredWithoutAttributes: (state, action: PayloadAction<{ error: string }>) => {
+        uploadCbomStoredWithoutAttributes: (state, action: PayloadAction<{ error: string; uuid?: string }>) => {
             state.isUploading = false;
             state.isUploadSuccess = true;
+            state.uploadedCbomUuid = action.payload.uuid;
         },
 
         // Delete CBOM
@@ -267,6 +272,7 @@ export const selectIsFetchingVersions = createSelector(featureSelector, (state) 
 export const selectIsFetchingSearchableFields = createSelector(featureSelector, (state) => state.isFetchingSearchableFields);
 export const selectIsUploading = createSelector(featureSelector, (state) => state.isUploading);
 export const selectIsUploadSuccess = createSelector(featureSelector, (state) => state.isUploadSuccess);
+export const selectUploadedCbomUuid = createSelector(featureSelector, (state) => state.uploadedCbomUuid);
 export const selectIsDeleting = createSelector(featureSelector, (state) => state.isDeleting);
 export const selectIsBulkDeleting = createSelector(featureSelector, (state) => state.isBulkDeleting);
 export const selectIsSyncing = createSelector(featureSelector, (state) => state.isSyncing);
@@ -289,6 +295,7 @@ export const selectors = {
     selectIsFetchingSearchableFields,
     selectIsUploading,
     selectIsUploadSuccess,
+    selectUploadedCbomUuid,
     selectIsDeleting,
     selectIsBulkDeleting,
     selectIsSyncing,

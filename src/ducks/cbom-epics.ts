@@ -21,8 +21,8 @@ import { LockWidgetNameEnum } from 'types/user-interface';
 const DUPLICATE_CBOM_MESSAGE =
     'A CBOM with the same serial number and version already exists.\nPlease upload a new version or update the existing CBOM.';
 
-// Core's message when it stored the document but not its custom attributes; it names the stored CBOM.
-const STORED_WITHOUT_ATTRIBUTES = 'was stored, but its custom attributes could not be stored';
+// Core's message when it stored the document but not its custom attributes; it names the stored CBOM by its UUID.
+const STORED_WITHOUT_ATTRIBUTES = /CBOM with UUID (\S+) was stored, but its custom attributes could not be stored/;
 
 // Core answers a duplicate serial number and version with 409; an error that carries no status is judged by its text.
 const isDuplicateCbom = (message: string, status: number | undefined): boolean =>
@@ -202,9 +202,13 @@ const uploadCbom: AppEpic = (action$, state, deps) => {
                     ),
                 ),
                 catchError((err) => {
-                    if (extractError(err, '').includes(STORED_WITHOUT_ATTRIBUTES)) {
+                    const stored = STORED_WITHOUT_ATTRIBUTES.exec(extractError(err, ''));
+                    if (stored) {
                         const error = extractError(err, 'Failed to store the custom attributes of the uploaded CBOM');
-                        return of(slice.actions.uploadCbomStoredWithoutAttributes({ error }), alertsSlice.actions.error(error));
+                        return of(
+                            slice.actions.uploadCbomStoredWithoutAttributes({ error, uuid: stored[1] }),
+                            alertsSlice.actions.error(error),
+                        );
                     }
                     const status = typeof err?.status === 'number' ? err.status : undefined;
                     const errorMessage = normalizeCbomUploadErrorMessage(extractError(err, 'Failed to upload CBOM'), status);
