@@ -106,8 +106,8 @@ const OUTCOME_COLORS: Record<PqcExplanationStepOutcome, BadgeColor> = {
     [PqcExplanationStepOutcome.Decided]: 'primary',
     [PqcExplanationStepOutcome.Resolved]: 'primary',
     [PqcExplanationStepOutcome.Failed]: 'danger',
+    [PqcExplanationStepOutcome.Matched]: 'info',
     [PqcExplanationStepOutcome.NotMatched]: 'secondary',
-    [PqcExplanationStepOutcome.NotReached]: 'secondary',
 };
 
 // Marked by a solid badge and a bold title rather than a row fill: a tinted row takes a resolved step's link under AA in the light theme.
@@ -350,7 +350,7 @@ function stepRow(step: PqcExplanationStepDto, index: number, enums: PqcLabelEnum
                 <span>{step.message}</span>
                 {step.referencedAsset && (
                     <span className="flex flex-col gap-1">
-                        <span className="text-xs text-content-muted">Decided by</span>
+                        <span className="text-xs text-content-muted">{isDeciding ? 'Decided by' : 'Verdict carried over from'}</span>
                         <PqcReferencedAsset asset={step.referencedAsset} typeEnum={enums.assetType} tab={PQC_READINESS_TAB} />
                     </span>
                 )}

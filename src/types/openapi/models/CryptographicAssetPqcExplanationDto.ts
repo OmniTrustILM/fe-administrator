@@ -50,7 +50,7 @@ export interface CryptographicAssetPqcExplanationDto {
      */
     inputs: { [key: string]: any };
     /**
-     * Every rule the evaluation consults for an asset of this type, in evaluation order; rules that apply only to other asset types are not listed. Evaluation is first-match-wins: the rules before the deciding one are notMatched, the deciding one is decided or resolved, and the rules after it are notReached. The deciding step\'s ruleId equals the explanation\'s ruleId
+     * Every rule the evaluation consults for an asset of this type, in catalogue order; rules that apply only to other asset types are not listed. Every rule is evaluated: a step is matched or notMatched, and the one the rule order selects is decided or resolved instead. The order is: a rule that places the asset outside the question decides first; otherwise the weakest matched verdict, notReady before unknown before ready, with catalogue position breaking a tie; a fallback decides only when nothing else matched. The deciding step\'s ruleId equals the explanation\'s ruleId
      * @type {Array<PqcExplanationStepDto>}
      * @memberof CryptographicAssetPqcExplanationDto
      */
