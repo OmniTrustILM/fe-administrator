@@ -68,7 +68,7 @@ export function AttributeFieldSelect({
                 } else {
                     currentValues = field.value != null && field.value !== '' ? [field.value] : [];
                 }
-                const seen = new Set(baseOptions.map((o) => String(o.value)));
+                const seen = new Set(baseOptions.map((o) => String(o.value))); // NOSONAR(S6551): matches the String() keys of currentValues below
                 const extra: AttributeSelectOption[] =
                     descriptor.properties.extensibleList === true
                         ? currentValues

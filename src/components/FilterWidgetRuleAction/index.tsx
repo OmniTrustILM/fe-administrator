@@ -745,7 +745,7 @@ export default function FilterWidgetRuleAction({
                 {isMapped ? <i>{value}</i> : value}
                 {!disableBadgeRemove && (
                     // biome-ignore lint/a11y/useSemanticElements: can't be a <button> — this remove control is rendered inside the badge's own <button>, and nested buttons are invalid HTML; role="button" with key handling keeps it accessible.
-                    <span
+                    <span // NOSONAR(S6819)
                         onClick={(event) => {
                             event.stopPropagation();
                             onRemoveFilterClick(itemNumber);
@@ -849,7 +849,13 @@ export default function FilterWidgetRuleAction({
     return (
         <Widget title={title} busy={isFetchingAvailableFilters} titleSize="large">
             {/* biome-ignore lint/a11y/useSemanticElements: can't be a <button> — it wraps the filter form's inputs and badges (interactive content is invalid inside a button); role="button" is the closest accessible fit for the click/keyboard "deselect on empty background" behaviour. */}
-            <div id="unselectFilters" role="button" tabIndex={0} onClick={onUnselectFiltersClick} onKeyDown={onUnselectFiltersKeyDown}>
+            <div // NOSONAR(S6819)
+                id="unselectFilters"
+                role="button"
+                tabIndex={0}
+                onClick={onUnselectFiltersClick}
+                onKeyDown={onUnselectFiltersKeyDown}
+            >
                 {mappingSupported && isMappingTargetCustom && (
                     <div className="flex flex-row gap-4 mb-3 text-sm">
                         <label className="flex items-center gap-2 cursor-pointer">

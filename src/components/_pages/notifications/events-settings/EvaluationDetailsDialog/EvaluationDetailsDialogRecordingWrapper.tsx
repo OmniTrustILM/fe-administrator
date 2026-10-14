@@ -48,6 +48,7 @@ const trigger: TriggerHistoryObjectTriggerSummaryDto = {
 export default function EvaluationDetailsDialogRecordingWrapper() {
     const [isOpen, setIsOpen] = useState(true);
     const [reads, setReads] = useState(0);
+    const [failures, setFailures] = useState(0);
     const storeRef = useRef<ReturnType<typeof createRecordingStore>>(undefined);
     const store = useMemo(
         () =>
@@ -57,6 +58,7 @@ export default function EvaluationDetailsDialogRecordingWrapper() {
                     if (type !== eventHistoryActions.getConditionFilterFields.type) return;
                     setReads((count) => count + 1);
                     setTimeout(() => {
+                        setFailures((count) => count + 1);
                         storeRef.current?.dispatch(
                             eventHistoryActions.getConditionFilterFieldsFailure({ resource: Resource.Certificates, error: 'boom' }),
                         );
@@ -73,6 +75,7 @@ export default function EvaluationDetailsDialogRecordingWrapper() {
             <MemoryRouter>
                 <EvaluationDetailsDialog isOpen={isOpen} onClose={() => setIsOpen(false)} objectLabel="yahoo.com" trigger={trigger} />
                 <output data-testid="field-reads">{reads}</output>
+                <output data-testid="field-read-failures">{failures}</output>
                 <button type="button" onClick={() => setIsOpen(true)}>
                     Open again
                 </button>

@@ -323,7 +323,7 @@ test.describe('PagedList · column header menu', () => {
         await expect(menu.getByTestId(`column-header-menu-${DEPARTMENT}-sort-desc`)).toHaveAttribute('aria-disabled', 'true');
         await expect(menu.getByTestId(`column-header-menu-${DEPARTMENT}-sort-unavailable`)).toBeVisible();
 
-        await menu.getByTestId(`column-header-menu-${DEPARTMENT}-sort-asc`).click({ force: true });
+        await menu.getByTestId(`column-header-menu-${DEPARTMENT}-sort-asc`).dispatchEvent('click');
         const settled = await lastRequest(page);
         expect(settled).toBeDefined();
         expect(settled?.sort).toBeUndefined();

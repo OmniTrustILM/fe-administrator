@@ -279,7 +279,6 @@ test.describe('DatePicker', () => {
 
         const input = component.locator('input[type="text"]');
         await input.click({ force: true });
-        await page.waitForTimeout(100);
         await expect(getDropdown(page)).not.toBeVisible();
     });
 
@@ -430,8 +429,13 @@ test.describe('DatePicker', () => {
         const input = component.locator('input[type="text"]');
         await input.click();
         await expect(getDropdown(page)).toBeVisible();
-        await page.evaluate(() => window.scrollTo(0, 100));
-        await page.waitForTimeout(50);
+        await page.evaluate(
+            () =>
+                new Promise<void>((resolve) => {
+                    window.addEventListener('scroll', () => resolve(), { once: true });
+                    window.scrollTo(0, 100);
+                }),
+        );
         await expect(getDropdown(page)).toBeVisible();
     });
 

@@ -159,8 +159,10 @@ test.describe('Select', () => {
         let changes = 0;
         await mount(<Select id="d" value="" onChange={() => changes++} options={opts} dataTestId="sel" />);
         await page.getByTestId('sel-trigger').click();
-        await page.getByRole('option', { name: 'Two' }).click({ force: true });
-        expect(changes).toBe(0);
+        await page.getByRole('option', { name: 'Two' }).dispatchEvent('click');
+        await page.getByRole('option', { name: 'Three' }).click();
+        await expect.poll(() => changes).toBe(1);
+        expect(changes).toBe(1);
     });
 
     test('colorizeVersionLabel renders brand + content spans on trigger', async ({ mount, page }) => {

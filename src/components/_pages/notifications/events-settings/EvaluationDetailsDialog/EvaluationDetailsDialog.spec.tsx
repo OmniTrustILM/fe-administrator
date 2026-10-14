@@ -138,8 +138,9 @@ test.describe('EvaluationDetailsDialog', () => {
 
     test('asks for the fields once per opening, not again after the read failed', async ({ mount, page }) => {
         await mount(<EvaluationDetailsDialogRecordingWrapper />);
-        await expect(page.getByTestId('field-reads')).toHaveText('1');
-        await page.waitForTimeout(500);
+        await expect(page.getByTestId('field-read-failures')).toHaveText('1');
+        // A frame and a task let any re-read the failure's commit would trigger reach the counter.
+        await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => setTimeout(resolve))));
         await expect(page.getByTestId('field-reads')).toHaveText('1');
 
         await page.getByRole('button', { name: 'Close', exact: true }).last().click();
