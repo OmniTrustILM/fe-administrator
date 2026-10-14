@@ -75,7 +75,7 @@ export default function DiscoveryProgressWidget({ discovery, className }: Props)
                             value={bar.value}
                             max={bar.max}
                             tone={bar.tone}
-                            ariaLabel="Discovery Provider"
+                            ariaLabel={`Discovery Provider: ${bar.caption}`}
                             dataTestId="provider-progress-bar"
                             label={
                                 <>

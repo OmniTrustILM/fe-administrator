@@ -342,6 +342,7 @@ describe('DiscoveryDetail', () => {
             const bar = container.querySelector('[data-testid="provider-progress-bar"] [role="progressbar"]');
             expect(bar?.getAttribute('aria-valuenow')).toBe('12');
             expect(bar?.getAttribute('aria-valuemax')).toBe('30');
+            expect(bar?.getAttribute('aria-label')).toBe('Discovery Provider: 12 / 30 targets');
             expect(container.querySelector('[data-testid="targets-caption"]')?.textContent).toBe('12 / 30 targets');
             expect(container.querySelector('[data-testid="progress-phase"]')?.textContent).toBe('Phase: scanning');
             expect(container.querySelector('[data-testid="progress-recorded"]')?.textContent).toMatch(/^as of \d{4}-/);
@@ -495,6 +496,7 @@ describe('DiscoveryDetail', () => {
                 const bar = container.querySelector('[data-testid="provider-progress-bar"] [role="progressbar"]');
                 expect(bar?.getAttribute('aria-valuenow')).toBe('3700');
                 expect(bar?.getAttribute('aria-valuemax')).toBe('12000');
+                expect(bar?.getAttribute('aria-label')).toBe('Discovery Provider: 3,700 / ~12,000 certificates');
                 expect(container.querySelector('[data-testid="targets-caption"]')?.textContent).toBe('3,700 / ~12,000 certificates');
                 expect(rowText('certificates')).toBe('Certificate3,700~12,000—');
             });
