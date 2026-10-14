@@ -6,12 +6,14 @@ import { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import type { DiscoveryResponseDetailModel } from 'types/discoveries';
 import { DiscoveryStatus, PlatformEnum } from 'types/openapi';
-import { importRemainder, isTerminalRun, progressRecordedCaption, targetsCaption } from './discoveryDetailHelpers';
+import { formatCount, importRemainder, progressRecordedCaption, providerBar, providerState } from './discoveryDetailHelpers';
 
 type Props = Readonly<{
     discovery: DiscoveryResponseDetailModel;
     className?: string;
 }>;
+
+const targetCount = (count: number) => `${formatCount(count)} ${count === 1 ? 'target' : 'targets'}`;
 
 const BY_RESOURCE_HEADERS: TableHeader[] = [
     { id: 'resource', content: 'Resource' },
@@ -21,11 +23,12 @@ const BY_RESOURCE_HEADERS: TableHeader[] = [
 ];
 
 /**
- * Two bars for two phases, each labelled with whose work it is. The Provider's bar counts targets and is only as fresh
- * as Core's last poll of the Provider, which is what the caption dates. The platform's bar counts items, appears only
- * while the run is processing, and is counted from the platform's own rows on every read. A run against a v1 Provider
- * reports no progress at all, and then this widget renders nothing. A v2 run always gets the widget, so the row it shares
- * keeps its shape when the first report arrives.
+ * Two bars for two phases, each labelled with whose work it is. The Provider's bar draws what {@link providerBar}
+ * measures and is only as fresh as Core's last poll of the Provider, which is what the caption dates. A target that held nothing is a normal outcome and reads muted; only one that could
+ * not be read is flagged. The platform's bar counts items, appears only while the run is processing, and is counted
+ * from the platform's own rows on every read. A run against a v1 Provider reports no progress at all, and then this
+ * widget renders nothing. A v2 run always gets the widget, so the row it shares keeps its shape when the first report
+ * arrives.
  */
 export default function DiscoveryProgressWidget({ discovery, className }: Props) {
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
@@ -39,8 +42,8 @@ export default function DiscoveryProgressWidget({ discovery, className }: Props)
                 id: resource,
                 columns: [
                     getEnumLabel(resourceEnum, resource),
-                    counters.produced === undefined ? '—' : String(counters.produced),
-                    counters.totalEstimate === undefined ? '—' : `~${counters.totalEstimate}`,
+                    counters.produced === undefined ? '—' : formatCount(counters.produced),
+                    counters.totalEstimate === undefined ? '—' : `~${formatCount(counters.totalEstimate)}`,
                     counters.phase ?? '—',
                 ],
             })),
@@ -49,7 +52,9 @@ export default function DiscoveryProgressWidget({ discovery, className }: Props)
 
     if (!discovery.connectorInterface && !progress && !processing) return null;
 
-    const providerDone = processing || isTerminalRun(discovery.status);
+    const state = providerState(discovery);
+    const providerDone = state !== 'working' && state !== 'paused';
+    const bar = progress ? providerBar(progress, state, discovery.resources) : undefined;
 
     const recorded = progressRecordedCaption(progress?.updatedAt);
     const remaining = importRemainder(discovery);
@@ -58,24 +63,25 @@ export default function DiscoveryProgressWidget({ discovery, className }: Props)
     // A run that rediscovered only what the inventory already held has no import to draw; a full bar says so, where an
     // empty total would read as work of unknown size.
     const nothingToImport = toImport === 0;
-    const notImported = failed ? `, ${failed} not imported` : '';
-    const importCaption = nothingToImport ? 'Nothing to import' : `${remaining} waiting${notImported}`;
+    const notImported = failed ? `, ${formatCount(failed)} not imported` : '';
+    const importCaption = nothingToImport ? 'Nothing to import' : `${formatCount(remaining)} waiting${notImported}`;
 
     return (
         <Widget title="Progress" titleSize="large" className={className} dataTestId="discovery-progress">
             <div className="flex flex-col gap-4">
-                {progress ? (
+                {progress && bar ? (
                     <div data-testid="provider-progress">
                         <ProgressBar
-                            value={progress.targetsProcessed}
-                            max={progress.targetsTotal}
-                            ariaLabel="Discovery Provider targets"
+                            value={bar.value}
+                            max={bar.max}
+                            tone={bar.tone}
+                            ariaLabel={`Discovery Provider: ${bar.caption}`}
                             dataTestId="provider-progress-bar"
                             label={
                                 <>
                                     <span>Discovery Provider</span>
                                     <span className="tabular-nums" data-testid="targets-caption">
-                                        {targetsCaption(progress.targetsProcessed, progress.targetsTotal)}
+                                        {bar.caption}
                                     </span>
                                 </>
                             }
@@ -88,7 +94,12 @@ export default function DiscoveryProgressWidget({ discovery, className }: Props)
                         />
                         {progress.targetsFailed ? (
                             <p className="mt-1 text-sm text-warning" data-testid="targets-failed">
-                                {progress.targetsFailed} {progress.targetsFailed === 1 ? 'target' : 'targets'} failed
+                                {targetCount(progress.targetsFailed)} failed
+                            </p>
+                        ) : null}
+                        {progress.targetsEmpty ? (
+                            <p className="mt-1 text-sm text-content-muted" data-testid="targets-empty">
+                                {targetCount(progress.targetsEmpty)} had nothing to discover
                             </p>
                         ) : null}
                     </div>
@@ -110,7 +121,7 @@ export default function DiscoveryProgressWidget({ discovery, className }: Props)
                                 <>
                                     <span>Platform import</span>
                                     <span className="tabular-nums">
-                                        {discovery.itemsProcessed ?? 0} / {toImport} items
+                                        {formatCount(discovery.itemsProcessed ?? 0)} / {formatCount(toImport)} items
                                     </span>
                                 </>
                             }

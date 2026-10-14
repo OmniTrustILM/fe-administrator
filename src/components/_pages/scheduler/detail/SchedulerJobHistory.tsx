@@ -14,10 +14,11 @@ import { useNavigate } from 'react-router';
 import Button from 'components/Button';
 import Badge from 'components/Badge';
 import type { SearchRequestModel } from 'types/certificate';
-import { PlatformEnum, SchedulerJobExecutionStatus } from 'types/openapi';
+import { PlatformEnum } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { Info, ArrowRight } from 'lucide-react';
 import { dateFormatter, timeFormatter } from 'utils/dateUtil';
+import { getExecutionStatusBadgeColor } from 'utils/scheduler';
 
 type Props = Readonly<{
     uuid: string;
@@ -76,12 +77,7 @@ function SchedulerJobHistory({ uuid }: Props) {
                         ? timeFormatter(new Date(history.endTime).valueOf() - new Date(history.startTime).valueOf())
                         : '',
                     <div key="status-actions" className="flex items-center gap-1">
-                        <Badge
-                            color={(() => {
-                                if (history.status === SchedulerJobExecutionStatus.Failed) return 'danger';
-                                return history.status === SchedulerJobExecutionStatus.Succeeded ? 'success' : 'primary';
-                            })()}
-                        >
+                        <Badge color={getExecutionStatusBadgeColor(history.status)}>
                             {getEnumLabel(schedulerJobExecutionStatusEnum, history.status)}
                         </Badge>
                         {history.resultMessage && (

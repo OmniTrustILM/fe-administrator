@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import { ScheduledJobScheduleState } from 'types/openapi';
-import { getScheduleStateBadgeColor } from './scheduler';
+import { ScheduledJobScheduleState, SchedulerJobExecutionStatus } from 'types/openapi';
+import { getExecutionStatusBadgeColor, getScheduleStateBadgeColor } from './scheduler';
 
 describe('getScheduleStateBadgeColor', () => {
     test.each([
@@ -28,5 +28,22 @@ describe('getScheduleStateBadgeColor', () => {
 
     test('a state this build does not know is neutral, not a fault', () => {
         expect(getScheduleStateBadgeColor('somethingCoreAddedLater' as ScheduledJobScheduleState, false)).toBe('secondary');
+    });
+});
+
+describe('getExecutionStatusBadgeColor', () => {
+    test.each([
+        [SchedulerJobExecutionStatus.Started, 'primary'],
+        [SchedulerJobExecutionStatus.Succeeded, 'success'],
+        [SchedulerJobExecutionStatus.Failed, 'danger'],
+        [SchedulerJobExecutionStatus.Cancelled, 'secondary'],
+    ])('%s maps to the %s badge', (status, expected) => {
+        expect(getExecutionStatusBadgeColor(status)).toBe(expected);
+    });
+
+    test('gives every status a colour of its own', () => {
+        const colours = Object.values(SchedulerJobExecutionStatus).map(getExecutionStatusBadgeColor);
+
+        expect(new Set(colours).size).toBe(colours.length);
     });
 });

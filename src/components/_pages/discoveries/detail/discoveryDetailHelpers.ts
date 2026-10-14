@@ -1,5 +1,12 @@
+import { type ProgressBarTone, progressRatio } from 'components/ProgressBar';
 import type { DiscoveryResponseDetailModel } from 'types/discoveries';
-import { type ConnectorInterfaceDto, DiscoveryStatus, Resource } from 'types/openapi';
+import {
+    type ConnectorInterfaceDto,
+    type DiscoveryProgressDto,
+    type DiscoveryResourceProgressDto,
+    DiscoveryStatus,
+    Resource,
+} from 'types/openapi';
 import { dateFormatter, formatTimeAgo } from 'utils/dateUtil';
 
 export type DiscoveryLifecycleAction = 'stop' | 'resume' | 'cancel';
@@ -102,12 +109,102 @@ export function importRemainder(
     return Math.max(0, (run.itemsNewlyDiscovered ?? 0) - (run.itemsProcessed ?? 0) - (run.itemsFailed ?? 0));
 }
 
+/** Every count the progress shows, grouped the same way whatever the browser's locale. */
+export const formatCount = (count: number) => count.toLocaleString('en-US');
+
 /** Targets are the Provider's unit of work; the caption never shows a denominator the Provider did not send. */
 export function targetsCaption(targetsProcessed: number | undefined, targetsTotal: number | undefined): string {
-    if (targetsProcessed === undefined && targetsTotal === undefined) return 'No target count reported';
-    if (targetsTotal === undefined) return `${targetsProcessed} targets`;
-    if (targetsProcessed === undefined) return `${targetsTotal} targets in total`;
-    return `${targetsProcessed} / ${targetsTotal} targets`;
+    if (targetsTotal === undefined) {
+        return targetsProcessed === undefined ? 'No target count reported' : `${formatCount(targetsProcessed)} targets`;
+    }
+    if (targetsProcessed === undefined) return `${formatCount(targetsTotal)} targets in total`;
+    return `${formatCount(targetsProcessed)} / ${formatCount(targetsTotal)} targets`;
+}
+
+/**
+ * Where the Provider's own work stands. Core keeps a run in progress through the tail drain after the Provider has
+ * finished, so a Provider that reports completion counts as finished before the run moves on.
+ */
+export type ProviderState = 'working' | 'paused' | 'finished' | 'failed' | 'cancelled';
+
+export function providerState(run: Pick<DiscoveryResponseDetailModel, 'status' | 'connectorStatus' | 'connectorInterface'>): ProviderState {
+    switch (run.status) {
+        case DiscoveryStatus.Failed:
+            return 'failed';
+        case DiscoveryStatus.Cancelled:
+            return 'cancelled';
+        case DiscoveryStatus.Stopped:
+            return 'paused';
+        case DiscoveryStatus.Processing:
+        case DiscoveryStatus.Completed:
+        case DiscoveryStatus.Warning:
+            return 'finished';
+        default:
+            return run.connectorInterface && run.connectorStatus === DiscoveryStatus.Completed ? 'finished' : 'working';
+    }
+}
+
+export type ProviderBar = { value?: number; max?: number; caption: string; tone?: ProgressBarTone };
+
+/** Nouns for the resources a discovery counts items of; the platform's labels are singular display names. */
+const ITEM_NOUNS: Partial<Record<string, [string, string]>> = {
+    [Resource.Certificates]: ['certificate', 'certificates'],
+    [Resource.Keys]: ['key', 'keys'],
+};
+
+function itemNoun(resource: string, count: number): string {
+    const [one, many] = ITEM_NOUNS[resource] ?? ['item', 'items'];
+    return count === 1 ? one : many;
+}
+
+/**
+ * The run's one resource, when its items stand in for targets: the Provider counts no targets, as one whose unit of
+ * work would only be a page of search results does, and the run targets that resource alone. A run of several
+ * resources has no common unit, even while the Provider has reported only one of them.
+ */
+function itemsProgress(
+    progress: DiscoveryProgressDto,
+    runResources: Resource[] | undefined,
+): [string, DiscoveryResourceProgressDto] | undefined {
+    if (progress.targetsProcessed !== undefined || progress.targetsTotal !== undefined) return undefined;
+    if (runResources?.length !== 1) return undefined;
+    const counters = progress.byResource?.[runResources[0]];
+    if (!counters || (counters.produced === undefined && counters.totalEstimate === undefined)) return undefined;
+    return [runResources[0], counters];
+}
+
+function itemsBar(resource: string, { produced = 0, totalEstimate }: DiscoveryResourceProgressDto): ProviderBar {
+    return {
+        value: produced,
+        max: totalEstimate,
+        caption:
+            totalEstimate === undefined
+                ? `${formatCount(produced)} ${itemNoun(resource, produced)} found`
+                : `${formatCount(produced)} / ~${formatCount(totalEstimate)} ${itemNoun(resource, totalEstimate)}`,
+    };
+}
+
+const ENDED_EARLY_TONE: Partial<Record<ProviderState, ProgressBarTone>> = { failed: 'warning', cancelled: 'info' };
+
+/**
+ * What the Provider's bar draws and the figures beside it: targets when the Provider counts them, else the items of the
+ * run's one resource against the Provider's estimate. A bar with nothing to measure against moves only while the
+ * Provider works: it is held empty while the run is paused and drawn full once the Provider is done. A run that ended
+ * early is drawn in the tone of how it ended, and a known total keeps its true ratio, so it shows where the run stopped.
+ */
+export function providerBar(progress: DiscoveryProgressDto, state: ProviderState, runResources: Resource[] | undefined): ProviderBar {
+    const items = itemsProgress(progress, runResources);
+    const measured: ProviderBar = items
+        ? itemsBar(...items)
+        : {
+              value: progress.targetsProcessed,
+              max: progress.targetsTotal,
+              caption: targetsCaption(progress.targetsProcessed, progress.targetsTotal),
+          };
+    const tone = ENDED_EARLY_TONE[state];
+    const bar = tone ? { ...measured, tone } : measured;
+    if (state === 'working' || progressRatio(bar.value, bar.max) !== undefined) return bar;
+    return { ...bar, value: state === 'paused' ? 0 : 1, max: 1 };
 }
 
 export type CertificateNote = { kind: 'repeats' | 'notHandedOver'; count: number };

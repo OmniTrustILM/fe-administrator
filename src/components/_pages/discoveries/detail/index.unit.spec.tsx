@@ -145,8 +145,8 @@ function buildState(discovery: any, allowedActions: ResourceAction[] = allDiscov
             platformEnums: {
                 [PlatformEnum.Resource]: {
                     [Resource.Discoveries]: { label: 'Discoveries' },
-                    [Resource.Certificates]: { label: 'Certificates' },
-                    [Resource.Keys]: { label: 'Keys' },
+                    [Resource.Certificates]: { label: 'Certificate' },
+                    [Resource.Keys]: { label: 'Key' },
                 },
                 [PlatformEnum.TriggerType]: {},
                 [PlatformEnum.ResourceEvent]: {},
@@ -222,14 +222,14 @@ describe('DiscoveryDetail', () => {
         it('says which resources the run targeted', async () => {
             await render(buildState(v2Run));
 
-            expect(rowText('resources')).toBe('ResourcesCertificatesKeys');
+            expect(rowText('resources')).toBe('ResourcesCertificateKey');
         });
 
         it('names certificates for a v1 run, which can target nothing else', async () => {
             // Core synthesizes the list for a v1 run, so the row is never blank and never says "unknown".
             await render(buildState(v1Run));
 
-            expect(rowText('resources')).toBe('ResourcesCertificates');
+            expect(rowText('resources')).toBe('ResourcesCertificate');
         });
     });
 
@@ -342,6 +342,7 @@ describe('DiscoveryDetail', () => {
             const bar = container.querySelector('[data-testid="provider-progress-bar"] [role="progressbar"]');
             expect(bar?.getAttribute('aria-valuenow')).toBe('12');
             expect(bar?.getAttribute('aria-valuemax')).toBe('30');
+            expect(bar?.getAttribute('aria-label')).toBe('Discovery Provider: 12 / 30 targets');
             expect(container.querySelector('[data-testid="targets-caption"]')?.textContent).toBe('12 / 30 targets');
             expect(container.querySelector('[data-testid="progress-phase"]')?.textContent).toBe('Phase: scanning');
             expect(container.querySelector('[data-testid="progress-recorded"]')?.textContent).toMatch(/^as of \d{4}-/);
@@ -374,6 +375,175 @@ describe('DiscoveryDetail', () => {
             await render(buildState({ ...v2Run, progress: { ...v2Run.progress, targetsFailed: 1 } }));
 
             expect(container.querySelector('[data-testid="targets-failed"]')?.textContent).toBe('1 target failed');
+        });
+
+        it('keeps the amber line for failures and gives empty targets a muted line of their own', async () => {
+            await render(
+                buildState({ ...v2Run, progress: { ...v2Run.progress, targetsProcessed: 768, targetsTotal: 768, targetsEmpty: 717 } }),
+            );
+
+            const empty = container.querySelector('[data-testid="targets-empty"]');
+            const failed = container.querySelector('[data-testid="targets-failed"]');
+            expect(empty?.textContent).toBe('717 targets had nothing to discover');
+            expect(empty?.className).toContain('text-content-muted');
+            expect(empty?.className).not.toContain('text-warning');
+            expect(failed?.textContent).toBe('3 targets failed');
+            expect(failed?.className).toContain('text-warning');
+        });
+
+        it('says one target had nothing to discover without a plural', async () => {
+            await render(buildState({ ...v2Run, progress: { ...v2Run.progress, targetsEmpty: 1 } }));
+
+            expect(container.querySelector('[data-testid="targets-empty"]')?.textContent).toBe('1 target had nothing to discover');
+        });
+
+        it('shows neither line when no target came up empty or failed', async () => {
+            for (const outcomes of [
+                { targetsEmpty: 0, targetsFailed: 0 },
+                { targetsEmpty: undefined, targetsFailed: undefined },
+            ]) {
+                await render(buildState({ ...v2Run, progress: { ...v2Run.progress, ...outcomes } }));
+
+                expect(container.querySelector('[data-testid="targets-empty"]')).toBeNull();
+                expect(container.querySelector('[data-testid="targets-failed"]')).toBeNull();
+            }
+        });
+
+        it('draws the bar full once the Provider is done, though it never sent a total', async () => {
+            for (const status of [DiscoveryStatus.Processing, DiscoveryStatus.Completed, DiscoveryStatus.Cancelled]) {
+                await render(buildState({ ...v2Run, status, progress: { ...v2Run.progress, targetsTotal: undefined } }));
+
+                const bar = container.querySelector('[data-testid="provider-progress-bar"] [role="progressbar"]');
+                expect(bar?.hasAttribute('data-indeterminate')).toBe(false);
+                expect(bar?.getAttribute('aria-valuenow')).toBe(bar?.getAttribute('aria-valuemax'));
+                expect(container.querySelector('[data-testid="targets-caption"]')?.textContent).toBe('12 targets');
+            }
+        });
+
+        it('stops moving once the Provider reports completion, while Core still drains its last items', async () => {
+            await render(
+                buildState({
+                    ...v2Run,
+                    connectorStatus: DiscoveryStatus.Completed,
+                    progress: { ...v2Run.progress, targetsTotal: undefined },
+                }),
+            );
+
+            const bar = container.querySelector('[data-testid="provider-progress-bar"] [role="progressbar"]');
+            expect(bar?.hasAttribute('data-indeterminate')).toBe(false);
+            expect(bar?.getAttribute('aria-valuenow')).toBe(bar?.getAttribute('aria-valuemax'));
+        });
+
+        it('holds a paused run without a total still and empty, rather than moving or full', async () => {
+            await render(
+                buildState({
+                    ...v2Run,
+                    status: DiscoveryStatus.Stopped,
+                    connectorStatus: DiscoveryStatus.Stopped,
+                    progress: { ...v2Run.progress, targetsTotal: undefined },
+                }),
+            );
+
+            const bar = container.querySelector('[data-testid="provider-progress-bar"] [role="progressbar"]');
+            expect(bar?.hasAttribute('data-indeterminate')).toBe(false);
+            expect(bar?.getAttribute('aria-valuenow')).toBe('0');
+        });
+
+        it('draws a run that ended early in the tone of how it ended, not as a clean finish', async () => {
+            const fill = () => container.querySelector('[data-testid="provider-progress-bar"] [data-testid="progress-bar-fill"]');
+
+            await render(
+                buildState({ ...v2Run, status: DiscoveryStatus.Failed, progress: { ...v2Run.progress, targetsTotal: undefined } }),
+            );
+            expect(fill()?.className).toContain('bg-warning-solid');
+
+            await render(
+                buildState({ ...v2Run, status: DiscoveryStatus.Cancelled, progress: { ...v2Run.progress, targetsTotal: undefined } }),
+            );
+            expect(fill()?.className).toContain('bg-info-solid');
+        });
+
+        it('keeps the true ratio of a run cancelled partway through a known total', async () => {
+            await render(
+                buildState({
+                    ...v2Run,
+                    status: DiscoveryStatus.Cancelled,
+                    progress: { ...v2Run.progress, targetsProcessed: 300, targetsTotal: 768 },
+                }),
+            );
+
+            const bar = container.querySelector('[data-testid="provider-progress-bar"] [role="progressbar"]');
+            expect(bar?.getAttribute('aria-valuenow')).toBe('300');
+            expect(bar?.getAttribute('aria-valuemax')).toBe('768');
+        });
+
+        describe('a Provider that counts no targets', () => {
+            const searchProgress = (byResource: Record<string, unknown>) => ({
+                phase: 'searching',
+                byResource,
+                updatedAt: '2026-09-13T12:32:07.000Z',
+            });
+
+            it('draws the bar from the items of its one resource against their estimate', async () => {
+                await render(
+                    buildState({
+                        ...v2Run,
+                        resources: [Resource.Certificates],
+                        progress: searchProgress({ certificates: { produced: 3700, totalEstimate: 12000 } }),
+                    }),
+                );
+
+                const bar = container.querySelector('[data-testid="provider-progress-bar"] [role="progressbar"]');
+                expect(bar?.getAttribute('aria-valuenow')).toBe('3700');
+                expect(bar?.getAttribute('aria-valuemax')).toBe('12000');
+                expect(bar?.getAttribute('aria-label')).toBe('Discovery Provider: 3,700 / ~12,000 certificates');
+                expect(container.querySelector('[data-testid="targets-caption"]')?.textContent).toBe('3,700 / ~12,000 certificates');
+                expect(rowText('certificates')).toBe('Certificate3,700~12,000—');
+            });
+
+            it('says how many items it found when it has no estimate, and fills the bar only once it is done', async () => {
+                const run = {
+                    ...v2Run,
+                    resources: [Resource.Certificates],
+                    progress: searchProgress({ certificates: { produced: 1180 } }),
+                };
+                const bar = () => container.querySelector('[data-testid="provider-progress-bar"] [role="progressbar"]');
+
+                await render(buildState(run));
+                expect(bar()?.getAttribute('data-indeterminate')).toBe('true');
+                expect(container.querySelector('[data-testid="targets-caption"]')?.textContent).toBe('1,180 certificates found');
+
+                await render(buildState({ ...run, status: DiscoveryStatus.Completed }));
+                expect(bar()?.hasAttribute('data-indeterminate')).toBe(false);
+                expect(bar()?.getAttribute('aria-valuenow')).toBe(bar()?.getAttribute('aria-valuemax'));
+                expect(container.querySelector('[data-testid="targets-caption"]')?.textContent).toBe('1,180 certificates found');
+            });
+
+            it('draws no items count for a run of several resources while its Provider has reported only one', async () => {
+                await render(
+                    buildState({
+                        ...v2Run,
+                        progress: searchProgress({ certificates: { produced: 3700, totalEstimate: 12000 } }),
+                    }),
+                );
+
+                expect(container.querySelector('[data-testid="targets-caption"]')?.textContent).toBe('No target count reported');
+            });
+
+            it('reports no count for a run with several resources, which has no single count to draw', async () => {
+                await render(
+                    buildState({
+                        ...v2Run,
+                        progress: searchProgress({ certificates: { produced: 3700, totalEstimate: 12000 }, keys: { produced: 4 } }),
+                    }),
+                );
+
+                const bar = container.querySelector('[data-testid="provider-progress-bar"] [role="progressbar"]');
+                expect(bar?.getAttribute('data-indeterminate')).toBe('true');
+                expect(container.querySelector('[data-testid="targets-caption"]')?.textContent).toBe('No target count reported');
+                expect(rowText('certificates')).toBe('Certificate3,700~12,000—');
+                expect(rowText('keys')).toBe('Key4——');
+            });
         });
 
         it('draws a full bar when there is nothing to import, never an indeterminate one', async () => {
@@ -412,8 +582,8 @@ describe('DiscoveryDetail', () => {
         it('lists the per-resource breakdown by resource label', async () => {
             await render(buildState(v2Run));
 
-            expect(rowText('certificates')).toBe('Certificates48~120collecting');
-            expect(rowText('keys')).toBe('Keys4——');
+            expect(rowText('certificates')).toBe('Certificate48~120collecting');
+            expect(rowText('keys')).toBe('Key4——');
         });
     });
 

@@ -7,11 +7,13 @@ import {
     connectorInterfaceVersion,
     type DiscoveryLifecycleAction,
     importRemainder,
+    providerState,
     inventoryPath,
     isLiveRun,
     isNotProcessedRun,
     lifecycleActionsForStatus,
     progressRecordedCaption,
+    providerBar,
     resultResources,
     targetsCaption,
     visibleLifecycleActions,
@@ -150,6 +152,119 @@ describe('targetsCaption', () => {
         expect(targetsCaption(12, undefined)).toBe('12 targets');
         expect(targetsCaption(undefined, 30)).toBe('30 targets in total');
         expect(targetsCaption(undefined, undefined)).toBe('No target count reported');
+    });
+});
+
+describe('providerState', () => {
+    const v2 = { connectorInterface: { uuid: 'iface-1', code: ConnectorInterface.Discovery, version: 'v2' } };
+
+    it('says the Provider is working while a run is in progress', () => {
+        expect(providerState({ ...v2, status: DiscoveryStatus.InProgress, connectorStatus: DiscoveryStatus.InProgress })).toBe('working');
+    });
+
+    it('counts a Provider that reported completion as finished while Core still drains its last items', () => {
+        expect(providerState({ ...v2, status: DiscoveryStatus.InProgress, connectorStatus: DiscoveryStatus.Completed })).toBe('finished');
+    });
+
+    it('tells a paused run, a finished one and the two ways of ending early apart', () => {
+        expect(providerState({ ...v2, status: DiscoveryStatus.Stopped, connectorStatus: DiscoveryStatus.Stopped })).toBe('paused');
+        for (const status of [DiscoveryStatus.Processing, DiscoveryStatus.Completed, DiscoveryStatus.Warning]) {
+            expect(providerState({ ...v2, status, connectorStatus: DiscoveryStatus.Completed })).toBe('finished');
+        }
+        expect(providerState({ ...v2, status: DiscoveryStatus.Failed, connectorStatus: DiscoveryStatus.Failed })).toBe('failed');
+        expect(providerState({ ...v2, status: DiscoveryStatus.Cancelled, connectorStatus: DiscoveryStatus.Cancelled })).toBe('cancelled');
+    });
+});
+
+describe('providerBar', () => {
+    const certificates = [Resource.Certificates];
+    const full = { value: 1, max: 1 };
+
+    it('measures targets against the total the Provider sent, whatever the Provider is doing', () => {
+        const progress = { targetsProcessed: 12, targetsTotal: 30 };
+
+        expect(providerBar(progress, 'working', certificates)).toEqual({ value: 12, max: 30, caption: '12 / 30 targets' });
+        expect(providerBar(progress, 'finished', certificates)).toEqual({ value: 12, max: 30, caption: '12 / 30 targets' });
+    });
+
+    it('groups the digits of large counts', () => {
+        expect(providerBar({ targetsProcessed: 65536, targetsTotal: 65536 }, 'working', certificates).caption).toBe(
+            '65,536 / 65,536 targets',
+        );
+    });
+
+    it('keeps the true ratio of a run that ended partway, in the tone of how it ended', () => {
+        expect(providerBar({ targetsProcessed: 300, targetsTotal: 768 }, 'cancelled', certificates)).toMatchObject({
+            value: 300,
+            max: 768,
+            tone: 'info',
+        });
+        expect(providerBar({ targetsProcessed: 300, targetsTotal: 768 }, 'failed', certificates)).toMatchObject({ tone: 'warning' });
+    });
+
+    it('keeps a bar without a total moving only while the Provider works', () => {
+        const progress = { targetsProcessed: 12 };
+
+        expect(providerBar(progress, 'working', certificates)).toEqual({ value: 12, max: undefined, caption: '12 targets' });
+        expect(providerBar(progress, 'finished', certificates)).toEqual({ ...full, caption: '12 targets' });
+        expect(providerBar(progress, 'paused', certificates)).toEqual({ value: 0, max: 1, caption: '12 targets' });
+        expect(providerBar(progress, 'failed', certificates)).toEqual({ ...full, caption: '12 targets', tone: 'warning' });
+    });
+
+    it("counts the items of the run's one resource against its estimate when the Provider counts no targets", () => {
+        const progress = { phase: 'searching', byResource: { certificates: { produced: 3700, totalEstimate: 12000 } } };
+
+        expect(providerBar(progress, 'working', certificates)).toEqual({
+            value: 3700,
+            max: 12000,
+            caption: '3,700 / ~12,000 certificates',
+        });
+        expect(providerBar({ byResource: { certificates: { totalEstimate: 12000 } } }, 'working', certificates)).toEqual({
+            value: 0,
+            max: 12000,
+            caption: '0 / ~12,000 certificates',
+        });
+    });
+
+    it('says how many items were found when there is no estimate, filling the bar only once the Provider is done', () => {
+        const progress = { byResource: { certificates: { produced: 1180 } } };
+
+        expect(providerBar(progress, 'working', certificates)).toEqual({
+            value: 1180,
+            max: undefined,
+            caption: '1,180 certificates found',
+        });
+        expect(providerBar(progress, 'finished', certificates)).toEqual({ ...full, caption: '1,180 certificates found' });
+    });
+
+    it('names one item in the singular', () => {
+        expect(providerBar({ byResource: { keys: { produced: 1 } } }, 'working', [Resource.Keys]).caption).toBe('1 key found');
+        expect(providerBar({ byResource: { keys: { produced: 0, totalEstimate: 1 } } }, 'working', [Resource.Keys]).caption).toBe(
+            '0 / ~1 key',
+        );
+    });
+
+    it('prefers targets whenever the Provider counts them, whatever it reports per resource', () => {
+        const progress = { targetsProcessed: 4, byResource: { certificates: { produced: 3700, totalEstimate: 12000 } } };
+
+        expect(providerBar(progress, 'working', certificates)).toEqual({ value: 4, max: undefined, caption: '4 targets' });
+    });
+
+    it('draws no items count for a run of several resources, even while the Provider reports only one of them', () => {
+        const progress = { byResource: { certificates: { produced: 3700, totalEstimate: 12000 } } };
+
+        expect(providerBar(progress, 'working', [Resource.Certificates, Resource.Keys]).caption).toBe('No target count reported');
+    });
+
+    it('has no count to draw for no resource, or one the Provider did not count', () => {
+        for (const progress of [{}, { byResource: { certificates: { phase: 'searching' } } }]) {
+            expect(providerBar(progress, 'working', certificates)).toEqual({
+                value: undefined,
+                max: undefined,
+                caption: 'No target count reported',
+            });
+            expect(providerBar(progress, 'finished', certificates)).toEqual({ ...full, caption: 'No target count reported' });
+        }
     });
 });
 
