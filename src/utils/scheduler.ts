@@ -1,5 +1,5 @@
 import type { BadgeColor } from 'components/Badge';
-import { ScheduledJobScheduleState } from 'types/openapi';
+import { ScheduledJobScheduleState, SchedulerJobExecutionStatus } from 'types/openapi';
 
 export function getScheduleStateBadgeColor(scheduleState: ScheduledJobScheduleState, oneTime: boolean): BadgeColor {
     switch (scheduleState) {
@@ -19,5 +19,22 @@ export function getScheduleStateBadgeColor(scheduleState: ScheduledJobScheduleSt
         // `unknown` lands here too: an unreadable scheduler is not a fault of the job.
         default:
             return 'secondary';
+    }
+}
+
+export function getExecutionStatusBadgeColor(status: SchedulerJobExecutionStatus | undefined): BadgeColor {
+    switch (status) {
+        case SchedulerJobExecutionStatus.Succeeded:
+            return 'success';
+
+        case SchedulerJobExecutionStatus.Failed:
+            return 'danger';
+
+        // An ending someone asked for: not a fault, and no longer running either.
+        case SchedulerJobExecutionStatus.Cancelled:
+            return 'secondary';
+
+        default:
+            return 'primary';
     }
 }
