@@ -29,5 +29,7 @@ export enum ResourceEvent {
     ApprovalClosed = 'approval_closed',
     CommentCreated = 'comment_created',
     CommentResolved = 'comment_resolved',
+    CbomSynced = 'cbom_synced',
+    CryptoAssetPqcNotReady = 'crypto_asset_pqc_not_ready',
     ScheduledJobFinished = 'scheduled_job_finished',
 }
