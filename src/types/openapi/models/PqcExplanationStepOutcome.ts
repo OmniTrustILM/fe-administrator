@@ -18,8 +18,8 @@
  */
 export enum PqcExplanationStepOutcome {
     NotMatched = 'notMatched',
+    Matched = 'matched',
     Decided = 'decided',
-    NotReached = 'notReached',
     Resolved = 'resolved',
     Failed = 'failed',
 }

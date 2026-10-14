@@ -125,7 +125,7 @@ const enumMap = (labels: Record<string, string>) =>
 const enums = {
     assetType: enumMap({ algorithm: 'Algorithm', certificate: 'Certificate', 'related-crypto-material': 'Related crypto material' }),
     verdict: enumMap({ ready: 'PQC ready', notReady: 'Not PQC ready', unknown: 'Unknown' }),
-    outcome: enumMap({ notMatched: 'Not matched', decided: 'Decided', notReached: 'Not reached', resolved: 'Resolved', failed: 'Failed' }),
+    outcome: enumMap({ notMatched: 'Not matched', matched: 'Matched', decided: 'Decided', resolved: 'Resolved', failed: 'Failed' }),
 };
 
 const visibleKey: PqcReferencedAssetDto = {
@@ -160,7 +160,10 @@ const explanation = (overrides: Partial<CryptographicAssetPqcExplanationDto> = {
             verdict: PqcVerdict.NotReady,
             evaluatedFields: { algorithmFamily: 'RSA', parameterSet: '2048' },
         }),
-        step('SYMMETRIC-READY', PqcExplanationStepOutcome.NotReached),
+        step('CLASSICAL-UNDERSIZED', PqcExplanationStepOutcome.Matched, {
+            verdict: PqcVerdict.Unknown,
+            evaluatedFields: { parameterSet: '2048' },
+        }),
     ],
     matchesStored: true,
     storedVerdict: PqcVerdict.NotReady,
@@ -316,7 +319,7 @@ describe('crypto asset detail sections', () => {
             expect(stepRows().map((row) => cells(row).slice(0, 4))).toEqual([
                 ['Title of PQC-STANDARDIZEDPQC-STANDARDIZED', 'Not matched', '-', 'Message of PQC-STANDARDIZED'],
                 ['Title of CLASSICAL-SHORCLASSICAL-SHOR', 'Decided', 'Not PQC ready', 'Message of CLASSICAL-SHOR'],
-                ['Title of SYMMETRIC-READYSYMMETRIC-READY', 'Not reached', '-', 'Message of SYMMETRIC-READY'],
+                ['Title of CLASSICAL-UNDERSIZEDCLASSICAL-UNDERSIZED', 'Matched', 'Unknown', 'Message of CLASSICAL-UNDERSIZED'],
             ]);
             expect(one('[data-testid="outcome-descriptions"]')).not.toBeNull();
         });
@@ -327,20 +330,26 @@ describe('crypto asset detail sections', () => {
             expect(stepRows().map((row) => row.querySelector('[data-testid$="-outcome"]')?.textContent)).toEqual([
                 'Not matched',
                 'Decided',
-                'Not reached',
+                'Matched',
             ]);
         });
 
         test('the properties a step read open from its info control, and a step that read none has no control', async () => {
             await renderExplanation();
 
-            const [notMatched, decided, notReached] = stepRows();
+            const [notMatched, decided, matched] = stepRows();
             expect(propertiesRead(notMatched)).toEqual(['Algorithm family: RSA']);
             expect(propertiesRead(decided)).toEqual(['Algorithm family: RSA', 'Parameter set: 2048']);
             expect(decided.querySelector('[data-testid="toggletip"]')?.getAttribute('data-label')).toBe(
                 'Properties read by CLASSICAL-SHOR',
             );
-            expect(notReached.querySelector('[data-testid="toggletip"]')).toBeNull();
+            expect(propertiesRead(matched)).toEqual(['Parameter set: 2048']);
+        });
+
+        test('a step that read no properties has no info control', async () => {
+            await renderExplanation({ steps: [step('PQC-STANDARDIZED', PqcExplanationStepOutcome.NotMatched)] });
+
+            expect(stepRows()[0].querySelector('[data-testid="toggletip"]')).toBeNull();
         });
 
         const isSetApart = (row: Element) =>
@@ -397,6 +406,30 @@ describe('crypto asset detail sections', () => {
                 'Subject public key reference: crypto/key/rsa-2048',
                 'Rule of the referenced asset: CLASSICAL-SHOR',
             ]);
+        });
+
+        test("a matched step that carried another asset's verdict links it without claiming it decided", async () => {
+            await renderExplanation({
+                steps: [
+                    step('CERT-SUBJECT-KEY', PqcExplanationStepOutcome.Matched, {
+                        verdict: PqcVerdict.NotReady,
+                        referencedAsset: visibleKey,
+                        evaluatedFields: { assetType: 'certificate', referencedRuleId: 'CLASSICAL-SHOR' },
+                    }),
+                    step('CERT-SIGNATURE-ALGORITHM', PqcExplanationStepOutcome.Resolved, {
+                        verdict: PqcVerdict.NotReady,
+                        referencedAsset: hiddenKey,
+                    }),
+                ],
+            });
+
+            const [matched, resolved] = stepRows();
+            expect(isSetApart(matched)).toBe(false);
+            expect(cells(matched)[1]).toBe('Matched');
+            expect(matched.querySelector('a')?.getAttribute('href')).toBe('/cryptoassets/detail/key-1?tab=pqc-readiness');
+            expect(matched.textContent).toContain('Verdict carried over from');
+            expect(matched.textContent).not.toContain('Decided by');
+            expect(resolved.textContent).toContain('Decided by');
         });
 
         test('a resolved step whose asset the reader cannot open names it without a link', async () => {

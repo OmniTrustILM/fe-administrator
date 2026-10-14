@@ -14,7 +14,7 @@
 import type { PqcExplanationStepOutcome, PqcReferencedAssetDto, PqcVerdict } from './';
 
 /**
- * One rule of the PQC rule set as the explanation walked it. verdict is present on decided, resolved and failed steps; evaluatedFields is absent on a notReached step; referencedAsset is present on a resolved step only
+ * One rule of the PQC rule set as the explanation evaluated it. verdict is present on matched, decided, resolved and failed steps and absent on a notMatched one; evaluatedFields is present on every evaluated step; referencedAsset is present on a resolved step, and on a matched step whose rule carried another asset\'s verdict
  * @export
  * @interface PqcExplanationStepDto
  */
