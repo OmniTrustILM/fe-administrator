@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { firstValueFrom, of, throwError } from 'rxjs';
+import { AjaxError } from 'rxjs/ajax';
 import { take, toArray } from 'rxjs/operators';
 import cbomEpics from './cbom-epics';
 import { slice } from './cbom';
@@ -10,6 +11,11 @@ import { actions as userInterfaceActions } from './user-interface';
 import { actions as appRedirectActions } from './app-redirect';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { AttributeContentType, AttributeVersion } from 'types/openapi';
+
+const DUPLICATE_CBOM_MESSAGE =
+    'A CBOM with the same serial number and version already exists.\nPlease upload a new version or update the existing CBOM.';
+
+const coreError = (status: number, response: unknown) => new AjaxError('failed', { status, response } as never, {} as never);
 
 type EpicDeps = {
     apiClients: {
@@ -333,14 +339,14 @@ describe('cbom epics', () => {
         expect(requests).toEqual([uploadPayload]);
     });
 
-    test('uploadCbom keeps a stored-but-attributes-failed message whole and does not upload again', async () => {
+    test('uploadCbom ends an upload Core stored without its custom attributes as finished, keeping the message from Core whole', async () => {
         const message =
             'CBOM with UUID 3f2c9a64-1b7e-4c55-9d2a-6f1e0b8c4d21 was stored, but its custom attributes could not be stored. Content of attribute owner already exists.';
         let uploads = 0;
         const deps = createDeps({
             uploadCbom: () => {
                 uploads++;
-                return throwError(() => ({ message }));
+                return throwError(() => coreError(422, { message }));
             },
         });
 
@@ -351,9 +357,36 @@ describe('cbom epics', () => {
         );
         const emitted = await firstValueFrom(output$.pipe(toArray()));
 
-        const shown = `Failed to upload CBOM. ${message}`;
-        expect(emitted).toEqual([slice.actions.uploadCbomFailure({ error: shown }), alertsSlice.actions.error(shown)]);
+        const shown = `Failed to store the custom attributes of the uploaded CBOM (422): ${message}`;
+        expect(emitted).toEqual([slice.actions.uploadCbomStoredWithoutAttributes({ error: shown }), alertsSlice.actions.error(shown)]);
         expect(uploads).toBe(1);
+    });
+
+    test('uploadCbom shows the duplicate CBOM message for a 409 from Core', async () => {
+        const deps = createDeps({
+            uploadCbom: () =>
+                throwError(() => coreError(409, { message: 'CBOM with serialNumber urn:uuid:1 and version 1 already exists' })),
+        });
+
+        const output$ = (cbomEpics[4] as any)(of(slice.actions.uploadCbom({ content: {} } as any)), of({}) as any, deps as any);
+        const emitted = await firstValueFrom(output$.pipe(toArray()));
+
+        expect(emitted).toEqual([
+            slice.actions.uploadCbomFailure({ error: DUPLICATE_CBOM_MESSAGE }),
+            alertsSlice.actions.error(DUPLICATE_CBOM_MESSAGE),
+        ]);
+    });
+
+    test('uploadCbom keeps a refusal that is not a 409 whole, even when it says already exists', async () => {
+        const deps = createDeps({
+            uploadCbom: () => throwError(() => coreError(422, { message: 'Content of attribute owner already exists' })),
+        });
+
+        const output$ = (cbomEpics[4] as any)(of(slice.actions.uploadCbom({ content: {} } as any)), of({}) as any, deps as any);
+        const emitted = await firstValueFrom(output$.pipe(toArray()));
+
+        const shown = 'Failed to upload CBOM (422): Content of attribute owner already exists';
+        expect(emitted).toEqual([slice.actions.uploadCbomFailure({ error: shown }), alertsSlice.actions.error(shown)]);
     });
 
     test('deleteCbom success emits deleteCbomSuccess and success alert', async () => {

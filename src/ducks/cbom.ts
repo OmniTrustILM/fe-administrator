@@ -185,6 +185,13 @@ export const slice = createSlice({
             state.isUploadSuccess = false;
         },
 
+        // Core stored the document but not its custom attributes: the upload is over, so the list closes the dialog and
+        // re-reads, and the CBOM is not sent again.
+        uploadCbomStoredWithoutAttributes: (state, action: PayloadAction<{ error: string }>) => {
+            state.isUploading = false;
+            state.isUploadSuccess = true;
+        },
+
         // Delete CBOM
         deleteCbom: (state, action: PayloadAction<{ uuid: string }>) => {
             state.isDeleting = true;

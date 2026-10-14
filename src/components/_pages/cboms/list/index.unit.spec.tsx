@@ -6,6 +6,8 @@ import { MemoryRouter } from 'react-router';
 import ThemeProvider from 'components/ThemeProvider';
 import { actions as cbomActions } from 'ducks/cbom';
 import { actions as customAttributeActions } from 'ducks/customAttributes';
+import { EntityType } from 'ducks/filters';
+import { actions as pagingActions } from 'ducks/paging';
 import { reducers } from 'ducks/reducers';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
@@ -30,7 +32,8 @@ describe('CBOM list upload', () => {
         container.remove();
     });
 
-    test('dispatches the upload request the dialog builds, custom attributes included', async () => {
+    /** Renders the list, opens the upload dialog with no CBOM custom attributes defined, and pastes the document. */
+    const openUploadWithDocument = async () => {
         const store = configureStore({ reducer: reducers });
         const dispatch = vi.spyOn(store, 'dispatch');
         await act(async () => {
@@ -58,10 +61,30 @@ describe('CBOM list upload', () => {
             Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set?.call(content, JSON.stringify(cbom));
             content?.dispatchEvent(new Event('input', { bubbles: true }));
         });
+        return { store, dispatch, content };
+    };
+
+    test('passes the whole upload request the dialog builds to uploadCbom', async () => {
+        const { dispatch, content } = await openUploadWithDocument();
+
         await act(async () => {
             content?.closest('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
         });
 
         await vi.waitFor(() => expect(dispatch).toHaveBeenCalledWith(cbomActions.uploadCbom({ content: cbom, customAttributes: [] })));
+    });
+
+    test('closes the dialog and reads the list again when Core stored the CBOM without its custom attributes', async () => {
+        const { store, dispatch } = await openUploadWithDocument();
+
+        await act(async () => {
+            store.dispatch(cbomActions.uploadCbom({ content: cbom, customAttributes: [] }));
+        });
+        await act(async () => {
+            store.dispatch(cbomActions.uploadCbomStoredWithoutAttributes({ error: 'attributes refused' }));
+        });
+
+        expect(document.body.querySelector('textarea')).toBeNull();
+        expect(dispatch).toHaveBeenCalledWith(pagingActions.resetPaging({ entity: EntityType.CBOM }));
     });
 });

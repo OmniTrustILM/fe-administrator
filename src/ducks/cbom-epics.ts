@@ -21,11 +21,15 @@ import { LockWidgetNameEnum } from 'types/user-interface';
 const DUPLICATE_CBOM_MESSAGE =
     'A CBOM with the same serial number and version already exists.\nPlease upload a new version or update the existing CBOM.';
 
-// Core stored the document and only its custom attributes failed; the message names the stored CBOM, so it is never read as a duplicate.
+// Core's message when it stored the document but not its custom attributes; it names the stored CBOM.
 const STORED_WITHOUT_ATTRIBUTES = 'was stored, but its custom attributes could not be stored';
 
-const normalizeCbomUploadErrorMessage = (message: string): string => {
-    if (!message.includes(STORED_WITHOUT_ATTRIBUTES) && /serial number and version already exists|already exists/gi.test(message)) {
+// Core answers a duplicate serial number and version with 409; an error that carries no status is judged by its text.
+const isDuplicateCbom = (message: string, status: number | undefined): boolean =>
+    status === undefined ? /already exists/i.test(message) : status === 409;
+
+const normalizeCbomUploadErrorMessage = (message: string, status: number | undefined): string => {
+    if (isDuplicateCbom(message, status)) {
         return DUPLICATE_CBOM_MESSAGE;
     }
 
@@ -197,12 +201,15 @@ const uploadCbom: AppEpic = (action$, state, deps) => {
                         alertsSlice.actions.success('CBOM uploaded successfully.'),
                     ),
                 ),
-                catchError((err) =>
-                    (() => {
-                        const errorMessage = normalizeCbomUploadErrorMessage(extractError(err, 'Failed to upload CBOM'));
-                        return of(slice.actions.uploadCbomFailure({ error: errorMessage }), alertsSlice.actions.error(errorMessage));
-                    })(),
-                ),
+                catchError((err) => {
+                    if (extractError(err, '').includes(STORED_WITHOUT_ATTRIBUTES)) {
+                        const error = extractError(err, 'Failed to store the custom attributes of the uploaded CBOM');
+                        return of(slice.actions.uploadCbomStoredWithoutAttributes({ error }), alertsSlice.actions.error(error));
+                    }
+                    const status = typeof err?.status === 'number' ? err.status : undefined;
+                    const errorMessage = normalizeCbomUploadErrorMessage(extractError(err, 'Failed to upload CBOM'), status);
+                    return of(slice.actions.uploadCbomFailure({ error: errorMessage }), alertsSlice.actions.error(errorMessage));
+                }),
             ),
         ),
     );

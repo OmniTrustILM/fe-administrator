@@ -176,6 +176,20 @@ describe('cbom slice', () => {
         expect(next.cbomsData).toBeUndefined();
     });
 
+    test('uploadCbomStoredWithoutAttributes ends the upload as finished without adding a row', () => {
+        const uploading = {
+            ...initialState,
+            isUploading: true,
+            cbomsData: { items: [{ uuid: 'old-1' }], totalItems: 1, pageNumber: 1, itemsPerPage: 10, totalPages: 1 },
+        } as any;
+
+        const next = reducer(uploading, actions.uploadCbomStoredWithoutAttributes({ error: 'attributes refused' }));
+
+        expect(next.isUploading).toBe(false);
+        expect(next.isUploadSuccess).toBe(true);
+        expect(next.cbomsData!.items).toEqual([{ uuid: 'old-1' }]);
+    });
+
     test('deleteCbom / success / failure updates flags and list data', () => {
         const state = {
             ...initialState,
