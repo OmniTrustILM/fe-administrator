@@ -8,6 +8,7 @@ import MultiValueCell from './MultiValueCell';
 type Props = Readonly<{
     contentType: AttributeContentType | undefined;
     content: BaseAttributeContentModel[] | undefined;
+    referenceIsLabel?: boolean;
     dataTestId?: string;
 }>;
 
@@ -24,10 +25,10 @@ const TABULAR_CONTENT_TYPES: ReadonlySet<AttributeContentType> = new Set([
  * An attribute-sourced cell. Absence is answered first — a row simply may not have the attribute —
  * and only then does the content type decide how the values are rendered.
  */
-export default function AttributeCell({ contentType, content, dataTestId }: Props) {
+export default function AttributeCell({ contentType, content, referenceIsLabel, dataTestId }: Props) {
     // A column whose catalogue entry carries no content type cannot be interpreted; that is a
     // missing value as far as the row is concerned, not a reason to render something arbitrary.
-    const values = contentType ? getListCellValues(contentType, content) : [];
+    const values = contentType ? getListCellValues(contentType, content, referenceIsLabel) : [];
 
     if (values.length === 0) return <EmptyCell />;
 

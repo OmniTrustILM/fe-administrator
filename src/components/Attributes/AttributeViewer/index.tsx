@@ -16,6 +16,7 @@ import type { MetadataItemModel, MetadataModel } from 'types/locations';
 import {
     type AttributeResource,
     AttributeContentType,
+    AttributeType,
     type NameAndUuidDto,
     PlatformEnum,
     type Resource,
@@ -248,7 +249,7 @@ export default function AttributeViewer({
                     );
                 }
 
-                return getContent(attribute.contentType, attribute.content);
+                return getContent(attribute.contentType, attribute.content, attribute.type === AttributeType.Data);
             };
 
             return {
@@ -377,7 +378,7 @@ export default function AttributeViewer({
                                     }}
                                 />
                             ) : (
-                                getContent(a.contentType, a.content)
+                                getContent(a.contentType, a.content, a.type === AttributeType.Data)
                             ),
                             <WidgetButtons key="widget-buttons" buttons={getButtons(a, descriptor!, a.name)} />,
                         ],

@@ -6,7 +6,7 @@ import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EnumValueDescription } from 'components/EnumDescription';
 import { useSelector } from 'react-redux';
 import { type AttributeDescriptorModel, isDataAttributeModel, isInfoAttributeModel } from 'types/attributes';
-import { AttributeConstraintType, PlatformEnum } from 'types/openapi';
+import { AttributeConstraintType, AttributeType, PlatformEnum } from 'types/openapi';
 
 export type Props = {
     attributeDescriptors: AttributeDescriptorModel[];
@@ -65,7 +65,7 @@ export default function AttributeDescriptorViewer({ attributeDescriptors }: Read
                     getEnumLabel(attributeTypeEnum, attr.type),
                     requiredText,
                     attr.description ?? 'Not set',
-                    getAttributeContent(attr.contentType, attr.content),
+                    getAttributeContent(attr.contentType, attr.content, attr.type === AttributeType.Data),
                 ];
             } else {
                 return [attr.name, attr.type, 'n/a', attr.description ?? 'Not set', ''];
@@ -105,7 +105,13 @@ export default function AttributeDescriptorViewer({ attributeDescriptors }: Read
                         ],
                     },
                     ...columns,
-                    { id: 'defaults', columns: [<b key="label">Defaults</b>, getAttributeContent(attr.contentType, attr.content)] },
+                    {
+                        id: 'defaults',
+                        columns: [
+                            <b key="label">Defaults</b>,
+                            getAttributeContent(attr.contentType, attr.content, attr.type === AttributeType.Data),
+                        ],
+                    },
                 ];
             }
 

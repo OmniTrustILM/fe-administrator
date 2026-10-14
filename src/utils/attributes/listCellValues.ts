@@ -49,12 +49,11 @@ function toFileValue(item: BaseAttributeContentModel): ListCellValue | undefined
     return { label: item.data.fileName, detail: item.data.mimeType };
 }
 
-function toLabel(contentType: AttributeContentType, item: BaseAttributeContentModel): string | undefined {
+function toLabel(contentType: AttributeContentType, item: BaseAttributeContentModel, referenceIsLabel: boolean): string | undefined {
     switch (contentType) {
         case AttributeContentType.String:
         case AttributeContentType.Text:
-            // The reference is the human-readable form; the data is the stored code behind it.
-            return item.reference ?? String(item.data);
+            return referenceIsLabel && item.reference ? item.reference : String(item.data);
         case AttributeContentType.Integer:
         case AttributeContentType.Float:
             return String(item.data);
@@ -95,7 +94,11 @@ function toLabel(contentType: AttributeContentType, item: BaseAttributeContentMo
  * An item that has nothing presentable is dropped rather than rendered blank, so a cell left with
  * no values resolves to the empty state.
  */
-export function getListCellValues(contentType: AttributeContentType, content: BaseAttributeContentModel[] | undefined): ListCellValue[] {
+export function getListCellValues(
+    contentType: AttributeContentType,
+    content: BaseAttributeContentModel[] | undefined,
+    referenceIsLabel = false,
+): ListCellValue[] {
     if (!content || content.length === 0) return [];
 
     return content.reduce<ListCellValue[]>((values, item) => {
@@ -103,7 +106,7 @@ export function getListCellValues(contentType: AttributeContentType, content: Ba
         if (contentType === AttributeContentType.Resource) value = toResourceValue(item);
         else if (contentType === AttributeContentType.File) value = toFileValue(item);
         else {
-            const label = toLabel(contentType, item);
+            const label = toLabel(contentType, item, referenceIsLabel);
             value = label ? { label } : undefined;
         }
         if (value) values.push(value);

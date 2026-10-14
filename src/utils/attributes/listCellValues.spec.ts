@@ -3,8 +3,8 @@ import type { BaseAttributeContentModel } from 'types/attributes';
 import { AttributeContentType } from 'types/openapi';
 import { getListCellValues } from './listCellValues';
 
-const values = (contentType: AttributeContentType, content: BaseAttributeContentModel[] | undefined) =>
-    getListCellValues(contentType, content).map((value) => value.label);
+const values = (contentType: AttributeContentType, content: BaseAttributeContentModel[] | undefined, referenceIsLabel?: boolean) =>
+    getListCellValues(contentType, content, referenceIsLabel).map((value) => value.label);
 
 describe('getListCellValues', () => {
     it('returns nothing for absent content, so the cell resolves to the empty state', () => {
@@ -18,9 +18,14 @@ describe('getListCellValues', () => {
     });
 
     describe('string and text', () => {
-        it('prefers the human-readable reference over the stored data', () => {
-            expect(values(AttributeContentType.String, [{ data: 'ACME_1', reference: 'Acme Corp' }])).toEqual(['Acme Corp']);
-            expect(values(AttributeContentType.Text, [{ data: 'ACME_1', reference: 'Acme Corp' }])).toEqual(['Acme Corp']);
+        it('prefers the reference over the stored data when the reference is a label', () => {
+            expect(values(AttributeContentType.String, [{ data: 'ACME_1', reference: 'Acme Corp' }], true)).toEqual(['Acme Corp']);
+            expect(values(AttributeContentType.Text, [{ data: 'ACME_1', reference: 'Acme Corp' }], true)).toEqual(['Acme Corp']);
+        });
+
+        it('shows the stored data over the reference by default', () => {
+            expect(values(AttributeContentType.String, [{ data: 'Production', reference: 'environment' }])).toEqual(['Production']);
+            expect(values(AttributeContentType.Text, [{ data: 'Some notes', reference: 'notes' }])).toEqual(['Some notes']);
         });
 
         it('falls back to the data when there is no reference', () => {

@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import { FilterFieldSource } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
 import { getColumnKey, getProjectedContent } from 'utils/tableColumns';
 import type { TableDataRow } from '../types';
@@ -28,6 +29,7 @@ export function renderCell<TRow extends object>(row: TRow, column: ColumnDefinit
     return (
         <AttributeCell
             contentType={column.attributeContentType}
+            referenceIsLabel={column.fieldSource === FilterFieldSource.Data}
             content={getProjectedContent(row, column)}
             dataTestId={`cell-${getColumnKey(column)}`}
         />
