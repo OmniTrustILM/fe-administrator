@@ -237,11 +237,13 @@ test.describe('SigningProfileForm - qualified timestamp accuracy warning', () =>
         await page.getByRole('option', { name: 'High Precision', exact: true }).click();
     }
 
-    test('warns when the selected configuration is coarser than one second', async ({ mount, page }) => {
-        await mount(<SigningProfileFormTestWrapper timeQualityAccuracy="PT2S" />);
-        await selectQualifiedTimeQuality(page);
-        await expect(page.getByText(warning)).toBeVisible();
-    });
+    for (const accuracy of ['PT2S', 'PT1.0001S']) {
+        test(`warns for an accuracy of ${accuracy}`, async ({ mount, page }) => {
+            await mount(<SigningProfileFormTestWrapper timeQualityAccuracy={accuracy} />);
+            await selectQualifiedTimeQuality(page);
+            await expect(page.getByText(warning)).toBeVisible();
+        });
+    }
 
     for (const accuracy of ['PT1S', 'PT0.5S']) {
         test(`does not warn for an accuracy of ${accuracy}`, async ({ mount, page }) => {

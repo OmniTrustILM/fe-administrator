@@ -91,6 +91,10 @@ describe('duration', () => {
             expect(getMillisecondsFromIso8601String(input)).toBeUndefined();
         });
 
+        test('keeps sub-millisecond precision', () => {
+            expect(getMillisecondsFromIso8601String('PT1.0001S')).toBeGreaterThan(1000);
+        });
+
         test('orders durations correctly', () => {
             const drift = getMillisecondsFromIso8601String('PT0.5S')!;
             const accuracy = getMillisecondsFromIso8601String('PT1S')!;
