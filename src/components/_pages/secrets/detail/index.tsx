@@ -608,7 +608,7 @@ function SecretDetail() {
                                         </Widget>
 
                                         {secret && (
-                                            <Container className="grid gap-6 xl:grid-cols-2 items-start">
+                                            <Container className="grid grid-cols-1 gap-6 xl:grid-cols-2 items-start">
                                                 <Widget
                                                     title="Sync Vault Profiles"
                                                     titleSize="large"
