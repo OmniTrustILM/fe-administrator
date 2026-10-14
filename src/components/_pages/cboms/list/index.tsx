@@ -225,7 +225,7 @@ function CbomsList() {
                 body={
                     <CbomUploadDialog
                         onCancel={() => setIsUploadOpen(false)}
-                        onUpload={(data) => dispatch(actions.uploadCbom({ content: data.content }))}
+                        onUpload={(request) => dispatch(actions.uploadCbom(request))}
                     />
                 }
                 toggle={() => setIsUploadOpen(false)}
