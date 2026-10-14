@@ -1,4 +1,5 @@
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
+import CustomAttributeWidget from 'components/Attributes/CustomAttributeWidget';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router';
@@ -15,6 +16,8 @@ import DonutChart from 'components/_pages/dashboard/DashboardItem/DonutChart';
 import Spinner from 'components/Spinner';
 import TabLayout from 'components/Layout/TabLayout';
 import Widget from 'components/Widget';
+import type { AttributeResponseModel } from 'types/attributes';
+import { Resource } from 'types/openapi';
 import { EntityType } from 'ducks/filters';
 import { actions, selectors } from 'ducks/cbom';
 import { CbomAssetName, CbomInventoryStatus, useCbomInventory } from './CbomInventoryLinks';
@@ -620,7 +623,7 @@ export default function CbomDetail() {
     );
 
     if (isFetching) {
-        return <DetailPageSkeleton layout="tabs" tabCount={3} />;
+        return <DetailPageSkeleton layout="tabs" tabCount={4} />;
     }
 
     const inventoryStatus = <CbomInventoryStatus state={inventoryState} onRetry={reloadInventory} />;
@@ -922,6 +925,24 @@ export default function CbomDetail() {
                                     </Widget>
                                 </Container>
                             ),
+                    },
+                    {
+                        title: 'Attributes',
+                        tabKey: 'attributes',
+                        content:
+                            isTabSwitching && activeTab === 3 && renderedTab !== 3 ? (
+                                tabSwitchLoadingContent
+                            ) : detail ? (
+                                <Container>
+                                    <CustomAttributeWidget
+                                        resource={Resource.Cboms}
+                                        resourceUuid={detail.uuid}
+                                        attributes={
+                                            (detail as typeof detail & { customAttributes?: AttributeResponseModel[] }).customAttributes
+                                        }
+                                    />
+                                </Container>
+                            ) : null,
                     },
                 ]}
             />

@@ -8,6 +8,8 @@ import type {
     SearchRequestDto,
 } from 'types/openapi';
 import type { WidgetLockErrorModel } from 'types/user-interface';
+import { Resource } from 'types/openapi';
+import { attachCustomAttributesSync } from './customAttributesSync';
 import { resetSliceState } from './reducerUtils';
 
 // No searchable-fields state here: the filter widget reads the catalogue through the `filters` duck.
@@ -106,6 +108,9 @@ export const slice = createSlice({
             state.pqcExplanationLock = action.payload.lock;
             state.isFetchingPqcExplanation = false;
         },
+    },
+    extraReducers: (builder) => {
+        attachCustomAttributesSync(builder, Resource.CryptoAssets, (state) => state.assetDetail);
     },
 });
 

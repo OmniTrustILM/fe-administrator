@@ -1,9 +1,14 @@
 import { act } from 'react';
+import { configureStore } from '@reduxjs/toolkit';
 import { Provider } from 'react-redux';
 import { createRoot, type Root } from 'react-dom/client';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { actions } from 'ducks/crypto-assets';
+import { actions as customAttributeActions } from 'ducks/customAttributes';
+import { reducers } from 'ducks/reducers';
+import type { AttributeResponseModel, CustomAttributeModel } from 'types/attributes';
+import { AttributeContentType, AttributeType, AttributeVersion, Resource } from 'types/openapi';
 import { LockTypeEnum } from 'types/user-interface';
 import { createMockStore } from 'utils/test-helpers';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
@@ -117,6 +122,113 @@ describe('CryptoAssetDetail', () => {
         expect(one('h1')?.textContent).toBe('RSA-2048');
         expect(widgetTitles()).toEqual(['Identity', 'PQC readiness', 'Source CBOMs', 'Crypto properties']);
         expect(one(explanationWidget)).toBeNull();
+    });
+
+    test('the attributes tab shows saved content and loads the editor for this asset', async () => {
+        const customAttributes = [
+            {
+                uuid: 'owner-attribute',
+                name: 'owner',
+                label: 'Owner',
+                type: AttributeType.Custom,
+                contentType: AttributeContentType.String,
+                properties: { label: 'Owner', readOnly: false, required: false, list: false, multiSelect: false },
+                content: [{ data: 'Security team' }],
+            },
+        ];
+        const store = storeWith({ assetDetail: { ...loadedAsset, customAttributes } });
+        store.dispatch(customAttributeActions.listResourceCustomAttributesSuccess([customAttributes[0] as never]));
+        const dispatch = vi.spyOn(store, 'dispatch');
+
+        await render(store, '?tab=attributes');
+
+        expect(widgetTitles()).toContain('Custom Attributes');
+        expect(container.textContent).toContain('Security team');
+        expect(dispatch).toHaveBeenCalledWith(customAttributeActions.listResourceCustomAttributes(Resource.CryptoAssets));
+        expect(dispatch).toHaveBeenCalledWith(
+            customAttributeActions.loadCustomAttributeContent({
+                resource: Resource.CryptoAssets,
+                resourceUuid: 'asset-1',
+                customAttributes,
+            }),
+        );
+    });
+
+    const ownerAttribute: AttributeResponseModel = {
+        uuid: 'owner-attribute',
+        name: 'owner',
+        label: 'Owner',
+        type: AttributeType.Custom,
+        contentType: AttributeContentType.String,
+        version: AttributeVersion.V3,
+        content: [{ data: 'Security team' }],
+    };
+    const ownerDescriptor: CustomAttributeModel = {
+        ...ownerAttribute,
+        version: 3,
+        properties: {
+            label: 'Owner',
+            visible: true,
+            readOnly: false,
+            required: false,
+            list: false,
+            multiSelect: false,
+            extensibleList: false,
+        },
+    };
+
+    test.each([
+        { operation: 'add', before: [], after: [ownerAttribute] },
+        { operation: 'edit', before: [ownerAttribute], after: [{ ...ownerAttribute, content: [{ data: 'Updated team' }] }] },
+        { operation: 'remove', before: [ownerAttribute], after: [] },
+    ])('keeps a successful attribute $operation after leaving and reopening the tab', async ({ operation, before, after }) => {
+        const store = configureStore({ reducer: reducers });
+        await act(async () => {
+            root.render(
+                <Provider store={store}>
+                    <MemoryRouter initialEntries={['/cryptoassets/detail/asset-1?tab=attributes']}>
+                        <Routes>
+                            <Route path="/cryptoassets/detail/:id" element={<CryptoAssetDetail />} />
+                        </Routes>
+                    </MemoryRouter>
+                </Provider>,
+            );
+        });
+        await act(async () => {
+            store.dispatch(actions.getCryptoAssetDetailSuccess({ detail: { ...loadedAsset, customAttributes: before } as never }));
+        });
+        await act(async () => {
+            store.dispatch(customAttributeActions.listResourceCustomAttributesSuccess([ownerDescriptor]));
+        });
+        if (before.length > 0) expect(container.textContent).toContain('Security team');
+        await act(async () => {
+            store.dispatch(
+                (operation === 'remove'
+                    ? customAttributeActions.removeCustomAttributeContentSuccess
+                    : customAttributeActions.updateCustomAttributeContentSuccess)({
+                    resource: Resource.CryptoAssets,
+                    resourceUuid: 'asset-1',
+                    customAttributes: after,
+                }),
+            );
+        });
+        const expectSavedContent = () => {
+            if (operation === 'remove') {
+                expect(container.textContent).not.toContain('Security team');
+            } else {
+                expect(container.textContent).toContain(operation === 'edit' ? 'Updated team' : 'Security team');
+            }
+        };
+        expectSavedContent();
+
+        await click(Array.from(container.querySelectorAll('[role="tab"]')).find((tab) => tab.textContent === 'Details'));
+        expect(container.textContent).not.toContain('Custom Attributes');
+        await click(Array.from(container.querySelectorAll('[role="tab"]')).find((tab) => tab.textContent === 'Attributes'));
+        await act(async () => {
+            store.dispatch(customAttributeActions.listResourceCustomAttributesSuccess([ownerDescriptor]));
+        });
+        expect(container.textContent).toContain('Custom Attributes');
+        expectSavedContent();
     });
 
     test('the PQC readiness tab shows the rules beside the properties they evaluated', async () => {

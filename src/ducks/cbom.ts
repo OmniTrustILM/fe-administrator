@@ -9,6 +9,8 @@ import type {
     SearchRequestDto,
 } from 'types/openapi';
 import type { ContributedAssetRefs, ContributedAssets } from 'utils/cbom-asset-links';
+import { Resource } from 'types/openapi';
+import { attachCustomAttributesSync } from './customAttributesSync';
 import { resetSliceState } from './reducerUtils';
 
 export type State = {
@@ -234,6 +236,9 @@ export const slice = createSlice({
             state.isSyncing = false;
             state.syncSucceeded = false;
         },
+    },
+    extraReducers: (builder) => {
+        attachCustomAttributesSync(builder, Resource.Cboms, (state) => state.cbomDetail);
     },
 });
 
