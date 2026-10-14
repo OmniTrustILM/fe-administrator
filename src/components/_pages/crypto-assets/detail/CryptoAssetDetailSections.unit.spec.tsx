@@ -334,7 +334,7 @@ describe('crypto asset detail sections', () => {
             ]);
         });
 
-        test('the properties a step read open from its info control, and a step that read none has no control', async () => {
+        test('the properties a step read open from its info control', async () => {
             await renderExplanation();
 
             const [notMatched, decided, matched] = stepRows();
