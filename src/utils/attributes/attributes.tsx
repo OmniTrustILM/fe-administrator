@@ -111,7 +111,16 @@ export const getAttributeCopyValue = (contentType: AttributeContentType, content
 export const isFreeTextContentType = (contentType: AttributeContentType) =>
     contentType === AttributeContentType.String || contentType === AttributeContentType.Text;
 
-export const getAttributeContent = (contentType: AttributeContentType, content: BaseAttributeContentModel[] | undefined) => {
+/**
+ * `referenceIsLabel` is true only for connector DATA attributes, whose STRING/TEXT `reference` names the
+ * selected list option. Custom and metadata content can carry an arbitrary `reference`, such as the
+ * attribute name, so their value is always `data`.
+ */
+export const getAttributeContent = (
+    contentType: AttributeContentType,
+    content: BaseAttributeContentModel[] | undefined,
+    referenceIsLabel = false,
+) => {
     if (!content) return 'Not set';
 
     if (contentType === AttributeContentType.Codeblock && content.length > 0) {
@@ -141,7 +150,7 @@ export const getAttributeContent = (contentType: AttributeContentType, content: 
                 return String(content.data);
             case AttributeContentType.String:
             case AttributeContentType.Text:
-                return content.reference ? content.reference : String(content.data);
+                return referenceIsLabel && content.reference ? content.reference : String(content.data);
             case AttributeContentType.Secret:
                 return '*****';
         }
