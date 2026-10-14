@@ -21,8 +21,11 @@ import { LockWidgetNameEnum } from 'types/user-interface';
 const DUPLICATE_CBOM_MESSAGE =
     'A CBOM with the same serial number and version already exists.\nPlease upload a new version or update the existing CBOM.';
 
+// Core stored the document and only its custom attributes failed; the message names the stored CBOM, so it is never read as a duplicate.
+const STORED_WITHOUT_ATTRIBUTES = 'was stored, but its custom attributes could not be stored';
+
 const normalizeCbomUploadErrorMessage = (message: string): string => {
-    if (/serial number and version already exists|already exists/gi.test(message)) {
+    if (!message.includes(STORED_WITHOUT_ATTRIBUTES) && /serial number and version already exists|already exists/gi.test(message)) {
         return DUPLICATE_CBOM_MESSAGE;
     }
 

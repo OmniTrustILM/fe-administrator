@@ -9,6 +9,7 @@ import { actions as pagingActions } from './paging';
 import { actions as userInterfaceActions } from './user-interface';
 import { actions as appRedirectActions } from './app-redirect';
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { AttributeContentType, AttributeVersion } from 'types/openapi';
 
 type EpicDeps = {
     apiClients: {
@@ -303,6 +304,56 @@ describe('cbom epics', () => {
                 'A CBOM with the same serial number and version already exists.\nPlease upload a new version or update the existing CBOM.',
             ),
         );
+    });
+
+    test('uploadCbom sends the document and its custom attributes as one request', async () => {
+        const uploadPayload = {
+            content: { bomFormat: 'CycloneDX', specVersion: '1.6', metadata: { component: { name: 'CBOM-Lens' } } },
+            customAttributes: [
+                {
+                    uuid: 'owner-attribute',
+                    name: 'owner',
+                    contentType: AttributeContentType.String,
+                    version: AttributeVersion.V3,
+                    content: [{ data: 'Inventory team' }],
+                },
+            ],
+        };
+        const requests: unknown[] = [];
+        const deps = createDeps({
+            uploadCbom: ({ cbomUploadRequestDto }) => {
+                requests.push(cbomUploadRequestDto);
+                return of({ uuid: 'created-cbom' });
+            },
+        });
+
+        const output$ = (cbomEpics[4] as any)(of(slice.actions.uploadCbom(uploadPayload)), of({}) as any, deps as any);
+        await firstValueFrom(output$.pipe(take(2), toArray()));
+
+        expect(requests).toEqual([uploadPayload]);
+    });
+
+    test('uploadCbom keeps a stored-but-attributes-failed message whole and does not upload again', async () => {
+        const message =
+            'CBOM with UUID 3f2c9a64-1b7e-4c55-9d2a-6f1e0b8c4d21 was stored, but its custom attributes could not be stored. Content of attribute owner already exists.';
+        let uploads = 0;
+        const deps = createDeps({
+            uploadCbom: () => {
+                uploads++;
+                return throwError(() => ({ message }));
+            },
+        });
+
+        const output$ = (cbomEpics[4] as any)(
+            of(slice.actions.uploadCbom({ content: {}, customAttributes: [] } as any)),
+            of({}) as any,
+            deps as any,
+        );
+        const emitted = await firstValueFrom(output$.pipe(toArray()));
+
+        const shown = `Failed to upload CBOM. ${message}`;
+        expect(emitted).toEqual([slice.actions.uploadCbomFailure({ error: shown }), alertsSlice.actions.error(shown)]);
+        expect(uploads).toBe(1);
     });
 
     test('deleteCbom success emits deleteCbomSuccess and success alert', async () => {
