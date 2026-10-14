@@ -193,7 +193,7 @@ export default function AddColumnMenu({
                                 type="button"
                                 onClick={onReset}
                                 data-testid={`${dataTestId}-reset`}
-                                className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-brand hover:bg-brand-subtle focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand"
+                                className="inline-flex shrink-0 cursor-pointer items-center gap-1.5 rounded-md px-2 py-1.5 text-sm font-medium text-brand hover:bg-brand-subtle hover:text-brand-hover focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand"
                             >
                                 <RotateCcw className="size-4 shrink-0" aria-hidden="true" />
                                 Reset to standard

@@ -1,5 +1,6 @@
 import { FilterFieldSource } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
+import { textContrast } from '../../../playwright/contrast';
 import { expect, test, type Page } from '../../../playwright/ct-test';
 import AddColumnMenuHarness from './AddColumnMenuHarness';
 
@@ -182,6 +183,19 @@ test.describe('AddColumnMenu', () => {
         await expect.poll(() => appliedColumns(page)).toEqual(['property:COMMON_NAME']);
         await expect(page.getByTestId('add-column-menu')).toBeVisible();
     });
+
+    for (const theme of ['light', 'dark'] as const) {
+        test(`the hovered reset entry meets AA text contrast in the ${theme} theme`, async ({ mount, page }) => {
+            await mount(<AddColumnMenuHarness fields={fields} columns={[commonName, expiresAt]} standardColumns={[commonName]} />);
+            await page.evaluate((isDark) => document.documentElement.classList.toggle('dark', isDark), theme === 'dark');
+            await page.getByTestId('add-column-menu-trigger').click();
+            const reset = page.getByTestId('add-column-menu-reset');
+
+            await reset.hover();
+
+            expect(await textContrast(reset)).toBeGreaterThanOrEqual(4.5);
+        });
+    }
 
     test('offers no reset where the host has nothing to go back to', async ({ mount, page }) => {
         await mount(<AddColumnMenuHarness fields={fields} columns={[commonName, expiresAt]} />);

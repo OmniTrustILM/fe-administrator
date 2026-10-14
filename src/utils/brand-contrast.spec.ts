@@ -119,6 +119,38 @@ describe('brand-contrast', () => {
             expect(findings.every(({ theme }) => theme === 'light')).toBe(true);
         });
 
+        test('should report body text that is too light for a selected option', () => {
+            const findings = brandContrastFindings(brandColors({ backgroundColor: '#111111', textColor: '#f5f5f5' }));
+
+            expect(findings.map(identify)).toContain('text|light|Body text is hard to read on selected options');
+        });
+
+        test('should report tag and highlighted action text a pale Primary cannot carry', () => {
+            const findings = brandContrastFindings(brandColors({ primaryColor: '#7fc4ff' }));
+
+            expect(findings.map(identify)).toContain('primary|light|Text on tags and highlighted actions is hard to read');
+        });
+
+        test('should measure the highlight a black page hides from the link pairing', () => {
+            // A pale Primary reads as a link on a black page's card, so the link pairing passes; the highlight it sits on
+            // as a tag is still a wash towards white.
+            const consequences = brandContrastFindings(brandColors({ primaryColor: '#7fc4ff', backgroundColor: '#000000' }))
+                .filter(({ theme }) => theme === 'light')
+                .map(({ consequence }) => consequence);
+
+            expect(consequences).not.toContain('Links and active controls are hard to read on cards and dialogs');
+            expect(consequences).toContain('Text on tags and highlighted actions is hard to read');
+        });
+
+        test('should leave selected options unmeasured in the dark composition, where no Primary can fail them', () => {
+            const lightestHighlight = brandTokenValues(brandColors({ primaryColor: '#ffffff' }), 'dark')['brand-subtle'];
+
+            expect(contrastRatio(PLATFORM_TOKENS.dark.content, lightestHighlight)).toBeGreaterThanOrEqual(AA_TEXT);
+            expect(PAIRINGS.filter(({ composition }) => composition !== undefined).map(({ consequence }) => consequence)).toStrictEqual([
+                'Body text is hard to read on selected options',
+            ]);
+        });
+
         test('should name the colours it compared and the ratio they achieve', () => {
             const [finding] = brandContrastFindings(brandColors({ backgroundColor: '#ffffff', textColor: '#c9c9c9' }));
 
@@ -232,7 +264,9 @@ describe('brand-contrast', () => {
             const colors = brandColors(ALL_SET);
             const sources = { light: brandTokenSources(colors, 'light'), dark: brandTokenSources(colors, 'dark') };
             const categoryIn = (theme: 'light' | 'dark', pairing: (typeof PAIRINGS)[number]) =>
-                sources[theme][pairing.foreground] ?? sources[theme][pairing.background];
+                pairing.composition === undefined || pairing.composition === theme
+                    ? (sources[theme][pairing.foreground] ?? sources[theme][pairing.background])
+                    : undefined;
 
             const inBothThemes = PAIRINGS.filter(
                 (pairing) => categoryIn('light', pairing) !== undefined && categoryIn('dark', pairing) !== undefined,

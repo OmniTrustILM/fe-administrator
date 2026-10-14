@@ -176,7 +176,7 @@ export default function CommentComposer({
                     role="toolbar"
                     aria-label="Formatting"
                 >
-                    <div className="flex items-center" role="tablist" aria-label="Editor mode">
+                    <div className="flex items-center gap-1" role="tablist" aria-label="Editor mode">
                         {MODES.map(({ label, isPreview }) => (
                             <button
                                 key={label}
@@ -184,8 +184,10 @@ export default function CommentComposer({
                                 role="tab"
                                 aria-selected={preview === isPreview}
                                 className={cn(
-                                    'px-2.5 py-1 text-xs font-medium rounded-md border border-transparent focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand',
-                                    preview === isPreview ? 'text-brand bg-brand-subtle' : 'text-content-muted hover:bg-surface-hover',
+                                    'px-2.5 py-1 text-xs font-medium rounded-md border focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand',
+                                    preview === isPreview
+                                        ? 'border-brand bg-brand-subtle text-content'
+                                        : 'border-transparent text-content-muted hover:bg-surface-hover',
                                 )}
                                 onClick={() => setPreview(isPreview)}
                                 data-testid={`${dataTestId}-${isPreview ? 'toggle-preview' : 'toggle-write'}`}

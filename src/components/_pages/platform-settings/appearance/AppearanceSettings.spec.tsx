@@ -940,8 +940,9 @@ test.describe('AppearanceSettings', () => {
 
             await expect(primary).toBeVisible();
             await expect(primary).toContainText('Primary');
-            await expect(primary.getByRole('listitem')).toHaveCount(2);
+            await expect(primary.getByRole('listitem')).toHaveCount(3);
             await expect(primary).toContainText('Links and active controls are hard to read on cards and dialogs in the light theme.');
+            await expect(primary).toContainText('Text on tags and highlighted actions is hard to read in the light theme.');
             await expect(primary).toContainText('1.81:1, needs 4.5:1');
             // The field to change is the box's heading, so the list has to carry it: read inside the list alone, a
             // consequence never says which of the four colours produced it.

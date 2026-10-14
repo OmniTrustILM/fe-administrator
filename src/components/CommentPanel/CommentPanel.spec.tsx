@@ -1,5 +1,6 @@
 import type { Page } from '@playwright/test';
 import { LockTypeEnum } from 'types/user-interface';
+import { textContrast } from '../../../playwright/contrast';
 import { expect, test } from '../../../playwright/ct-test';
 import CommentPanelWithStore from './CommentPanelWithStore';
 
@@ -131,6 +132,20 @@ test.describe('CommentPanel', () => {
             true,
         );
     });
+
+    for (const theme of ['light', 'dark'] as const) {
+        test(`the selected editor mode tab meets AA text contrast in the ${theme} theme`, async ({ mount, page }) => {
+            await mount(<CommentPanelWithStore />);
+            await page.evaluate((isDark) => document.documentElement.classList.toggle('dark', isDark), theme === 'dark');
+
+            for (const mode of ['write', 'preview']) {
+                const tab = page.getByTestId(`comment-panel-obj-1-composer-toggle-${mode}`);
+                await tab.click();
+                await expect(tab).toHaveAttribute('aria-selected', 'true');
+                expect(await textContrast(tab)).toBeGreaterThanOrEqual(4.5);
+            }
+        });
+    }
 
     test('posts a root comment and supports preview', async ({ mount, page }) => {
         await mount(<CommentPanelWithStore />);

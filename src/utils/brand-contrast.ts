@@ -42,6 +42,7 @@ export const PLATFORM_TOKENS: Record<ResolvedTheme, Record<string, string>> = {
         'content-on-brand': '#ffffff',
         outline: '#8f8f8f',
         brand: '#0073cf',
+        'brand-subtle': '#e6f2ff',
         info: '#0369a1',
         'info-surface': '#e6f2ff',
         'info-solid': '#2798e7',
@@ -57,6 +58,7 @@ export const PLATFORM_TOKENS: Record<ResolvedTheme, Record<string, string>> = {
         'content-on-brand': '#ffffff',
         outline: '#666666',
         brand: '#3399ff',
+        'brand-subtle': '#002d59',
         info: '#38bdf8',
         'info-surface': '#002d59',
         'info-solid': '#2798e7',
@@ -69,6 +71,8 @@ type Pairing = {
     foreground: string;
     background: string;
     threshold: number;
+    /** The one composition it is measured in, for a pairing nothing the operator sets can fail in the other. */
+    composition?: ResolvedTheme;
 };
 
 /**
@@ -93,6 +97,15 @@ export const PAIRINGS: readonly Pairing[] = [
         threshold: AA_TEXT,
     },
     { consequence: 'Body text is hard to read on inset panels', foreground: 'content', background: 'surface-sunken', threshold: AA_TEXT },
+    // Light only: Text does not reach the dark composition, and the platform's own content there clears AA on the
+    // wash of any Primary, white included. Measuring it would also file one sentence under two fields.
+    {
+        consequence: 'Body text is hard to read on selected options',
+        foreground: 'content',
+        background: 'brand-subtle',
+        threshold: AA_TEXT,
+        composition: 'light',
+    },
     {
         consequence: 'Supporting text is hard to read on the page background',
         foreground: 'content-muted',
@@ -115,6 +128,12 @@ export const PAIRINGS: readonly Pairing[] = [
         consequence: 'Links and active controls are hard to read on cards and dialogs',
         foreground: 'brand',
         background: 'surface-raised',
+        threshold: AA_TEXT,
+    },
+    {
+        consequence: 'Text on tags and highlighted actions is hard to read',
+        foreground: 'brand-hover',
+        background: 'brand-subtle',
         threshold: AA_TEXT,
     },
     {
@@ -166,7 +185,11 @@ const findingsForTheme = (colors: BrandColors, theme: ResolvedTheme): ContrastFi
     const tokens = { ...PLATFORM_TOKENS[theme], ...branded };
     const findings: ContrastFinding[] = [];
 
-    for (const { consequence, foreground, background, threshold } of PAIRINGS) {
+    for (const { consequence, foreground, background, threshold, composition } of PAIRINGS) {
+        if (composition !== undefined && composition !== theme) {
+            continue;
+        }
+
         // A pairing neither side of which branding reaches is the platform's own, and is already asserted at build
         // time. Reporting it would blame the operator's colours for something they did not change - and in the dark
         // composition, where Background and Text do not apply, that is most of the list.
