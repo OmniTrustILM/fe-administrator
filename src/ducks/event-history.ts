@@ -1,5 +1,6 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { AppState } from 'ducks';
+import type { SearchFieldListModel } from 'types/certificate';
 import type {
     EventHistoryRequestDto,
     PaginationResponseDtoEventHistoryDto,
@@ -13,11 +14,14 @@ export type State = {
     isFetchingEventHistory: boolean;
     objectEventHistory?: PaginationResponseDtoObjectEventHistoryDto;
     isFetchingObjectEventHistory: boolean;
+    /** Condition filter fields per resource, so a record is only ever rendered with the fields of its own resource. */
+    conditionFilterFieldsByResource: Partial<Record<Resource, SearchFieldListModel[]>>;
 };
 
 export const initialState: State = {
     isFetchingEventHistory: false,
     isFetchingObjectEventHistory: false,
+    conditionFilterFieldsByResource: {},
 };
 
 export const slice = createSlice({
@@ -54,6 +58,12 @@ export const slice = createSlice({
             state.isFetchingObjectEventHistory = false;
         },
 
+        getConditionFilterFields: (state, action: PayloadAction<{ resource: Resource }>) => {},
+        getConditionFilterFieldsSuccess: (state, action: PayloadAction<{ resource: Resource; filterFields: SearchFieldListModel[] }>) => {
+            state.conditionFilterFieldsByResource[action.payload.resource] = action.payload.filterFields;
+        },
+        getConditionFilterFieldsFailure: (state, action: PayloadAction<{ resource: Resource; error: string | undefined }>) => {},
+
         resetEventHistory: () => initialState,
     },
 });
@@ -64,6 +74,8 @@ const eventHistory = createSelector(state, (s) => s.eventHistory);
 const isFetchingEventHistory = createSelector(state, (s) => s.isFetchingEventHistory);
 const objectEventHistory = createSelector(state, (s) => s.objectEventHistory);
 const isFetchingObjectEventHistory = createSelector(state, (s) => s.isFetchingObjectEventHistory);
+const conditionFilterFields = (resource: Resource | undefined) =>
+    createSelector(state, (s) => (resource ? s.conditionFilterFieldsByResource[resource] : undefined));
 
 export const selectors = {
     state,
@@ -71,6 +83,7 @@ export const selectors = {
     isFetchingEventHistory,
     objectEventHistory,
     isFetchingObjectEventHistory,
+    conditionFilterFields,
 };
 
 export const actions = slice.actions;

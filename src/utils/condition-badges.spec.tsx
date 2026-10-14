@@ -78,6 +78,37 @@ test.describe('condition-badges', () => {
         await expect(component.getByText(/'a' OR 'b'/)).toBeVisible();
     });
 
+    test('renderConditionItems keeps a zero value', async ({ mount }) => {
+        const conditionItems: ConditionItemDto[] = [
+            { fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'retries', operator: FilterConditionOperator.Equals, value: 0 },
+        ];
+
+        const result = renderConditionItems(conditionItems, [], {}, searchGroupEnum as any, filterConditionOperatorEnum as any, {
+            className: 'cls',
+            variant: 'badge',
+        });
+
+        const component = await mount(<div>{result}</div>);
+        await expect(component.getByText(/equals\s+'0'/)).toBeVisible();
+    });
+
+    test('renderConditionItems shows no value for an item that has none', async ({ mount }) => {
+        const conditionItems: ConditionItemDto[] = [
+            { fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'owner', operator: FilterConditionOperator.Equals, value: '' },
+            { fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'group', operator: FilterConditionOperator.Equals },
+        ];
+
+        const result = renderConditionItems(conditionItems, [], {}, searchGroupEnum as any, filterConditionOperatorEnum as any, {
+            className: 'cls',
+            variant: 'badge',
+        });
+
+        const component = await mount(<div>{result}</div>);
+        await expect(component.getByText(/'owner'/)).toBeVisible();
+        await expect(component.getByText(/'group'/)).toBeVisible();
+        await expect(component.getByText(/''|undefined|null/)).toHaveCount(0);
+    });
+
     test('renderConditionItems returns empty when conditionItems empty', () => {
         const result = renderConditionItems([], [], {}, searchGroupEnum as any, filterConditionOperatorEnum as any, {
             className: 'c',

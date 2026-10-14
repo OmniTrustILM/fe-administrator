@@ -1,6 +1,11 @@
 import Dialog from 'components/Dialog';
-import { Fragment, useMemo } from 'react';
-import type { TriggerHistoryObjectTriggerSummaryDto } from 'types/openapi';
+import { selectors as enumSelectors } from 'ducks/enums';
+import { actions as eventHistoryActions, selectors as eventHistorySelectors } from 'ducks/event-history';
+import { Fragment, type ReactNode, useEffect, useMemo } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { PlatformEnum, type TriggerHistoryObjectTriggerSummaryDto } from 'types/openapi';
+import { findConditionField, renderConditionItems } from 'utils/condition-badges';
+import { findUnmetConditionItem } from 'utils/trigger-history';
 
 type Props = {
     isOpen: boolean;
@@ -9,10 +14,35 @@ type Props = {
     trigger?: TriggerHistoryObjectTriggerSummaryDto;
 };
 
-type Row = { label: string; value: string };
+type Row = { label: string; value: ReactNode };
 type Section = { id: string; rows: Row[] };
 
+const unmetItemReason = (item: ReactNode) => (
+    <span className="inline-flex flex-wrap items-center gap-1">
+        Condition item
+        {item}
+        is false.
+    </span>
+);
+
 export default function EvaluationDetailsDialog({ isOpen, onClose, objectLabel, trigger }: Readonly<Props>) {
+    const dispatch = useDispatch();
+    const fieldSourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.FilterFieldSource));
+    const operatorEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.FilterConditionOperator));
+    const platformEnums = useSelector(enumSelectors.platformEnums);
+    const filtersResource = useMemo(
+        () => trigger?.records.find((record) => findUnmetConditionItem(record, fieldSourceEnum, operatorEnum))?.condition?.resource,
+        [trigger, fieldSourceEnum, operatorEnum],
+    );
+    const selectFilterFields = useMemo(() => eventHistorySelectors.conditionFilterFields(filtersResource), [filtersResource]);
+    const availableFilters = useSelector(selectFilterFields);
+
+    // Asked for once per opening: a failed read keeps the recorded text and is tried again when the dialog opens next.
+    useEffect(() => {
+        if (!isOpen || !filtersResource || availableFilters) return;
+        dispatch(eventHistoryActions.getConditionFilterFields({ resource: filtersResource }));
+    }, [dispatch, isOpen, filtersResource, availableFilters]);
+
     const sections: Section[] = useMemo(() => {
         if (!trigger) return [];
 
@@ -38,7 +68,20 @@ export default function EvaluationDetailsDialog({ isOpen, onClose, objectLabel, 
                       { label: 'Result', value: 'Failed' },
                   ]
                 : [];
-            const reasonRows: Row[] = record.message ? [{ label: 'Reason', value: record.message }] : [];
+            const unmetItem = findUnmetConditionItem(record, fieldSourceEnum, operatorEnum);
+            const isUnmetItemReadable =
+                !!unmetItem &&
+                record.condition?.resource === filtersResource &&
+                !!availableFilters &&
+                !!findConditionField(availableFilters, unmetItem);
+            const reason = isUnmetItemReadable
+                ? unmetItemReason(
+                      renderConditionItems([unmetItem], availableFilters ?? [], platformEnums, fieldSourceEnum, operatorEnum, {
+                          className: '',
+                      }),
+                  )
+                : record.message;
+            const reasonRows: Row[] = record.message ? [{ label: 'Reason', value: reason }] : [];
 
             return {
                 id: `record-${index}`,
@@ -47,7 +90,7 @@ export default function EvaluationDetailsDialog({ isOpen, onClose, objectLabel, 
         });
 
         return [header, ...recordSections];
-    }, [trigger, objectLabel]);
+    }, [trigger, objectLabel, fieldSourceEnum, operatorEnum, platformEnums, availableFilters, filtersResource]);
 
     return (
         <Dialog

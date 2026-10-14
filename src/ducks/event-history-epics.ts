@@ -1,9 +1,10 @@
 import type { AppEpic } from 'ducks';
 import { of } from 'rxjs';
-import { catchError, filter, map, switchMap } from 'rxjs/operators';
+import { catchError, exhaustMap, filter, groupBy, map, mergeMap, switchMap } from 'rxjs/operators';
 import { extractError } from 'utils/net';
 
 import { slice } from './event-history';
+import { transformSearchFieldListDtoToModel } from './transform/certificates';
 
 const getPlatformSettingsEventHistory: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
@@ -53,6 +54,35 @@ const getObjectEventHistory: AppEpic = (action$, state$, deps) => {
     );
 };
 
-const epics = [getPlatformSettingsEventHistory, getObjectEventHistory];
+const getConditionFilterFields: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.getConditionFilterFields.match),
+        groupBy((action) => action.payload.resource),
+        mergeMap((perResource$) =>
+            perResource$.pipe(
+                exhaustMap((action) =>
+                    deps.apiClients.resources.listResourceRuleFilterFields({ resource: action.payload.resource }).pipe(
+                        map((filterFields) =>
+                            slice.actions.getConditionFilterFieldsSuccess({
+                                resource: action.payload.resource,
+                                filterFields: filterFields.map(transformSearchFieldListDtoToModel),
+                            }),
+                        ),
+                        catchError((err) =>
+                            of(
+                                slice.actions.getConditionFilterFieldsFailure({
+                                    resource: action.payload.resource,
+                                    error: extractError(err, 'Failed to get condition filter fields'),
+                                }),
+                            ),
+                        ),
+                    ),
+                ),
+            ),
+        ),
+    );
+};
+
+const epics = [getPlatformSettingsEventHistory, getObjectEventHistory, getConditionFilterFields];
 
 export default epics;

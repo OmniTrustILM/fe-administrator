@@ -8,6 +8,11 @@ import { getInputStringFromIso8601String } from 'utils/duration';
 
 type RenderVariant = 'badge' | 'small';
 
+export const findConditionField = (availableFilters: SearchFieldListModel[], condition: ConditionItemDto): SearchFieldModel | undefined =>
+    availableFilters
+        .find((a) => a.filterFieldSource === condition.fieldSource)
+        ?.searchFieldData?.find((s) => s.fieldIdentifier === condition.fieldIdentifier);
+
 type RenderConditionItemsOptions = {
     className: string;
     variant?: RenderVariant;
@@ -71,16 +76,16 @@ export const renderConditionItems = (
             return condition.value.map((v) => `'${formatSingleValue(v, field, platformEnums, condition.operator)}'`).join(' OR ');
         }
 
-        if (condition.value) {
-            return `'${formatSingleValue(condition.value, field, platformEnums, condition.operator)}'`;
+        // Zero and false are values; only an item without one, as under an "is empty" operator, shows none.
+        const value: unknown = condition.value;
+        if (value === undefined || value === null || value === '') {
+            return '';
         }
-        return '';
+        return `'${formatSingleValue(value, field, platformEnums, condition.operator)}'`;
     };
 
     return conditionItems.map((condition, i) => {
-        const field = availableFilters
-            .find((a) => a.filterFieldSource === condition.fieldSource)
-            ?.searchFieldData?.find((s) => s.fieldIdentifier === condition.fieldIdentifier);
+        const field = findConditionField(availableFilters, condition);
 
         const label = field ? field.fieldLabel : condition.fieldIdentifier;
         const value = getConditionValue(condition, field, platformEnums);
