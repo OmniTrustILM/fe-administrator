@@ -113,9 +113,17 @@ export default function DiscoveryDetail() {
         dispatch(rulesActions.getTriggerHistorySummary({ triggerObjectUuid: id }));
     }, [id, dispatch]);
 
+    const shownRunUuidRef = useRef(discovery?.uuid);
+    shownRunUuidRef.current = discovery?.uuid;
+
+    // Coming back to the run already on screen re-reads it in place: a reset would blank the page and remount its tables.
     useEffect(() => {
-        getFreshDiscoveryDetails();
-    }, [id, getFreshDiscoveryDetails]);
+        if (shownRunUuidRef.current === id) {
+            refreshDiscoveryDetails();
+        } else {
+            getFreshDiscoveryDetails();
+        }
+    }, [id, getFreshDiscoveryDetails, refreshDiscoveryDetails]);
 
     // While a run is live the page re-reads it on its own, so its progress moves without the user clicking. A tick is
     // skipped while a read or a lifecycle call is in flight, since that call's own re-read is the newer answer. A
@@ -313,8 +321,10 @@ export default function DiscoveryDetail() {
         );
     }, [discovery?.runMessageCount, discoveryMessages]);
 
-    // Only the first load gets the skeleton; a refresh keeps the page and lets the widgets show busy.
-    if (isFetching && !discovery) {
+    // Only the first load gets the skeleton; a refresh keeps the page and lets the widgets show busy. A run left over
+    // from another detail page is not shown either, or its tables would load under that run's uuid.
+    const isShowingAnotherRun = !!discovery && discovery.uuid !== id;
+    if ((isFetching && !discovery) || isShowingAnotherRun) {
         return <DetailPageSkeleton layout="tabs" tabCount={6} />;
     }
 

@@ -1,5 +1,5 @@
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useLocation } from 'react-router';
 import { useDispatch, useSelector } from 'react-redux';
 import { actions as tablePaginationActions, selectors as tablePaginationSelectors } from 'ducks/table-pagination';
@@ -17,40 +17,43 @@ type Props = {
 export default function PagedCustomTable({ headers, data, totalItems, onReloadData, stateKey, tableStateKey, isLoading }: Readonly<Props>) {
     const dispatch = useDispatch();
     const location = useLocation();
-    const [pageSize, setPageSize] = useState(10);
-    const [pageNumber, setPageNumber] = useState(1);
 
-    const onReloadDataRef = useRef(onReloadData);
-    const paginationHydratedKeyRef = useRef<string | undefined>(undefined);
-
-    useEffect(() => {
-        onReloadDataRef.current = onReloadData;
-    }, [onReloadData]);
-
-    const paginationStateRouteKey = useMemo(() => {
-        if (stateKey) {
-            return stateKey;
-        }
-
-        return location.pathname;
-    }, [location.pathname, stateKey]);
-
-    const paginationStateStorageKey = useMemo(() => `paged-custom-table-pagination:${paginationStateRouteKey}`, [paginationStateRouteKey]);
+    const paginationStateStorageKey = `paged-custom-table-pagination:${stateKey ?? location.pathname}`;
     const selectPaginationState = useMemo(
         () => tablePaginationSelectors.pagination(paginationStateStorageKey),
         [paginationStateStorageKey],
     );
     const persistedPaginationState = useSelector(selectPaginationState);
 
-    useEffect(() => {
-        if (paginationHydratedKeyRef.current === paginationStateStorageKey) {
-            return;
-        }
+    // Opens on what is stored, so the first persist and the first load cannot run on a default page and write it back.
+    const [pagination, setPagination] = useState(() => ({
+        key: paginationStateStorageKey,
+        page: persistedPaginationState.page,
+        pageSize: persistedPaginationState.pageSize,
+    }));
+    if (pagination.key !== paginationStateStorageKey) {
+        setPagination({
+            key: paginationStateStorageKey,
+            page: persistedPaginationState.page,
+            pageSize: persistedPaginationState.pageSize,
+        });
+    }
+    const { page: pageNumber, pageSize } = pagination;
 
-        paginationHydratedKeyRef.current = paginationStateStorageKey;
-        setPageNumber(persistedPaginationState.page);
-        setPageSize(persistedPaginationState.pageSize);
-    }, [paginationStateStorageKey, persistedPaginationState.page, persistedPaginationState.pageSize]);
+    const setPageNumber = useCallback(
+        (page: number) => setPagination((current) => (current.page === page ? current : { ...current, page })),
+        [],
+    );
+    const setPageSize = useCallback(
+        (size: number) => setPagination((current) => (current.pageSize === size ? current : { ...current, pageSize: size })),
+        [],
+    );
+
+    const onReloadDataRef = useRef(onReloadData);
+
+    useEffect(() => {
+        onReloadDataRef.current = onReloadData;
+    }, [onReloadData]);
 
     useEffect(() => {
         if (persistedPaginationState.page === pageNumber && persistedPaginationState.pageSize === pageSize) {
@@ -66,9 +69,10 @@ export default function PagedCustomTable({ headers, data, totalItems, onReloadDa
         );
     }, [dispatch, pageNumber, pageSize, paginationStateStorageKey, persistedPaginationState.page, persistedPaginationState.pageSize]);
 
+    // One load per table state: a new key with the same page is still another table's page.
     useEffect(() => {
-        onReloadDataRef.current(pageSize, pageNumber);
-    }, [pageSize, pageNumber]);
+        onReloadDataRef.current(pagination.pageSize, pagination.page);
+    }, [pagination]);
 
     const paginationData = useMemo(
         () => ({

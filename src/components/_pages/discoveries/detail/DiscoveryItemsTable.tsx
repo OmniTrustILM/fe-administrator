@@ -179,9 +179,7 @@ export default function DiscoveryItemsTable({ discoveryUuid, resource }: Props) 
 
     const pagedTable = (
         <PagedCustomTable
-            // Remounting is what re-issues onReloadData with the new filter: PagedCustomTable holds
-            // onReloadData in a ref and only re-fetches on [pageSize, pageNumber].
-            key={`${resource}:${activeTab.tabKey}`}
+            // A change of this key is what reloads the table with the new filter, as a change of page or page size does.
             stateKey={`${pathname}:${resource}:${activeTab.tabKey}`}
             headers={headers}
             data={rows}

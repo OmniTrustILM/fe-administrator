@@ -530,6 +530,37 @@ describe('DiscoveryDetail', () => {
         });
     });
 
+    describe('opening', () => {
+        const dispatched = () => dispatch.mock.calls.map((call) => call[0]);
+
+        it('loads a run the store does not hold after a reset', async () => {
+            await render(buildState(undefined));
+
+            expect(dispatched().map((action) => action?.type)).toContain('discoveries/resetState');
+            expect(dispatched().find((action) => action?.type === 'discoveries/getDiscoveryDetail')?.payload).toEqual({ uuid: 'disc-1' });
+        });
+
+        it('re-reads the run already on screen in place, so its tables keep their state', async () => {
+            await render(buildState(v2Run));
+
+            expect(dispatched().map((action) => action?.type)).not.toContain('discoveries/resetState');
+            expect(dispatched().find((action) => action?.type === 'discoveries/getDiscoveryDetail')?.payload).toEqual({
+                uuid: 'disc-1',
+                keepCurrent: true,
+            });
+            expect(container.querySelector('[data-testid="skeleton"]')).toBeNull();
+        });
+
+        it('hides a run left over from another detail page and resets before loading this one', async () => {
+            await render(buildState({ ...v2Run, uuid: 'disc-0' }));
+
+            expect(container.querySelector('[data-testid="skeleton"]')).not.toBeNull();
+            expect(container.querySelector('[data-testid="discovery-certificates"]')).toBeNull();
+            expect(dispatched().map((action) => action?.type)).toContain('discoveries/resetState');
+            expect(dispatched().find((action) => action?.type === 'discoveries/getDiscoveryDetail')?.payload).toEqual({ uuid: 'disc-1' });
+        });
+    });
+
     describe('refreshing', () => {
         it('has one refresh button, on Discovery Details, which re-reads the trigger summary too', async () => {
             const state = buildState(v2Run);
