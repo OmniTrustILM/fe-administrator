@@ -30,7 +30,7 @@ import { actions as customAttributesActions, selectors as customAttributesSelect
 
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { validateRequired } from 'utils/validators';
-import { CertificateState, PlatformEnum, Resource } from '../../../../types/openapi';
+import { AttributeType, CertificateState, PlatformEnum, Resource } from '../../../../types/openapi';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import TabLayout from '../../../Layout/TabLayout';
 import CertificateStatusBadge from '../../../_pages/certificates/CertificateStatus';
@@ -657,7 +657,11 @@ export default function LocationDetail() {
                               <div style={{ whiteSpace: 'nowrap', textOverflow: 'ellipsis', maxWidth: '20em', overflow: 'hidden' }}>
                                   {cert.csrAttributes
                                       .map((atr) => {
-                                          const content = getAttributeContent(atr.contentType, atr.content);
+                                          const content = getAttributeContent(
+                                              atr.contentType,
+                                              atr.content,
+                                              atr.type === AttributeType.Data,
+                                          );
                                           return typeof content === 'string' ? content : '';
                                       })
                                       .join(', ')}

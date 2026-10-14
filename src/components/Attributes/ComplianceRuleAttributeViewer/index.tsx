@@ -39,11 +39,11 @@ export default function ComplianceRuleAttributeViewer({ attributes, descriptorAt
     const tableData: TableDataRow[] = useMemo(() => {
         const attributeRows = attributes?.map((attribute) => ({
             id: attribute.uuid || attribute.name,
-            columns: [attribute.name || '', attribute.version || '', getContent(attribute.contentType, attribute.content)],
+            columns: [attribute.name || '', attribute.version || '', getContent(attribute.contentType, attribute.content, true)],
         }));
         const descriptorRows = descriptorAttributes?.filter(isDataAttributeModel).map((attribute) => ({
             id: attribute.uuid || attribute.name,
-            columns: [attribute.name || '', attribute.version || '', getContent(attribute.contentType, attribute.content)],
+            columns: [attribute.name || '', attribute.version || '', getContent(attribute.contentType, attribute.content, true)],
         }));
         return [...(attributeRows ?? []), ...(descriptorRows ?? [])];
     }, [attributes, descriptorAttributes, getContent]);

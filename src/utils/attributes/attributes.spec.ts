@@ -181,15 +181,24 @@ describe('attributes utils', () => {
             expect(getAttributeContent(AttributeContentType.Integer, [{ data: 42 } as any])).toBe('42');
         });
 
-        test('prefers reference over data for String and Text content', () => {
+        test('prefers reference over data for String and Text content when the reference is a label', () => {
             expect(
-                getAttributeContent(AttributeContentType.String, [
-                    { data: 'ee-profile-object-id', reference: 'End Entity Profile One' } as any,
-                ]),
+                getAttributeContent(
+                    AttributeContentType.String,
+                    [{ data: 'ee-profile-object-id', reference: 'End Entity Profile One' } as any],
+                    true,
+                ),
             ).toBe('End Entity Profile One');
-            expect(getAttributeContent(AttributeContentType.Text, [{ data: 'raw-text-value', reference: 'Readable Text' } as any])).toBe(
-                'Readable Text',
+            expect(
+                getAttributeContent(AttributeContentType.Text, [{ data: 'raw-text-value', reference: 'Readable Text' } as any], true),
+            ).toBe('Readable Text');
+        });
+
+        test('shows data over reference for String and Text content by default', () => {
+            expect(getAttributeContent(AttributeContentType.String, [{ data: 'Production', reference: 'environment' } as any])).toBe(
+                'Production',
             );
+            expect(getAttributeContent(AttributeContentType.Text, [{ data: 'Some notes', reference: 'notes' } as any])).toBe('Some notes');
         });
 
         test('falls back to data for String and Text content when reference is missing or empty', () => {
@@ -201,7 +210,7 @@ describe('attributes utils', () => {
 
         test('resolves reference per item for a multi-value String attribute', () => {
             const content = [{ data: 'id-1', reference: 'Profile One' } as any, { data: 'id-2' } as any];
-            expect(getAttributeContent(AttributeContentType.String, content)).toBe('Profile One, id-2');
+            expect(getAttributeContent(AttributeContentType.String, content, true)).toBe('Profile One, id-2');
         });
 
         test('returns raw value for Time and Date', () => {

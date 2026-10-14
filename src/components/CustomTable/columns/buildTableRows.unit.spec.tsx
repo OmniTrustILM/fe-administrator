@@ -12,8 +12,18 @@ import type { CellRegistry } from './registry';
 // resolution order, so they are stubbed down to something the assertions can read.
 vi.mock('./EmptyCell', () => ({ default: () => <span data-testid="empty">empty</span> }));
 vi.mock('./AttributeCell', () => ({
-    default: ({ contentType, content }: { contentType?: string; content?: { data: unknown }[] }) => (
-        <span data-testid="attribute">{`${contentType}:${content?.map((item) => String(item.data)).join('|') ?? 'none'}`}</span>
+    default: ({
+        contentType,
+        content,
+        referenceIsLabel,
+    }: {
+        contentType?: string;
+        content?: { data: unknown }[];
+        referenceIsLabel?: boolean;
+    }) => (
+        <span data-testid="attribute" data-reference-is-label={String(referenceIsLabel)}>
+            {`${contentType}:${content?.map((item) => String(item.data)).join('|') ?? 'none'}`}
+        </span>
     ),
 }));
 
@@ -74,6 +84,14 @@ describe('renderCell', () => {
         await render({ uuid: 'u-1', attributeValues: { custom: { costCentre: [{ data: 4820 }] } } }, costCentre, registry);
 
         expect(container.querySelector('[data-testid="attribute"]')?.textContent).toBe('integer:4820');
+    });
+
+    it('treats the reference as a label only for a data attribute column', async () => {
+        await render({ uuid: 'u-1' }, costCentre);
+        expect(container.querySelector('[data-testid="attribute"]')?.getAttribute('data-reference-is-label')).toBe('false');
+
+        await render({ uuid: 'u-1' }, { ...costCentre, fieldSource: FilterFieldSource.Data });
+        expect(container.querySelector('[data-testid="attribute"]')?.getAttribute('data-reference-is-label')).toBe('true');
     });
 
     it('falls through when no registry is supplied at all', async () => {
