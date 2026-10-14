@@ -27,7 +27,8 @@ export function getMillisecondsFromIso8601String(string: string | undefined | nu
     if (!string) return undefined;
     const trimmed = string.trim();
     if (!trimmed || trimmed === 'P' || trimmed.endsWith('T') || !isValidIso8601Duration(trimmed)) return undefined;
-    return getTotalSecondsFromIso8601String(trimmed) * 1000;
+    // Rounds to microseconds to drop floating-point noise while keeping sub-millisecond precision.
+    return Math.round(getTotalSecondsFromIso8601String(trimmed) * 1e6) / 1e3;
 }
 
 function getInputStringFromDuration(duration: Duration): string {
