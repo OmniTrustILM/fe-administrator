@@ -35,7 +35,7 @@ export default function CbomUploadDialog({ onCancel, onUpload, okButtonTitle = '
         mode: 'onTouched',
         defaultValues: {},
     });
-    const { handleSubmit, formState, getValues } = methods;
+    const { handleSubmit, formState } = methods;
 
     const listCustomAttributes = useCallback(
         () => dispatch(customAttributesActions.listResourceCustomAttributes(Resource.Cboms)),
@@ -70,45 +70,38 @@ export default function CbomUploadDialog({ onCancel, onUpload, okButtonTitle = '
 
     const onFileContentLoaded = useCallback((base64Content: string) => setFileContent(base64ToUtf8(base64Content)), []);
 
-    const upload = useCallback(
-        (content: Record<string, unknown>) =>
-            onUpload({
-                content,
-                customAttributes: collectFormAttributes(CUSTOM_ATTRIBUTES_ID, customAttributeDescriptors, getValues()).map(
-                    transformAttributeRequestModelToDto,
-                ),
-            }),
-        [onUpload, customAttributeDescriptors, getValues],
-    );
-
-    const onSubmit = useCallback(async () => {
-        if (!fileContent) return;
-        let parsed: unknown;
-        try {
-            parsed = JSON.parse(fileContent);
-            if (!validateCbomContent(parsed)) return;
-        } catch {
-            // try YAML
+    const onSubmit = useCallback(
+        async (values: FieldValues) => {
+            if (!fileContent) return;
+            let parsed: unknown;
             try {
-                const yaml = await import('js-yaml');
-                try {
-                    parsed = yaml.load(fileContent);
-                    if (!validateCbomContent(parsed)) return;
-                    upload(parsed);
-                } catch {
-                    dispatch(alertActions.error('Failed to parse CBOM file (not valid JSON or YAML)'));
-                }
+                parsed = JSON.parse(fileContent);
             } catch {
-                dispatch(alertActions.error('Failed to parse CBOM file (not valid JSON)'));
+                // try YAML
+                try {
+                    const yaml = await import('js-yaml');
+                    try {
+                        parsed = yaml.load(fileContent);
+                    } catch {
+                        dispatch(alertActions.error('Failed to parse CBOM file (not valid JSON or YAML)'));
+                        return;
+                    }
+                } catch {
+                    dispatch(alertActions.error('Failed to parse CBOM file (not valid JSON)'));
+                    return;
+                }
             }
-            return;
-        }
+            if (!validateCbomContent(parsed)) return;
 
-        upload(parsed);
-    }, [fileContent, upload, dispatch, validateCbomContent]);
-
-    // A failed listing leaves required custom attributes unasked, so the upload waits for it.
-    const customAttributesReady = !isListingCustomAttributes && !customAttributesError;
+            onUpload({
+                content: parsed,
+                customAttributes: collectFormAttributes(CUSTOM_ATTRIBUTES_ID, customAttributeDescriptors, values, undefined, {
+                    omitEmptyContent: true,
+                }).map(transformAttributeRequestModelToDto),
+            });
+        },
+        [fileContent, onUpload, customAttributeDescriptors, dispatch, validateCbomContent],
+    );
 
     return (
         <FormProvider {...methods}>
@@ -140,6 +133,8 @@ export default function CbomUploadDialog({ onCancel, onUpload, okButtonTitle = '
                         </section>
                     )}
 
+                    {/* Core refuses an upload missing a required custom attribute before it stores anything, so only a listing in
+                        flight holds the upload; after a failed one, the upload goes ahead without the attributes. */}
                     <Container className="flex-row justify-end modal-footer" gap={4}>
                         <Button variant="outline" onClick={onCancel} disabled={formState.isSubmitting || isUploading} type="button">
                             Cancel
@@ -148,7 +143,7 @@ export default function CbomUploadDialog({ onCancel, onUpload, okButtonTitle = '
                             title={okButtonTitle}
                             inProgressTitle={okButtonTitle}
                             inProgress={formState.isSubmitting || isUploading}
-                            disabled={!fileContent || !customAttributesReady}
+                            disabled={!fileContent || isListingCustomAttributes}
                         />
                     </Container>
                 </div>

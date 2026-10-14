@@ -29,6 +29,15 @@ const migrationWave = {
     properties: { label: 'Migration wave', required: true, readOnly: false, visible: true, list: false, multiSelect: false },
 } as CustomAttributeModel;
 
+const priority = {
+    uuid: '5d4c3b2a-1f0e-4d9c-8b7a-6f5e4d3c2b1a',
+    name: 'priority',
+    version: 3,
+    type: AttributeType.Custom,
+    contentType: AttributeContentType.Integer,
+    properties: { label: 'Priority', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
+} as CustomAttributeModel;
+
 const OWNER_FIELD = 'text-input-__attributes__customCbom__.owner';
 const WAVE_FIELD = 'text-input-__attributes__customCbom__.migrationWave';
 
@@ -47,7 +56,7 @@ async function enterText(page: Page, testId: string, value: string) {
     await field.fill(value);
 }
 
-const attribute = (descriptor: CustomAttributeModel, data: string) => ({
+const attribute = (descriptor: CustomAttributeModel, data: string | number) => ({
     uuid: descriptor.uuid,
     name: descriptor.name,
     contentType: descriptor.contentType,
@@ -175,7 +184,6 @@ test.describe('CbomUploadDialog', () => {
         await page.locator('textarea').fill(JSON.stringify(cbom));
 
         await expect(section.getByRole('alert')).toContainText('Failed to get Resource Custom Attributes list (503): Service unavailable');
-        await expect(page.getByRole('button', { name: 'Upload' })).toBeDisabled();
 
         await section.getByRole('button', { name: 'Retry' }).click();
 
@@ -185,5 +193,63 @@ test.describe('CbomUploadDialog', () => {
 
         await expect.poll(() => uploads.length).toBe(1);
         expect(uploads).toEqual([{ content: cbom, customAttributes: [attribute(migrationWave, 'Wave 2')] }]);
+    });
+    test('uploads without the custom attributes when their definitions could not be listed, leaving the check to Core', async ({
+        mount,
+        page,
+    }) => {
+        const uploads: CbomUploadRequestDto[] = [];
+        await mount(
+            <CbomUploadDialogWithStore
+                customAttributes={[migrationWave]}
+                failedListings={3}
+                onUpload={(request) => uploads.push(request)}
+            />,
+        );
+
+        await page.locator('textarea').fill(JSON.stringify(cbom));
+        await expect(page.getByRole('region', { name: 'Custom attributes' }).getByRole('alert')).toBeVisible();
+        await page.getByRole('button', { name: 'Upload' }).click();
+
+        await expect.poll(() => uploads.length).toBe(1);
+        expect(uploads).toEqual([{ content: cbom, customAttributes: [] }]);
+    });
+
+    test('leaves out an optional custom attribute that was added and then cleared', async ({ mount, page }) => {
+        const uploads: CbomUploadRequestDto[] = [];
+        await mount(<CbomUploadDialogWithStore customAttributes={[owner]} onUpload={(request) => uploads.push(request)} />);
+
+        await page.locator('textarea').fill(JSON.stringify(cbom));
+        await addAttribute(page, 'Owner');
+        await enterText(page, OWNER_FIELD, 'Inventory team');
+        await page.getByTestId(OWNER_FIELD).fill('');
+        await page.getByRole('button', { name: 'Upload' }).click();
+
+        await expect.poll(() => uploads.length).toBe(1);
+        expect(uploads).toEqual([{ content: cbom, customAttributes: [] }]);
+    });
+
+    test('does not upload an integer custom attribute that is not a whole number, and sends a valid one as a number', async ({
+        mount,
+        page,
+    }) => {
+        const uploads: CbomUploadRequestDto[] = [];
+        await mount(<CbomUploadDialogWithStore customAttributes={[priority]} onUpload={(request) => uploads.push(request)} />);
+
+        await page.locator('textarea').fill(JSON.stringify(cbom));
+        await addAttribute(page, 'Priority');
+        const field = page.locator('[id="__attributes__customCbom__.priority"]');
+        await field.click();
+        await field.fill('4.5');
+        await page.getByRole('button', { name: 'Upload' }).click();
+
+        await expect(page.getByText('Value must be an integer')).toBeVisible();
+        expect(uploads).toEqual([]);
+
+        await field.fill('42');
+        await page.getByRole('button', { name: 'Upload' }).click();
+
+        await expect.poll(() => uploads.length).toBe(1);
+        expect(uploads).toEqual([{ content: cbom, customAttributes: [attribute(priority, 42)] }]);
     });
 });
