@@ -50,17 +50,39 @@ test.describe('AttributeViewer', () => {
         await expect(component.getByText('value1')).toBeVisible();
     });
 
-    test('ATTRIBUTE type: renders the reference of a String attribute instead of its data', async ({ mount, page }) => {
+    test('ATTRIBUTE type: renders the reference of a String data attribute instead of its data', async ({ mount, page }) => {
         const component = await mount(
             <AttributeViewerMountHarness
                 viewerType={ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE}
-                attributes={[attrResponse({ content: [{ data: 'ee-profile-object-id', reference: 'End Entity Profile One' } as any] })]}
+                attributes={[
+                    attrResponse({
+                        type: AttributeType.Data,
+                        content: [{ data: 'ee-profile-object-id', reference: 'End Entity Profile One' } as any],
+                    }),
+                ]}
             />,
         );
         await expect(page.getByTestId('custom-table')).toBeVisible({ timeout: 10000 });
         await expect(component.getByText('End Entity Profile One')).toBeVisible();
         await expect(component.getByText('ee-profile-object-id')).toHaveCount(0);
     });
+
+    for (const type of [AttributeType.Custom, AttributeType.Meta]) {
+        test(`ATTRIBUTE type: renders the data of a String ${type} attribute, not a reference holding its name`, async ({
+            mount,
+            page,
+        }) => {
+            const component = await mount(
+                <AttributeViewerMountHarness
+                    viewerType={ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE}
+                    attributes={[attrResponse({ type, content: [{ data: 'Production', reference: 'environment' } as any] })]}
+                />,
+            );
+            await expect(page.getByTestId('custom-table')).toBeVisible({ timeout: 10000 });
+            await expect(component.getByText('Production')).toBeVisible();
+            await expect(component.getByText('environment')).toHaveCount(0);
+        });
+    }
 
     test('ATTRIBUTE type: copy button copies content', async ({ mount, page }) => {
         await mount(
