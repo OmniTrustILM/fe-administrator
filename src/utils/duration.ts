@@ -27,8 +27,8 @@ export function getMillisecondsFromIso8601String(string: string | undefined | nu
     if (!string) return undefined;
     const trimmed = string.trim();
     if (!trimmed || trimmed === 'P' || trimmed.endsWith('T') || !isValidIso8601Duration(trimmed)) return undefined;
-    const d = getDurationFromIso8601String(trimmed);
-    return ((d.days * 24 + d.hours) * 60 + d.minutes) * 60 * 1000 + d.seconds * 1000 + d.milliseconds;
+    // Rounds to nanoseconds, the precision of a Java Duration, to drop floating-point noise.
+    return Math.round(getTotalSecondsFromIso8601String(trimmed) * 1e9) / 1e6;
 }
 
 function getInputStringFromDuration(duration: Duration): string {
@@ -78,6 +78,18 @@ function getDurationFromIso8601String(input: string): Duration {
         return duration;
     }
 
+    const totalMs = Math.round(getTotalSecondsFromIso8601String(input) * 1000);
+
+    duration.days = Math.floor(totalMs / 86400000);
+    duration.hours = Math.floor((totalMs % 86400000) / 3600000);
+    duration.minutes = Math.floor((totalMs % 3600000) / 60000);
+    duration.seconds = Math.floor((totalMs % 60000) / 1000);
+    duration.milliseconds = totalMs % 1000;
+
+    return duration;
+}
+
+function getTotalSecondsFromIso8601String(input: string): number {
     const weeksMatch = /(\d{1,10}(?:\.\d{1,10})?)W/.exec(input);
     const daysMatch = /(\d{1,10}(?:\.\d{1,10})?)D/.exec(input);
 
@@ -91,16 +103,7 @@ function getDurationFromIso8601String(input: string): Duration {
     const minutes = parseMatch(minutesMatch);
     const seconds = parseMatch(secondsMatch);
 
-    const totalSeconds = (((weeks * 7 + days) * 24 + hours) * 60 + minutes) * 60 + seconds;
-    const totalMs = Math.round(totalSeconds * 1000);
-
-    duration.days = Math.floor(totalMs / 86400000);
-    duration.hours = Math.floor((totalMs % 86400000) / 3600000);
-    duration.minutes = Math.floor((totalMs % 3600000) / 60000);
-    duration.seconds = Math.floor((totalMs % 60000) / 1000);
-    duration.milliseconds = totalMs % 1000;
-
-    return duration;
+    return (((weeks * 7 + days) * 24 + hours) * 60 + minutes) * 60 + seconds;
 }
 
 function getDurationFromInputString(input: string) {

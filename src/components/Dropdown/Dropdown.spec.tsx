@@ -50,7 +50,7 @@ test.describe('Dropdown', () => {
         await mount(<Dropdown title="Dropdown" items={items} disabled={true} />);
         const trigger = page.getByRole('button', { name: 'Dropdown' });
         await expect(trigger).toBeDisabled();
-        await trigger.click({ force: true }).catch(() => {});
+        await trigger.dispatchEvent('pointerdown', { button: 0, pointerType: 'mouse' });
         await expect(page.getByRole('menuitem')).toHaveCount(0);
     });
 

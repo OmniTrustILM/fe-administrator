@@ -33,13 +33,14 @@ test.describe('Tooltip', () => {
     });
 
     test('does not show content when disabled', async ({ mount, page }) => {
+        await page.clock.install();
         await mount(
             <Tooltip content="Tooltip text" disabled={true}>
                 <button type="button">Hover me</button>
             </Tooltip>,
         );
-        await page.getByRole('button', { name: 'Hover me' }).hover({ force: true });
-        await page.waitForTimeout(800);
+        await page.getByRole('button', { name: 'Hover me' }).dispatchEvent('pointermove', { pointerType: 'mouse' });
+        await page.clock.runFor(800);
         await expect(page.getByRole('tooltip')).toHaveCount(0);
     });
 

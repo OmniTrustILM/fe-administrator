@@ -1016,7 +1016,11 @@ export default function RequestAttributeAuthoringEditor({
                 {/* Group label for the value rows below — not tied to a single input's id. */}
                 <Label>Static list values</Label>
                 {d.staticValues.map((v, index) => (
-                    <div key={index} className="flex items-center gap-2" data-testid={`${dataTestId}-static-value-row`}>
+                    <div
+                        key={index} // NOSONAR(S6479): static values are bare, duplicable scalars with no identity to key on
+                        className="flex items-center gap-2"
+                        data-testid={`${dataTestId}-static-value-row`}
+                    >
                         <div className="flex-1">
                             <AddCustomValueInput
                                 id={`ra-attr-static-value-${index}`}

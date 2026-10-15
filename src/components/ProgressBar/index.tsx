@@ -57,7 +57,7 @@ export default function ProgressBar({ value, max, label, caption, tone = 'brand'
                     {label}
                 </div>
             ) : null}
-            <div
+            <div // NOSONAR(S6819): a native <progress> cannot carry the tone tokens, width transition or indeterminate animation
                 role="progressbar"
                 aria-label={ariaLabel}
                 aria-labelledby={!ariaLabel && label ? labelId : undefined}

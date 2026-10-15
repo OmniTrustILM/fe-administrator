@@ -226,3 +226,31 @@ test.describe('SigningProfileForm - required-field indicators (#1820)', () => {
         await expect(page.getByTestId('label-retentionDays')).toContainText('*');
     });
 });
+
+test.describe('SigningProfileForm - qualified timestamp accuracy warning', () => {
+    const warning = 'accuracy coarser than 1';
+
+    async function selectQualifiedTimeQuality(page: import('@playwright/test').Page) {
+        await page.getByRole('tab', { name: '2 · Timestamping Properties' }).click();
+        await toggleSwitch(page, 'qualifiedTimestamp', true);
+        await page.getByTestId('select-timeQualityConfigurationUuid-trigger').click();
+        await page.getByRole('option', { name: 'High Precision', exact: true }).click();
+    }
+
+    for (const accuracy of ['PT2S', 'PT1.0001S']) {
+        test(`warns for an accuracy of ${accuracy}`, async ({ mount, page }) => {
+            await mount(<SigningProfileFormTestWrapper timeQualityAccuracy={accuracy} />);
+            await selectQualifiedTimeQuality(page);
+            await expect(page.getByText(warning)).toBeVisible();
+        });
+    }
+
+    for (const accuracy of ['PT1S', 'PT0.5S']) {
+        test(`does not warn for an accuracy of ${accuracy}`, async ({ mount, page }) => {
+            await mount(<SigningProfileFormTestWrapper timeQualityAccuracy={accuracy} />);
+            await selectQualifiedTimeQuality(page);
+            await expect(page.getByTestId('select-timeQualityConfigurationUuid-trigger')).toContainText('High Precision');
+            await expect(page.getByText(warning)).toHaveCount(0);
+        });
+    }
+});

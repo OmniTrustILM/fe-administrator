@@ -649,7 +649,7 @@ test.describe('CertificateForm', () => {
         const createButton = page.getByRole('button', { name: 'Create' });
         await expect(createButton).toBeDisabled();
 
-        await createButton.click({ force: true });
+        await createButton.dispatchEvent('click');
         await expect.poll(() => dispatched.filter((a) => a.type === 'certificates/registerCertificate')).toHaveLength(0);
     });
 

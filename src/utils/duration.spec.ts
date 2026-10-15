@@ -91,6 +91,19 @@ describe('duration', () => {
             expect(getMillisecondsFromIso8601String(input)).toBeUndefined();
         });
 
+        test('keeps sub-millisecond precision', () => {
+            expect(getMillisecondsFromIso8601String('PT1.0001S')).toBeGreaterThan(1000);
+        });
+
+        test('keeps nanosecond precision', () => {
+            expect(getMillisecondsFromIso8601String('PT1.000000001S')).toBeGreaterThan(1000);
+        });
+
+        test('returns the same value for equal durations spelled differently', () => {
+            expect(getMillisecondsFromIso8601String('PT1M2.026S')).toBe(getMillisecondsFromIso8601String('PT62.026S'));
+            expect(getMillisecondsFromIso8601String('PT1.001S')).toBe(1001);
+        });
+
         test('orders durations correctly', () => {
             const drift = getMillisecondsFromIso8601String('PT0.5S')!;
             const accuracy = getMillisecondsFromIso8601String('PT1S')!;

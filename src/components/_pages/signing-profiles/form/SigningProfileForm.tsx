@@ -34,6 +34,7 @@ import {
     type StaticKeyManagedSigningRequestDto,
 } from 'types/openapi';
 import { isStaticKeyManagedSigning, isTimestampingWorkflow } from 'utils/type-guards';
+import { getMillisecondsFromIso8601String } from 'utils/duration';
 import { collectFormAttributes, mapProfileAttribute, transformAttributes } from 'utils/attributes/attributes';
 import { transformAttributeDescriptorDtoToModel } from 'ducks/transform/attributes';
 import { validateAlphaNumericWithoutAccents, validateLength, validateOid, validateRequired } from 'utils/validators';
@@ -115,21 +116,6 @@ interface FormValues {
 }
 
 const WORKFLOW_TYPE = SigningWorkflowType.Timestamping;
-
-// Parse an ISO-8601 duration (e.g. "PT1S", "PT0.8S", "PT2M", "PT1H") into seconds.
-// Returns undefined if the value can't be parsed.
-function parseIsoDurationSeconds(duration: string | undefined): number | undefined {
-    if (!duration) return undefined;
-    // Single anchored pass that enforces the canonical D → (T) H → M → S ordering. Each unit is its own
-    // capture group, so out-of-order values (e.g. "PT1S1H") fail to match. Anchoring keeps it linear-time.
-    const match = /^P(?:(\d+(?:\.\d+)?)D)?(?:T(?:(\d+(?:\.\d+)?)H)?(?:(\d+(?:\.\d+)?)M)?(?:(\d+(?:\.\d+)?)S)?)?$/.exec(duration.trim());
-    if (!match) return undefined;
-    const [, days, hours, minutes, seconds] = match;
-    // Reject component-less durations like "P" or "PT".
-    if (days === undefined && hours === undefined && minutes === undefined && seconds === undefined) return undefined;
-    const total = (Number(days) || 0) * 86400 + (Number(hours) || 0) * 3600 + (Number(minutes) || 0) * 60 + (Number(seconds) || 0);
-    return Number.isFinite(total) ? total : undefined;
-}
 
 // Tailwind classes for a selectable option card (signing scheme / managed signing type).
 function optionCardClassName(isSupported: boolean, isSelected: boolean): string {
@@ -366,12 +352,11 @@ export default function SigningProfileForm() {
     }, [dispatch, timeQualityConfigurationUuidValue]);
 
     // Delta #219: for qualified signing, warn if the selected Time Quality accuracy is coarser than 1s.
-    const selectedTqcAccuracySeconds =
+    const selectedTqcAccuracyMs =
         selectedTimeQualityConfiguration?.uuid === timeQualityConfigurationUuidValue
-            ? parseIsoDurationSeconds(selectedTimeQualityConfiguration?.accuracy)
+            ? getMillisecondsFromIso8601String(selectedTimeQualityConfiguration?.accuracy)
             : undefined;
-    const showAccuracyWarning =
-        Boolean(qualifiedTimestampValue) && selectedTqcAccuracySeconds !== undefined && selectedTqcAccuracySeconds > 1;
+    const showAccuracyWarning = Boolean(qualifiedTimestampValue) && selectedTqcAccuracyMs !== undefined && selectedTqcAccuracyMs > 1000;
     const signingOperationAttributes = useMemo(() => {
         const sc = signingProfile?.signingScheme;
         if (editMode && sc && isStaticKeyManagedSigning(sc)) {

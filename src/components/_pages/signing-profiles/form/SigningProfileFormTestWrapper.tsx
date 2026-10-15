@@ -67,7 +67,10 @@ const existingSigningProfile: SigningProfileDto = {
     customAttributes: [],
 };
 
-export function SigningProfileFormTestWrapper({ editMode = false }: Readonly<{ editMode?: boolean }>) {
+export function SigningProfileFormTestWrapper({
+    editMode = false,
+    timeQualityAccuracy,
+}: Readonly<{ editMode?: boolean; timeQualityAccuracy?: string }>) {
     const store = useMemo(
         () =>
             configureStore({
@@ -90,7 +93,9 @@ export function SigningProfileFormTestWrapper({ editMode = false }: Readonly<{ e
                     timeQualityConfigurations: identity({
                         timeQualityConfigurations: [{ uuid: 'tqc1', name: 'High Precision' }],
                         isFetchingList: false,
-                        timeQualityConfiguration: undefined,
+                        timeQualityConfiguration: timeQualityAccuracy
+                            ? { uuid: 'tqc1', name: 'High Precision', accuracy: timeQualityAccuracy }
+                            : undefined,
                     }),
                     customAttributes: identity({
                         resourceCustomAttributesContents: [],
@@ -104,7 +109,7 @@ export function SigningProfileFormTestWrapper({ editMode = false }: Readonly<{ e
                 }),
                 middleware: (getDefault) => getDefault({ serializableCheck: false }),
             }),
-        [editMode],
+        [editMode, timeQualityAccuracy],
     );
 
     return (
