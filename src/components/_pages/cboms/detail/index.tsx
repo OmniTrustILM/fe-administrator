@@ -16,7 +16,6 @@ import DonutChart from 'components/_pages/dashboard/DashboardItem/DonutChart';
 import Spinner from 'components/Spinner';
 import TabLayout from 'components/Layout/TabLayout';
 import Widget from 'components/Widget';
-import type { AttributeResponseModel } from 'types/attributes';
 import { Resource } from 'types/openapi';
 import { EntityType } from 'ducks/filters';
 import { actions, selectors } from 'ducks/cbom';
@@ -937,9 +936,7 @@ export default function CbomDetail() {
                                     <CustomAttributeWidget
                                         resource={Resource.Cboms}
                                         resourceUuid={detail.uuid}
-                                        attributes={
-                                            (detail as typeof detail & { customAttributes?: AttributeResponseModel[] }).customAttributes
-                                        }
+                                        attributes={detail.customAttributes}
                                     />
                                 </Container>
                             ) : null,

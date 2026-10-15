@@ -1,32 +1,50 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { FormProvider, useForm } from 'react-hook-form';
+import { type FieldValues, FormProvider, useForm } from 'react-hook-form';
+import AttributeEditor from 'components/Attributes/AttributeEditor';
 import FileUpload from 'components/Input/FileUpload/FileUpload';
 import Container from 'components/Container';
 import Button from 'components/Button';
 import ProgressButton from 'components/ProgressButton';
+import RetryCallout from 'components/RetryCallout';
 import { actions as alertActions } from 'ducks/alerts';
 import { selectors as cbomSelectors } from 'ducks/cbom';
+import { actions as customAttributesActions, selectors as customAttributesSelectors } from 'ducks/customAttributes';
+import { transformAttributeRequestModelToDto } from 'ducks/transform/attributes';
+import { type CbomUploadRequestDto, Resource } from 'types/openapi';
+import { collectFormAttributes } from 'utils/attributes/attributes';
 import { base64ToUtf8 } from 'utils/common-utils';
 
 type Props = {
     onCancel: () => void;
-    onUpload: (data: { content: Record<string, unknown> }) => void;
+    onUpload: (data: CbomUploadRequestDto) => void;
     okButtonTitle?: string;
 };
 
-type FormValues = Record<string, never>;
+const CUSTOM_ATTRIBUTES_ID = 'customCbom';
 
 export default function CbomUploadDialog({ onCancel, onUpload, okButtonTitle = 'Upload' }: Readonly<Props>) {
     const dispatch = useDispatch();
     const [fileContent, setFileContent] = useState<string>('');
 
     const isUploading = useSelector(cbomSelectors.selectIsUploading);
-    const methods = useForm<FormValues>({
+    const customAttributeDescriptors = useSelector(customAttributesSelectors.resourceCustomAttributes);
+    const isListingCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
+    const customAttributesError = useSelector(customAttributesSelectors.resourceCustomAttributesError);
+    const methods = useForm<FieldValues>({
         mode: 'onTouched',
         defaultValues: {},
     });
     const { handleSubmit, formState } = methods;
+
+    const listCustomAttributes = useCallback(
+        () => dispatch(customAttributesActions.listResourceCustomAttributes(Resource.Cboms)),
+        [dispatch],
+    );
+
+    useEffect(() => {
+        listCustomAttributes();
+    }, [listCustomAttributes]);
 
     const validateCbomContent = useCallback(
         (parsedContent: unknown): parsedContent is Record<string, unknown> => {
@@ -52,31 +70,38 @@ export default function CbomUploadDialog({ onCancel, onUpload, okButtonTitle = '
 
     const onFileContentLoaded = useCallback((base64Content: string) => setFileContent(base64ToUtf8(base64Content)), []);
 
-    const onSubmit = useCallback(async () => {
-        if (!fileContent) return;
-        let parsed: unknown;
-        try {
-            parsed = JSON.parse(fileContent);
-            if (!validateCbomContent(parsed)) return;
-        } catch {
-            // try YAML
+    const onSubmit = useCallback(
+        async (values: FieldValues) => {
+            if (!fileContent) return;
+            let parsed: unknown;
             try {
-                const yaml = await import('js-yaml');
-                try {
-                    parsed = yaml.load(fileContent);
-                    if (!validateCbomContent(parsed)) return;
-                    onUpload({ content: parsed });
-                } catch {
-                    dispatch(alertActions.error('Failed to parse CBOM file (not valid JSON or YAML)'));
-                }
+                parsed = JSON.parse(fileContent);
             } catch {
-                dispatch(alertActions.error('Failed to parse CBOM file (not valid JSON)'));
+                // try YAML
+                try {
+                    const yaml = await import('js-yaml');
+                    try {
+                        parsed = yaml.load(fileContent);
+                    } catch {
+                        dispatch(alertActions.error('Failed to parse CBOM file (not valid JSON or YAML)'));
+                        return;
+                    }
+                } catch {
+                    dispatch(alertActions.error('Failed to parse CBOM file (not valid JSON)'));
+                    return;
+                }
             }
-            return;
-        }
+            if (!validateCbomContent(parsed)) return;
 
-        onUpload({ content: parsed });
-    }, [fileContent, onUpload, dispatch, validateCbomContent]);
+            onUpload({
+                content: parsed,
+                customAttributes: collectFormAttributes(CUSTOM_ATTRIBUTES_ID, customAttributeDescriptors, values, undefined, {
+                    omitEmptyContent: true,
+                }).map(transformAttributeRequestModelToDto),
+            });
+        },
+        [fileContent, onUpload, customAttributeDescriptors, dispatch, validateCbomContent],
+    );
 
     return (
         <FormProvider {...methods}>
@@ -92,6 +117,24 @@ export default function CbomUploadDialog({ onCancel, onUpload, okButtonTitle = '
                         dropZoneHintText="Upload a Cryptographic Bill of Materials generated by CBOM-Lens or other compatible tools."
                     />
 
+                    {(customAttributesError || (!isListingCustomAttributes && customAttributeDescriptors.length > 0)) && (
+                        <section aria-labelledby="cbomUploadCustomAttributes" className="space-y-3">
+                            <h4
+                                id="cbomUploadCustomAttributes"
+                                className="text-xs font-semibold uppercase tracking-wide text-content-muted"
+                            >
+                                Custom attributes
+                            </h4>
+                            {customAttributesError ? (
+                                <RetryCallout message={customAttributesError} onRetry={listCustomAttributes} />
+                            ) : (
+                                <AttributeEditor id={CUSTOM_ATTRIBUTES_ID} attributeDescriptors={customAttributeDescriptors} />
+                            )}
+                        </section>
+                    )}
+
+                    {/* Core refuses an upload missing a required custom attribute before it stores anything, so only a listing in
+                        flight holds the upload; after a failed one, the upload goes ahead without the attributes. */}
                     <Container className="flex-row justify-end modal-footer" gap={4}>
                         <Button variant="outline" onClick={onCancel} disabled={formState.isSubmitting || isUploading} type="button">
                             Cancel
@@ -100,7 +143,7 @@ export default function CbomUploadDialog({ onCancel, onUpload, okButtonTitle = '
                             title={okButtonTitle}
                             inProgressTitle={okButtonTitle}
                             inProgress={formState.isSubmitting || isUploading}
-                            disabled={!fileContent}
+                            disabled={!fileContent || isListingCustomAttributes}
                         />
                     </Container>
                 </div>

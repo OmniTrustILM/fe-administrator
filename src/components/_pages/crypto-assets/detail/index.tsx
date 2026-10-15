@@ -11,7 +11,6 @@ import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
 import { useCallback, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams, useSearchParams } from 'react-router';
-import type { AttributeResponseModel } from 'types/attributes';
 import { PlatformEnum, Resource } from 'types/openapi';
 import { PQC_READINESS_TAB } from 'utils/crypto-assets';
 import {
@@ -178,11 +177,7 @@ export default function CryptoAssetDetail() {
 
     const attributesTab = (
         <Container>
-            <CustomAttributeWidget
-                resource={Resource.CryptoAssets}
-                resourceUuid={detail.uuid}
-                attributes={(detail as typeof detail & { customAttributes?: AttributeResponseModel[] }).customAttributes}
-            />
+            <CustomAttributeWidget resource={Resource.CryptoAssets} resourceUuid={detail.uuid} attributes={detail.customAttributes} />
         </Container>
     );
 

@@ -8,7 +8,15 @@ import { actions } from 'ducks/crypto-assets';
 import { actions as customAttributeActions } from 'ducks/customAttributes';
 import { reducers } from 'ducks/reducers';
 import type { AttributeResponseModel, CustomAttributeModel } from 'types/attributes';
-import { AttributeContentType, AttributeType, AttributeVersion, Resource } from 'types/openapi';
+import {
+    AttributeContentType,
+    AttributeType,
+    AttributeVersion,
+    type CryptographicAssetDetailDto,
+    CryptographicAssetType,
+    PqcVerdict,
+    Resource,
+} from 'types/openapi';
 import { LockTypeEnum } from 'types/user-interface';
 import { createMockStore } from 'utils/test-helpers';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
@@ -46,7 +54,18 @@ const storeWith = (cryptoAssets: CryptoAssetsState) =>
         } as never,
     });
 
-const loadedAsset = { uuid: 'asset-1', name: 'RSA-2048', type: 'algorithm', pqcVerdict: 'notReady' };
+const loadedAsset: CryptographicAssetDetailDto = {
+    uuid: 'asset-1',
+    name: 'RSA-2048',
+    type: CryptographicAssetType.Algorithm,
+    pqcVerdict: PqcVerdict.NotReady,
+    sourceCbomCount: 1,
+    occurrenceCount: 1,
+    quarantined: false,
+    customAttributes: [],
+    sources: [],
+    oids: [],
+};
 
 describe('CryptoAssetDetail', () => {
     let container: HTMLDivElement;
@@ -195,7 +214,7 @@ describe('CryptoAssetDetail', () => {
             );
         });
         await act(async () => {
-            store.dispatch(actions.getCryptoAssetDetailSuccess({ detail: { ...loadedAsset, customAttributes: before } as never }));
+            store.dispatch(actions.getCryptoAssetDetailSuccess({ detail: { ...loadedAsset, customAttributes: before } }));
         });
         await act(async () => {
             store.dispatch(customAttributeActions.listResourceCustomAttributesSuccess([ownerDescriptor]));

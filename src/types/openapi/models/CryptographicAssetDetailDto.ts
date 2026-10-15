@@ -19,6 +19,7 @@ import type {
     CryptographicAssetType,
     CryptographicAssetVerdictDto,
     PqcVerdict,
+    ResponseAttribute,
 } from './';
 
 /**
@@ -74,6 +75,12 @@ export interface CryptographicAssetDetailDto {
      * @memberof CryptographicAssetDetailDto
      */
     attributeValues?: { [key: string]: { [key: string]: Array<BaseAttributeContentDtoV3> } };
+    /**
+     * Custom attribute content assigned to this asset
+     * @type {Array<ResponseAttribute>}
+     * @memberof CryptographicAssetDetailDto
+     */
+    customAttributes: Array<ResponseAttribute>;
     /**
      * Provenance of the asset\'s PQC verdict. Absent until the first rule-set evaluation of this asset; the row-level pqcVerdict serves unknown until then
      * @type {CryptographicAssetVerdictDto}

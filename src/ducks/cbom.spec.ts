@@ -176,6 +176,36 @@ describe('cbom slice', () => {
         expect(next.cbomsData).toBeUndefined();
     });
 
+    test('uploadCbomStoredWithoutAttributes ends the upload as finished without adding a row', () => {
+        const uploading = {
+            ...initialState,
+            isUploading: true,
+            cbomsData: { items: [{ uuid: 'old-1' }], totalItems: 1, pageNumber: 1, itemsPerPage: 10, totalPages: 1 },
+        } as any;
+
+        const next = reducer(uploading, actions.uploadCbomStoredWithoutAttributes({ error: 'attributes refused', uuid: 'stored-1' }));
+
+        expect(next.isUploading).toBe(false);
+        expect(next.isUploadSuccess).toBe(true);
+        expect(next.cbomsData!.items).toEqual([{ uuid: 'old-1' }]);
+    });
+
+    test('remembers the UUID of the CBOM the last upload stored, and forgets it when the next upload starts', () => {
+        let next = reducer(initialState, actions.uploadCbom({ content: {} }));
+        next = reducer(next, actions.uploadCbomSuccess({ cbom: { uuid: 'new-1' } as any }));
+        expect(next.uploadedCbomUuid).toBe('new-1');
+
+        next = reducer(next, actions.uploadCbom({ content: {} }));
+        expect(next.uploadedCbomUuid).toBeUndefined();
+
+        next = reducer(next, actions.uploadCbomStoredWithoutAttributes({ error: 'attributes refused', uuid: 'stored-1' }));
+        expect(next.uploadedCbomUuid).toBe('stored-1');
+
+        next = reducer(next, actions.uploadCbom({ content: {} }));
+        next = reducer(next, actions.uploadCbomStoredWithoutAttributes({ error: 'attributes refused' }));
+        expect(next.uploadedCbomUuid).toBeUndefined();
+    });
+
     test('deleteCbom / success / failure updates flags and list data', () => {
         const state = {
             ...initialState,

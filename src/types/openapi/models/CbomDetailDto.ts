@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { BaseAttributeContentDtoV3, CbomAssetSyncState } from './';
+import type { BaseAttributeContentDtoV3, CbomAssetSyncState, ResponseAttribute } from './';
 
 /**
  * @export
@@ -120,4 +120,10 @@ export interface CbomDetailDto {
      * @memberof CbomDetailDto
      */
     content: { [key: string]: any };
+    /**
+     * Custom attribute content assigned to this CBOM
+     * @type {Array<ResponseAttribute>}
+     * @memberof CbomDetailDto
+     */
+    customAttributes: Array<ResponseAttribute>;
 }

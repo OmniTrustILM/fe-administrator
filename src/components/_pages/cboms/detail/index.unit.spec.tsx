@@ -186,10 +186,16 @@ describe('CBOM detail attributes', () => {
                         serialNumber: 'urn:cbom:example',
                         version: 2,
                         specVersion: '1.7',
-                        content: { components: [] },
+                        timestamp: '2026-10-09T00:00:00Z',
+                        source: 'inventory-service',
+                        algorithms: 0,
+                        certificates: 0,
+                        protocols: 0,
+                        cryptoMaterial: 0,
                         totalAssets: 0,
+                        content: { components: [] },
                         customAttributes,
-                    } as never,
+                    },
                 }),
             );
         });
