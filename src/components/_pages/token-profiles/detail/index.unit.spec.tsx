@@ -1,6 +1,7 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { beforeEach, describe, expect, test, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
+import { actions as tokenProfilesActions } from 'ducks/token-profiles';
 import { KeyUsage } from 'types/openapi';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
 import { useDispatchMock, useSelectorMock } from '../../test-utils/reactReduxMockModule';
@@ -36,11 +37,10 @@ vi.mock('components/StatusBadge', () => ({ default: () => null }));
 vi.mock('components/Badge', () => ({ default: ({ children }: { children?: React.ReactNode }) => <span>{children}</span> }));
 vi.mock('components/_pages/tokens/TokenStatusBadge', () => ({ default: () => null }));
 vi.mock('../form', () => ({ default: () => null }));
-vi.mock('../../cryptographic-keys/KeyUsageSelect', () => ({
-    default: ({ supportedKeyUsages, isDisabled }: { supportedKeyUsages?: KeyUsage[]; isDisabled?: boolean }) => (
-        <div data-testid="key-usage-select" data-supported-usages={supportedKeyUsages?.join(',')} data-disabled={isDisabled} />
-    ),
-}));
+vi.mock('components/Select', async () => {
+    const { optionListSelectMockModule } = await import('../../test-utils/mockModules');
+    return optionListSelectMockModule();
+});
 vi.mock('components/EnumDescription', () => ({
     EnumValueDescription: () => null,
 }));
@@ -77,57 +77,68 @@ describe('TokenProfileDetail key-usage dialog', () => {
                 isDeleting: false,
                 isEnabling: false,
                 isDisabling: false,
-                supportedTokenProfileKeyUsages: [],
-                isFetchingSupportedTokenProfileKeyUsages: false,
             },
             enums: { platformEnums: {} },
         };
         useSelectorMock.mockImplementation((selector: (value: unknown) => unknown) => selector(state));
     });
 
-    test('opensDialog_andRequestsUsagesSupportedByTheProfileToken', async () => {
-        // given
-        const supportedKeyUsages = [KeyUsage.Sign, KeyUsage.Verify];
-        state.tokenprofiles.supportedTokenProfileKeyUsages = supportedKeyUsages;
-        await act(async () => {
-            root.render(<TokenProfileDetail />);
+    afterEach(() => {
+        act(() => {
+            root.unmount();
         });
-        const updateKeyUsagesButton = container.querySelector('button[title="Update Key Usages"]') as HTMLButtonElement;
-
-        // when
-        await act(async () => {
-            updateKeyUsagesButton.click();
-        });
-
-        // then
-        const keyUsageSelect = container.querySelector('[data-testid="key-usage-select"]') as HTMLElement;
-        expect(keyUsageSelect.dataset.supportedUsages).toBe(supportedKeyUsages.join(','));
-        expect(keyUsageSelect.dataset.disabled).toBe('false');
-        expect(dispatch).toHaveBeenCalledWith({
-            type: 'tokenprofiles/clearSupportedTokenProfileKeyUsages',
-            payload: undefined,
-        });
-        expect(dispatch).toHaveBeenCalledWith({
-            type: 'tokenprofiles/getSupportedTokenProfileKeyUsages',
-            payload: { tokenInstanceUuid: 'token-1' },
-        });
+        container.remove();
     });
 
-    test('opensDialog_withKeyUsageSelectDisabled_whileSupportedUsagesAreLoading', async () => {
-        // given
-        state.tokenprofiles.isFetchingSupportedTokenProfileKeyUsages = true;
+    const openKeyUsageDialog = async () => {
         await act(async () => {
             root.render(<TokenProfileDetail />);
         });
+        dispatch.mockClear();
         const updateKeyUsagesButton = container.querySelector('button[title="Update Key Usages"]') as HTMLButtonElement;
-
-        // when
         await act(async () => {
             updateKeyUsagesButton.click();
         });
+    };
+
+    test('opensDialog_offeringEveryKeyUsage_withTheProfileUsagesSelected', async () => {
+        // given
+        state.tokenprofiles.tokenProfile.usages = [KeyUsage.Sign];
+
+        // when
+        await openKeyUsageDialog();
 
         // then
-        const keyUsageSelect = container.querySelector('[data-testid="key-usage-select"]') as HTMLElement;
-        expect(keyUsageSelect.dataset.disabled).toBe('true');
+        const keyUsageSelect = container.querySelector('[data-testid="select-field"]') as HTMLButtonElement;
+        expect(keyUsageSelect.dataset.options).toBe(Object.values(KeyUsage).join(','));
+        expect(keyUsageSelect.dataset.value).toBe(KeyUsage.Sign);
+        expect(keyUsageSelect.disabled).toBe(false);
+        expect(dispatch).not.toHaveBeenCalled();
+    });
+
+    test('confirmsDialog_updatingTheProfileWithThePickedUsages', async () => {
+        // given
+        await openKeyUsageDialog();
+        const keyUsageSelect = container.querySelector('[data-testid="select-field"]') as HTMLButtonElement;
+        await act(async () => {
+            keyUsageSelect.click();
+        });
+        const updateButton = Array.from(container.querySelectorAll('[data-testid="dialog"] button')).find(
+            (button) => button.textContent === 'Update',
+        ) as HTMLButtonElement;
+
+        // when
+        await act(async () => {
+            updateButton.click();
+        });
+
+        // then
+        expect(dispatch).toHaveBeenCalledWith(
+            tokenProfilesActions.updateKeyUsage({
+                tokenInstanceUuid: 'token-1',
+                uuid: 'profile-1',
+                usage: { usage: Object.values(KeyUsage) },
+            }),
+        );
     });
 });

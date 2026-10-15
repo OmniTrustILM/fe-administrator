@@ -23,7 +23,6 @@ import type {
     EditTokenProfileRequestDto,
     ErrorMessageDto,
     KeyRequestType,
-    KeyUsage,
     TokenProfileDetailDto,
     TokenProfileDto,
     TokenProfileKeyUsageRequestDto,
@@ -79,10 +78,6 @@ export interface GetTokenProfileRequest {
 export interface ListSupportedKeyRequestTypesRequest {
     tokenInstanceUuid: string;
     tokenProfileUuid: string;
-}
-
-export interface ListSupportedTokenProfileKeyUsagesRequest {
-    tokenInstanceUuid: string;
 }
 
 export interface ListTokenProfileAttributesRequest {
@@ -385,30 +380,6 @@ export class TokenProfileManagementApi extends BaseAPI {
                 url: '/v1/tokens/{tokenInstanceUuid}/tokenProfiles/{tokenProfileUuid}/keys/types'
                     .replace('{tokenInstanceUuid}', encodeURI(tokenInstanceUuid))
                     .replace('{tokenProfileUuid}', encodeURI(tokenProfileUuid)),
-                method: 'GET',
-            },
-            opts?.responseOpts,
-        );
-    }
-
-    /**
-     * Returns the key usages supported for the specified token instance
-     * List supported token profile key usages
-     */
-    listSupportedTokenProfileKeyUsages({ tokenInstanceUuid }: ListSupportedTokenProfileKeyUsagesRequest): Observable<Array<KeyUsage>>;
-    listSupportedTokenProfileKeyUsages(
-        { tokenInstanceUuid }: ListSupportedTokenProfileKeyUsagesRequest,
-        opts?: OperationOpts,
-    ): Observable<AjaxResponse<Array<KeyUsage>>>;
-    listSupportedTokenProfileKeyUsages(
-        { tokenInstanceUuid }: ListSupportedTokenProfileKeyUsagesRequest,
-        opts?: OperationOpts,
-    ): Observable<Array<KeyUsage> | AjaxResponse<Array<KeyUsage>>> {
-        throwIfNullOrUndefined(tokenInstanceUuid, 'tokenInstanceUuid', 'listSupportedTokenProfileKeyUsages');
-
-        return this.request<Array<KeyUsage>>(
-            {
-                url: '/v1/tokens/{tokenInstanceUuid}/tokenProfiles/keyUsages'.replace('{tokenInstanceUuid}', encodeURI(tokenInstanceUuid)),
                 method: 'GET',
             },
             opts?.responseOpts,

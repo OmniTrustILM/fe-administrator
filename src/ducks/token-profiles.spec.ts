@@ -181,107 +181,6 @@ describe('tokenProfiles slice', () => {
         expect(next.detailFetchSucceeded).toBe(true);
     });
 
-    test('getSupportedTokenProfileKeyUsages_clearsWhileLoading_andStoresCurrentTokenUsages', () => {
-        // given
-        const tokenInstanceUuid = 'token-1';
-        const supportedKeyUsages = [KeyUsage.Sign, KeyUsage.Verify];
-
-        // when
-        let next = reducer(
-            { ...initialState, supportedTokenProfileKeyUsages: [KeyUsage.Encrypt] },
-            actions.getSupportedTokenProfileKeyUsages({ tokenInstanceUuid }),
-        );
-
-        // then
-        expect(next.supportedTokenProfileKeyUsages).toEqual([]);
-        expect(next.supportedTokenProfileKeyUsagesTokenInstanceUuid).toBe(tokenInstanceUuid);
-        expect(next.isFetchingSupportedTokenProfileKeyUsages).toBe(true);
-
-        // when
-        next = reducer(next, actions.getSupportedTokenProfileKeyUsagesSuccess({ tokenInstanceUuid, keyUsages: supportedKeyUsages }));
-
-        // then
-        expect(next.supportedTokenProfileKeyUsages).toEqual(supportedKeyUsages);
-        expect(next.isFetchingSupportedTokenProfileKeyUsages).toBe(false);
-    });
-
-    test('getSupportedTokenProfileKeyUsages_ignoresStaleResponses', () => {
-        // given
-        const firstTokenInstanceUuid = 'token-1';
-        const secondTokenInstanceUuid = 'token-2';
-        const staleKeyUsages = [KeyUsage.Encrypt];
-        const currentKeyUsages = [KeyUsage.Sign];
-
-        // when
-        let next = reducer(initialState, actions.getSupportedTokenProfileKeyUsages({ tokenInstanceUuid: firstTokenInstanceUuid }));
-        next = reducer(next, actions.getSupportedTokenProfileKeyUsages({ tokenInstanceUuid: secondTokenInstanceUuid }));
-        next = reducer(
-            next,
-            actions.getSupportedTokenProfileKeyUsagesSuccess({
-                tokenInstanceUuid: firstTokenInstanceUuid,
-                keyUsages: staleKeyUsages,
-            }),
-        );
-        next = reducer(
-            next,
-            actions.getSupportedTokenProfileKeyUsagesFailure({
-                tokenInstanceUuid: firstTokenInstanceUuid,
-                error: 'stale response',
-            }),
-        );
-
-        // then
-        expect(next.supportedTokenProfileKeyUsages).toEqual([]);
-        expect(next.isFetchingSupportedTokenProfileKeyUsages).toBe(true);
-
-        // when
-        next = reducer(
-            next,
-            actions.getSupportedTokenProfileKeyUsagesSuccess({
-                tokenInstanceUuid: secondTokenInstanceUuid,
-                keyUsages: currentKeyUsages,
-            }),
-        );
-
-        // then
-        expect(next.supportedTokenProfileKeyUsages).toEqual(currentKeyUsages);
-        expect(next.isFetchingSupportedTokenProfileKeyUsages).toBe(false);
-    });
-
-    test('getSupportedTokenProfileKeyUsagesFailure_fallsBackToAllKeyUsages', () => {
-        // given
-        const tokenInstanceUuid = 'token-1';
-        const loadingState = reducer(initialState, actions.getSupportedTokenProfileKeyUsages({ tokenInstanceUuid }));
-
-        // when
-        const next = reducer(
-            loadingState,
-            actions.getSupportedTokenProfileKeyUsagesFailure({ tokenInstanceUuid, error: 'endpoint unavailable' }),
-        );
-
-        // then
-        expect(next.supportedTokenProfileKeyUsages).toEqual(Object.values(KeyUsage));
-        expect(next.isFetchingSupportedTokenProfileKeyUsages).toBe(false);
-    });
-
-    test('clearSupportedTokenProfileKeyUsages_clearsSelectedTokenMetadata', () => {
-        // given
-        const loadedState = {
-            ...initialState,
-            supportedTokenProfileKeyUsages: [KeyUsage.Sign],
-            supportedTokenProfileKeyUsagesTokenInstanceUuid: 'token-1',
-            isFetchingSupportedTokenProfileKeyUsages: true,
-        };
-
-        // when
-        const next = reducer(loadedState, actions.clearSupportedTokenProfileKeyUsages());
-
-        // then
-        expect(next.supportedTokenProfileKeyUsages).toEqual([]);
-        expect(next.supportedTokenProfileKeyUsagesTokenInstanceUuid).toBeUndefined();
-        expect(next.isFetchingSupportedTokenProfileKeyUsages).toBe(false);
-    });
-
     test('createTokenProfile / success / failure', () => {
         let next = reducer(
             initialState,
@@ -546,14 +445,11 @@ describe('tokenProfiles selectors', () => {
         importableTokenProfiles: [profile],
         importableTokenProfilesListed: true,
         importableTokenProfilesError: 'Failed to get importable token profiles',
-        supportedTokenProfileKeyUsages: [KeyUsage.Sign],
-        supportedTokenProfileKeyUsagesTokenInstanceUuid: 'token-1',
         checkedRows: ['tp-1'],
         isFetchingList: true,
         isFetchingImportable: true,
         isFetchingDetail: true,
         isFetchingAttributes: true,
-        isFetchingSupportedTokenProfileKeyUsages: true,
         isCreating: true,
         createTokenProfileSucceeded: true,
         isDeleting: true,
@@ -614,21 +510,6 @@ describe('tokenProfiles selectors', () => {
         expect(
             selectors.loadedTokenProfile('tp-1')({ tokenprofiles: { ...loaded.tokenprofiles, detailFetchSucceeded: false } } as any),
         ).toBeUndefined();
-    });
-
-    test('supportedTokenProfileKeyUsages selectors', () => {
-        // given
-        const stateWithSupportedUsages = state;
-
-        // when
-        const supportedUsages = selectors.supportedTokenProfileKeyUsages(stateWithSupportedUsages);
-        const selectedTokenUuid = selectors.supportedTokenProfileKeyUsagesTokenInstanceUuid(stateWithSupportedUsages);
-        const isFetching = selectors.isFetchingSupportedTokenProfileKeyUsages(stateWithSupportedUsages);
-
-        // then
-        expect(supportedUsages).toEqual([KeyUsage.Sign]);
-        expect(selectedTokenUuid).toBe('token-1');
-        expect(isFetching).toBe(true);
     });
 
     test('checkedRows selector', () => {
@@ -703,12 +584,9 @@ describe('tokenProfiles selectors', () => {
         const defaultState = { tokenprofiles: initialState } as any;
         expect(selectors.tokenProfile(defaultState)).toBeUndefined();
         expect(selectors.tokenProfiles(defaultState)).toEqual([]);
-        expect(selectors.supportedTokenProfileKeyUsages(defaultState)).toEqual([]);
-        expect(selectors.supportedTokenProfileKeyUsagesTokenInstanceUuid(defaultState)).toBeUndefined();
         expect(selectors.checkedRows(defaultState)).toEqual([]);
         expect(selectors.isFetchingList(defaultState)).toBe(false);
         expect(selectors.isFetchingDetail(defaultState)).toBe(false);
-        expect(selectors.isFetchingSupportedTokenProfileKeyUsages(defaultState)).toBe(false);
         expect(selectors.isCreating(defaultState)).toBe(false);
         expect(selectors.isDeleting(defaultState)).toBe(false);
         expect(selectors.isBulkDeleting(defaultState)).toBe(false);

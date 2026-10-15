@@ -49,8 +49,6 @@ export default function TokenProfileDetail() {
     const [keyUsageUpdate, setKeyUsageUpdate] = useState<boolean>(false);
 
     const keyUsageEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyUsage));
-    const supportedKeyUsages = useSelector(tokenProfilesSelectors.supportedTokenProfileKeyUsages) ?? [];
-    const isFetchingSupportedKeyUsages = useSelector(tokenProfilesSelectors.isFetchingSupportedTokenProfileKeyUsages);
     const [keyUsages, setKeyUsages] = useState<KeyUsage[]>([]);
     const isBusy = useMemo(
         () => isFetchingProfile || isDeleting || isEnabling || isDisabling || isUpdatingKeyUsage,
@@ -81,17 +79,11 @@ export default function TokenProfileDetail() {
     }, [tokenProfile]);
 
     const onKeyUsageEditClick = useCallback(() => {
-        if (!tokenProfile?.tokenInstanceUuid) return;
+        if (!tokenProfile) return;
 
         setKeyUsages(tokenProfile.usages);
         setKeyUsageUpdate(true);
-        dispatch(tokenProfilesActions.clearSupportedTokenProfileKeyUsages());
-        dispatch(
-            tokenProfilesActions.getSupportedTokenProfileKeyUsages({
-                tokenInstanceUuid: tokenProfile.tokenInstanceUuid,
-            }),
-        );
-    }, [dispatch, tokenProfile]);
+    }, [tokenProfile]);
 
     const onEnableClick = useCallback(() => {
         if (!tokenProfile) return;
@@ -296,20 +288,12 @@ export default function TokenProfileDetail() {
             <Dialog
                 isOpen={keyUsageUpdate}
                 caption="Update Key Usage"
-                body={
-                    <KeyUsageSelect
-                        value={keyUsages}
-                        onChange={setKeyUsages}
-                        keyUsageEnum={keyUsageEnum}
-                        supportedKeyUsages={supportedKeyUsages}
-                        isDisabled={isFetchingSupportedKeyUsages}
-                    />
-                }
+                body={<KeyUsageSelect value={keyUsages} onChange={setKeyUsages} keyUsageEnum={keyUsageEnum} />}
                 toggle={() => setKeyUsageUpdate(false)}
                 size="md"
                 buttons={[
                     { color: 'secondary', variant: 'outline', onClick: () => setKeyUsageUpdate(false), body: 'Cancel' },
-                    { color: 'primary', onClick: onUpdateKeyUsageConfirmed, body: 'Update', disabled: isFetchingSupportedKeyUsages },
+                    { color: 'primary', onClick: onUpdateKeyUsageConfirmed, body: 'Update' },
                 ]}
             />
 
