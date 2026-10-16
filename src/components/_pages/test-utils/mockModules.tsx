@@ -171,3 +171,32 @@ export const COMMON_VAULT_PROFILES_STATE = {
         { uuid: 'vp-2', name: 'Vault Profile Two', enabled: true, vaultInstance: { uuid: 'vault-2' } },
     ],
 };
+
+type MockSelectOption = { value: unknown };
+
+export const optionListSelectMockModule = () => ({
+    default: ({
+        id,
+        options,
+        value,
+        onChange,
+        isDisabled,
+    }: {
+        id?: string;
+        options?: MockSelectOption[];
+        value?: MockSelectOption[];
+        onChange: (value: MockSelectOption[]) => void;
+        isDisabled?: boolean;
+    }) => (
+        <button
+            type="button"
+            data-testid={`select-${id}`}
+            data-options={(options || []).map((option) => option.value).join(',')}
+            data-value={(value || []).map((option) => option.value).join(',')}
+            disabled={isDisabled}
+            onClick={() => onChange(options || [])}
+        >
+            select
+        </button>
+    ),
+});

@@ -3,24 +3,24 @@ import { KeyUsage } from 'types/openapi';
 import { getKeyUsageOptions } from './index';
 
 describe('getKeyUsageOptions', () => {
-    test('usesOnlyUsagesProvidedByTheConnector', () => {
+    test('usesOnlyTheAvailableUsages', () => {
         // given
-        const connectorSupportedUsages = [KeyUsage.Sign, KeyUsage.Verify];
+        const availableUsages = [KeyUsage.Sign, KeyUsage.Verify];
 
         // when
-        const options = getKeyUsageOptions(connectorSupportedUsages, undefined);
+        const options = getKeyUsageOptions(availableUsages, undefined);
 
         // then
-        expect(options.map((option) => option.value)).toEqual(connectorSupportedUsages);
+        expect(options.map((option) => option.value)).toEqual(availableUsages);
     });
 
-    test('keepsKeyTypeFilteringForConnectorSupportedUsages', () => {
+    test('keepsKeyTypeFilteringForTheAvailableUsages', () => {
         // given
-        const connectorSupportedUsages = [KeyUsage.Sign, KeyUsage.Verify];
+        const availableUsages = [KeyUsage.Sign, KeyUsage.Verify];
         const privateKeyUsages = [KeyUsage.Sign, KeyUsage.Decrypt, KeyUsage.Unwrap];
 
         // when
-        const options = getKeyUsageOptions(connectorSupportedUsages, undefined, privateKeyUsages);
+        const options = getKeyUsageOptions(availableUsages, undefined, privateKeyUsages);
 
         // then
         expect(options.map((option) => option.value)).toEqual([KeyUsage.Sign]);

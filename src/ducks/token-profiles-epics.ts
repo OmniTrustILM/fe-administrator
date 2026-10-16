@@ -1,5 +1,5 @@
 import type { AppEpic } from 'ducks';
-import { defer, iif, of } from 'rxjs';
+import { iif, of } from 'rxjs';
 import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
 import { extractError } from 'utils/net';
 import { actions as alertActions } from './alerts';
@@ -135,35 +135,6 @@ const createTokenProfile: AppEpic = (action$, state$, deps) => {
                         ),
                     ),
                 ),
-        ),
-    );
-};
-
-const getSupportedTokenProfileKeyUsages: AppEpic = (action$, state$, deps) => {
-    return action$.pipe(
-        filter(slice.actions.getSupportedTokenProfileKeyUsages.match),
-        switchMap((action) =>
-            defer(() =>
-                deps.apiClients.tokenProfiles.listSupportedTokenProfileKeyUsages({
-                    tokenInstanceUuid: action.payload.tokenInstanceUuid,
-                }),
-            ).pipe(
-                map((keyUsages) =>
-                    slice.actions.getSupportedTokenProfileKeyUsagesSuccess({
-                        tokenInstanceUuid: action.payload.tokenInstanceUuid,
-                        keyUsages,
-                    }),
-                ),
-                catchError((err) =>
-                    of(
-                        slice.actions.getSupportedTokenProfileKeyUsagesFailure({
-                            tokenInstanceUuid: action.payload.tokenInstanceUuid,
-                            error: extractError(err, 'Failed to get supported Token Profile Key Usages'),
-                        }),
-                        appRedirectActions.fetchError({ error: err, message: 'Failed to get supported Token Profile Key Usages' }),
-                    ),
-                ),
-            ),
         ),
     );
 };
@@ -396,7 +367,6 @@ const epics = [
     listImportableTokenProfiles,
     getTokenProfileDetail,
     createTokenProfile,
-    getSupportedTokenProfileKeyUsages,
     updateTokenProfile,
     enableTokenProfile,
     disableTokenProfile,
@@ -408,5 +378,5 @@ const epics = [
     bulkUpdateKeyUsage,
 ];
 
-export { getSupportedTokenProfileKeyUsages, getTokenProfileDetail };
+export { getTokenProfileDetail };
 export default epics;

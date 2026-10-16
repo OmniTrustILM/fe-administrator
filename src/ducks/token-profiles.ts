@@ -2,7 +2,7 @@ import { resetSliceState } from 'ducks/reducerUtils';
 import type { AppState } from 'ducks';
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { BulkActionModel } from 'types/connectors';
-import { KeyUsage, type TokenProfileDto } from 'types/openapi';
+import type { KeyUsage, TokenProfileDto } from 'types/openapi';
 import type {
     TokenProfileAddRequestModel,
     TokenProfileDetailResponseModel,
@@ -25,8 +25,6 @@ export type State = {
     importableTokenProfilesListed: boolean;
     /** Why the last listing of importable profiles failed, until the next one. */
     importableTokenProfilesError?: string;
-    supportedTokenProfileKeyUsages: KeyUsage[];
-    supportedTokenProfileKeyUsagesTokenInstanceUuid?: string;
 
     isFetchingList: boolean;
     isFetchingImportable: boolean;
@@ -35,7 +33,6 @@ export type State = {
     /** Why the last detail request failed, until the next one. */
     detailError?: string;
     isFetchingAttributes: boolean;
-    isFetchingSupportedTokenProfileKeyUsages: boolean;
     isUpdatingKeyUsage: boolean;
     isBulkUpdatingKeyUsage: boolean;
 
@@ -60,14 +57,12 @@ export const initialState: State = {
     tokenProfiles: [],
     importableTokenProfiles: [],
     importableTokenProfilesListed: false,
-    supportedTokenProfileKeyUsages: [],
 
     isFetchingList: false,
     isFetchingImportable: false,
     isFetchingDetail: false,
     detailFetchSucceeded: false,
     isFetchingAttributes: false,
-    isFetchingSupportedTokenProfileKeyUsages: false,
     isUpdatingKeyUsage: false,
     isBulkUpdatingKeyUsage: false,
     isCreating: false,
@@ -154,35 +149,6 @@ export const slice = createSlice({
             state.isFetchingDetail = false;
             state.detailFetchSucceeded = false;
             state.detailError = action.payload.error;
-        },
-
-        clearSupportedTokenProfileKeyUsages: (state, action: PayloadAction<void>) => {
-            state.supportedTokenProfileKeyUsages = [];
-            state.supportedTokenProfileKeyUsagesTokenInstanceUuid = undefined;
-            state.isFetchingSupportedTokenProfileKeyUsages = false;
-        },
-
-        getSupportedTokenProfileKeyUsages: (state, action: PayloadAction<{ tokenInstanceUuid: string }>) => {
-            state.supportedTokenProfileKeyUsages = [];
-            state.supportedTokenProfileKeyUsagesTokenInstanceUuid = action.payload.tokenInstanceUuid;
-            state.isFetchingSupportedTokenProfileKeyUsages = true;
-        },
-
-        getSupportedTokenProfileKeyUsagesSuccess: (state, action: PayloadAction<{ tokenInstanceUuid: string; keyUsages: KeyUsage[] }>) => {
-            if (state.supportedTokenProfileKeyUsagesTokenInstanceUuid !== action.payload.tokenInstanceUuid) return;
-
-            state.supportedTokenProfileKeyUsages = action.payload.keyUsages;
-            state.isFetchingSupportedTokenProfileKeyUsages = false;
-        },
-
-        getSupportedTokenProfileKeyUsagesFailure: (
-            state,
-            action: PayloadAction<{ tokenInstanceUuid: string; error: string | undefined }>,
-        ) => {
-            if (state.supportedTokenProfileKeyUsagesTokenInstanceUuid !== action.payload.tokenInstanceUuid) return;
-
-            state.supportedTokenProfileKeyUsages = Object.values(KeyUsage);
-            state.isFetchingSupportedTokenProfileKeyUsages = false;
         },
 
         createTokenProfile: (
@@ -387,18 +353,12 @@ const importableTokenProfiles = createSelector(state, (state: State) => state.im
 const isFetchingImportable = createSelector(state, (state: State) => state.isFetchingImportable);
 const isImportableTokenProfilesListed = createSelector(state, (state: State) => state.importableTokenProfilesListed);
 const importableTokenProfilesError = createSelector(state, (state: State) => state.importableTokenProfilesError);
-const supportedTokenProfileKeyUsages = createSelector(state, (state: State) => state.supportedTokenProfileKeyUsages);
-const supportedTokenProfileKeyUsagesTokenInstanceUuid = createSelector(
-    state,
-    (state: State) => state.supportedTokenProfileKeyUsagesTokenInstanceUuid,
-);
 
 const isFetchingList = createSelector(state, (state: State) => state.isFetchingList);
 const isFetchingDetail = createSelector(state, (state: State) => state.isFetchingDetail);
 const detailFetchSucceeded = createSelector(state, (state: State) => state.detailFetchSucceeded);
 const detailError = createSelector(state, (state: State) => state.detailError);
 const isFetchingAttributes = createSelector(state, (state: State) => state.isFetchingAttributes);
-const isFetchingSupportedTokenProfileKeyUsages = createSelector(state, (state: State) => state.isFetchingSupportedTokenProfileKeyUsages);
 const isCreating = createSelector(state, (state: State) => state.isCreating);
 const createTokenProfileSucceeded = createSelector(state, (state: State) => state.createTokenProfileSucceeded);
 const isDeleting = createSelector(state, (state: State) => state.isDeleting);
@@ -424,15 +384,12 @@ export const selectors = {
     isFetchingImportable,
     isImportableTokenProfilesListed,
     importableTokenProfilesError,
-    supportedTokenProfileKeyUsages,
-    supportedTokenProfileKeyUsagesTokenInstanceUuid,
 
     isFetchingList,
     isFetchingDetail,
     detailFetchSucceeded,
     detailError,
     isFetchingAttributes,
-    isFetchingSupportedTokenProfileKeyUsages,
     isCreating,
     createTokenProfileSucceeded,
     isDeleting,

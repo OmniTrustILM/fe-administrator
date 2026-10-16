@@ -24,8 +24,7 @@ import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { validateAlphaNumericWithSpecialChars, validateLength, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from '../../../../ducks/customAttributes';
-import { PlatformEnum, Resource } from '../../../../types/openapi';
-import type { KeyUsage } from '../../../../types/openapi';
+import { KeyUsage, PlatformEnum, Resource } from '../../../../types/openapi';
 import TabLayout from '../../../Layout/TabLayout';
 import TextInput from 'components/TextInput';
 import TextArea from 'components/TextArea';
@@ -72,8 +71,6 @@ export default function TokenProfileForm({
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
 
     const keyUsageEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyUsage));
-    const supportedTokenProfileKeyUsages = useSelector(tokenProfilesSelectors.supportedTokenProfileKeyUsages) ?? [];
-    const isFetchingSupportedTokenProfileKeyUsages = useSelector(tokenProfilesSelectors.isFetchingSupportedTokenProfileKeyUsages);
     const isFetchingTokenProfileAttributes = useSelector(tokensSelectors.isFetchingTokenProfileAttributesDescriptors);
 
     const isFetchingDetail = useSelector(tokenProfilesSelectors.isFetchingDetail);
@@ -85,21 +82,8 @@ export default function TokenProfileForm({
     const [tokenProfile, setTokenProfile] = useState<TokenProfileDetailResponseModel>();
 
     const isBusy = useMemo(
-        () =>
-            isFetchingDetail ||
-            isCreating ||
-            isUpdating ||
-            isFetchingTokenProfileAttributes ||
-            isFetchingSupportedTokenProfileKeyUsages ||
-            isFetchingResourceCustomAttributes,
-        [
-            isCreating,
-            isFetchingDetail,
-            isUpdating,
-            isFetchingTokenProfileAttributes,
-            isFetchingSupportedTokenProfileKeyUsages,
-            isFetchingResourceCustomAttributes,
-        ],
+        () => isFetchingDetail || isCreating || isUpdating || isFetchingTokenProfileAttributes || isFetchingResourceCustomAttributes,
+        [isCreating, isFetchingDetail, isUpdating, isFetchingTokenProfileAttributes, isFetchingResourceCustomAttributes],
     );
 
     const previousIdRef = useRef<string | undefined>(undefined);
@@ -107,7 +91,6 @@ export default function TokenProfileForm({
     useEffect(() => {
         dispatch(tokensActions.listTokens());
         dispatch(tokensActions.clearTokenProfileAttributesDescriptors());
-        dispatch(tokenProfilesActions.clearSupportedTokenProfileKeyUsages());
         dispatch(connectorActions.clearCallbackData());
     }, [dispatch]);
 
@@ -131,11 +114,6 @@ export default function TokenProfileForm({
         if (editMode && tokenProfileSelector && tokenProfileSelector.uuid === id) {
             setTokenProfile(tokenProfileSelector);
             dispatch(tokensActions.getTokenProfileAttributesDescriptors({ tokenUuid: tokenProfileSelector.tokenInstanceUuid }));
-            dispatch(
-                tokenProfilesActions.getSupportedTokenProfileKeyUsages({
-                    tokenInstanceUuid: tokenProfileSelector.tokenInstanceUuid,
-                }),
-            );
         }
     }, [dispatch, editMode, id, tokenProfileSelector]);
 
@@ -215,12 +193,9 @@ export default function TokenProfileForm({
                     setValue(key as `__attributes__${string}`, undefined);
                 }
             });
-            setValue('usages', [], { shouldDirty: true, shouldValidate: true });
             dispatch(tokensActions.clearTokenProfileAttributesDescriptors());
-            dispatch(tokenProfilesActions.clearSupportedTokenProfileKeyUsages());
             if (tokenUuid) {
                 dispatch(tokensActions.getTokenProfileAttributesDescriptors({ tokenUuid }));
-                dispatch(tokenProfilesActions.getSupportedTokenProfileKeyUsages({ tokenInstanceUuid: tokenUuid }));
             }
         },
         [dispatch, getValues, setValue],
@@ -230,8 +205,6 @@ export default function TokenProfileForm({
         if (!editMode && tokenId) {
             dispatch(tokensActions.clearTokenProfileAttributesDescriptors());
             dispatch(tokensActions.getTokenProfileAttributesDescriptors({ tokenUuid: tokenId }));
-            dispatch(tokenProfilesActions.clearSupportedTokenProfileKeyUsages());
-            dispatch(tokenProfilesActions.getSupportedTokenProfileKeyUsages({ tokenInstanceUuid: tokenId }));
         }
     }, [dispatch, editMode, tokenId]);
 
@@ -309,10 +282,7 @@ export default function TokenProfileForm({
         );
     }, [isBusy, resourceCustomAttributes, tokenProfile]);
 
-    const keyUsageOptions = useMemo(
-        () => getKeyUsageOptions(supportedTokenProfileKeyUsages, keyUsageEnum),
-        [keyUsageEnum, supportedTokenProfileKeyUsages],
-    );
+    const keyUsageOptions = useMemo(() => getKeyUsageOptions(Object.values(KeyUsage), keyUsageEnum), [keyUsageEnum]);
 
     return (
         <FormProvider {...methods}>
@@ -420,7 +390,6 @@ export default function TokenProfileForm({
                                                 field.onChange(value);
                                             }}
                                             options={keyUsageOptions}
-                                            isDisabled={isFetchingSupportedTokenProfileKeyUsages || !watchedToken}
                                             placeholder="Select Key Usages"
                                             placement="bottom"
                                             showOptionDescriptionInDropdown

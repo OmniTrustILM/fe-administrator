@@ -1,14 +1,23 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter, Route, Routes } from 'react-router';
-import { createMockStore } from 'utils/test-helpers';
+import { actions as customAttributesActions } from 'ducks/customAttributes';
+import { testInitialState } from 'ducks/test-reducers';
+import type { TokenInstanceDto } from 'types/openapi';
+import type { TokenProfileDetailResponseModel } from 'types/token-profiles';
+import { useRecordingStore } from 'utils/test-helpers';
 import TokenProfileForm from './index';
+
+const NO_TOKENS: TokenInstanceDto[] = [];
 
 export type TokenProfileFormWithStoreProps = Readonly<{
     /** Route the form is rendered under — the source of the `:id` param the form used to trust. */
     initialRoute?: string;
     routePath?: string;
     usesGlobalModal?: boolean;
+    tokens?: TokenInstanceDto[];
+    /** Profile already in the store, as after its detail fetch. */
+    tokenProfile?: TokenProfileDetailResponseModel;
 }>;
 
 /**
@@ -21,8 +30,22 @@ export function TokenProfileFormWithStore({
     initialRoute = '/certificates/detail/certificate-uuid',
     routePath = '/certificates/detail/:id',
     usesGlobalModal = false,
+    tokens = NO_TOKENS,
+    tokenProfile,
 }: TokenProfileFormWithStoreProps) {
-    const store = useMemo(() => createMockStore(), []);
+    const state = useMemo(
+        () => ({
+            tokens: { ...testInitialState.tokens, tokens },
+            tokenprofiles: { ...testInitialState.tokenprofiles, tokenProfile },
+        }),
+        [tokens, tokenProfile],
+    );
+    const { store, dispatched } = useRecordingStore(state, 'tokenprofiles/');
+
+    // Answers the form's custom attribute listing in place of its epic, so the busy overlay clears.
+    useEffect(() => {
+        store.dispatch(customAttributesActions.listResourceCustomAttributesSuccess([]));
+    }, [store]);
 
     return (
         <Provider store={store}>
@@ -31,6 +54,7 @@ export function TokenProfileFormWithStore({
                     <Route path={routePath} element={<TokenProfileForm usesGlobalModal={usesGlobalModal} />} />
                 </Routes>
             </MemoryRouter>
+            <output data-testid="token-profile-actions">{dispatched.map(({ type }) => type).join(',')}</output>
         </Provider>
     );
 }

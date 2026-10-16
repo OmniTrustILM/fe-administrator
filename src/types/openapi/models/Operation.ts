@@ -74,7 +74,6 @@ export enum Operation {
     Retry = 'retry',
     Compromise = 'compromise',
     Destroy = 'destroy',
-    ListKeyUsages = 'listKeyUsages',
     UpdateKeyUsage = 'updateKeyUsage',
     ListKeyRequestTypes = 'listKeyRequestTypes',
     Encrypt = 'encrypt',
