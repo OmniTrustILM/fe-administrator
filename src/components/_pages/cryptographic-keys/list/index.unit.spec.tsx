@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import CryptographicKeyList from './index';
 import certificatesReducer, { actions as certificatesActions, initialState as certificatesInitialState } from 'ducks/certificates';
 import cryptographicKeysReducer, { actions as keysActions, initialState as keysInitialState } from 'ducks/cryptographic-keys';
+import { keyPairMeta } from 'ducks/__fixtures__/token-keys';
 import { EntityType } from 'ducks/filters';
 import pagingsReducer, { actions as pagingsActions, initialState as pagingsInitialState } from 'ducks/paging';
 import tokenProfilesReducer, { actions as tokenProfilesActions, initialState as tokenProfilesInitialState } from 'ducks/token-profiles';
@@ -114,7 +115,9 @@ describe('CryptographicKeyList', () => {
         await renderList();
         expect(listRefreshToken()).toBe('0');
 
-        const results = [{ keyHandle: 'handle', onboarded: true, intoExistingKey: false, keyUuid: 'key-1', keyName: 'signer' }];
+        const results = [
+            { keyPairMeta: keyPairMeta('handle'), onboarded: true, intoExistingKey: false, keyUuid: 'key-1', keyName: 'signer' },
+        ];
         state = {
             ...state,
             tokenprofiles: tokenProfilesReducer(state.tokenprofiles, tokenProfilesActions.onboardTokenKeysSuccess({ results })),
@@ -139,7 +142,7 @@ describe('CryptographicKeyList', () => {
         };
         await renderList();
 
-        const results = [{ keyHandle: 'handle', onboarded: false, intoExistingKey: false, reason: 'gone' }];
+        const results = [{ keyPairMeta: keyPairMeta('handle'), onboarded: false, intoExistingKey: false, reason: 'gone' }];
         state = {
             ...state,
             tokenprofiles: tokenProfilesReducer(state.tokenprofiles, tokenProfilesActions.onboardTokenKeysSuccess({ results })),

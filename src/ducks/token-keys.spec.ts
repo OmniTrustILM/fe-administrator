@@ -13,6 +13,7 @@ import {
     TokenKeyStatus,
     type TokenProfileDto,
 } from 'types/openapi';
+import { keyPairMeta } from './__fixtures__/token-keys';
 import { actions as alertActions } from './alerts';
 import reducer, { actions, initialState, selectors } from './token-profiles';
 import tokenProfileEpics from './token-profiles-epics';
@@ -27,7 +28,7 @@ function epicNamed(epics: unknown[], name: string) {
 const page: TokenKeyListResponseDto = {
     items: [
         {
-            keyHandle: 'handle-1',
+            keyPairMeta: keyPairMeta('handle-1'),
             label: 'signer',
             keyAlgorithm: KeyAlgorithm.Rsa,
             length: 2048,
@@ -41,9 +42,14 @@ const page: TokenKeyListResponseDto = {
     totalItems: 1,
 };
 
-const onboarded: TokenKeyOnboardingResultDto = { keyHandle: 'handle-1', onboarded: true, keyUuid: 'key-1', keyName: 'signer' };
+const onboarded: TokenKeyOnboardingResultDto = {
+    keyPairMeta: keyPairMeta('handle-1'),
+    onboarded: true,
+    keyUuid: 'key-1',
+    keyName: 'signer',
+};
 const skipped: TokenKeyOnboardingResultDto = {
-    keyHandle: 'handle-2',
+    keyPairMeta: keyPairMeta('handle-2'),
     onboarded: false,
     reason: 'Key signer already holds this key pair.',
 };
@@ -116,7 +122,7 @@ describe('token keys in the token profiles slice', () => {
         const earlier = { ...initialState, tokenKeyOnboardingResults: [skipped] };
 
         // when
-        const onboarding = reducer(earlier, actions.onboardTokenKeys({ ...request, keys: [{ keyHandle: 'handle-1' }] }));
+        const onboarding = reducer(earlier, actions.onboardTokenKeys({ ...request, keys: [{ keyPairMeta: keyPairMeta('handle-1') }] }));
         const done = reducer(onboarding, actions.onboardTokenKeysSuccess({ results: [onboarded] }));
 
         // then
@@ -130,7 +136,7 @@ describe('token keys in the token profiles slice', () => {
         // given
         const onboarding = reducer(
             { ...initialState, tokenKeys: page, tokenKeyOnboardingResults: [onboarded] },
-            actions.onboardTokenKeys({ ...request, keys: [{ keyHandle: 'handle-1' }] }),
+            actions.onboardTokenKeys({ ...request, keys: [{ keyPairMeta: keyPairMeta('handle-1') }] }),
         );
 
         // when
@@ -144,7 +150,7 @@ describe('token keys in the token profiles slice', () => {
         // given
         const lateOnboarding = new Subject<OnboardTokenKeysResponseDto>();
         const { dispatch, state } = observeTokenKeys({ onboardTokenKeys: () => lateOnboarding, listTokenKeys: () => of(page) });
-        dispatch(actions.onboardTokenKeys({ ...request, keys: [{ keyHandle: 'handle-1' }] }));
+        dispatch(actions.onboardTokenKeys({ ...request, keys: [{ keyPairMeta: keyPairMeta('handle-1') }] }));
         dispatch(actions.clearTokenKeys());
         dispatch(actions.listTokenKeys({ tokenInstanceUuid: 'token', tokenProfileUuid: 'other-profile', pageNumber: 1, itemsPerPage: 10 }));
         const listed = state();
@@ -199,7 +205,10 @@ describe('token key epics', () => {
     test('onboardTokenKeys reports onboarded keys as a success', async () => {
         // given
         const onboardTokenKeys = vi.fn(() => of({ results: [onboarded, skipped] }));
-        const action = actions.onboardTokenKeys({ ...request, keys: [{ keyHandle: 'handle-1' }, { keyHandle: 'handle-2' }] });
+        const action = actions.onboardTokenKeys({
+            ...request,
+            keys: [{ keyPairMeta: keyPairMeta('handle-1') }, { keyPairMeta: keyPairMeta('handle-2') }],
+        });
 
         // when
         const emitted = await firstValueFrom(
@@ -211,7 +220,7 @@ describe('token key epics', () => {
         // then
         expect(onboardTokenKeys).toHaveBeenCalledWith({
             ...request,
-            onboardTokenKeysRequestDto: { keys: [{ keyHandle: 'handle-1' }, { keyHandle: 'handle-2' }] },
+            onboardTokenKeysRequestDto: { keys: [{ keyPairMeta: keyPairMeta('handle-1') }, { keyPairMeta: keyPairMeta('handle-2') }] },
         });
         expect(emitted).toEqual([
             actions.onboardTokenKeysSuccess({ results: [onboarded, skipped] }),
@@ -222,7 +231,7 @@ describe('token key epics', () => {
     test('onboardTokenKeys reports zero onboarded keys as information', async () => {
         // given
         const onboardTokenKeys = vi.fn(() => of({ results: [skipped] }));
-        const action = actions.onboardTokenKeys({ ...request, keys: [{ keyHandle: 'handle-2' }] });
+        const action = actions.onboardTokenKeys({ ...request, keys: [{ keyPairMeta: keyPairMeta('handle-2') }] });
 
         // when
         const emitted = await firstValueFrom(
@@ -238,7 +247,7 @@ describe('token key epics', () => {
     test('onboardTokenKeys reports a refused onboarding', async () => {
         // given
         const onboardTokenKeys = vi.fn(() => throwError(() => new Error('refused')));
-        const action = actions.onboardTokenKeys({ ...request, keys: [{ keyHandle: 'handle-1' }] });
+        const action = actions.onboardTokenKeys({ ...request, keys: [{ keyPairMeta: keyPairMeta('handle-1') }] });
 
         // when
         const emitted = await firstValueFrom(
@@ -255,7 +264,7 @@ describe('token key epics', () => {
         // given
         const onboardTokenKeys = vi.fn(() => of({ results: [onboarded] }));
         const customAttributes = [{ name: 'department', version: 'v3', uuid: 'department-uuid', content: [] }] as RequestAttribute[];
-        const action = actions.onboardTokenKeys({ ...request, keys: [{ keyHandle: 'handle-1' }], customAttributes });
+        const action = actions.onboardTokenKeys({ ...request, keys: [{ keyPairMeta: keyPairMeta('handle-1') }], customAttributes });
 
         // when
         await firstValueFrom(
@@ -267,7 +276,7 @@ describe('token key epics', () => {
         // then
         expect(onboardTokenKeys).toHaveBeenCalledWith({
             ...request,
-            onboardTokenKeysRequestDto: { keys: [{ keyHandle: 'handle-1' }], customAttributes },
+            onboardTokenKeysRequestDto: { keys: [{ keyPairMeta: keyPairMeta('handle-1') }], customAttributes },
         });
     });
 

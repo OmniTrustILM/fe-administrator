@@ -14,6 +14,7 @@ import { actions as keyActions } from 'ducks/cryptographic-keys';
 import { actions as connectorActions } from 'ducks/connectors';
 import { actions as certificateActions } from 'ducks/certificates';
 import { actions as tokenProfilesActions } from 'ducks/token-profiles';
+import { keyPairMeta } from 'ducks/__fixtures__/token-keys';
 import type { UnknownAction } from '@reduxjs/toolkit';
 import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
 import type { TokenProfileResponseModel } from 'types/token-profiles';
@@ -56,7 +57,7 @@ async function clickExportableSwitch(page: Page) {
 const onboardableKeys: TokenKeyListResponseDto = {
     items: [
         {
-            keyHandle: 'onboardable',
+            keyPairMeta: keyPairMeta('onboardable'),
             label: 'signer',
             keyAlgorithm: KeyAlgorithm.Rsa,
             length: 2048,
@@ -352,7 +353,7 @@ test.describe('CryptographicKeyForm', () => {
                 keyListableTokenProfiles={[profile]}
                 tokenKeys={onboardableKeys}
                 onboardingResults={[
-                    { keyHandle: 'onboardable', onboarded: true, intoExistingKey: false, keyUuid: 'key', keyName: 'signer' },
+                    { keyPairMeta: keyPairMeta('onboardable'), onboarded: true, intoExistingKey: false, keyUuid: 'key', keyName: 'signer' },
                 ]}
                 onSuccess={() => {
                     succeededCount += 1;

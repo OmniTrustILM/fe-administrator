@@ -16,6 +16,7 @@ import { type ReactNode, useCallback, useEffect, useEffectEvent, useMemo, useSta
 import { type FieldValues, FormProvider, useForm, useFormContext } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import {
+    type MetadataAttribute,
     PlatformEnum,
     Resource,
     type TokenKeyDto,
@@ -31,8 +32,10 @@ type Props = Readonly<{
     onDone: () => void;
 }>;
 
-/** A selected pair's name, or `INTO_EXISTING_KEY` for a pair joining the key that holds its public key under that key's name. */
-type SelectionsByHandle = Record<string, string | null>;
+/** The name is `INTO_EXISTING_KEY` for a pair joining the key that holds its public key, under that key's name. */
+type Selection = Readonly<{ keyPairMeta: MetadataAttribute[]; name: string | null }>;
+
+type SelectionsByHandle = Record<string, Selection>;
 
 type SelectionCells = [select: ReactNode, name: ReactNode];
 
@@ -46,7 +49,10 @@ const statusColors: Record<TokenKeyStatus, BadgeColor> = {
     [TokenKeyStatus.InInventoryWithoutToken]: 'warning',
     [TokenKeyStatus.ImportInProgress]: 'gray',
     [TokenKeyStatus.NoPublicKey]: 'danger',
-    [TokenKeyStatus.NoUniqueId]: 'danger',
+    [TokenKeyStatus.NoUsableId]: 'danger',
+    [TokenKeyStatus.UnsupportedKeyType]: 'danger',
+    [TokenKeyStatus.Unreadable]: 'danger',
+    [TokenKeyStatus.Gone]: 'gray',
 };
 
 const headers: TableHeader[] = [
@@ -57,6 +63,12 @@ const headers: TableHeader[] = [
     { id: 'status', content: 'Status' },
     { id: 'name', content: 'Onboard as' },
 ];
+
+/** Core matches a pair by each metadata name with its content data, in any order, so the handle holds those alone. */
+function handleOf(keyPairMeta: readonly MetadataAttribute[]): string {
+    const dataByName = keyPairMeta.map((attribute) => [attribute.name, (attribute.content ?? []).map((item) => item.data)] as const);
+    return JSON.stringify([...dataByName].sort(([name], [other]) => (name < other ? -1 : 1)));
+}
 
 /** The prefixes keep a handle-less row's id apart from every handle's. */
 function rowId(handle: string | undefined, index: number): string {
@@ -95,7 +107,7 @@ function isOnboardable(status: TokenKeyStatus): boolean {
 }
 
 function withoutOnboarded(selections: SelectionsByHandle, results: TokenKeyOnboardingResultDto[]): SelectionsByHandle {
-    const onboarded = new Set(results.filter((result) => result.onboarded).map((result) => result.keyHandle));
+    const onboarded = new Set(results.filter((result) => result.onboarded).map((result) => handleOf(result.keyPairMeta)));
     return Object.fromEntries(Object.entries(selections).filter(([handle]) => !onboarded.has(handle)));
 }
 
@@ -103,20 +115,22 @@ function withoutOnboarded(selections: SelectionsByHandle, results: TokenKeyOnboa
 function withListedTargets(selections: SelectionsByHandle, listed: readonly TokenKeyDto[]): SelectionsByHandle {
     const retargeted: SelectionsByHandle = {};
     for (const key of listed) {
-        const handle = key.keyHandle;
-        if (handle === undefined || !(handle in selections)) continue;
-        const intoKey = selections[handle] === INTO_EXISTING_KEY;
+        if (key.keyPairMeta === undefined) continue;
+        const handle = handleOf(key.keyPairMeta);
+        const selection = selections[handle];
+        if (selection === undefined) continue;
+        const intoKey = selection.name === INTO_EXISTING_KEY;
         if (key.status === TokenKeyStatus.OnboardableIntoKey && !intoKey) {
-            retargeted[handle] = INTO_EXISTING_KEY;
+            retargeted[handle] = { ...selection, name: INTO_EXISTING_KEY };
         } else if (key.status === TokenKeyStatus.Onboardable && intoKey) {
-            retargeted[handle] = key.suggestedName ?? '';
+            retargeted[handle] = { ...selection, name: key.suggestedName ?? '' };
         }
     }
     return Object.keys(retargeted).length === 0 ? selections : { ...selections, ...retargeted };
 }
 
-function toSelection([keyHandle, name]: [string, string | null]): TokenKeySelectionDto {
-    return name === INTO_EXISTING_KEY ? { keyHandle } : { keyHandle, name };
+function toSelection({ keyPairMeta, name }: Selection): TokenKeySelectionDto {
+    return name === INTO_EXISTING_KEY ? { keyPairMeta } : { keyPairMeta, name };
 }
 
 function describeResult(result: TokenKeyOnboardingResultDto): string {
@@ -266,17 +280,20 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
         [dispatch],
     );
 
-    const toggle = useCallback((key: TokenKeyDto, handle: string) => {
+    const toggle = useCallback((key: TokenKeyDto, keyPairMeta: MetadataAttribute[], handle: string) => {
         setSelections((current) => {
             const { [handle]: previous, ...rest } = current;
             if (previous !== undefined) return rest;
-            const selection = key.status === TokenKeyStatus.OnboardableIntoKey ? INTO_EXISTING_KEY : (key.suggestedName ?? '');
-            return { ...current, [handle]: selection };
+            const name = key.status === TokenKeyStatus.OnboardableIntoKey ? INTO_EXISTING_KEY : (key.suggestedName ?? '');
+            return { ...current, [handle]: { keyPairMeta, name } };
         });
     }, []);
 
     const rename = useCallback((handle: string, name: string) => {
-        setSelections((current) => ({ ...current, [handle]: name }));
+        setSelections((current) => {
+            const selection = current[handle];
+            return selection === undefined ? current : { ...current, [handle]: { ...selection, name } };
+        });
     }, []);
 
     const onboard = useCallback(
@@ -284,7 +301,7 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
             const customAttributes = collectFormAttributes(KEY_CUSTOM_ATTRIBUTES_ID, keyCustomAttributeDescriptors, values).map(
                 transformAttributeRequestModelToDto,
             );
-            const keys = Object.entries(selections).map(toSelection);
+            const keys = Object.values(selections).map(toSelection);
             dispatch(actions.onboardTokenKeys({ tokenInstanceUuid, tokenProfileUuid, keys, customAttributes }));
         },
         [dispatch, selections, keyCustomAttributeDescriptors, tokenInstanceUuid, tokenProfileUuid],
@@ -292,7 +309,11 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
 
     const labelsByHandle = useMemo(
         () =>
-            new Map((tokenKeys?.items ?? []).flatMap((key) => (key.keyHandle === undefined ? [] : [[key.keyHandle, key.label] as const]))),
+            new Map(
+                (tokenKeys?.items ?? []).flatMap((key) =>
+                    key.keyPairMeta === undefined ? [] : [[handleOf(key.keyPairMeta), key.label] as const],
+                ),
+            ),
         [tokenKeys],
     );
 
@@ -302,18 +323,13 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
                 return <span className="text-sm">{`Into ${key.inventoryKeyName ?? 'the existing key'}`}</span>;
             }
             return (
-                <TextInput
-                    key="name"
-                    id={`name-${handle}`}
-                    ariaLabel={`Name for ${shownLabel}`}
-                    value={name}
-                    onChange={(newName) => rename(handle, newName)}
-                />
+                <TextInput key="name" ariaLabel={`Name for ${shownLabel}`} value={name} onChange={(newName) => rename(handle, newName)} />
             );
         };
 
-        const selectionCells = (key: TokenKeyDto, handle: string, shownLabel: string): SelectionCells => {
-            const name = selections[handle];
+        const selectionCells = (key: TokenKeyDto, keyPairMeta: MetadataAttribute[], shownLabel: string): SelectionCells => {
+            const handle = handleOf(keyPairMeta);
+            const name = selections[handle]?.name;
             const selected = name !== undefined;
             const canToggle = selected || isOnboardable(key.status);
             return [
@@ -323,22 +339,22 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
                     aria-label={`Select ${shownLabel}`}
                     checked={selected}
                     disabled={!canToggle}
-                    onChange={() => toggle(key, handle)}
+                    onChange={() => toggle(key, keyPairMeta, handle)}
                 />,
                 selected ? nameCell(key, handle, shownLabel, name) : '',
             ];
         };
 
         return (tokenKeys?.items ?? []).map((key, index) => {
-            const shownLabel = key.label ?? key.keyHandle ?? '';
+            const shownLabel = key.label ?? key.fingerprint ?? '';
             const [select, name] =
-                key.keyHandle === undefined ? unselectableCells(shownLabel) : selectionCells(key, key.keyHandle, shownLabel);
+                key.keyPairMeta === undefined ? unselectableCells(shownLabel) : selectionCells(key, key.keyPairMeta, shownLabel);
             return {
-                id: rowId(key.keyHandle, index),
+                id: rowId(key.keyPairMeta && handleOf(key.keyPairMeta), index),
                 columns: [
                     select,
                     key.label ?? '',
-                    getEnumLabel(algorithmEnum, key.keyAlgorithm),
+                    key.keyAlgorithm ? getEnumLabel(algorithmEnum, key.keyAlgorithm) : '',
                     key.length?.toString() ?? '',
                     statusCell(key, getEnumLabel(statusEnum, key.status)),
                     name,
@@ -389,10 +405,11 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
             {results && results.length > 0 && (
                 <ul className="space-y-1 text-sm" aria-label="Onboarding results">
                     {results.map((result, index) => {
-                        const label = labelsByHandle.get(result.keyHandle);
+                        const handle = handleOf(result.keyPairMeta);
+                        const label = labelsByHandle.get(handle);
                         const outcome = describeResult(result);
                         return (
-                            <li key={`${index}-${result.keyHandle}`} className={result.onboarded ? 'text-content' : 'text-warning'}>
+                            <li key={`${index}-${handle}`} className={result.onboarded ? 'text-content' : 'text-warning'}>
                                 {label ? `${label}: ${outcome}` : outcome}
                             </li>
                         );
