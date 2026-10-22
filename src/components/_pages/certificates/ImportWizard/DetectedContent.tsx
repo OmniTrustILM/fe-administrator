@@ -17,7 +17,7 @@ export const entryCount = (count: number) => `${count} ${count === 1 ? 'entry' :
  * "RSA-2048 private key + certificate chain (3)" for a key and the kind for anything else, followed by the subject of
  * the entry's certificate when it has one.
  */
-function describe(entry: InspectedEntryDto, algorithm: string | undefined): string {
+function describeEntry(entry: InspectedEntryDto, algorithm: string | undefined): string {
     const type = keyRequestTypeOf(entry);
     const spec = [algorithm, entry.keyLength].filter(Boolean).join('-');
     const kind = type && spec ? `${spec} ${KEY_NOUNS[type]}` : kindLabel(entry.kind);
@@ -63,7 +63,7 @@ export default function DetectedContent({ entries, selected, mayImportKeys, onTo
                                     onChange={(checked) => onToggle(entry, checked)}
                                     ariaDescribedBy={reason ? `${id}-reason` : undefined}
                                 />
-                                <p className="ml-6 mt-1 text-xs text-content-muted">{describe(entry, algorithm)}</p>
+                                <p className="ml-6 mt-1 text-xs text-content-muted">{describeEntry(entry, algorithm)}</p>
                                 {reason && (
                                     <p id={`${id}-reason`} className="ml-6 mt-1 text-xs text-content-muted">
                                         {reason}

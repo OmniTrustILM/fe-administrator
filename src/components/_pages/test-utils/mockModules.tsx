@@ -28,10 +28,6 @@ export const reduxHooksMockModule = (useDispatchMock: () => unknown, useSelector
     useSelector: (selector: MockSelector) => useSelectorMock(selector),
 });
 
-export const routerLinkMockModule = () => ({
-    Link: ({ to, children }: { to: string; children?: ReactNode }) => <a href={to}>{children}</a>,
-});
-
 export const badgeMockModule = () => ({
     default: ({ children }: { children?: ReactNode }) => <span>{children}</span>,
 });
