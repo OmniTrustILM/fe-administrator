@@ -1,5 +1,5 @@
 {
-    "$schema": "https://biomejs.dev/schemas/2.5.0/schema.json",
+    "$schema": "https://biomejs.dev/schemas/2.6.2/schema.json",
     "vcs": {
         "enabled": true,
         "clientKind": "git",
@@ -52,9 +52,9 @@
         "enabled": true,
         "includes": ["**", "!src/types/openapi/**"],
         "rules": {
-            "recommended": true,
+            "preset": "recommended",
             "a11y": {
-                "recommended": true,
+                "preset": "recommended",
                 "useButtonType": "warn",
                 "noSvgWithoutTitle": "warn",
                 "useSemanticElements": "warn",
@@ -100,7 +100,7 @@
     },
     "overrides": [
         {
-            "includes": ["*.md", "*.yml", "*.yaml"],
+            "includes": ["**/*.md", "**/*.yml", "**/*.yaml"],
             "formatter": {
                 "enabled": false
             }
