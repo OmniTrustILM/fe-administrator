@@ -68,7 +68,7 @@ export interface TokenKeyDto {
      */
     inventoryKeyName?: string;
     /**
-     * Default name of the onboarded key
+     * Name the platform suggests for the onboarded key
      * @type {string}
      * @memberof TokenKeyDto
      */

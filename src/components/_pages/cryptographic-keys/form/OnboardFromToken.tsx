@@ -33,10 +33,10 @@ type Props = Readonly<{
 }>;
 
 /**
- * The label names the pair in its onboarding result, whichever page it was picked on. The name is set only once the
- * user types one, since Core names the key otherwise.
+ * A selection keeps its pair as last listed, so a pair picked on another page still names its onboarding result and
+ * onboards under the name it was shown. The name is set once the user types one.
  */
-type Selection = Readonly<{ keyPairMeta: MetadataAttribute[]; label: string | undefined; name?: string }>;
+type Selection = Readonly<{ keyPairMeta: MetadataAttribute[]; listed: TokenKeyDto; name?: string }>;
 
 type SelectionsByHandle = Record<string, Selection>;
 
@@ -111,6 +111,22 @@ function isOnboardable(status: TokenKeyStatus): boolean {
 function withoutOnboarded(selections: SelectionsByHandle, results: TokenKeyOnboardingResultDto[]): SelectionsByHandle {
     const onboarded = new Set(results.filter((result) => result.onboarded).map((result) => handleOf(result.keyPairMeta)));
     return Object.fromEntries(Object.entries(selections).filter(([handle]) => !onboarded.has(handle)));
+}
+
+function withRelisted(selections: SelectionsByHandle, keys: readonly TokenKeyDto[]): SelectionsByHandle {
+    const relisted: SelectionsByHandle = {};
+    for (const key of keys) {
+        if (key.keyPairMeta === undefined) continue;
+        const handle = handleOf(key.keyPairMeta);
+        const selection = selections[handle];
+        if (selection !== undefined) relisted[handle] = { ...selection, listed: key };
+    }
+    return Object.keys(relisted).length === 0 ? selections : { ...selections, ...relisted };
+}
+
+/** A pair joining a key keeps that key's name, so it sends none. */
+function nameToSend({ listed, name }: Selection): string | undefined {
+    return listed.status === TokenKeyStatus.OnboardableIntoKey ? undefined : (name ?? listed.suggestedName);
 }
 
 function describeResult(result: TokenKeyOnboardingResultDto): string {
@@ -251,6 +267,10 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
         if (results) onOnboardingFinished(results);
     }, [results]);
 
+    useEffect(() => {
+        setSelections((current) => withRelisted(current, tokenKeys?.items ?? []));
+    }, [tokenKeys]);
+
     useEffect(
         () => () => {
             dispatch(tokenKeysActions.clearTokenKeys());
@@ -262,7 +282,7 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
         setSelections((current) => {
             const { [handle]: previous, ...rest } = current;
             if (previous !== undefined) return rest;
-            return { ...current, [handle]: { keyPairMeta, label: key.label } };
+            return { ...current, [handle]: { keyPairMeta, listed: key } };
         });
     }, []);
 
@@ -278,7 +298,10 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
             const customAttributes = collectFormAttributes(KEY_CUSTOM_ATTRIBUTES_ID, keyCustomAttributeDescriptors, values).map(
                 transformAttributeRequestModelToDto,
             );
-            const keys = Object.values(selections).map(({ keyPairMeta, name }) => ({ keyPairMeta, name }));
+            const keys = Object.values(selections).map((selection) => ({
+                keyPairMeta: selection.keyPairMeta,
+                name: nameToSend(selection),
+            }));
             setSentSelections(selections);
             dispatch(tokenKeysActions.onboardTokenKeys({ tokenInstanceUuid, tokenProfileUuid, keys, customAttributes }));
         },
@@ -379,7 +402,7 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
                 <ul className="space-y-1 text-sm" aria-label="Onboarding results">
                     {results.map((result, index) => {
                         const handle = handleOf(result.keyPairMeta);
-                        const label = sentSelections[handle]?.label;
+                        const label = sentSelections[handle]?.listed.label;
                         const outcome = describeResult(result);
                         return (
                             <li key={`${index}-${handle}`} className={result.onboarded ? 'text-content' : 'text-warning'}>

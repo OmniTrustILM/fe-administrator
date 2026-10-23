@@ -1340,7 +1340,7 @@ export class CryptographicKeyManagementApi extends BaseAPI {
     }
 
     /**
-     * Onboard the selected keys into the specified token profile, reading each key again from the key storage. For a key pair, the inventory may already hold a key with its public key but no token instance. Onboarding then adds the private key to that key, and requires permission to update it. That key keeps its name, owner, groups, custom attributes and certificates. A key the inventory holds in any other way is skipped. A result names an existing key only when the caller may see that key in detail.
+     * Onboard the selected keys into the specified token profile, reading each key again from the key storage. Each key item that onboarding adds starts disabled and is never exportable. A new key is owned by the caller. For a key pair, the inventory may already hold a key with its public key but no token instance. Onboarding then adds the private key to that key, and requires permission to update it. That key keeps its name, owner, groups, custom attributes and certificates. A key the inventory holds in any other way is skipped. A result names an existing key only when the caller may see that key in detail.
      * Onboard keys from the key storage
      */
     onboardTokenKeys({
