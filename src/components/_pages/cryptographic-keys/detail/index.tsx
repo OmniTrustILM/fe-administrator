@@ -56,7 +56,9 @@ export default function CryptographicKeyDetail() {
             ? tokenProfile.usages
             : undefined;
     const supportedKeyUsages = cryptographicKey && cryptographicKey.uuid === id && !tokenProfileUuid ? allKeyUsages : profileKeyUsages;
-    const tokenListsKeys = tokenProfileFetchSucceeded && tokenProfile?.uuid === tokenProfileUuid && tokenProfile?.keyListAvailable === true;
+    const keyListableProfilesListed = useSelector(tokenProfileSelectors.isKeyListableTokenProfilesListed);
+    const keyListableProfileUuids = useSelector(tokenProfileSelectors.keyListableTokenProfileUuids);
+    const tokenListsKeys = tokenProfileUuid !== undefined && keyListableProfileUuids.has(tokenProfileUuid);
     const state = useSelector(selectors.state);
     const isUpdatingKeyUsage = useSelector(selectors.isUpdatingKeyUsage);
 
@@ -122,6 +124,10 @@ export default function CryptographicKeyDetail() {
     useEffect(() => {
         loadProfileDetail();
     }, [loadProfileDetail]);
+
+    useEffect(() => {
+        if (!keyListableProfilesListed) dispatch(tokenProfileActions.listKeyListableTokenProfiles());
+    }, [dispatch, keyListableProfilesListed]);
 
     // The profile's detail says which items can be exported, so refreshing the key asks for it again too.
     const refreshKeyDetails = useCallback(() => {

@@ -10,6 +10,7 @@ import { actions, selectors } from 'ducks/cryptographic-keys';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EntityType, actions as filterActions } from 'ducks/filters';
 import { actions as pagingActions, selectors as pagingSelectors } from 'ducks/paging';
+import { selectors as tokenKeysSelectors } from 'ducks/token-keys';
 import { actions as tokenProfilesActions, selectors as tokenProfilesSelectors } from 'ducks/token-profiles';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
@@ -42,13 +43,13 @@ function keyCount(count: number) {
 function removabilityOfCheckedKeys(
     items: CryptographicKeyResponseModel[],
     checkedItemUuids: string[],
-    keyListingProfileUuids: ReadonlySet<string>,
+    keyListableProfileUuids: ReadonlySet<string>,
 ) {
     const checkedKeyUuids = new Set(items.filter((item) => checkedItemUuids.includes(item.uuid)).map((item) => item.keyWrapperUuid));
     const removability = new Map<string, boolean>();
     for (const keyUuid of checkedKeyUuids) {
         const rows = items.filter((item) => item.keyWrapperUuid === keyUuid);
-        const tokenListsKeys = rows.every((row) => row.tokenProfileUuid !== undefined && keyListingProfileUuids.has(row.tokenProfileUuid));
+        const tokenListsKeys = rows.every((row) => row.tokenProfileUuid !== undefined && keyListableProfileUuids.has(row.tokenProfileUuid));
         removability.set(keyUuid, isRemovableFromInventory(tokenListsKeys, rows));
     }
     return removability;
@@ -70,13 +71,13 @@ function CryptographicKeyList() {
     const bulkRemoveFromInventoryMessages = useSelector(selectors.bulkRemoveFromInventoryMessages);
     const isImporting = useSelector(certificateSelectors.isImporting);
     const importResults = useSelector(certificateSelectors.importResults);
-    const isOnboarding = useSelector(tokenProfilesSelectors.isOnboardingTokenKeys);
-    const onboardingResults = useSelector(tokenProfilesSelectors.tokenKeyOnboardingResults);
+    const isOnboarding = useSelector(tokenKeysSelectors.isOnboardingTokenKeys);
+    const onboardingResults = useSelector(tokenKeysSelectors.tokenKeyOnboardingResults);
 
     const keyUsageEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyUsage));
     const keyTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyType));
     const keyCompromiseReasonEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyCompromiseReason));
-    const keyListingProfiles = useSelector(tokenProfilesSelectors.keyListableTokenProfiles);
+    const keyListableProfileUuids = useSelector(tokenProfilesSelectors.keyListableTokenProfileUuids);
     const isBusy =
         isBulkDeleting ||
         isBulkEnabling ||
@@ -104,10 +105,9 @@ function CryptographicKeyList() {
 
     const [isRemovalReportOpen, setIsRemovalReportOpen] = useState<boolean>(false);
 
-    const keyListingProfileUuids = useMemo(() => new Set(keyListingProfiles.map((profile) => profile.uuid)), [keyListingProfiles]);
     const checkedKeyRemovability = useMemo(
-        () => removabilityOfCheckedKeys(cryptographicKeys, checkedRows, keyListingProfileUuids),
-        [cryptographicKeys, checkedRows, keyListingProfileUuids],
+        () => removabilityOfCheckedKeys(cryptographicKeys, checkedRows, keyListableProfileUuids),
+        [cryptographicKeys, checkedRows, keyListableProfileUuids],
     );
     const removableKeyUuids = useMemo(
         () => [...checkedKeyRemovability].filter(([, removable]) => removable).map(([keyUuid]) => keyUuid),

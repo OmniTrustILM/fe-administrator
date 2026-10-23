@@ -20,7 +20,7 @@ import type { KeyAlgorithm, MetadataAttribute, TokenKeyStatus } from './';
  */
 export interface TokenKeyDto {
     /**
-     * Metadata identifying the key pair in the key storage. Send it back unchanged to onboard the key pair. Absent for a key without a usable ID.
+     * Metadata identifying the key pair in the key storage. Send it back unchanged to onboard the key pair.
      * @type {Array<MetadataAttribute>}
      * @memberof TokenKeyDto
      */
@@ -32,19 +32,19 @@ export interface TokenKeyDto {
      */
     label?: string;
     /**
-     * Algorithm of the key. Absent when the connector cannot read the key\'s type.
+     * Algorithm of the key
      * @type {KeyAlgorithm}
      * @memberof TokenKeyDto
      */
     keyAlgorithm?: KeyAlgorithm;
     /**
-     * Key length in bits. Required for RSA, ECDSA and AES; optional otherwise.
+     * Key length in bits
      * @type {number}
      * @memberof TokenKeyDto
      */
     length?: number | null;
     /**
-     * SHA-256 fingerprint of the public key of a key pair. Absent when the key storage lacks a public key object.
+     * SHA-256 fingerprint of the public key of a key pair
      * @type {string}
      * @memberof TokenKeyDto
      */

@@ -9,13 +9,15 @@ import {
     type State as CustomAttributeState,
 } from 'ducks/customAttributes';
 import { testReducers } from 'ducks/test-reducers';
-import { actions, slice as tokenProfileSlice, type State as TokenProfileState } from 'ducks/token-profiles';
+import { actions as tokenKeyActions, slice as tokenKeySlice, type State as TokenKeyState } from 'ducks/token-keys';
+import { actions as tokenProfileActions, slice as tokenProfileSlice, type State as TokenProfileState } from 'ducks/token-profiles';
 import type { CustomAttributeModel } from 'types/attributes';
 import type { TokenKeyListResponseDto, TokenKeyOnboardingResultDto, TokenProfileDto } from 'types/openapi';
 
-type State = Omit<ReturnType<typeof testReducers>, 'customAttributes' | 'tokenprofiles'> & {
+type State = Omit<ReturnType<typeof testReducers>, 'customAttributes' | 'tokenprofiles' | 'tokenKeys'> & {
     customAttributes: CustomAttributeState;
     tokenprofiles: TokenProfileState;
+    tokenKeys: TokenKeyState;
 };
 
 function reducer(state: State | undefined, action: UnknownAction): State {
@@ -23,6 +25,7 @@ function reducer(state: State | undefined, action: UnknownAction): State {
         ...testReducers(state, action),
         customAttributes: customAttributeSlice.reducer(state?.customAttributes, action),
         tokenprofiles: tokenProfileSlice.reducer(state?.tokenprofiles, action),
+        tokenKeys: tokenKeySlice.reducer(state?.tokenKeys, action),
     };
 }
 
@@ -31,6 +34,8 @@ export type OnboardFromTokenWithStoreProps = Readonly<{
     page: TokenKeyListResponseDto;
     /** Answers every listing after the first in place of the page. */
     relistedPage?: TokenKeyListResponseDto;
+    /** Answers each listing of the second page. */
+    secondPage?: TokenKeyListResponseDto;
     /** Fails each listing of key pairs with this error in place of the page. */
     listingError?: string;
     /** Leaves an onboarding in flight when absent. */
@@ -43,11 +48,12 @@ export type OnboardFromTokenWithStoreProps = Readonly<{
 
 const noop = () => {};
 
-/** Mounts the tab against the real token profiles and custom attributes slices, answering their requests from the fixtures. */
+/** Mounts the tab against the real token profiles, token keys and custom attributes slices, answering their requests from the fixtures. */
 export default function OnboardFromTokenWithStore({
     profiles,
     page,
     relistedPage,
+    secondPage,
     listingError,
     onboardingResults,
     keyCustomAttributes,
@@ -57,20 +63,24 @@ export default function OnboardFromTokenWithStore({
 }: OnboardFromTokenWithStoreProps) {
     const store = useMemo(() => {
         let listings = 0;
+        const pageFor = (pageNumber: number) => {
+            if (pageNumber === 2 && secondPage) return secondPage;
+            return listings++ > 0 && relistedPage ? relistedPage : page;
+        };
         const answer: Middleware = (api) => (next) => (action) => {
             const result = next(action);
             onAction?.(action as UnknownAction);
             const later = (answered: UnknownAction) => setTimeout(() => api.dispatch(answered), 0);
-            if (actions.listKeyListableTokenProfiles.match(action)) {
-                later(actions.listKeyListableTokenProfilesSuccess({ tokenProfiles: profiles }));
-            } else if (actions.listTokenKeys.match(action)) {
+            if (tokenProfileActions.listKeyListableTokenProfiles.match(action)) {
+                later(tokenProfileActions.listKeyListableTokenProfilesSuccess({ tokenProfiles: profiles }));
+            } else if (tokenKeyActions.listTokenKeys.match(action)) {
                 later(
                     listingError === undefined
-                        ? actions.listTokenKeysSuccess({ tokenKeys: listings++ > 0 && relistedPage ? relistedPage : page })
-                        : actions.listTokenKeysFailure({ error: listingError }),
+                        ? tokenKeyActions.listTokenKeysSuccess({ tokenKeys: pageFor(action.payload.pageNumber) })
+                        : tokenKeyActions.listTokenKeysFailure({ error: listingError }),
                 );
-            } else if (actions.onboardTokenKeys.match(action) && onboardingResults) {
-                later(actions.onboardTokenKeysSuccess({ results: onboardingResults }));
+            } else if (tokenKeyActions.onboardTokenKeys.match(action) && onboardingResults) {
+                later(tokenKeyActions.onboardTokenKeysSuccess({ results: onboardingResults }));
             } else if (customAttributeActions.listResourceCustomAttributes.match(action)) {
                 later(customAttributeActions.listResourceCustomAttributesSuccess(keyCustomAttributes ?? []));
             }
@@ -80,7 +90,7 @@ export default function OnboardFromTokenWithStore({
             reducer,
             middleware: (getDefault) => getDefault({ serializableCheck: false }).concat(answer),
         });
-    }, [profiles, page, relistedPage, listingError, onboardingResults, keyCustomAttributes, onAction]);
+    }, [profiles, page, relistedPage, secondPage, listingError, onboardingResults, keyCustomAttributes, onAction]);
 
     return (
         <Provider store={store}>

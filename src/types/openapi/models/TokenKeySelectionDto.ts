@@ -26,7 +26,7 @@ export interface TokenKeySelectionDto {
      */
     keyPairMeta: Array<MetadataAttribute>;
     /**
-     * Name of the onboarded key, by default the name the listing suggested. A key pair onboarded into an existing key keeps the name of that key.
+     * Name of the onboarded key, by default one the platform suggests. A key pair onboarded into an existing key keeps the name of that key.
      * @type {string}
      * @memberof TokenKeySelectionDto
      */

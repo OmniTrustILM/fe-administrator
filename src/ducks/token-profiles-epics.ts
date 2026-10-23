@@ -1,12 +1,10 @@
 import type { AppEpic } from 'ducks';
-import { defer, iif, of } from 'rxjs';
+import { iif, of } from 'rxjs';
 import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
 import { extractError } from 'utils/net';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { slice } from './token-profiles';
-import type { TokenKeyOnboardingResultDto } from 'types/openapi';
-import { describeOnboarding } from './transform/token-keys';
 import { actions as userInterfaceActions } from './user-interface';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
@@ -364,53 +362,6 @@ const bulkUpdateKeyUsage: AppEpic = (action$, state$, deps) => {
     );
 };
 
-const listTokenKeys: AppEpic = (action$, state$, deps) => {
-    return action$.pipe(
-        filter(slice.actions.listTokenKeys.match),
-        switchMap((action) =>
-            defer(() => deps.apiClients.cryptographicKeys.listTokenKeys(action.payload)).pipe(
-                map((tokenKeys) => slice.actions.listTokenKeysSuccess({ tokenKeys })),
-                catchError((error) =>
-                    of(
-                        slice.actions.listTokenKeysFailure({ error: extractError(error, 'Failed to list the keys in the key storage') }),
-                        alertActions.error(extractError(error, 'Failed to list the keys in the key storage')),
-                    ),
-                ),
-            ),
-        ),
-    );
-};
-
-function onboardingAlert(results: TokenKeyOnboardingResultDto[]) {
-    const outcome = describeOnboarding(results);
-    return results.some((result) => result.onboarded) ? alertActions.success(outcome) : alertActions.info(outcome);
-}
-
-const onboardTokenKeys: AppEpic = (action$, state$, deps) => {
-    return action$.pipe(
-        filter(slice.actions.onboardTokenKeys.match),
-        switchMap((action) =>
-            defer(() =>
-                deps.apiClients.cryptographicKeys.onboardTokenKeys({
-                    tokenInstanceUuid: action.payload.tokenInstanceUuid,
-                    tokenProfileUuid: action.payload.tokenProfileUuid,
-                    onboardTokenKeysRequestDto: { keys: action.payload.keys, customAttributes: action.payload.customAttributes },
-                }),
-            ).pipe(
-                switchMap((response) =>
-                    of(slice.actions.onboardTokenKeysSuccess({ results: response.results }), onboardingAlert(response.results)),
-                ),
-                catchError((error) =>
-                    of(
-                        slice.actions.onboardTokenKeysFailure({ error: extractError(error, 'Failed to onboard the keys') }),
-                        alertActions.error(extractError(error, 'Failed to onboard the keys')),
-                    ),
-                ),
-            ),
-        ),
-    );
-};
-
 const listKeyListableTokenProfiles: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.listKeyListableTokenProfiles.match),
@@ -443,8 +394,6 @@ const epics = [
     bulkDeleteProfiles,
     updateKeyUsage,
     bulkUpdateKeyUsage,
-    listTokenKeys,
-    onboardTokenKeys,
     listKeyListableTokenProfiles,
 ];
 

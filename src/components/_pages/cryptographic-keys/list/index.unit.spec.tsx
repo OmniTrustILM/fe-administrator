@@ -8,7 +8,8 @@ import cryptographicKeysReducer, { actions as keysActions, initialState as keysI
 import { keyPairMeta } from 'ducks/__fixtures__/token-keys';
 import { EntityType } from 'ducks/filters';
 import pagingsReducer, { actions as pagingsActions, initialState as pagingsInitialState } from 'ducks/paging';
-import tokenProfilesReducer, { actions as tokenProfilesActions, initialState as tokenProfilesInitialState } from 'ducks/token-profiles';
+import tokenKeysReducer, { actions as tokenKeysActions, initialState as tokenKeysInitialState } from 'ducks/token-keys';
+import { actions as tokenProfilesActions, initialState as tokenProfilesInitialState } from 'ducks/token-profiles';
 import { InspectedEntryKind, KeyState, KeyType } from 'types/openapi';
 import { REMOVE_KEY_FROM_INVENTORY_NOTE, REMOVE_KEYS_FROM_INVENTORY_NOTE } from '../inventoryRemoval';
 import { clickByText, clickByTitle } from '../../test-utils/domActions';
@@ -63,6 +64,7 @@ describe('CryptographicKeyList', () => {
             pagings: { pagings: [] },
             enums: { platformEnums: {} },
             tokenprofiles: tokenProfilesInitialState,
+            tokenKeys: tokenKeysInitialState,
         };
         useDispatchMock.mockReturnValue(vi.fn());
         useSelectorMock.mockImplementation((selector: any) => selector(state));
@@ -102,9 +104,9 @@ describe('CryptographicKeyList', () => {
     it('refreshes as soon as an onboarding from its Create Key dialog onboards a key, however the dialog is then closed', async () => {
         state = {
             ...state,
-            tokenprofiles: tokenProfilesReducer(
-                state.tokenprofiles,
-                tokenProfilesActions.onboardTokenKeys({
+            tokenKeys: tokenKeysReducer(
+                state.tokenKeys,
+                tokenKeysActions.onboardTokenKeys({
                     tokenInstanceUuid: 'token',
                     tokenProfileUuid: 'profile',
                     keys: [],
@@ -120,7 +122,7 @@ describe('CryptographicKeyList', () => {
         ];
         state = {
             ...state,
-            tokenprofiles: tokenProfilesReducer(state.tokenprofiles, tokenProfilesActions.onboardTokenKeysSuccess({ results })),
+            tokenKeys: tokenKeysReducer(state.tokenKeys, tokenKeysActions.onboardTokenKeysSuccess({ results })),
         };
         await renderList();
 
@@ -130,9 +132,9 @@ describe('CryptographicKeyList', () => {
     it('does not refresh for an onboarding that onboarded no key', async () => {
         state = {
             ...state,
-            tokenprofiles: tokenProfilesReducer(
-                state.tokenprofiles,
-                tokenProfilesActions.onboardTokenKeys({
+            tokenKeys: tokenKeysReducer(
+                state.tokenKeys,
+                tokenKeysActions.onboardTokenKeys({
                     tokenInstanceUuid: 'token',
                     tokenProfileUuid: 'profile',
                     keys: [],
@@ -145,7 +147,7 @@ describe('CryptographicKeyList', () => {
         const results = [{ keyPairMeta: keyPairMeta('handle'), onboarded: false, intoExistingKey: false, reason: 'gone' }];
         state = {
             ...state,
-            tokenprofiles: tokenProfilesReducer(state.tokenprofiles, tokenProfilesActions.onboardTokenKeysSuccess({ results })),
+            tokenKeys: tokenKeysReducer(state.tokenKeys, tokenKeysActions.onboardTokenKeysSuccess({ results })),
         };
         await renderList();
 
@@ -156,7 +158,7 @@ describe('CryptographicKeyList', () => {
         state = {
             ...state,
             certificates: { ...state.certificates, isImporting: false },
-            tokenprofiles: { ...state.tokenprofiles, isOnboardingTokenKeys: true },
+            tokenKeys: { ...state.tokenKeys, isOnboardingTokenKeys: true },
         };
         await renderList();
         await clickByTitle(container, 'Create Key');
@@ -164,7 +166,7 @@ describe('CryptographicKeyList', () => {
         await clickByText(container, 'toggle');
         expect(createKeyDialog()).toBeDefined();
 
-        state = { ...state, tokenprofiles: { ...state.tokenprofiles, isOnboardingTokenKeys: false } };
+        state = { ...state, tokenKeys: { ...state.tokenKeys, isOnboardingTokenKeys: false } };
         await renderList();
         await clickByText(container, 'toggle');
         expect(createKeyDialog()).toBeUndefined();
@@ -251,6 +253,7 @@ describe('CryptographicKeyList removal from the inventory', () => {
                 cryptographicKeys: [pairPrivate, pairPublic, otherPairPrivate, compromisedPrivate, unlistedPrivate, publicKeyOnly],
             },
             tokenprofiles: { ...tokenProfilesInitialState, keyListableTokenProfiles: [{ uuid: LISTING_PROFILE }] },
+            tokenKeys: tokenKeysInitialState,
             certificates: certificatesInitialState,
             pagings: pagingsInitialState,
             enums: { platformEnums: {} },

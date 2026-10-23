@@ -11,12 +11,11 @@ import {
     type RequestAttribute,
     type TokenKeyListResponseDto,
     TokenKeyStatus,
-    type TokenProfileDto,
 } from 'types/openapi';
 import { keyPairMeta } from './__fixtures__/token-keys';
 import { actions as alertActions } from './alerts';
-import reducer, { actions, initialState, selectors } from './token-profiles';
-import tokenProfileEpics from './token-profiles-epics';
+import reducer, { actions, initialState, selectors } from './token-keys';
+import tokenKeyEpics from './token-keys-epics';
 import { describeOnboarding } from './transform/token-keys';
 
 function epicNamed(epics: unknown[], name: string) {
@@ -63,10 +62,10 @@ type TokenKeysClient = {
 
 function observeTokenKeys(cryptographicKeys: TokenKeysClient) {
     const action$ = new Subject<UnknownAction>();
-    const state$ = new StateObservable<AppState>(EMPTY, { tokenprofiles: initialState } as AppState);
+    const state$ = new StateObservable<AppState>(EMPTY, { tokenKeys: initialState } as AppState);
     const dependencies = { apiClients: { cryptographicKeys } } as unknown as EpicDependencies;
     let state = initialState;
-    const subscription = combineEpics(...tokenProfileEpics)(action$, state$, dependencies).subscribe((action) => {
+    const subscription = combineEpics(...tokenKeyEpics)(action$, state$, dependencies).subscribe((action) => {
         state = reducer(state, action);
     });
     onTestFinished(() => {
@@ -82,7 +81,7 @@ function observeTokenKeys(cryptographicKeys: TokenKeysClient) {
     };
 }
 
-describe('token keys in the token profiles slice', () => {
+describe('token keys slice', () => {
     test('a listing is in progress until its page or its failure arrives', () => {
         // given
         const listing = reducer(
@@ -97,7 +96,7 @@ describe('token keys in the token profiles slice', () => {
         // then
         expect(listing.isListingTokenKeys).toBe(true);
         expect(listed.isListingTokenKeys).toBe(false);
-        expect(selectors.tokenKeys({ tokenprofiles: listed } as never)).toEqual(page);
+        expect(selectors.tokenKeys({ tokenKeys: listed } as never)).toEqual(page);
         expect(failed.isListingTokenKeys).toBe(false);
         expect(failed.tokenKeys).toBeUndefined();
     });
@@ -112,7 +111,7 @@ describe('token keys in the token profiles slice', () => {
         const cleared = reducer(failed, actions.clearTokenKeys());
 
         // then
-        expect(selectors.tokenKeysError({ tokenprofiles: failed } as never)).toBe('down');
+        expect(selectors.tokenKeysError({ tokenKeys: failed } as never)).toBe('down');
         expect(relisting.tokenKeysError).toBeUndefined();
         expect(cleared.tokenKeysError).toBeUndefined();
     });
@@ -192,7 +191,7 @@ describe('token key epics', () => {
 
         // when
         const emitted = await firstValueFrom(
-            epicNamed(tokenProfileEpics, 'listTokenKeys')(of(action), of({}), {
+            epicNamed(tokenKeyEpics, 'listTokenKeys')(of(action), of({}), {
                 apiClients: { cryptographicKeys: { listTokenKeys } },
             }).pipe(toArray()),
         );
@@ -212,7 +211,7 @@ describe('token key epics', () => {
 
         // when
         const emitted = await firstValueFrom(
-            epicNamed(tokenProfileEpics, 'onboardTokenKeys')(of(action), of({}), {
+            epicNamed(tokenKeyEpics, 'onboardTokenKeys')(of(action), of({}), {
                 apiClients: { cryptographicKeys: { onboardTokenKeys } },
             }).pipe(toArray()),
         );
@@ -235,7 +234,7 @@ describe('token key epics', () => {
 
         // when
         const emitted = await firstValueFrom(
-            epicNamed(tokenProfileEpics, 'onboardTokenKeys')(of(action), of({}), {
+            epicNamed(tokenKeyEpics, 'onboardTokenKeys')(of(action), of({}), {
                 apiClients: { cryptographicKeys: { onboardTokenKeys } },
             }).pipe(toArray()),
         );
@@ -251,7 +250,7 @@ describe('token key epics', () => {
 
         // when
         const emitted = await firstValueFrom(
-            epicNamed(tokenProfileEpics, 'onboardTokenKeys')(of(action), of({}), {
+            epicNamed(tokenKeyEpics, 'onboardTokenKeys')(of(action), of({}), {
                 apiClients: { cryptographicKeys: { onboardTokenKeys } },
             }).pipe(toArray()),
         );
@@ -268,7 +267,7 @@ describe('token key epics', () => {
 
         // when
         await firstValueFrom(
-            epicNamed(tokenProfileEpics, 'onboardTokenKeys')(of(action), of({}), {
+            epicNamed(tokenKeyEpics, 'onboardTokenKeys')(of(action), of({}), {
                 apiClients: { cryptographicKeys: { onboardTokenKeys } },
             }).pipe(toArray()),
         );
@@ -278,40 +277,6 @@ describe('token key epics', () => {
             ...request,
             onboardTokenKeysRequestDto: { keys: [{ keyPairMeta: keyPairMeta('handle-1') }], customAttributes },
         });
-    });
-
-    test('listKeyListableTokenProfiles asks Core for the profiles whose connector lists keys', async () => {
-        // given
-        const profiles = [{ uuid: 'profile', name: 'listing' }] as TokenProfileDto[];
-        const listTokenProfiles = vi.fn(() => of(profiles));
-
-        // when
-        const emitted = await firstValueFrom(
-            epicNamed(tokenProfileEpics, 'listKeyListableTokenProfiles')(of(actions.listKeyListableTokenProfiles()), of({}), {
-                apiClients: { tokenProfiles: { listTokenProfiles } },
-            }).pipe(toArray()),
-        );
-
-        // then
-        expect(listTokenProfiles).toHaveBeenCalledWith({ keyListable: true });
-        expect(emitted).toEqual([actions.listKeyListableTokenProfilesSuccess({ tokenProfiles: profiles })]);
-    });
-
-    test('listKeyListableTokenProfiles keeps why the listing failed', async () => {
-        // given
-        const listTokenProfiles = vi.fn(() => throwError(() => new Error('down')));
-
-        // when
-        const emitted = await firstValueFrom(
-            epicNamed(tokenProfileEpics, 'listKeyListableTokenProfiles')(of(actions.listKeyListableTokenProfiles()), of({}), {
-                apiClients: { tokenProfiles: { listTokenProfiles } },
-            }).pipe(toArray()),
-        );
-        const failed = reducer(initialState, emitted[0] as UnknownAction);
-
-        // then
-        expect(failed.keyListableTokenProfilesError).toBe('Failed to get the token profiles that list keys. down');
-        expect(failed.keyListableTokenProfilesListed).toBe(false);
     });
 });
 

@@ -136,7 +136,7 @@ export function importWizardTestMiddleware(
         } else if (answer === 'loaded' && summary) {
             api.dispatch(
                 tokenProfileActions.getTokenProfileDetailSuccess({
-                    tokenProfile: { ...summary, attributes: [], keyTransfer: keyTransferByProfile?.[uuid], keyListAvailable: false },
+                    tokenProfile: { ...summary, attributes: [], keyTransfer: keyTransferByProfile?.[uuid] },
                 }),
             );
         }

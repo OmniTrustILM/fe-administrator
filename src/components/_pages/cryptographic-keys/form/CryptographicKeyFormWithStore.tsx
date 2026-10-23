@@ -16,6 +16,7 @@ import { actions as connectorActions } from 'ducks/connectors';
 import { actions as customAttributeActions } from 'ducks/customAttributes';
 import { slice as inspectionSlice, type State as InspectionState } from 'ducks/inspections';
 import { testInitialState, testReducers } from 'ducks/test-reducers';
+import { actions as tokenKeyActions, slice as tokenKeySlice, type State as TokenKeyState } from 'ducks/token-keys';
 import { actions as tokenProfileActions, slice as tokenProfileSlice, type State as TokenProfileState } from 'ducks/token-profiles';
 import type { AttributeDescriptorModel, CustomAttributeModel } from 'types/attributes';
 import type {
@@ -31,9 +32,10 @@ import { createMockStore } from 'utils/test-helpers';
 import { keyPermissionsAuth } from '../../test-utils/exportDialogTestStore';
 import { nth } from '../../test-utils/testAnswers';
 
-type SharedState = Omit<ReturnType<typeof testReducers>, 'cryptographicKeys' | 'tokenprofiles' | 'certificates'> & {
+type SharedState = Omit<ReturnType<typeof testReducers>, 'cryptographicKeys' | 'tokenprofiles' | 'tokenKeys' | 'certificates'> & {
     cryptographicKeys: KeyState;
     tokenprofiles: TokenProfileState;
+    tokenKeys: TokenKeyState;
     certificates: CertificateState;
 };
 
@@ -47,6 +49,7 @@ function reducer(state: State | undefined, action: UnknownAction): State {
         ...testReducers(sharedState, action),
         cryptographicKeys: keySlice.reducer(sharedState?.cryptographicKeys, action),
         tokenprofiles: tokenProfileSlice.reducer(sharedState?.tokenprofiles, action),
+        tokenKeys: tokenKeySlice.reducer(sharedState?.tokenKeys, action),
         certificates: certificateSlice.reducer(sharedState?.certificates, action),
         inspections: inspectionSlice.reducer(inspections, action),
     };
@@ -153,17 +156,16 @@ export function CryptographicKeyFormWithStore({
                                 ...summary,
                                 attributes: [],
                                 keyTransfer: keyTransferByProfile?.[action.payload.uuid],
-                                keyListAvailable: false,
                             },
                         }),
                     );
                 }
             } else if (tokenProfileActions.listKeyListableTokenProfiles.match(action)) {
                 api.dispatch(tokenProfileActions.listKeyListableTokenProfilesSuccess({ tokenProfiles: keyListableTokenProfiles ?? [] }));
-            } else if (tokenProfileActions.listTokenKeys.match(action) && tokenKeys) {
-                api.dispatch(tokenProfileActions.listTokenKeysSuccess({ tokenKeys }));
-            } else if (tokenProfileActions.onboardTokenKeys.match(action) && onboardingResults) {
-                api.dispatch(tokenProfileActions.onboardTokenKeysSuccess({ results: onboardingResults }));
+            } else if (tokenKeyActions.listTokenKeys.match(action) && tokenKeys) {
+                api.dispatch(tokenKeyActions.listTokenKeysSuccess({ tokenKeys }));
+            } else if (tokenKeyActions.onboardTokenKeys.match(action) && onboardingResults) {
+                api.dispatch(tokenKeyActions.onboardTokenKeysSuccess({ results: onboardingResults }));
             }
             return result;
         };
@@ -186,6 +188,7 @@ export function CryptographicKeyFormWithStore({
             ...testInitialState,
             auth,
             tokenprofiles: { ...tokenProfileSlice.getInitialState(), tokenProfiles },
+            tokenKeys: tokenKeySlice.getInitialState(),
             cryptographicKeys: { ...keySlice.getInitialState(), cryptographicKey: keyDetail },
             certificates: certificateSlice.getInitialState(),
             inspections: inspectionSlice.getInitialState(),

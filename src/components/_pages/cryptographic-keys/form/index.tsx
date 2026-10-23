@@ -14,6 +14,7 @@ import { actions as userActions, selectors as userSelectors } from 'ducks/users'
 
 import { selectors as certificatesSelectors } from 'ducks/certificates';
 import { actions as cryptographicKeysActions, selectors as cryptographicKeysSelectors } from 'ducks/cryptographic-keys';
+import { selectors as tokenKeysSelectors } from 'ducks/token-keys';
 import { actions as tokenProfilesActions, selectors as tokenProfilesSelectors } from 'ducks/token-profiles';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, FormProvider, type Path, useForm, useWatch } from 'react-hook-form';
@@ -107,7 +108,7 @@ export default function CryptographicKeyForm({
     const createCryptographicKeySucceeded = useSelector(cryptographicKeysSelectors.createCryptographicKeySucceeded);
     const updateCryptographicKeySucceeded = useSelector(cryptographicKeysSelectors.updateCryptographicKeySucceeded);
     const isImporting = useSelector(certificatesSelectors.isImporting);
-    const isOnboarding = useSelector(tokenProfilesSelectors.isOnboardingTokenKeys);
+    const isOnboarding = useSelector(tokenKeysSelectors.isOnboardingTokenKeys);
 
     const [groupAttributesCallbackAttributes, setGroupAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
 

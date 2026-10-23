@@ -1,7 +1,8 @@
 import type { UnknownAction } from '@reduxjs/toolkit';
 import { test, expect, type Locator, type Page } from 'playwright/ct-test';
 import { keyPairMeta } from 'ducks/__fixtures__/token-keys';
-import { actions } from 'ducks/token-profiles';
+import { actions as tokenKeyActions } from 'ducks/token-keys';
+import { actions as tokenProfileActions } from 'ducks/token-profiles';
 import type { CustomAttributeModel } from 'types/attributes';
 import {
     AttributeContentType,
@@ -115,8 +116,8 @@ test.describe('OnboardFromToken', () => {
         await expect(browser.getByRole('checkbox', { name: 'Select certified' })).toBeEnabled();
         await expect(browser.getByRole('checkbox', { name: 'Select held' })).toBeDisabled();
         await expect(browser.getByRole('checkbox', { name: 'Select orphan' })).toBeDisabled();
-        expect(dispatched.filter(actions.listKeyListableTokenProfiles.match)).toHaveLength(1);
-        expect(dispatched.filter(actions.listTokenKeys.match).map((action) => action.payload)).toEqual([firstPage]);
+        expect(dispatched.filter(tokenProfileActions.listKeyListableTokenProfiles.match)).toHaveLength(1);
+        expect(dispatched.filter(tokenKeyActions.listTokenKeys.match).map((action) => action.payload)).toEqual([firstPage]);
     });
 
     test('says when no enabled token profile lists keys', async ({ mount, page: browser }) => {
@@ -252,7 +253,7 @@ test.describe('OnboardFromToken', () => {
         await browser.getByRole('button', { name: 'Retry' }).click();
 
         await expect
-            .poll(() => dispatched.filter(actions.listTokenKeys.match).map((action) => action.payload))
+            .poll(() => dispatched.filter(tokenKeyActions.listTokenKeys.match).map((action) => action.payload))
             .toEqual([firstPage, firstPage]);
     });
 
@@ -272,8 +273,8 @@ test.describe('OnboardFromToken', () => {
         await browser.getByRole('button', { name: 'Onboard 1' }).click();
 
         await expect
-            .poll(() => dispatched.filter(actions.onboardTokenKeys.match).map((action) => action.payload.keys))
-            .toEqual([[{ keyPairMeta: keyPairMeta('onboardable'), name: 'signer' }]]);
+            .poll(() => dispatched.filter(tokenKeyActions.onboardTokenKeys.match).map((action) => action.payload.keys))
+            .toEqual([[{ keyPairMeta: keyPairMeta('onboardable') }]]);
     });
 
     test('onboards a selected key pair under the name it was given', async ({ mount, page: browser }) => {
@@ -289,7 +290,7 @@ test.describe('OnboardFromToken', () => {
         await browser.getByRole('button', { name: 'Onboard 1' }).click();
 
         await expect
-            .poll(() => dispatched.filter(actions.onboardTokenKeys.match).map((action) => action.payload))
+            .poll(() => dispatched.filter(tokenKeyActions.onboardTokenKeys.match).map((action) => action.payload))
             .toEqual([
                 {
                     tokenInstanceUuid: 'token',
@@ -312,7 +313,7 @@ test.describe('OnboardFromToken', () => {
         await browser.getByRole('button', { name: 'Onboard 1' }).click();
 
         await expect
-            .poll(() => dispatched.filter(actions.onboardTokenKeys.match).map((action) => action.payload.keys))
+            .poll(() => dispatched.filter(tokenKeyActions.onboardTokenKeys.match).map((action) => action.payload.keys))
             .toEqual([[{ keyPairMeta: keyPairMeta('onboardable'), name: '  ' }]]);
     });
 
@@ -327,7 +328,7 @@ test.describe('OnboardFromToken', () => {
         await expect(browser.getByRole('textbox', { name: 'Name for certified' })).toHaveCount(0);
         await browser.getByRole('button', { name: 'Onboard 1' }).click();
         await expect
-            .poll(() => dispatched.filter(actions.onboardTokenKeys.match).map((action) => action.payload.keys))
+            .poll(() => dispatched.filter(tokenKeyActions.onboardTokenKeys.match).map((action) => action.payload.keys))
             .toEqual([[{ keyPairMeta: keyPairMeta('into') }]]);
     });
 
@@ -350,7 +351,7 @@ test.describe('OnboardFromToken', () => {
         await expect
             .poll(() =>
                 dispatched
-                    .filter(actions.onboardTokenKeys.match)
+                    .filter(tokenKeyActions.onboardTokenKeys.match)
                     .flatMap((action) => action.payload.customAttributes ?? [])
                     .map((attribute) => [attribute.name, attribute.content?.[0]?.data]),
             )
@@ -373,7 +374,7 @@ test.describe('OnboardFromToken', () => {
         await browser.getByRole('button', { name: 'Onboard 1' }).click();
 
         await expect(browser.getByText('Required Field')).toBeVisible();
-        expect(dispatched.filter(actions.onboardTokenKeys.match)).toEqual([]);
+        expect(dispatched.filter(tokenKeyActions.onboardTokenKeys.match)).toEqual([]);
     });
 
     test('shows what became of each key pair and offers to finish once one was onboarded', async ({ mount, page: browser }) => {
@@ -466,7 +467,7 @@ test.describe('OnboardFromToken', () => {
         await expect(browser.getByRole('checkbox', { name: 'Select signer' })).toBeChecked();
         await browser.getByRole('button', { name: 'Onboard 1' }).click();
 
-        await expect.poll(() => dispatched.filter(actions.listTokenKeys.match).length).toBe(2);
+        await expect.poll(() => dispatched.filter(tokenKeyActions.listTokenKeys.match).length).toBe(2);
         await expect(browser.getByRole('checkbox', { name: 'Select signer' })).not.toBeChecked();
         await expect(browser.getByRole('button', { name: 'Onboard', exact: true })).toBeDisabled();
     });
@@ -481,6 +482,57 @@ test.describe('OnboardFromToken', () => {
         await expect(browser.getByRole('button', { name: 'Onboarding...' })).toBeVisible();
         await expect(browser.getByRole('button', { name: 'Cancel' })).toBeDisabled();
         await expect(browser.getByTestId('select-onboardTokenProfileSelect-trigger')).toBeDisabled();
+    });
+
+    test('names each key pair in the results by its label, whichever page it was picked on', async ({ mount, page: browser }) => {
+        const secondPage: TokenKeyListResponseDto = {
+            items: [
+                {
+                    keyPairMeta: keyPairMeta('archiving'),
+                    label: 'archiver',
+                    keyAlgorithm: KeyAlgorithm.Rsa,
+                    length: 2048,
+                    status: TokenKeyStatus.Onboardable,
+                    suggestedName: 'archiver',
+                },
+            ],
+            itemsPerPage: 10,
+            pageNumber: 2,
+            totalPages: 2,
+            totalItems: 7,
+        };
+        await mount(
+            <OnboardFromTokenWithStore
+                profiles={[profile]}
+                page={{ ...page, totalPages: 2, totalItems: 7 }}
+                secondPage={secondPage}
+                onboardingResults={[
+                    {
+                        keyPairMeta: keyPairMeta('onboardable'),
+                        onboarded: true,
+                        intoExistingKey: false,
+                        keyUuid: 'key-1',
+                        keyName: 'Payments signer',
+                    },
+                    {
+                        keyPairMeta: keyPairMeta('archiving'),
+                        onboarded: false,
+                        intoExistingKey: false,
+                        reason: 'Another key is named archiver.',
+                    },
+                ]}
+            />,
+        );
+        await chooseProfile(browser);
+
+        await browser.getByRole('checkbox', { name: 'Select signer' }).click();
+        await browser.getByTestId('pagination-next').click();
+        await browser.getByRole('checkbox', { name: 'Select archiver' }).click();
+        await browser.getByRole('button', { name: 'Onboard 2' }).click();
+
+        const results = browser.getByRole('list', { name: 'Onboarding results' });
+        await expect(results).toContainText('signer: onboarded as Payments signer');
+        await expect(results).toContainText('archiver: Another key is named archiver.');
     });
 
     test('says a private key joined an existing key the caller may not see', async ({ mount, page: browser }) => {
@@ -501,7 +553,7 @@ test.describe('OnboardFromToken', () => {
         );
     });
 
-    test('follows a selected key pair whose public key no key holds any more', async ({ mount, page: browser }) => {
+    test('asks a name for a selected key pair whose public key no key holds any more', async ({ mount, page: browser }) => {
         const dispatched: UnknownAction[] = [];
         const released = page.items.map((key) =>
             key.label === 'certified'
@@ -534,11 +586,11 @@ test.describe('OnboardFromToken', () => {
         await expect(browser.getByRole('textbox', { name: 'Name for certified' })).toHaveValue('certified');
         await browser.getByRole('button', { name: 'Onboard 1' }).click();
         await expect
-            .poll(() => dispatched.filter(actions.onboardTokenKeys.match).map((action) => action.payload.keys))
-            .toEqual([[{ keyPairMeta: keyPairMeta('into') }], [{ keyPairMeta: keyPairMeta('into'), name: 'certified' }]]);
+            .poll(() => dispatched.filter(tokenKeyActions.onboardTokenKeys.match).map((action) => action.payload.keys))
+            .toEqual([[{ keyPairMeta: keyPairMeta('into') }], [{ keyPairMeta: keyPairMeta('into') }]]);
     });
 
-    test('follows a selected key pair whose public key a key came to hold', async ({ mount, page: browser }) => {
+    test('shows the key a selected key pair joins once a key came to hold its public key', async ({ mount, page: browser }) => {
         const dispatched: UnknownAction[] = [];
         const claimed = page.items.map((key) =>
             key.label === 'signer'
@@ -564,8 +616,8 @@ test.describe('OnboardFromToken', () => {
         await expect(browser.getByRole('textbox', { name: 'Name for signer' })).toHaveCount(0);
         await browser.getByRole('button', { name: 'Onboard 1' }).click();
         await expect
-            .poll(() => dispatched.filter(actions.onboardTokenKeys.match).map((action) => action.payload.keys))
-            .toEqual([[{ keyPairMeta: keyPairMeta('onboardable'), name: 'signer' }], [{ keyPairMeta: keyPairMeta('onboardable') }]]);
+            .poll(() => dispatched.filter(tokenKeyActions.onboardTokenKeys.match).map((action) => action.payload.keys))
+            .toEqual([[{ keyPairMeta: keyPairMeta('onboardable') }], [{ keyPairMeta: keyPairMeta('onboardable') }]]);
     });
 
     test('cancels', async ({ mount, page: browser }) => {

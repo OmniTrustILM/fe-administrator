@@ -2,14 +2,7 @@ import { resetSliceState } from 'ducks/reducerUtils';
 import type { AppState } from 'ducks';
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { BulkActionModel } from 'types/connectors';
-import type {
-    KeyUsage,
-    RequestAttribute,
-    TokenKeyListResponseDto,
-    TokenKeyOnboardingResultDto,
-    TokenKeySelectionDto,
-    TokenProfileDto,
-} from 'types/openapi';
+import type { KeyUsage, TokenProfileDto } from 'types/openapi';
 import type {
     TokenProfileAddRequestModel,
     TokenProfileDetailResponseModel,
@@ -36,14 +29,9 @@ export type State = {
     keyListableTokenProfiles: TokenProfileDto[];
     keyListableTokenProfilesListed: boolean;
     keyListableTokenProfilesError?: string;
-    tokenKeys?: TokenKeyListResponseDto;
-    /** Why the last listing of key pairs failed. */
-    tokenKeysError?: string;
-    tokenKeyOnboardingResults?: TokenKeyOnboardingResultDto[];
 
     isFetchingList: boolean;
     isFetchingImportable: boolean;
-    isFetchingKeyListable: boolean;
     isFetchingDetail: boolean;
     detailFetchSucceeded: boolean;
     /** Why the last detail request failed, until the next one. */
@@ -62,8 +50,6 @@ export type State = {
     isBulkEnabling: boolean;
     isDisabling: boolean;
     isBulkDisabling: boolean;
-    isListingTokenKeys: boolean;
-    isOnboardingTokenKeys: boolean;
 };
 
 export const initialState: State = {
@@ -80,7 +66,6 @@ export const initialState: State = {
 
     isFetchingList: false,
     isFetchingImportable: false,
-    isFetchingKeyListable: false,
     isFetchingDetail: false,
     detailFetchSucceeded: false,
     isFetchingAttributes: false,
@@ -96,8 +81,6 @@ export const initialState: State = {
     isDisabling: false,
     isBulkEnabling: false,
     isBulkDisabling: false,
-    isListingTokenKeys: false,
-    isOnboardingTokenKeys: false,
 };
 
 export const slice = createSlice({
@@ -157,18 +140,15 @@ export const slice = createSlice({
             state.keyListableTokenProfiles = [];
             state.keyListableTokenProfilesListed = false;
             state.keyListableTokenProfilesError = undefined;
-            state.isFetchingKeyListable = true;
         },
 
         listKeyListableTokenProfilesSuccess: (state, action: PayloadAction<{ tokenProfiles: TokenProfileDto[] }>) => {
             state.keyListableTokenProfiles = action.payload.tokenProfiles;
             state.keyListableTokenProfilesListed = true;
-            state.isFetchingKeyListable = false;
         },
 
         listKeyListableTokenProfilesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.keyListableTokenProfilesError = action.payload.error;
-            state.isFetchingKeyListable = false;
         },
 
         getTokenProfileDetail: (state, action: PayloadAction<{ tokenInstanceUuid: string; uuid: string; skipWidgetLock?: boolean }>) => {
@@ -376,61 +356,6 @@ export const slice = createSlice({
         bulkUpdateKeyUsageFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isBulkUpdatingKeyUsage = false;
         },
-
-        listTokenKeys: (
-            state,
-            action: PayloadAction<{ tokenInstanceUuid: string; tokenProfileUuid: string; pageNumber: number; itemsPerPage: number }>,
-        ) => {
-            state.isListingTokenKeys = true;
-            state.tokenKeysError = undefined;
-        },
-
-        listTokenKeysSuccess: (state, action: PayloadAction<{ tokenKeys: TokenKeyListResponseDto }>) => {
-            if (!state.isListingTokenKeys) return;
-
-            state.isListingTokenKeys = false;
-            state.tokenKeys = action.payload.tokenKeys;
-        },
-
-        listTokenKeysFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
-            if (!state.isListingTokenKeys) return;
-
-            state.isListingTokenKeys = false;
-            state.tokenKeys = undefined;
-            state.tokenKeysError = action.payload.error;
-        },
-
-        onboardTokenKeys: (
-            state,
-            action: PayloadAction<{
-                tokenInstanceUuid: string;
-                tokenProfileUuid: string;
-                keys: TokenKeySelectionDto[];
-                customAttributes?: RequestAttribute[];
-            }>,
-        ) => {
-            state.isOnboardingTokenKeys = true;
-            state.tokenKeyOnboardingResults = undefined;
-        },
-
-        onboardTokenKeysSuccess: (state, action: PayloadAction<{ results: TokenKeyOnboardingResultDto[] }>) => {
-            if (!state.isOnboardingTokenKeys) return;
-
-            state.isOnboardingTokenKeys = false;
-            state.tokenKeyOnboardingResults = action.payload.results;
-        },
-
-        onboardTokenKeysFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
-            state.isOnboardingTokenKeys = false;
-        },
-
-        clearTokenKeys: (state, action: PayloadAction<void>) => {
-            state.tokenKeys = undefined;
-            state.tokenKeysError = undefined;
-            state.isListingTokenKeys = false;
-            state.isOnboardingTokenKeys = false;
-            state.tokenKeyOnboardingResults = undefined;
-        },
     },
 });
 
@@ -450,7 +375,11 @@ const isFetchingImportable = createSelector(state, (state: State) => state.isFet
 const isImportableTokenProfilesListed = createSelector(state, (state: State) => state.importableTokenProfilesListed);
 const importableTokenProfilesError = createSelector(state, (state: State) => state.importableTokenProfilesError);
 const keyListableTokenProfiles = createSelector(state, (state: State) => state.keyListableTokenProfiles);
-const isFetchingKeyListable = createSelector(state, (state: State) => state.isFetchingKeyListable);
+/** The pages that offer removal from the inventory share this set, so they decide alike whether a key's token lists keys. */
+const keyListableTokenProfileUuids = createSelector(
+    keyListableTokenProfiles,
+    (profiles) => new Set(profiles.map((profile) => profile.uuid)),
+);
 const isKeyListableTokenProfilesListed = createSelector(state, (state: State) => state.keyListableTokenProfilesListed);
 const keyListableTokenProfilesError = createSelector(state, (state: State) => state.keyListableTokenProfilesError);
 
@@ -471,11 +400,6 @@ const isDisabling = createSelector(state, (state: State) => state.isDisabling);
 const isBulkDisabling = createSelector(state, (state: State) => state.isBulkDisabling);
 const isUpdatingKeyUsage = createSelector(state, (state: State) => state.isUpdatingKeyUsage);
 const isBulkUpdatingKeyUsage = createSelector(state, (state: State) => state.isBulkUpdatingKeyUsage);
-const tokenKeys = createSelector(state, (state: State) => state.tokenKeys);
-const tokenKeysError = createSelector(state, (state: State) => state.tokenKeysError);
-const tokenKeyOnboardingResults = createSelector(state, (state: State) => state.tokenKeyOnboardingResults);
-const isListingTokenKeys = createSelector(state, (state: State) => state.isListingTokenKeys);
-const isOnboardingTokenKeys = createSelector(state, (state: State) => state.isOnboardingTokenKeys);
 
 export const selectors = {
     state,
@@ -490,7 +414,7 @@ export const selectors = {
     isImportableTokenProfilesListed,
     importableTokenProfilesError,
     keyListableTokenProfiles,
-    isFetchingKeyListable,
+    keyListableTokenProfileUuids,
     isKeyListableTokenProfilesListed,
     keyListableTokenProfilesError,
 
@@ -511,11 +435,6 @@ export const selectors = {
     isBulkDisabling,
     isUpdatingKeyUsage,
     isBulkUpdatingKeyUsage,
-    tokenKeys,
-    tokenKeysError,
-    tokenKeyOnboardingResults,
-    isListingTokenKeys,
-    isOnboardingTokenKeys,
 };
 
 export const actions = slice.actions;

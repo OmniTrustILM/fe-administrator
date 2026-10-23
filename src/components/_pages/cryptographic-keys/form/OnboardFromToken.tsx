@@ -10,7 +10,8 @@ import Tooltip from 'components/Tooltip';
 import WizardSection from 'components/_pages/certificates/ImportWizard/WizardSection';
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from 'ducks/customAttributes';
 import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
-import { actions, selectors } from 'ducks/token-profiles';
+import { actions as tokenKeysActions, selectors as tokenKeysSelectors } from 'ducks/token-keys';
+import { actions as tokenProfilesActions, selectors as tokenProfilesSelectors } from 'ducks/token-profiles';
 import { transformAttributeRequestModelToDto } from 'ducks/transform/attributes';
 import { type ReactNode, useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react';
 import { type FieldValues, FormProvider, useForm, useFormContext } from 'react-hook-form';
@@ -21,7 +22,6 @@ import {
     Resource,
     type TokenKeyDto,
     type TokenKeyOnboardingResultDto,
-    type TokenKeySelectionDto,
     TokenKeyStatus,
     type TokenProfileDto,
 } from 'types/openapi';
@@ -32,14 +32,16 @@ type Props = Readonly<{
     onDone: () => void;
 }>;
 
-/** The name is `INTO_EXISTING_KEY` for a pair joining the key that holds its public key, under that key's name. */
-type Selection = Readonly<{ keyPairMeta: MetadataAttribute[]; name: string | null }>;
+/**
+ * The label names the pair in its onboarding result, whichever page it was picked on. The name is set only once the
+ * user types one, since Core names the key otherwise.
+ */
+type Selection = Readonly<{ keyPairMeta: MetadataAttribute[]; label: string | undefined; name?: string }>;
 
 type SelectionsByHandle = Record<string, Selection>;
 
 type SelectionCells = [select: ReactNode, name: ReactNode];
 
-const INTO_EXISTING_KEY = null;
 const KEY_CUSTOM_ATTRIBUTES_ID = 'customOnboardKey';
 
 const statusColors: Record<TokenKeyStatus, BadgeColor> = {
@@ -64,7 +66,7 @@ const headers: TableHeader[] = [
     { id: 'name', content: 'Onboard as' },
 ];
 
-/** Core matches a pair by each metadata name with its content data, in any order, so the handle holds those alone. */
+/** The FE's own key for a pair across listings and in its onboarding result: each metadata name with its data, in name order. */
 function handleOf(keyPairMeta: readonly MetadataAttribute[]): string {
     const dataByName = keyPairMeta.map((attribute) => [attribute.name, (attribute.content ?? []).map((item) => item.data)] as const);
     return JSON.stringify([...dataByName].sort(([name], [other]) => (name < other ? -1 : 1)));
@@ -111,28 +113,6 @@ function withoutOnboarded(selections: SelectionsByHandle, results: TokenKeyOnboa
     return Object.fromEntries(Object.entries(selections).filter(([handle]) => !onboarded.has(handle)));
 }
 
-/** A listing may find a selected pair's public key newly held, or no longer held, by a key; the selection follows it. */
-function withListedTargets(selections: SelectionsByHandle, listed: readonly TokenKeyDto[]): SelectionsByHandle {
-    const retargeted: SelectionsByHandle = {};
-    for (const key of listed) {
-        if (key.keyPairMeta === undefined) continue;
-        const handle = handleOf(key.keyPairMeta);
-        const selection = selections[handle];
-        if (selection === undefined) continue;
-        const intoKey = selection.name === INTO_EXISTING_KEY;
-        if (key.status === TokenKeyStatus.OnboardableIntoKey && !intoKey) {
-            retargeted[handle] = { ...selection, name: INTO_EXISTING_KEY };
-        } else if (key.status === TokenKeyStatus.Onboardable && intoKey) {
-            retargeted[handle] = { ...selection, name: key.suggestedName ?? '' };
-        }
-    }
-    return Object.keys(retargeted).length === 0 ? selections : { ...selections, ...retargeted };
-}
-
-function toSelection({ keyPairMeta, name }: Selection): TokenKeySelectionDto {
-    return name === INTO_EXISTING_KEY ? { keyPairMeta } : { keyPairMeta, name };
-}
-
 function describeResult(result: TokenKeyOnboardingResultDto): string {
     if (!result.onboarded) return result.reason ?? '';
     if (!result.intoExistingKey) return `onboarded as ${result.keyName}`;
@@ -142,16 +122,16 @@ function describeResult(result: TokenKeyOnboardingResultDto): string {
 /** Onboards the key pairs a token already holds, picked from the listing of a profile whose connector lists keys. */
 export default function OnboardFromToken({ onCancel, onDone }: Props) {
     const dispatch = useDispatch();
-    const keyListableProfiles = useSelector(selectors.keyListableTokenProfiles);
+    const keyListableProfiles = useSelector(tokenProfilesSelectors.keyListableTokenProfiles);
     const profiles = useMemo(() => keyListableProfiles.filter((each) => each.enabled), [keyListableProfiles]);
-    const profilesListed = useSelector(selectors.isKeyListableTokenProfilesListed);
-    const profilesError = useSelector(selectors.keyListableTokenProfilesError);
-    const isOnboarding = useSelector(selectors.isOnboardingTokenKeys);
+    const profilesListed = useSelector(tokenProfilesSelectors.isKeyListableTokenProfilesListed);
+    const profilesError = useSelector(tokenProfilesSelectors.keyListableTokenProfilesError);
+    const isOnboarding = useSelector(tokenKeysSelectors.isOnboardingTokenKeys);
     const [profile, setProfile] = useState<TokenProfileDto>();
     const methods = useForm({ mode: 'onChange' });
 
     const listProfiles = useCallback(() => {
-        dispatch(actions.listKeyListableTokenProfiles());
+        dispatch(tokenProfilesActions.listKeyListableTokenProfiles());
     }, [dispatch]);
 
     const listKeyCustomAttributes = useCallback(() => {
@@ -236,11 +216,11 @@ type ProfileOnboardingProps = Readonly<{
 function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDone }: ProfileOnboardingProps) {
     const dispatch = useDispatch();
     const { handleSubmit } = useFormContext();
-    const tokenKeys = useSelector(selectors.tokenKeys);
-    const listingError = useSelector(selectors.tokenKeysError);
-    const isListing = useSelector(selectors.isListingTokenKeys);
-    const isOnboarding = useSelector(selectors.isOnboardingTokenKeys);
-    const results = useSelector(selectors.tokenKeyOnboardingResults);
+    const tokenKeys = useSelector(tokenKeysSelectors.tokenKeys);
+    const listingError = useSelector(tokenKeysSelectors.tokenKeysError);
+    const isListing = useSelector(tokenKeysSelectors.isListingTokenKeys);
+    const isOnboarding = useSelector(tokenKeysSelectors.isOnboardingTokenKeys);
+    const results = useSelector(tokenKeysSelectors.tokenKeyOnboardingResults);
     const keyCustomAttributeDescriptors = useSelector(customAttributesSelectors.resourceCustomAttributes);
     const keyCustomAttributesError = useSelector(customAttributesSelectors.resourceCustomAttributesError);
     const isListingKeyCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
@@ -249,11 +229,13 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
     const [pageNumber, setPageNumber] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [selections, setSelections] = useState<SelectionsByHandle>({});
+    // The results name their pairs from what was sent, since the onboarded pairs leave the selection.
+    const [sentSelections, setSentSelections] = useState<SelectionsByHandle>({});
     const tokenInstanceUuid = profile.tokenInstanceUuid;
     const tokenProfileUuid = profile.uuid;
 
     const listPage = useCallback(() => {
-        dispatch(actions.listTokenKeys({ tokenInstanceUuid, tokenProfileUuid, pageNumber, itemsPerPage }));
+        dispatch(tokenKeysActions.listTokenKeys({ tokenInstanceUuid, tokenProfileUuid, pageNumber, itemsPerPage }));
     }, [dispatch, tokenInstanceUuid, tokenProfileUuid, pageNumber, itemsPerPage]);
 
     useEffect(() => {
@@ -269,13 +251,9 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
         if (results) onOnboardingFinished(results);
     }, [results]);
 
-    useEffect(() => {
-        if (tokenKeys) setSelections((current) => withListedTargets(current, tokenKeys.items));
-    }, [tokenKeys]);
-
     useEffect(
         () => () => {
-            dispatch(actions.clearTokenKeys());
+            dispatch(tokenKeysActions.clearTokenKeys());
         },
         [dispatch],
     );
@@ -284,8 +262,7 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
         setSelections((current) => {
             const { [handle]: previous, ...rest } = current;
             if (previous !== undefined) return rest;
-            const name = key.status === TokenKeyStatus.OnboardableIntoKey ? INTO_EXISTING_KEY : (key.suggestedName ?? '');
-            return { ...current, [handle]: { keyPairMeta, name } };
+            return { ...current, [handle]: { keyPairMeta, label: key.label } };
         });
     }, []);
 
@@ -301,36 +278,32 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
             const customAttributes = collectFormAttributes(KEY_CUSTOM_ATTRIBUTES_ID, keyCustomAttributeDescriptors, values).map(
                 transformAttributeRequestModelToDto,
             );
-            const keys = Object.values(selections).map(toSelection);
-            dispatch(actions.onboardTokenKeys({ tokenInstanceUuid, tokenProfileUuid, keys, customAttributes }));
+            const keys = Object.values(selections).map(({ keyPairMeta, name }) => ({ keyPairMeta, name }));
+            setSentSelections(selections);
+            dispatch(tokenKeysActions.onboardTokenKeys({ tokenInstanceUuid, tokenProfileUuid, keys, customAttributes }));
         },
         [dispatch, selections, keyCustomAttributeDescriptors, tokenInstanceUuid, tokenProfileUuid],
     );
 
-    const labelsByHandle = useMemo(
-        () =>
-            new Map(
-                (tokenKeys?.items ?? []).flatMap((key) =>
-                    key.keyPairMeta === undefined ? [] : [[handleOf(key.keyPairMeta), key.label] as const],
-                ),
-            ),
-        [tokenKeys],
-    );
-
     const rows: TableDataRow[] = useMemo(() => {
-        const nameCell = (key: TokenKeyDto, handle: string, shownLabel: string, name: string | null): ReactNode => {
-            if (name === INTO_EXISTING_KEY) {
+        const nameCell = (key: TokenKeyDto, handle: string, shownLabel: string, selection: Selection): ReactNode => {
+            if (key.status === TokenKeyStatus.OnboardableIntoKey) {
                 return <span className="text-sm">{`Into ${key.inventoryKeyName ?? 'the existing key'}`}</span>;
             }
             return (
-                <TextInput key="name" ariaLabel={`Name for ${shownLabel}`} value={name} onChange={(newName) => rename(handle, newName)} />
+                <TextInput
+                    key="name"
+                    ariaLabel={`Name for ${shownLabel}`}
+                    value={selection.name ?? key.suggestedName ?? ''}
+                    onChange={(newName) => rename(handle, newName)}
+                />
             );
         };
 
         const selectionCells = (key: TokenKeyDto, keyPairMeta: MetadataAttribute[], shownLabel: string): SelectionCells => {
             const handle = handleOf(keyPairMeta);
-            const name = selections[handle]?.name;
-            const selected = name !== undefined;
+            const selection = selections[handle];
+            const selected = selection !== undefined;
             const canToggle = selected || isOnboardable(key.status);
             return [
                 <input
@@ -341,7 +314,7 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
                     disabled={!canToggle}
                     onChange={() => toggle(key, keyPairMeta, handle)}
                 />,
-                selected ? nameCell(key, handle, shownLabel, name) : '',
+                selected ? nameCell(key, handle, shownLabel, selection) : '',
             ];
         };
 
@@ -406,7 +379,7 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
                 <ul className="space-y-1 text-sm" aria-label="Onboarding results">
                     {results.map((result, index) => {
                         const handle = handleOf(result.keyPairMeta);
-                        const label = labelsByHandle.get(handle);
+                        const label = sentSelections[handle]?.label;
                         const outcome = describeResult(result);
                         return (
                             <li key={`${index}-${handle}`} className={result.onboarded ? 'text-content' : 'text-warning'}>
