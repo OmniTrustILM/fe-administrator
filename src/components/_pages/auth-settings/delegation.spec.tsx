@@ -61,7 +61,9 @@ test('clearing all allowed delegates submits an empty list and resets an empty c
         .getByTestId('select-allowedDelegates-trigger')
         .getByRole('button', { name: /remove/i })
         .click();
+    await expect(page.getByTestId('select-allowedDelegates-trigger')).not.toContainText('automation');
     await fillInput(page.getByLabel('Delegate claim', { exact: true }), '');
+    await expect(page.getByLabel('Delegate claim', { exact: true })).toHaveValue('');
     await page.getByRole('button', { name: 'Save', exact: true }).click();
 
     await expect
