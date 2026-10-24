@@ -124,6 +124,11 @@ export default function OAuth2ProviderDetail() {
                       { id: 'scope', columns: ['Scope', <>{selectedOAuth2Provider.scope?.join(', ')}</>] },
                       { id: 'audiences', columns: ['Audiences', <>{selectedOAuth2Provider.audiences?.join(', ')}</>] },
                       {
+                          id: 'allowedDelegates',
+                          columns: ['Allowed delegates', selectedOAuth2Provider.allowedDelegates?.join(', ') || 'None'],
+                      },
+                      { id: 'delegateClaim', columns: ['Delegate claim', selectedOAuth2Provider.delegateClaim || 'client_id'] },
+                      {
                           id: 'skew',
                           columns: [
                               'Skew',

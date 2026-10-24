@@ -91,6 +91,14 @@ export const createAuditLogDetailData = (
             property: 'Logged at',
             propertyValue: auditLog.loggedAt,
         },
+        ...(auditLog.actor.delegate
+            ? [
+                  { property: 'Delegate identifier', propertyValue: auditLog.actor.delegate.identifier },
+                  ...(auditLog.actor.delegate.subject
+                      ? [{ property: 'Delegate subject', propertyValue: auditLog.actor.delegate.subject }]
+                      : []),
+              ]
+            : []),
         {
             property: 'Resource',
             propertyValue: getEnumLabel(resourceEnum, auditLog.resource.type),
@@ -138,12 +146,21 @@ const renderActor = (actor: AuditLogDto['actor'], actorEnum: Record<string, Enum
     const typeLabel = getEnumLabel(actorEnum, actor.type);
     const path = actor.uuid ? `../users/detail/${actor.uuid}` : undefined;
 
-    return renderTypeWithOptionalNav(typeLabel, {
+    const userActor = renderTypeWithOptionalNav(typeLabel, {
         name: actor.name,
         uuid: actor.uuid,
         path,
         navigate,
     });
+
+    return actor.delegate ? (
+        <>
+            {userActor}
+            <span> via {actor.delegate.identifier}</span>
+        </>
+    ) : (
+        userActor
+    );
 };
 
 const renderResource = (
