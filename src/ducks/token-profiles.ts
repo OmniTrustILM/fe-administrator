@@ -25,6 +25,10 @@ export type State = {
     importableTokenProfilesListed: boolean;
     /** Why the last listing of importable profiles failed, until the next one. */
     importableTokenProfilesError?: string;
+    /** The profiles whose connector lists the keys in their key storage. */
+    keyListableTokenProfiles: TokenProfileDto[];
+    keyListableTokenProfilesListed: boolean;
+    keyListableTokenProfilesError?: string;
 
     isFetchingList: boolean;
     isFetchingImportable: boolean;
@@ -57,6 +61,8 @@ export const initialState: State = {
     tokenProfiles: [],
     importableTokenProfiles: [],
     importableTokenProfilesListed: false,
+    keyListableTokenProfiles: [],
+    keyListableTokenProfilesListed: false,
 
     isFetchingList: false,
     isFetchingImportable: false,
@@ -128,6 +134,21 @@ export const slice = createSlice({
             state.importableTokenProfilesListed = false;
             state.importableTokenProfilesError = action.payload.error;
             state.isFetchingImportable = false;
+        },
+
+        listKeyListableTokenProfiles: (state, action: PayloadAction<void>) => {
+            state.keyListableTokenProfiles = [];
+            state.keyListableTokenProfilesListed = false;
+            state.keyListableTokenProfilesError = undefined;
+        },
+
+        listKeyListableTokenProfilesSuccess: (state, action: PayloadAction<{ tokenProfiles: TokenProfileDto[] }>) => {
+            state.keyListableTokenProfiles = action.payload.tokenProfiles;
+            state.keyListableTokenProfilesListed = true;
+        },
+
+        listKeyListableTokenProfilesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.keyListableTokenProfilesError = action.payload.error;
         },
 
         getTokenProfileDetail: (state, action: PayloadAction<{ tokenInstanceUuid: string; uuid: string; skipWidgetLock?: boolean }>) => {
@@ -353,6 +374,14 @@ const importableTokenProfiles = createSelector(state, (state: State) => state.im
 const isFetchingImportable = createSelector(state, (state: State) => state.isFetchingImportable);
 const isImportableTokenProfilesListed = createSelector(state, (state: State) => state.importableTokenProfilesListed);
 const importableTokenProfilesError = createSelector(state, (state: State) => state.importableTokenProfilesError);
+const keyListableTokenProfiles = createSelector(state, (state: State) => state.keyListableTokenProfiles);
+/** The pages that offer removal from the inventory share this set, so they decide alike whether a key's token lists keys. */
+const keyListableTokenProfileUuids = createSelector(
+    keyListableTokenProfiles,
+    (profiles) => new Set(profiles.map((profile) => profile.uuid)),
+);
+const isKeyListableTokenProfilesListed = createSelector(state, (state: State) => state.keyListableTokenProfilesListed);
+const keyListableTokenProfilesError = createSelector(state, (state: State) => state.keyListableTokenProfilesError);
 
 const isFetchingList = createSelector(state, (state: State) => state.isFetchingList);
 const isFetchingDetail = createSelector(state, (state: State) => state.isFetchingDetail);
@@ -384,6 +413,10 @@ export const selectors = {
     isFetchingImportable,
     isImportableTokenProfilesListed,
     importableTokenProfilesError,
+    keyListableTokenProfiles,
+    keyListableTokenProfileUuids,
+    isKeyListableTokenProfilesListed,
+    keyListableTokenProfilesError,
 
     isFetchingList,
     isFetchingDetail,

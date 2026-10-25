@@ -16,17 +16,26 @@ import { actions as connectorActions } from 'ducks/connectors';
 import { actions as customAttributeActions } from 'ducks/customAttributes';
 import { slice as inspectionSlice, type State as InspectionState } from 'ducks/inspections';
 import { testInitialState, testReducers } from 'ducks/test-reducers';
+import { actions as tokenKeyActions, slice as tokenKeySlice, type State as TokenKeyState } from 'ducks/token-keys';
 import { actions as tokenProfileActions, slice as tokenProfileSlice, type State as TokenProfileState } from 'ducks/token-profiles';
 import type { AttributeDescriptorModel, CustomAttributeModel } from 'types/attributes';
-import type { BaseAttributeDto, KeyRequestType, KeyTransferCapabilityDto, TokenProfileDto } from 'types/openapi';
+import type {
+    BaseAttributeDto,
+    KeyRequestType,
+    KeyTransferCapabilityDto,
+    TokenKeyListResponseDto,
+    TokenKeyOnboardingResultDto,
+    TokenProfileDto,
+} from 'types/openapi';
 import type { TokenProfileResponseModel } from 'types/token-profiles';
 import { createMockStore } from 'utils/test-helpers';
 import { keyPermissionsAuth } from '../../test-utils/exportDialogTestStore';
 import { nth } from '../../test-utils/testAnswers';
 
-type SharedState = Omit<ReturnType<typeof testReducers>, 'cryptographicKeys' | 'tokenprofiles' | 'certificates'> & {
+type SharedState = Omit<ReturnType<typeof testReducers>, 'cryptographicKeys' | 'tokenprofiles' | 'tokenKeys' | 'certificates'> & {
     cryptographicKeys: KeyState;
     tokenprofiles: TokenProfileState;
+    tokenKeys: TokenKeyState;
     certificates: CertificateState;
 };
 
@@ -40,6 +49,7 @@ function reducer(state: State | undefined, action: UnknownAction): State {
         ...testReducers(sharedState, action),
         cryptographicKeys: keySlice.reducer(sharedState?.cryptographicKeys, action),
         tokenprofiles: tokenProfileSlice.reducer(sharedState?.tokenprofiles, action),
+        tokenKeys: tokenKeySlice.reducer(sharedState?.tokenKeys, action),
         certificates: certificateSlice.reducer(sharedState?.certificates, action),
         inspections: inspectionSlice.reducer(inspections, action),
     };
@@ -60,9 +70,12 @@ export type CryptographicKeyFormWithStoreProps = Readonly<{
     attributeDescriptors?: AttributeDescriptorModel[];
     /** Whether the signed-in user holds the key import permission. */
     canImportKeys?: boolean;
+    /** Whether the signed-in user holds the key create permission. */
+    canCreateKeys?: boolean;
     onAction?: (action: UnknownAction) => void;
     onSuccess?: () => void;
     onCancel?: () => void;
+    onWideTabShown?: (wide: boolean) => void;
     /** Import material tab fixtures, answered the way `ImportWizardWithStore` answers its own mount. */
     inspectAnswers?: InspectAnswer[];
     importableTokenProfiles?: TokenProfileDto[];
@@ -70,6 +83,10 @@ export type CryptographicKeyFormWithStoreProps = Readonly<{
     importKeyAttributes?: BaseAttributeDto[];
     certificateCustomAttributes?: CustomAttributeModel[];
     importAnswers?: ImportAnswer[];
+    /** Onboard from token tab fixtures; an onboarding stays in flight without `onboardingResults`. */
+    keyListableTokenProfiles?: TokenProfileDto[];
+    tokenKeys?: TokenKeyListResponseDto;
+    onboardingResults?: TokenKeyOnboardingResultDto[];
 }>;
 
 /** See TokenProfileFormWithStore — same harness for the sibling form behind the Key dropdown's "+". */
@@ -84,18 +101,23 @@ export function CryptographicKeyFormWithStore({
     keyDetail,
     attributeDescriptors,
     canImportKeys = true,
+    canCreateKeys = true,
     onAction,
     onSuccess,
     onCancel,
+    onWideTabShown,
     inspectAnswers,
     importableTokenProfiles,
     profileListings,
     importKeyAttributes,
     certificateCustomAttributes,
     importAnswers,
+    keyListableTokenProfiles,
+    tokenKeys,
+    onboardingResults,
 }: CryptographicKeyFormWithStoreProps) {
     const store = useMemo(() => {
-        const auth = keyPermissionsAuth({ importKey: canImportKeys });
+        const auth = keyPermissionsAuth({ importKey: canImportKeys, createKey: canCreateKeys });
         if (!tokenProfiles) return createMockStore({ auth });
 
         const summaries = new Map(tokenProfiles.map((profile) => [profile.uuid, profile]));
@@ -130,10 +152,20 @@ export function CryptographicKeyFormWithStore({
                 } else if (answer === 'loaded' && summary) {
                     api.dispatch(
                         tokenProfileActions.getTokenProfileDetailSuccess({
-                            tokenProfile: { ...summary, attributes: [], keyTransfer: keyTransferByProfile?.[action.payload.uuid] },
+                            tokenProfile: {
+                                ...summary,
+                                attributes: [],
+                                keyTransfer: keyTransferByProfile?.[action.payload.uuid],
+                            },
                         }),
                     );
                 }
+            } else if (tokenProfileActions.listKeyListableTokenProfiles.match(action)) {
+                api.dispatch(tokenProfileActions.listKeyListableTokenProfilesSuccess({ tokenProfiles: keyListableTokenProfiles ?? [] }));
+            } else if (tokenKeyActions.listTokenKeys.match(action) && tokenKeys) {
+                api.dispatch(tokenKeyActions.listTokenKeysSuccess({ tokenKeys }));
+            } else if (tokenKeyActions.onboardTokenKeys.match(action) && onboardingResults) {
+                api.dispatch(tokenKeyActions.onboardTokenKeysSuccess({ results: onboardingResults }));
             }
             return result;
         };
@@ -156,6 +188,7 @@ export function CryptographicKeyFormWithStore({
             ...testInitialState,
             auth,
             tokenprofiles: { ...tokenProfileSlice.getInitialState(), tokenProfiles },
+            tokenKeys: tokenKeySlice.getInitialState(),
             cryptographicKeys: { ...keySlice.getInitialState(), cryptographicKey: keyDetail },
             certificates: certificateSlice.getInitialState(),
             inspections: inspectionSlice.getInitialState(),
@@ -175,6 +208,7 @@ export function CryptographicKeyFormWithStore({
         keyDetail,
         attributeDescriptors,
         canImportKeys,
+        canCreateKeys,
         onAction,
         inspectAnswers,
         importableTokenProfiles,
@@ -182,6 +216,9 @@ export function CryptographicKeyFormWithStore({
         importKeyAttributes,
         certificateCustomAttributes,
         importAnswers,
+        keyListableTokenProfiles,
+        tokenKeys,
+        onboardingResults,
     ]);
 
     // Asks again for the token profile detail in the store, as another part of the page may while the form is open.
@@ -203,7 +240,14 @@ export function CryptographicKeyFormWithStore({
                 <Routes>
                     <Route
                         path={routePath}
-                        element={<CryptographicKeyForm usesGlobalModal={usesGlobalModal} onSuccess={onSuccess} onCancel={onCancel} />}
+                        element={
+                            <CryptographicKeyForm
+                                usesGlobalModal={usesGlobalModal}
+                                onSuccess={onSuccess}
+                                onCancel={onCancel}
+                                onWideTabShown={onWideTabShown}
+                            />
+                        }
                     />
                 </Routes>
                 {tokenProfiles && (

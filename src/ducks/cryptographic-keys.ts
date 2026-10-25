@@ -55,6 +55,10 @@ export type State = {
 
     isCreating: boolean;
     isDeleting: boolean;
+    isRemovingFromInventory: boolean;
+    isBulkRemovingFromInventory: boolean;
+    bulkRemoveFromInventoryRequestSize: number;
+    bulkRemoveFromInventoryFailures?: BulkActionModel[];
     isBulkDeleting: boolean;
     isUpdating: boolean;
     createCryptographicKeySucceeded: boolean;
@@ -99,6 +103,9 @@ export const initialState: State = {
     isCreating: false,
     createCryptographicKeySucceeded: false,
     isDeleting: false,
+    isRemovingFromInventory: false,
+    isBulkRemovingFromInventory: false,
+    bulkRemoveFromInventoryRequestSize: 0,
     isBulkDeleting: false,
     isUpdating: false,
     updateCryptographicKeySucceeded: false,
@@ -463,6 +470,37 @@ export const slice = createSlice({
                     return null;
                 });
             }
+        },
+
+        removeKeyFromInventory: (state, action: PayloadAction<{ uuid: string; redirect: string }>) => {
+            state.isRemovingFromInventory = true;
+        },
+
+        removeKeyFromInventorySuccess: (state, action: PayloadAction<{ uuid: string }>) => {
+            state.isRemovingFromInventory = false;
+            state.cryptographicKeys = state.cryptographicKeys.filter((keyItem) => keyItem.keyWrapperUuid !== action.payload.uuid);
+            if (state.cryptographicKey?.uuid === action.payload.uuid) {
+                state.cryptographicKey = undefined;
+            }
+        },
+
+        removeKeyFromInventoryFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isRemovingFromInventory = false;
+        },
+
+        bulkRemoveKeysFromInventory: (state, action: PayloadAction<{ uuids: string[] }>) => {
+            state.bulkRemoveFromInventoryFailures = undefined;
+            state.bulkRemoveFromInventoryRequestSize = action.payload.uuids.length;
+            state.isBulkRemovingFromInventory = true;
+        },
+
+        bulkRemoveKeysFromInventorySuccess: (state, action: PayloadAction<{ messages: BulkActionModel[] }>) => {
+            state.bulkRemoveFromInventoryFailures = action.payload.messages;
+            state.isBulkRemovingFromInventory = false;
+        },
+
+        bulkRemoveKeysFromInventoryFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isBulkRemovingFromInventory = false;
         },
 
         deleteCryptographicKeyFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
@@ -858,6 +896,10 @@ const isFetchingKeyPairs = createSelector(state, (state: State) => state.isFetch
 const isFetchingDetail = createSelector(state, (state: State) => state.isFetchingDetail);
 const isCreating = createSelector(state, (state: State) => state.isCreating);
 const isDeleting = createSelector(state, (state: State) => state.isDeleting);
+const isRemovingFromInventory = createSelector(state, (state: State) => state.isRemovingFromInventory);
+const isBulkRemovingFromInventory = createSelector(state, (state: State) => state.isBulkRemovingFromInventory);
+const bulkRemoveFromInventoryRequestSize = createSelector(state, (state: State) => state.bulkRemoveFromInventoryRequestSize);
+const bulkRemoveFromInventoryFailures = createSelector(state, (state: State) => state.bulkRemoveFromInventoryFailures);
 const isBulkDeleting = createSelector(state, (state: State) => state.isBulkDeleting);
 const isUpdating = createSelector(state, (state: State) => state.isUpdating);
 const createCryptographicKeySucceeded = createSelector(state, (state: State) => state.createCryptographicKeySucceeded);
@@ -902,6 +944,10 @@ export const selectors = {
     isCreating,
     createCryptographicKeySucceeded,
     isDeleting,
+    isRemovingFromInventory,
+    isBulkRemovingFromInventory,
+    bulkRemoveFromInventoryRequestSize,
+    bulkRemoveFromInventoryFailures,
     isBulkDeleting,
     isUpdating,
     updateCryptographicKeySucceeded,

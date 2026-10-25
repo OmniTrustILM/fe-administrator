@@ -54,6 +54,7 @@ import settingsEpics from './settings-epics';
 import raProfileRequestAttributesEpics from './raProfileRequestAttributes-epics';
 import startupEpics from './startup-epics';
 import dashboardEpics from './statisticsDashboard-epics';
+import tokenKeyEpics from './token-keys-epics';
 import tokenProfileEpics from './token-profiles-epics';
 import tokenEpics from './tokens-epics';
 import trustedCertificatesEpics from './trusted-certificates-epics';
@@ -131,6 +132,7 @@ export const epics = combineEpics(
     ...inspectionsEpics,
     ...tokenEpics,
     ...tokenProfileEpics,
+    ...tokenKeyEpics,
     ...trustedCertificatesEpics,
     ...cryptographicKeyEpics,
     ...cryptographicOperationsEpics,

@@ -29,6 +29,7 @@ import Breadcrumb from 'components/Breadcrumb';
 import Container from 'components/Container';
 import { keyWithoutTokenInstanceActionNotes } from './constants';
 import CryptographicKeyForm from '../form';
+import { isRemovableFromInventory, REMOVE_KEY_FROM_INVENTORY_NOTE } from '../inventoryRemoval';
 
 const allKeyUsages = Object.values(KeyUsage);
 
@@ -55,6 +56,9 @@ export default function CryptographicKeyDetail() {
             ? tokenProfile.usages
             : undefined;
     const supportedKeyUsages = cryptographicKey && cryptographicKey.uuid === id && !tokenProfileUuid ? allKeyUsages : profileKeyUsages;
+    const keyListableProfilesListed = useSelector(tokenProfileSelectors.isKeyListableTokenProfilesListed);
+    const keyListableProfileUuids = useSelector(tokenProfileSelectors.keyListableTokenProfileUuids);
+    const tokenListsKeys = tokenProfileUuid !== undefined && keyListableProfileUuids.has(tokenProfileUuid);
     const state = useSelector(selectors.state);
     const isUpdatingKeyUsage = useSelector(selectors.isUpdatingKeyUsage);
 
@@ -63,9 +67,11 @@ export default function CryptographicKeyDetail() {
     const isDisabling = useSelector(selectors.isDisabling);
     const isCompromising = useSelector(selectors.isBulkCompromising);
     const isDestroying = useSelector(selectors.isBulkDestroying);
+    const isRemovingFromInventory = useSelector(selectors.isRemovingFromInventory);
     const isFetchingHistory = useSelector(selectors.isFetchingHistory);
     const [selectedTab, setSelectedTab] = useState(0);
     const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
+    const [confirmRemoveFromInventory, setConfirmRemoveFromInventory] = useState<boolean>(false);
 
     const [confirmCompromise, setConfirmCompromise] = useState<boolean>(false);
 
@@ -79,8 +85,25 @@ export default function CryptographicKeyDetail() {
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
 
     const isBusy = useMemo(
-        () => state.isFetchingDetail || isDeleting || isEnabling || isDisabling || isUpdatingKeyUsage || isCompromising || isDestroying,
-        [isDeleting, isEnabling, isDisabling, isUpdatingKeyUsage, isCompromising, isDestroying, state.isFetchingDetail],
+        () =>
+            state.isFetchingDetail ||
+            isDeleting ||
+            isEnabling ||
+            isDisabling ||
+            isUpdatingKeyUsage ||
+            isCompromising ||
+            isDestroying ||
+            isRemovingFromInventory,
+        [
+            isDeleting,
+            isEnabling,
+            isDisabling,
+            isUpdatingKeyUsage,
+            isCompromising,
+            isDestroying,
+            isRemovingFromInventory,
+            state.isFetchingDetail,
+        ],
     );
 
     const getFreshCryptographicKeyDetails = useCallback(() => {
@@ -101,6 +124,10 @@ export default function CryptographicKeyDetail() {
     useEffect(() => {
         loadProfileDetail();
     }, [loadProfileDetail]);
+
+    useEffect(() => {
+        if (!keyListableProfilesListed) dispatch(tokenProfileActions.listKeyListableTokenProfiles());
+    }, [dispatch, keyListableProfilesListed]);
 
     // The profile's detail says which items can be exported, so refreshing the key asks for it again too.
     const refreshKeyDetails = useCallback(() => {
@@ -149,6 +176,12 @@ export default function CryptographicKeyDetail() {
         );
         setConfirmDelete(false);
     }, [dispatch, cryptographicKey, keysListPath]);
+
+    const onRemoveFromInventoryConfirmed = useCallback(() => {
+        if (!cryptographicKey) return;
+        dispatch(actions.removeKeyFromInventory({ uuid: cryptographicKey.uuid, redirect: keysListPath }));
+        setConfirmRemoveFromInventory(false);
+    }, [dispatch, cryptographicKey]);
 
     const onCompromise = useCallback(() => {
         if (!cryptographicKey) return;
@@ -244,8 +277,19 @@ export default function CryptographicKeyDetail() {
                     setConfirmDestroy(true);
                 },
             },
+            ...(cryptographicKey && isRemovableFromInventory(tokenListsKeys, cryptographicKey.items)
+                ? [
+                      {
+                          icon: 'package-minus' as const,
+                          disabled: false,
+                          tooltip: 'Remove from inventory',
+                          'aria-label': 'Remove from inventory',
+                          onClick: () => setConfirmRemoveFromInventory(true),
+                      },
+                  ]
+                : []),
         ],
-        [cryptographicKey, onEditClick, onDisableClick, onEnableClick, setConfirmCompromise, setConfirmDestroy],
+        [cryptographicKey, tokenListsKeys, onEditClick, onDisableClick, onEnableClick, setConfirmCompromise, setConfirmDestroy],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -504,6 +548,18 @@ export default function CryptographicKeyDetail() {
                 buttons={[
                     { color: 'secondary', variant: 'outline', onClick: () => setConfirmDelete(false), body: 'Cancel' },
                     { color: 'danger', onClick: onDeleteConfirmed, body: 'Delete' },
+                ]}
+            />
+            <Dialog
+                isOpen={confirmRemoveFromInventory}
+                caption="Remove Key from Inventory"
+                size="lg"
+                body={REMOVE_KEY_FROM_INVENTORY_NOTE}
+                toggle={() => setConfirmRemoveFromInventory(false)}
+                icon="delete"
+                buttons={[
+                    { color: 'secondary', variant: 'outline', onClick: () => setConfirmRemoveFromInventory(false), body: 'Cancel' },
+                    { color: 'danger', onClick: onRemoveFromInventoryConfirmed, body: 'Remove' },
                 ]}
             />
             <Dialog

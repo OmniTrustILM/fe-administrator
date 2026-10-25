@@ -52,6 +52,7 @@ import { slice as cryptoAssetsDashboardSlice } from './crypto-assets-dashboard';
 import { slice as settingsSlice } from './settings';
 import { slice as raProfileRequestAttributesSlice } from './raProfileRequestAttributes';
 import { slice as dashboardSlice } from './statisticsDashboard';
+import { slice as tokenKeySlice } from './token-keys';
 import { slice as tokenProfileSlice } from './token-profiles';
 import { slice as tokenSlice } from './tokens';
 import { slice as tablePaginationSlice } from './table-pagination';
@@ -127,6 +128,7 @@ export const reducers = combineReducers({
     [inspectionsSlice.name]: inspectionsSlice.reducer,
     [tokenSlice.name]: tokenSlice.reducer,
     [tokenProfileSlice.name]: tokenProfileSlice.reducer,
+    [tokenKeySlice.name]: tokenKeySlice.reducer,
     [tablePaginationSlice.name]: tablePaginationSlice.reducer,
     [listFiltersSlice.name]: listFiltersSlice.reducer,
     [listScopesSlice.name]: listScopesSlice.reducer,

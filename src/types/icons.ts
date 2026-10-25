@@ -38,6 +38,7 @@ export type IconName =
     | 'rekey'
     | 'archive'
     | 'unarchive'
+    | 'package-minus'
     | 'user-check'
     | 'user-cog'
     | 'shield-check'

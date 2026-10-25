@@ -362,6 +362,24 @@ const bulkUpdateKeyUsage: AppEpic = (action$, state$, deps) => {
     );
 };
 
+const listKeyListableTokenProfiles: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.listKeyListableTokenProfiles.match),
+        switchMap((action) =>
+            deps.apiClients.tokenProfiles.listTokenProfiles({ keyListable: true }).pipe(
+                map((tokenProfiles) => slice.actions.listKeyListableTokenProfilesSuccess({ tokenProfiles })),
+                catchError((error) =>
+                    of(
+                        slice.actions.listKeyListableTokenProfilesFailure({
+                            error: extractError(error, 'Failed to get the token profiles that list keys'),
+                        }),
+                    ),
+                ),
+            ),
+        ),
+    );
+};
+
 const epics = [
     listTokenProfiles,
     listImportableTokenProfiles,
@@ -376,6 +394,7 @@ const epics = [
     bulkDeleteProfiles,
     updateKeyUsage,
     bulkUpdateKeyUsage,
+    listKeyListableTokenProfiles,
 ];
 
 export { getTokenProfileDetail };
