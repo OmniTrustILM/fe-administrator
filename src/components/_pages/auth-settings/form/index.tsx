@@ -58,6 +58,8 @@ interface FormValues {
     postLogoutUrl: string;
     userInfoUrl: string;
     audiences: string[];
+    allowedDelegates: string[];
+    delegateClaim: string;
     skew: string;
     sessionMaxInactiveInterval: string;
 }
@@ -106,6 +108,8 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                 postLogoutUrl: oauth2Provider.postLogoutUrl || '',
                 userInfoUrl: oauth2Provider.userInfoUrl || '',
                 audiences: oauth2Provider.audiences || [],
+                allowedDelegates: oauth2Provider.allowedDelegates || [],
+                delegateClaim: oauth2Provider.delegateClaim || '',
                 skew: oauth2Provider.skew?.toString() || '',
                 sessionMaxInactiveInterval: oauth2Provider.sessionMaxInactiveInterval?.toString() || '',
             };
@@ -125,6 +129,8 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                 postLogoutUrl: '',
                 userInfoUrl: '',
                 audiences: [],
+                allowedDelegates: [],
+                delegateClaim: '',
                 skew: '',
                 sessionMaxInactiveInterval: '',
             };
@@ -172,6 +178,8 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                 postLogoutUrl: values.postLogoutUrl || undefined,
                 userInfoUrl: values.userInfoUrl || undefined,
                 audiences: values.audiences && values.audiences.length > 0 ? values.audiences : undefined,
+                allowedDelegates: values.allowedDelegates,
+                delegateClaim: values.delegateClaim.trim() || 'client_id',
                 skew: values.skew ? Number.parseInt(values.skew, 10) : undefined,
                 sessionMaxInactiveInterval: values.sessionMaxInactiveInterval
                     ? Number.parseInt(values.sessionMaxInactiveInterval, 10)
@@ -441,6 +449,44 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                                                         : []
                                                 }
                                             />
+                                        )}
+                                    />
+                                </div>
+
+                                <div>
+                                    <Label htmlFor="allowedDelegates">Allowed delegates</Label>
+                                    <p className="text-sm text-content-subtle mb-2">
+                                        A provider without allowed delegates refuses delegation tokens. Identifiers are matched exactly;
+                                        there is no wildcard.
+                                    </p>
+                                    <Controller
+                                        name="allowedDelegates"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <MultipleValueTextInput
+                                                id="allowedDelegates"
+                                                selectedValues={field.value || []}
+                                                onValuesChange={field.onChange}
+                                                placeholder="Select or add delegates"
+                                                addPlaceholder="Add delegate"
+                                                initialOptions={
+                                                    oauth2Provider?.allowedDelegates?.map((value) => ({ label: value, value })) || []
+                                                }
+                                            />
+                                        )}
+                                    />
+                                </div>
+
+                                <div>
+                                    <p className="text-sm text-content-subtle mb-2">
+                                        The claim inside the token's outermost act object that identifies the delegate. Defaults to
+                                        client_id.
+                                    </p>
+                                    <Controller
+                                        name="delegateClaim"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <TextInput {...field} id="delegateClaim" label="Delegate claim" placeholder="client_id" />
                                         )}
                                     />
                                 </div>

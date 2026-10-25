@@ -116,6 +116,7 @@ export default function MultipleValueTextInput({
                     className="text-content py-2.5 sm:py-3 px-4 block border-outline rounded-lg text-sm focus:border-brand focus:ring-brand bg-surface-raised placeholder-content-hint"
                     value={newValue}
                     onChange={(e) => setNewValue(e.target.value)}
+                    aria-label={addPlaceholder}
                     placeholder={addPlaceholder}
                     onKeyDown={handleKeyDown}
                     autoComplete="off"
