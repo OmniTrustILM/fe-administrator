@@ -465,6 +465,46 @@ test.describe('OnboardFromToken', () => {
         await expect(browser.getByRole('button', { name: 'Done' })).toHaveCount(0);
     });
 
+    test('names a key pair with a blank label by its fingerprint, in its row and in its result', async ({ mount, page: browser }) => {
+        const unlabelled: TokenKeyListResponseDto = {
+            ...page,
+            items: [
+                {
+                    keyPairMeta: keyPairMeta('unlabelled'),
+                    label: '',
+                    fingerprint: '5f2b9c',
+                    keyAlgorithm: KeyAlgorithm.Rsa,
+                    length: 2048,
+                    status: TokenKeyStatus.Onboardable,
+                    suggestedName: 'key (5f2b9c)',
+                },
+            ],
+            totalItems: 1,
+        };
+        await mount(
+            <OnboardFromTokenWithStore
+                profiles={[profile]}
+                page={unlabelled}
+                onboardingResults={[
+                    {
+                        keyPairMeta: keyPairMeta('unlabelled'),
+                        onboarded: false,
+                        intoExistingKey: false,
+                        reason: 'Another key is named key (5f2b9c).',
+                    },
+                ]}
+            />,
+        );
+        await chooseProfile(browser);
+
+        const row = browser.getByRole('row').filter({ has: browser.getByRole('checkbox', { name: 'Select 5f2b9c' }) });
+        await expect(row.getByRole('cell').nth(1)).toHaveText('5f2b9c');
+        await row.getByRole('checkbox').click();
+        await browser.getByRole('button', { name: 'Onboard', exact: true }).click();
+
+        await expect(browser.getByRole('list', { name: 'Onboarding results' })).toContainText('5f2b9c: Another key is named key (5f2b9c).');
+    });
+
     test('drops a selected key pair from the selection once a later listing finds it in the inventory', async ({
         mount,
         page: browser,

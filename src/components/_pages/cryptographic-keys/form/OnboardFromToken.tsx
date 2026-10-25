@@ -79,6 +79,22 @@ function rowId(handle: string | undefined, index: number): string {
 
 const unselectableCells: SelectionCells = ['', ''];
 
+/** A label is optional in a key storage, so a pair without one goes by its fingerprint. */
+function captionOf(key: TokenKeyDto): string {
+    return key.label || key.fingerprint || '';
+}
+
+/** The fingerprint is muted, so that it does not read as the pair's label. */
+function labelCell(key: TokenKeyDto): ReactNode {
+    if (key.label) return key.label;
+    if (!key.fingerprint) return '';
+    return (
+        <span key="label" className="break-all text-content-muted">
+            {key.fingerprint}
+        </span>
+    );
+}
+
 /**
  * A pair's reason shows on hovering or focusing its status, so the column holds only statuses and the keys holding pairs.
  * The reason opens to the right, clear of the statuses below.
@@ -340,7 +356,7 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
         };
 
         return (tokenKeys?.items ?? []).map((key, index) => {
-            const shownLabel = key.label ?? key.fingerprint ?? '';
+            const shownLabel = captionOf(key);
             const [select, name] =
                 key.keyPairMeta === undefined || !isOnboardable(key.status)
                     ? unselectableCells
@@ -349,7 +365,7 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
                 id: rowId(key.keyPairMeta && handleOf(key.keyPairMeta), index),
                 columns: [
                     select,
-                    key.label ?? '',
+                    labelCell(key),
                     key.keyAlgorithm ? getEnumLabel(algorithmEnum, key.keyAlgorithm) : '',
                     key.length?.toString() ?? '',
                     statusCell(key, getEnumLabel(statusEnum, key.status)),
@@ -401,11 +417,12 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
                 <ul className="space-y-1 text-sm" aria-label="Onboarding results">
                     {results.map((result, index) => {
                         const handle = handleOf(result.keyPairMeta);
-                        const label = sentSelections[handle]?.listed.label;
+                        const sent = sentSelections[handle];
+                        const caption = sent && captionOf(sent.listed);
                         const outcome = describeResult(result);
                         return (
                             <li key={`${index}-${handle}`} className={result.onboarded ? 'text-content' : 'text-warning'}>
-                                {label ? `${label}: ${outcome}` : outcome}
+                                {caption ? `${caption}: ${outcome}` : outcome}
                             </li>
                         );
                     })}

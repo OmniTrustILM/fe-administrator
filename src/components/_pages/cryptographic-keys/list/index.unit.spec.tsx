@@ -26,7 +26,14 @@ vi.mock('components/PagedList/PagedList', () => ({
     default: ({ additionalButtons, refreshToken }: any) => (
         <div data-testid="paged-list" data-refresh-token={refreshToken}>
             {additionalButtons.map((button: any) => (
-                <button key={button.tooltip} type="button" title={button.tooltip} onClick={button.onClick} disabled={button.disabled} />
+                <button
+                    key={button.tooltip}
+                    type="button"
+                    title={button.tooltip}
+                    data-disabled-tooltip={button.disabledTooltip}
+                    onClick={button.onClick}
+                    disabled={button.disabled}
+                />
             ))}
         </div>
     ),
@@ -352,6 +359,13 @@ describe('CryptographicKeyList removal from the inventory', () => {
 
         expect(dispatch).toHaveBeenCalledWith(keysActions.bulkRemoveKeysFromInventory({ uuids: ['key-1', 'key-2'] }));
         expect(dialogCaptioned('Remove Keys from Inventory')).toBeUndefined();
+    });
+
+    it('is held while a removal runs, without asking for another selection', async () => {
+        await confirmRemovalOfAllChecked();
+
+        expect(removeFromInventoryButton().disabled).toBe(true);
+        expect(removeFromInventoryButton().dataset.disabledTooltip).toBeUndefined();
     });
 
     it('relists once every key was removed', async () => {

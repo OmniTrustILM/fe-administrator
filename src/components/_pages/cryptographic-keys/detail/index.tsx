@@ -281,7 +281,7 @@ export default function CryptographicKeyDetail() {
                 ? [
                       {
                           icon: 'package-minus' as const,
-                          disabled: false,
+                          disabled: isBusy,
                           tooltip: 'Remove from inventory',
                           'aria-label': 'Remove from inventory',
                           onClick: () => setConfirmRemoveFromInventory(true),
@@ -289,7 +289,7 @@ export default function CryptographicKeyDetail() {
                   ]
                 : []),
         ],
-        [cryptographicKey, tokenListsKeys, onEditClick, onDisableClick, onEnableClick, setConfirmCompromise, setConfirmDestroy],
+        [cryptographicKey, tokenListsKeys, isBusy, onEditClick, onDisableClick, onEnableClick, setConfirmCompromise, setConfirmDestroy],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);

@@ -631,4 +631,20 @@ test.describe('CryptographicKeyDetail removal from the inventory', () => {
         await expect.poll(removals).toEqual([{ uuid: 'synchronized-key', redirect: '/keys' }]);
         expect(removals()).toEqual([{ uuid: 'synchronized-key', redirect: '/keys' }]);
     });
+
+    test('holds the removal while it runs', async ({ mount, page }) => {
+        const key = aSynchronizedKey().withTokenProfile(tokenProfile.uuid).build();
+        await mount(
+            <CryptographicKeyDetailWithStore
+                cryptographicKey={key}
+                tokenProfile={tokenProfile}
+                keyListableTokenProfiles={[keyListableProfile]}
+            />,
+        );
+
+        await page.getByRole('button', { name: 'Remove from inventory' }).click();
+        await page.getByRole('button', { name: 'Remove', exact: true }).click();
+
+        await expect(page.getByRole('button', { name: 'Remove from inventory' })).toBeDisabled();
+    });
 });

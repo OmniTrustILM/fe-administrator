@@ -203,9 +203,9 @@ function CryptographicKeyList() {
         },
         {
             icon: 'package-minus',
-            disabled: removableKeyUuids.length === 0,
+            disabled: isBusy || removableKeyUuids.length === 0,
             tooltip: 'Remove from inventory',
-            disabledTooltip: 'Select at least one key that can be removed from the inventory',
+            disabledTooltip: removableKeyUuids.length === 0 ? 'Select at least one key that can be removed from the inventory' : undefined,
             'aria-label': 'Remove from inventory',
             onClick: () => {
                 setConfirmRemoveFromInventory(true);
