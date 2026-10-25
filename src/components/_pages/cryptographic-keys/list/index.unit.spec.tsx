@@ -49,7 +49,14 @@ vi.mock('components/CustomTable', async () => {
     return customTableMockModule();
 });
 
-vi.mock('../form', () => ({ default: () => null }));
+const createKeyForm = vi.hoisted(() => ({ onWideTabShown: (_wide: boolean) => {} }));
+
+vi.mock('../form', () => ({
+    default: ({ onWideTabShown }: { onWideTabShown: (wide: boolean) => void }) => {
+        createKeyForm.onWideTabShown = onWideTabShown;
+        return null;
+    },
+}));
 
 describe('CryptographicKeyList', () => {
     let state: any;
@@ -159,6 +166,19 @@ describe('CryptographicKeyList', () => {
         await renderList();
 
         expect(listRefreshToken()).toBe('0');
+    });
+
+    it('opens the Create Key dialog at its usual width after it was closed wide', async () => {
+        state = { ...state, certificates: { ...state.certificates, isImporting: false } };
+        await renderList();
+        await clickByTitle(container, 'Create Key');
+        await act(async () => createKeyForm.onWideTabShown(true));
+        expect(createKeyDialog()?.getAttribute('data-size')).toBe('xxl');
+
+        await clickByText(container, 'toggle');
+        await clickByTitle(container, 'Create Key');
+
+        expect(createKeyDialog()?.getAttribute('data-size')).toBe('xl');
     });
 
     it('keeps the Create Key dialog open while an onboarding from it runs', async () => {

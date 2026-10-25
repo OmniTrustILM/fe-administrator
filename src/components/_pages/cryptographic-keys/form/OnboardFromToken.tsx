@@ -33,8 +33,8 @@ type Props = Readonly<{
 }>;
 
 /**
- * A selection keeps its pair as last listed, so a pair picked on another page still names its onboarding result and
- * onboards under the name it was shown. The name is set once the user types one.
+ * A selection keeps its pair as last listed, so a pair picked on another page still names its onboarding result.
+ * The name is set once the user types one.
  */
 type Selection = Readonly<{ keyPairMeta: MetadataAttribute[]; listed: TokenKeyDto; name?: string }>;
 
@@ -141,9 +141,12 @@ function withRelisted(selections: SelectionsByHandle, keys: readonly TokenKeyDto
     );
 }
 
-/** A pair joining a key keeps that key's name, so it sends none. */
+/**
+ * Only a name the user typed is sent. Without one, Core picks an unused name when it onboards the pair.
+ * A pair that joins an existing key keeps that key's name, so it sends none.
+ */
 function nameToSend({ listed, name }: Selection): string | undefined {
-    return listed.status === TokenKeyStatus.OnboardableIntoKey ? undefined : (name ?? listed.suggestedName);
+    return listed.status === TokenKeyStatus.OnboardableIntoKey ? undefined : name;
 }
 
 function describeResult(result: TokenKeyOnboardingResultDto): string {
@@ -179,6 +182,17 @@ export default function OnboardFromToken({ onCancel, onDone }: Props) {
         listKeyCustomAttributes();
     }, [listKeyCustomAttributes]);
 
+    const switchProfile = useCallback(
+        (uuid: unknown) => {
+            if (uuid === profile?.uuid) return;
+            // The old form's cleanup clears the store only after the new form has rendered.
+            // That form would otherwise show the old rows, and the old results would make it list a second time.
+            dispatch(tokenKeysActions.clearTokenKeys());
+            setProfile(profiles.find((each) => each.uuid === uuid));
+        },
+        [dispatch, profile, profiles],
+    );
+
     const options = useMemo(
         () => profiles.map((each) => ({ value: each.uuid, label: `${each.tokenInstanceName} / ${each.name}` })),
         [profiles],
@@ -213,7 +227,7 @@ export default function OnboardFromToken({ onCancel, onDone }: Props) {
                             placeholder="Select token profile"
                             placement="bottom"
                             isDisabled={isOnboarding}
-                            onChange={(value) => setProfile(profiles.find((each) => each.uuid === value))}
+                            onChange={switchProfile}
                         />
                         {profileNote}
                     </div>

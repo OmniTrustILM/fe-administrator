@@ -427,7 +427,7 @@ const removeKeyFromInventory: AppEpic = (action$, state$, deps) => {
                         slice.actions.removeKeyFromInventoryFailure({
                             error: extractError(err, 'Failed to remove the key from the inventory'),
                         }),
-                        alertActions.error(extractError(err, 'Failed to remove the key from the inventory')),
+                        appRedirectActions.fetchError({ error: err, message: 'Failed to remove the key from the inventory' }),
                     ),
                 ),
             ),
@@ -440,14 +440,14 @@ const bulkRemoveKeysFromInventory: AppEpic = (action$, state$, deps) => {
         filter(slice.actions.bulkRemoveKeysFromInventory.match),
         switchMap((action) =>
             defer(() => deps.apiClients.cryptographicKeys.removeKeysFromInventory({ requestBody: action.payload.uuids })).pipe(
-                mergeMap((messages) =>
-                    messages.length === 0
-                        ? of(
-                              slice.actions.bulkRemoveKeysFromInventorySuccess({ messages }),
-                              alertActions.success('Selected keys removed from the inventory.'),
-                          )
-                        : of(slice.actions.bulkRemoveKeysFromInventorySuccess({ messages })),
-                ),
+                mergeMap((messages) => {
+                    if (messages.length > 0) return of(slice.actions.bulkRemoveKeysFromInventorySuccess({ messages }));
+                    const removed = action.payload.uuids.length;
+                    return of(
+                        slice.actions.bulkRemoveKeysFromInventorySuccess({ messages }),
+                        alertActions.success(`${removed} key${removed === 1 ? '' : 's'} removed from the inventory.`),
+                    );
+                }),
                 catchError((err) =>
                     of(
                         slice.actions.bulkRemoveKeysFromInventoryFailure({

@@ -81,15 +81,17 @@ export const dialogMockModule = () => ({
         body,
         buttons,
         toggle,
+        size,
     }: {
         isOpen?: boolean;
         caption?: ReactNode;
         body?: ReactNode;
         buttons?: MockDialogButton[];
         toggle?: () => void;
+        size?: string;
     }) =>
         isOpen ? (
-            <div data-testid="dialog">
+            <div data-testid="dialog" data-size={size}>
                 <div>{caption}</div>
                 <div>{body}</div>
                 <button type="button" onClick={toggle}>

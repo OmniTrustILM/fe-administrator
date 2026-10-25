@@ -67,6 +67,25 @@ describe('removing a key from the inventory', () => {
             appRedirectActions.redirect({ url: '/keys' }),
         ]);
     });
+
+    test('reports a refused removal', async () => {
+        // given
+        const refusal = new Error('refused');
+        const action = keyActions.removeKeyFromInventory({ uuid: 'key-1', redirect: '/keys' });
+
+        // when
+        const emitted = await firstValueFrom(
+            epicNamed(cryptographicKeyEpics, 'removeKeyFromInventory')(of(action), of({}), {
+                apiClients: { cryptographicKeys: { removeKeyFromInventory: () => throwError(() => refusal) } },
+            }).pipe(toArray()),
+        );
+
+        // then
+        expect(emitted).toEqual([
+            keyActions.removeKeyFromInventoryFailure({ error: 'Failed to remove the key from the inventory. refused' }),
+            appRedirectActions.fetchError({ error: refusal, message: 'Failed to remove the key from the inventory' }),
+        ]);
+    });
 });
 
 describe('removing keys from the inventory in bulk', () => {
@@ -111,7 +130,7 @@ describe('removing keys from the inventory in bulk', () => {
         expect(removeKeysFromInventory).toHaveBeenCalledWith({ requestBody: ['key-1', 'key-2'] });
         expect(emitted).toEqual([
             keyActions.bulkRemoveKeysFromInventorySuccess({ messages: [] }),
-            alertActions.success('Selected keys removed from the inventory.'),
+            alertActions.success('2 keys removed from the inventory.'),
         ]);
     });
 

@@ -158,6 +158,7 @@ function CryptographicKeyList() {
             tooltip: 'Create Key',
             disabled: false,
             onClick: () => {
+                setIsAddDialogWide(false);
                 setIsAddOpen(true);
             },
         },

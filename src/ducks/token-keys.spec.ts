@@ -14,6 +14,7 @@ import {
 } from 'types/openapi';
 import { keyPairMeta } from './__fixtures__/token-keys';
 import { actions as alertActions } from './alerts';
+import { actions as appRedirectActions } from './app-redirect';
 import reducer, { actions, initialState, selectors } from './token-keys';
 import tokenKeyEpics from './token-keys-epics';
 import { describeOnboarding } from './transform/token-keys';
@@ -201,6 +202,25 @@ describe('token key epics', () => {
         expect(emitted).toEqual([actions.listTokenKeysSuccess({ tokenKeys: page })]);
     });
 
+    test('listTokenKeys reports a failed listing', async () => {
+        // given
+        const failure = new Error('down');
+        const action = actions.listTokenKeys({ ...request, pageNumber: 1, itemsPerPage: 10 });
+
+        // when
+        const emitted = await firstValueFrom(
+            epicNamed(tokenKeyEpics, 'listTokenKeys')(of(action), of({}), {
+                apiClients: { cryptographicKeys: { listTokenKeys: () => throwError(() => failure) } },
+            }).pipe(toArray()),
+        );
+
+        // then
+        expect(emitted).toEqual([
+            actions.listTokenKeysFailure({ error: 'Failed to list the keys in the key storage. down' }),
+            appRedirectActions.fetchError({ error: failure, message: 'Failed to list the keys in the key storage' }),
+        ]);
+    });
+
     test('onboardTokenKeys reports onboarded keys as a success', async () => {
         // given
         const onboardTokenKeys = vi.fn(() => of({ results: [onboarded, skipped] }));
@@ -245,7 +265,8 @@ describe('token key epics', () => {
 
     test('onboardTokenKeys reports a refused onboarding', async () => {
         // given
-        const onboardTokenKeys = vi.fn(() => throwError(() => new Error('refused')));
+        const refusal = new Error('refused');
+        const onboardTokenKeys = vi.fn(() => throwError(() => refusal));
         const action = actions.onboardTokenKeys({ ...request, keys: [{ keyPairMeta: keyPairMeta('handle-1') }] });
 
         // when
@@ -256,7 +277,10 @@ describe('token key epics', () => {
         );
 
         // then
-        expect(emitted[0]).toEqual(actions.onboardTokenKeysFailure({ error: 'Failed to onboard the keys. refused' }));
+        expect(emitted).toEqual([
+            actions.onboardTokenKeysFailure({ error: 'Failed to onboard the keys. refused' }),
+            appRedirectActions.fetchError({ error: refusal, message: 'Failed to onboard the keys' }),
+        ]);
     });
 
     test('onboardTokenKeys sends the custom attributes of the new keys', async () => {

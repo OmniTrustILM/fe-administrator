@@ -4,6 +4,7 @@ import { catchError, filter, map, switchMap } from 'rxjs/operators';
 import type { TokenKeyOnboardingResultDto } from 'types/openapi';
 import { extractError } from 'utils/net';
 import { actions as alertActions } from './alerts';
+import { actions as appRedirectActions } from './app-redirect';
 import { slice } from './token-keys';
 import { describeOnboarding } from './transform/token-keys';
 
@@ -16,7 +17,7 @@ const listTokenKeys: AppEpic = (action$, state$, deps) => {
                 catchError((error) =>
                     of(
                         slice.actions.listTokenKeysFailure({ error: extractError(error, 'Failed to list the keys in the key storage') }),
-                        alertActions.error(extractError(error, 'Failed to list the keys in the key storage')),
+                        appRedirectActions.fetchError({ error, message: 'Failed to list the keys in the key storage' }),
                     ),
                 ),
             ),
@@ -46,7 +47,7 @@ const onboardTokenKeys: AppEpic = (action$, state$, deps) => {
                 catchError((error) =>
                     of(
                         slice.actions.onboardTokenKeysFailure({ error: extractError(error, 'Failed to onboard the keys') }),
-                        alertActions.error(extractError(error, 'Failed to onboard the keys')),
+                        appRedirectActions.fetchError({ error, message: 'Failed to onboard the keys' }),
                     ),
                 ),
             ),
