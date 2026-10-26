@@ -22,6 +22,7 @@ export enum FeatureFlag {
     Asynchronous = 'asynchronous',
     KeyImport = 'keyImport',
     KeyExport = 'keyExport',
+    KeyList = 'keyList',
     SecretVersioning = 'secretVersioning',
     SecretRotation = 'secretRotation',
     ContentSigning = 'contentSigning',

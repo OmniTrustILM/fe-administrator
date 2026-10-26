@@ -28,6 +28,8 @@ type Props = {
     dataTestId?: string;
     /** Id of an element describing the field (typically an error paragraph) — announced by screen readers. */
     ariaDescribedBy?: string;
+    /** Accessible name for a field shown without a visible label. */
+    ariaLabel?: string;
     /** Virtual keyboard hint; a numeric field kept as `type="text"` so the validator sees what was typed uses `numeric`. */
     inputMode?: 'numeric' | 'decimal' | 'text';
 };
@@ -50,6 +52,7 @@ function TextInput({
     buttonRight,
     dataTestId,
     ariaDescribedBy,
+    ariaLabel,
     inputMode,
 }: Readonly<Props>) {
     const inputRef = useRef<HTMLInputElement>(null);
@@ -105,6 +108,7 @@ function TextInput({
                     className={className}
                     required={required}
                     ariaDescribedBy={ariaDescribedBy}
+                    ariaLabel={ariaLabel}
                     errorId={errorId}
                 />
             </>
@@ -131,6 +135,7 @@ function TextInput({
                     className={className}
                     required={required}
                     ariaDescribedBy={ariaDescribedBy}
+                    ariaLabel={ariaLabel}
                     errorId={errorId}
                 />
             </>
@@ -174,6 +179,7 @@ function TextInput({
                     id={passwordToggleTargetId ?? id}
                     aria-invalid={invalid || undefined}
                     aria-describedby={describedBy}
+                    aria-label={ariaLabel}
                     inputMode={inputMode}
                     autoComplete={getAutoComplete()}
                     data-form-type="other"

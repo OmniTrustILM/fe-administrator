@@ -3,6 +3,7 @@ import TabLayout from 'components/Layout/TabLayout';
 import ProgressButton from 'components/ProgressButton';
 import RetryCallout from 'components/RetryCallout';
 import ImportWizard from 'components/_pages/certificates/ImportWizard';
+import OnboardFromToken from 'components/_pages/cryptographic-keys/form/OnboardFromToken';
 
 import Widget from 'components/Widget';
 import type { AppState } from 'ducks';
@@ -13,6 +14,7 @@ import { actions as userActions, selectors as userSelectors } from 'ducks/users'
 
 import { selectors as certificatesSelectors } from 'ducks/certificates';
 import { actions as cryptographicKeysActions, selectors as cryptographicKeysSelectors } from 'ducks/cryptographic-keys';
+import { selectors as tokenKeysSelectors } from 'ducks/token-keys';
 import { actions as tokenProfilesActions, selectors as tokenProfilesSelectors } from 'ducks/token-profiles';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, FormProvider, type Path, useForm, useWatch } from 'react-hook-form';
@@ -43,13 +45,16 @@ const EXPORTABLE_HINT_FOR_REQUEST =
     'Required to download the certificate with its private key (PKCS12) after issuance. Cannot be enabled later.';
 const EXPORTABLE_HINT =
     'Can be exported later by users holding the key export permission. Off by default, and cannot be switched on later.';
-const GENERATE_TAB = 0;
+const GENERATE_TAB = 'generate-new';
+const ONBOARD_TAB = 'onboard-from-token';
 
 type CryptographicKeyFormProps = Readonly<{
     usesGlobalModal?: boolean;
     keyId?: string;
     onSuccess?: () => void;
     onCancel?: () => void;
+    /** Called with whether the open tab needs a wider dialog, as the onboarding's table of key pairs does. */
+    onWideTabShown?: (wide: boolean) => void;
 }>;
 
 interface SelectChangeValue {
@@ -66,7 +71,13 @@ interface FormValues {
     exportable?: boolean;
 }
 
-export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesGlobalModal = false }: CryptographicKeyFormProps) {
+export default function CryptographicKeyForm({
+    keyId,
+    onSuccess,
+    onCancel,
+    onWideTabShown,
+    usesGlobalModal = false,
+}: CryptographicKeyFormProps) {
     const dispatch = useDispatch();
     const store = useStore<AppState>();
 
@@ -97,6 +108,7 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
     const createCryptographicKeySucceeded = useSelector(cryptographicKeysSelectors.createCryptographicKeySucceeded);
     const updateCryptographicKeySucceeded = useSelector(cryptographicKeysSelectors.updateCryptographicKeySucceeded);
     const isImporting = useSelector(certificatesSelectors.isImporting);
+    const isOnboarding = useSelector(tokenKeysSelectors.isOnboardingTokenKeys);
 
     const [groupAttributesCallbackAttributes, setGroupAttributesCallbackAttributes] = useState<AttributeDescriptorModel[]>([]);
 
@@ -181,6 +193,10 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
             tokenProfilesSelectors.isFetchingDetail(state) && tokenProfilesSelectors.tokenProfile(state)?.uuid === tokenProfile.uuid;
         if (!loading && !tokenProfilesSelectors.loadedTokenProfile(tokenProfile.uuid)(state)) loadProfileDetail(tokenProfile);
     }, [activeTab, tokenProfile, store, loadProfileDetail]);
+
+    useEffect(() => {
+        onWideTabShown?.(activeTab === ONBOARD_TAB);
+    }, [activeTab, onWideTabShown]);
 
     const optionsForKeys = useMemo(
         () =>
@@ -682,19 +698,24 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
         </FormProvider>
     );
 
-    const offersImport = !editMode && !usesGlobalModal && hasResourceAction(auth, Resource.Keys, ResourceAction.ImportKey);
+    const createsAnew = !editMode && !usesGlobalModal;
+    const offersImport = createsAnew && hasResourceAction(auth, Resource.Keys, ResourceAction.ImportKey);
+    const offersOnboarding = createsAnew && hasResourceAction(auth, Resource.Keys, ResourceAction.Create);
+    // Leaving an import or an onboarding while it runs would drop its results, so the other tabs wait for it.
+    const isTransferring = isImporting || isOnboarding;
 
     return (
         <Widget noBorder busy={isBusy}>
-            {offersImport ? (
+            {offersImport || offersOnboarding ? (
                 <TabLayout
                     noBorder
-                    onTabChange={setActiveTab}
+                    onTabKeyChange={setActiveTab}
                     tabs={[
-                        // Leaving the import while it runs would drop its results, so the other tab waits for it.
-                        { title: 'Generate new', content: generateNewForm, disabled: isImporting },
+                        { tabKey: GENERATE_TAB, title: 'Generate new', content: generateNewForm, disabled: isTransferring },
                         {
                             title: 'Import material',
+                            hidden: !offersImport,
+                            disabled: isOnboarding,
                             content: (
                                 <ImportWizard
                                     presetTokenProfileUuid={tokenProfile?.uuid}
@@ -702,6 +723,13 @@ export default function CryptographicKeyForm({ keyId, onSuccess, onCancel, usesG
                                     onDone={handleCreateSuccess}
                                 />
                             ),
+                        },
+                        {
+                            tabKey: ONBOARD_TAB,
+                            title: 'Onboard from token',
+                            hidden: !offersOnboarding,
+                            disabled: isImporting,
+                            content: <OnboardFromToken onCancel={onCancelClick} onDone={handleCreateSuccess} />,
                         },
                     ]}
                 />
