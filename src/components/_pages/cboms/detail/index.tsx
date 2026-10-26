@@ -151,6 +151,7 @@ export const buildComponentRows = (
                 color="secondary"
                 type="button"
                 title="View asset detail"
+                aria-label="View asset detail"
                 onClick={() => handleAssetDetailClick(String(assetName), c)}
                 className="!p-1"
             >
