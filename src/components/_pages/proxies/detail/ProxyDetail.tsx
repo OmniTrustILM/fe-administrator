@@ -182,6 +182,7 @@ export const ProxyDetail = () => {
                                 variant="transparent"
                                 color="secondary"
                                 title="Update Description"
+                                aria-label="Update Description"
                                 onClick={() => {
                                     setUpdateDescriptionEditEnable(true);
                                 }}

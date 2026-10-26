@@ -179,6 +179,7 @@ const EditableTableCell = <TValue,>({
             <Spinner active={busy} />
             <Button
                 title="Edit"
+                aria-label="Edit"
                 data-testid="editable-cell-edit-btn"
                 variant="transparent"
                 onClick={(e) => {

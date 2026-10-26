@@ -543,6 +543,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                                       dispatch(userActions.list());
                                   }}
                                   title="Update Owner"
+                                  aria-label="Update Owner"
                               >
                                   <EditIcon size={16} />
                               </Button>
@@ -587,6 +588,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                                       dispatch(certificateGroupActions.listGroups());
                                   }}
                                   title="Update Group"
+                                  aria-label="Update Group"
                               >
                                   <EditIcon size={16} />
                               </Button>
@@ -629,6 +631,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                                   color="secondary"
                                   onClick={() => setUpdateRaProfile(true)}
                                   title="Update RA Profile"
+                                  aria-label="Update RA Profile"
                               >
                                   <EditIcon size={16} />
                               </Button>

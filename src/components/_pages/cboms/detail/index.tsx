@@ -902,6 +902,7 @@ export default function CbomDetail() {
                                                 color="secondary"
                                                 type="button"
                                                 title="Copy"
+                                                aria-label="Copy"
                                                 onClick={handleCopyRawJson}
                                             >
                                                 <Copy size={18} aria-hidden="true" />
@@ -911,6 +912,7 @@ export default function CbomDetail() {
                                                 color="secondary"
                                                 type="button"
                                                 title="Download"
+                                                aria-label="Download"
                                                 onClick={handleDownloadRawJson}
                                             >
                                                 <Download size={18} aria-hidden="true" />
