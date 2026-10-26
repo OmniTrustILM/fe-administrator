@@ -94,6 +94,7 @@ function Badge({
                     >
                         <span className="sr-only">Remove badge</span>
                         <svg
+                            aria-hidden="true"
                             className="shrink-0 size-3"
                             xmlns="http://www.w3.org/2000/svg"
                             width="24"
@@ -125,6 +126,7 @@ function Badge({
                 >
                     <span className="sr-only">Remove badge</span>
                     <svg
+                        aria-hidden="true"
                         className="shrink-0 size-3"
                         xmlns="http://www.w3.org/2000/svg"
                         width="24"

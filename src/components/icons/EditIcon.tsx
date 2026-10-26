@@ -7,6 +7,7 @@ type EditIconProps = Readonly<{
 function EditIcon({ size = 16, className, dataTestId = 'edit-icon' }: EditIconProps) {
     return (
         <svg
+            aria-hidden="true"
             width={size}
             height={size}
             viewBox="0 0 16 16"
