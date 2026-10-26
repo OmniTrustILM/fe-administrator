@@ -1,6 +1,6 @@
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import CustomAttributeWidget from 'components/Attributes/CustomAttributeWidget';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router';
 import Button from 'components/Button';
@@ -151,6 +151,7 @@ export const buildComponentRows = (
                 color="secondary"
                 type="button"
                 title="View asset detail"
+                aria-label="View asset detail"
                 onClick={() => handleAssetDetailClick(String(assetName), c)}
                 className="!p-1"
             >
@@ -636,6 +637,9 @@ export default function CbomDetail() {
         </Container>
     );
 
+    const pendingTab = isTabSwitching && activeTab !== renderedTab ? activeTab : undefined;
+    const tabContent = (tab: number, content: ReactNode) => (tab === pendingTab ? tabSwitchLoadingContent : content);
+
     const isStaleDetailFromPreviousCbom =
         Boolean(detail?.uuid) && Boolean(selectedVersionUuid) && String(detail?.uuid) !== String(selectedVersionUuid);
 
@@ -725,213 +729,208 @@ export default function CbomDetail() {
                 tabs={[
                     {
                         title: 'Overview',
-                        content:
-                            isTabSwitching && activeTab === 0 && renderedTab !== 0 ? (
-                                tabSwitchLoadingContent
-                            ) : (
-                                <Container>
-                                    <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-8 mb-4 md:mb-8">
-                                        <Widget title="Basic details" titleSize="large">
-                                            <CustomTable headers={keyValueHeaders} data={basicDetailsRows} />
-                                        </Widget>
-                                        <Widget title="Metadata summary" titleSize="large">
-                                            <CustomTable headers={keyValueHeaders} data={metadataSummaryRows} />
-                                        </Widget>
-                                    </div>
-                                    <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-8">
-                                        {Object.keys(assetsByCategoryChartData).length > 0 && (
-                                            <DonutChart
-                                                title="Assets by category"
-                                                data={assetsByCategoryChartData}
-                                                colorOptions={getDonutChartColorsByRandomNumberOfOptions(
-                                                    Object.keys(assetsByCategoryChartData).length,
-                                                )}
-                                                entity={EntityType.CBOM}
-                                                onSetFilter={() => []}
-                                                redirect="../cboms"
-                                                showValuesInLegend
-                                                interactiveLegend={false}
-                                                showCenterLabel
-                                                chartSize="full"
-                                            />
-                                        )}
-                                        {Object.keys(algorithmsByNameChartData).length > 0 && (
-                                            <DonutChart
-                                                title="Algorithms by name"
-                                                data={algorithmsByNameChartData}
-                                                colorOptions={getDonutChartColorsByRandomNumberOfOptions(
-                                                    Object.keys(algorithmsByNameChartData).length,
-                                                )}
-                                                entity={EntityType.CBOM}
-                                                onSetFilter={() => []}
-                                                redirect="../cboms"
-                                                showValuesInLegend
-                                                interactiveLegend={false}
-                                                showCenterLabel
-                                                chartSize="full"
-                                            />
-                                        )}
-                                        {Object.keys(cryptoFunctionsChartData).length > 0 && (
-                                            <DonutChart
-                                                title="Crypto functions"
-                                                data={cryptoFunctionsChartData}
-                                                colorOptions={getDonutChartColorsByRandomNumberOfOptions(
-                                                    Object.keys(cryptoFunctionsChartData).length,
-                                                )}
-                                                entity={EntityType.CBOM}
-                                                onSetFilter={() => []}
-                                                redirect="../cboms"
-                                                showValuesInLegend
-                                                interactiveLegend={false}
-                                                showCenterLabel
-                                                chartSize="full"
-                                            />
-                                        )}
-                                        {Object.keys(cryptoPrimitivesChartData).length > 0 && (
-                                            <DonutChart
-                                                title="Crypto primitives"
-                                                data={cryptoPrimitivesChartData}
-                                                colorOptions={getDonutChartColorsByRandomNumberOfOptions(
-                                                    Object.keys(cryptoPrimitivesChartData).length,
-                                                )}
-                                                entity={EntityType.CBOM}
-                                                onSetFilter={() => []}
-                                                redirect="../cboms"
-                                                showValuesInLegend
-                                                interactiveLegend={false}
-                                                showCenterLabel
-                                                chartSize="full"
-                                            />
-                                        )}
-                                        {Object.keys(relatedMaterialTypesChartData).length > 0 && (
-                                            <DonutChart
-                                                title="Crypto related material types"
-                                                data={relatedMaterialTypesChartData}
-                                                colorOptions={getDonutChartColorsByRandomNumberOfOptions(
-                                                    Object.keys(relatedMaterialTypesChartData).length,
-                                                )}
-                                                entity={EntityType.CBOM}
-                                                onSetFilter={() => []}
-                                                redirect="../cboms"
-                                                showValuesInLegend
-                                                interactiveLegend={false}
-                                                showCenterLabel
-                                                chartSize="full"
-                                            />
-                                        )}
-                                    </div>
-                                    <div className="mt-4 md:mt-8">
-                                        <Widget title="Assets" titleSize="large">
-                                            {showNonCbomAssetsNotice ? (
-                                                <NonCbomNotice />
-                                            ) : (
-                                                <>
-                                                    {inventoryStatus}
-                                                    <CustomTable
-                                                        headers={overviewComponentHeaders}
-                                                        data={overviewComponentRows}
-                                                        hasPagination
-                                                    />
-                                                </>
+                        content: tabContent(
+                            0,
+                            <Container>
+                                <div className="grid grid-cols-1 xl:grid-cols-2 gap-4 md:gap-8 mb-4 md:mb-8">
+                                    <Widget title="Basic details" titleSize="large">
+                                        <CustomTable headers={keyValueHeaders} data={basicDetailsRows} />
+                                    </Widget>
+                                    <Widget title="Metadata summary" titleSize="large">
+                                        <CustomTable headers={keyValueHeaders} data={metadataSummaryRows} />
+                                    </Widget>
+                                </div>
+                                <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 md:gap-8">
+                                    {Object.keys(assetsByCategoryChartData).length > 0 && (
+                                        <DonutChart
+                                            title="Assets by category"
+                                            data={assetsByCategoryChartData}
+                                            colorOptions={getDonutChartColorsByRandomNumberOfOptions(
+                                                Object.keys(assetsByCategoryChartData).length,
                                             )}
-                                        </Widget>
-                                    </div>
-                                </Container>
-                            ),
-                    },
-                    {
-                        title: 'Assets',
-                        content:
-                            isTabSwitching && activeTab === 1 && renderedTab !== 1 ? (
-                                tabSwitchLoadingContent
-                            ) : (
-                                <Container>
-                                    <Widget titleSize="large">
+                                            entity={EntityType.CBOM}
+                                            onSetFilter={() => []}
+                                            redirect="../cboms"
+                                            showValuesInLegend
+                                            interactiveLegend={false}
+                                            showCenterLabel
+                                            chartSize="full"
+                                        />
+                                    )}
+                                    {Object.keys(algorithmsByNameChartData).length > 0 && (
+                                        <DonutChart
+                                            title="Algorithms by name"
+                                            data={algorithmsByNameChartData}
+                                            colorOptions={getDonutChartColorsByRandomNumberOfOptions(
+                                                Object.keys(algorithmsByNameChartData).length,
+                                            )}
+                                            entity={EntityType.CBOM}
+                                            onSetFilter={() => []}
+                                            redirect="../cboms"
+                                            showValuesInLegend
+                                            interactiveLegend={false}
+                                            showCenterLabel
+                                            chartSize="full"
+                                        />
+                                    )}
+                                    {Object.keys(cryptoFunctionsChartData).length > 0 && (
+                                        <DonutChart
+                                            title="Crypto functions"
+                                            data={cryptoFunctionsChartData}
+                                            colorOptions={getDonutChartColorsByRandomNumberOfOptions(
+                                                Object.keys(cryptoFunctionsChartData).length,
+                                            )}
+                                            entity={EntityType.CBOM}
+                                            onSetFilter={() => []}
+                                            redirect="../cboms"
+                                            showValuesInLegend
+                                            interactiveLegend={false}
+                                            showCenterLabel
+                                            chartSize="full"
+                                        />
+                                    )}
+                                    {Object.keys(cryptoPrimitivesChartData).length > 0 && (
+                                        <DonutChart
+                                            title="Crypto primitives"
+                                            data={cryptoPrimitivesChartData}
+                                            colorOptions={getDonutChartColorsByRandomNumberOfOptions(
+                                                Object.keys(cryptoPrimitivesChartData).length,
+                                            )}
+                                            entity={EntityType.CBOM}
+                                            onSetFilter={() => []}
+                                            redirect="../cboms"
+                                            showValuesInLegend
+                                            interactiveLegend={false}
+                                            showCenterLabel
+                                            chartSize="full"
+                                        />
+                                    )}
+                                    {Object.keys(relatedMaterialTypesChartData).length > 0 && (
+                                        <DonutChart
+                                            title="Crypto related material types"
+                                            data={relatedMaterialTypesChartData}
+                                            colorOptions={getDonutChartColorsByRandomNumberOfOptions(
+                                                Object.keys(relatedMaterialTypesChartData).length,
+                                            )}
+                                            entity={EntityType.CBOM}
+                                            onSetFilter={() => []}
+                                            redirect="../cboms"
+                                            showValuesInLegend
+                                            interactiveLegend={false}
+                                            showCenterLabel
+                                            chartSize="full"
+                                        />
+                                    )}
+                                </div>
+                                <div className="mt-4 md:mt-8">
+                                    <Widget title="Assets" titleSize="large">
                                         {showNonCbomAssetsNotice ? (
                                             <NonCbomNotice />
                                         ) : (
                                             <>
                                                 {inventoryStatus}
-                                                <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
-                                                    <div className="md:col-span-2">
-                                                        <TextInput
-                                                            id="cbom-assets-search"
-                                                            value={assetSearchQuery}
-                                                            onChange={setAssetSearchQuery}
-                                                            placeholder="Search assets (crypto asset, location, primitive)"
-                                                            buttonRight={
-                                                                assetSearchQuery ? (
-                                                                    <button
-                                                                        type="button"
-                                                                        onClick={() => setAssetSearchQuery('')}
-                                                                        aria-label="Clear search"
-                                                                        title="Clear search"
-                                                                    >
-                                                                        <X size={16} />
-                                                                    </button>
-                                                                ) : undefined
-                                                            }
-                                                        />
-                                                    </div>
-                                                    <Select
-                                                        id="cbom-assets-type-filter"
-                                                        value={selectedAssetType}
-                                                        onChange={handleAssetTypeChange}
-                                                        options={assetTypeOptions}
-                                                        placeholder="Filter by asset type"
-                                                    />
-                                                </div>
-
-                                                <CustomTable headers={componentHeaders} data={componentRows} hasPagination />
+                                                <CustomTable
+                                                    headers={overviewComponentHeaders}
+                                                    data={overviewComponentRows}
+                                                    hasPagination
+                                                />
                                             </>
                                         )}
                                     </Widget>
-                                </Container>
-                            ),
+                                </div>
+                            </Container>,
+                        ),
+                    },
+                    {
+                        title: 'Assets',
+                        content: tabContent(
+                            1,
+                            <Container>
+                                <Widget titleSize="large">
+                                    {showNonCbomAssetsNotice ? (
+                                        <NonCbomNotice />
+                                    ) : (
+                                        <>
+                                            {inventoryStatus}
+                                            <div className="mb-4 grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4">
+                                                <div className="md:col-span-2">
+                                                    <TextInput
+                                                        id="cbom-assets-search"
+                                                        value={assetSearchQuery}
+                                                        onChange={setAssetSearchQuery}
+                                                        placeholder="Search assets (crypto asset, location, primitive)"
+                                                        buttonRight={
+                                                            assetSearchQuery ? (
+                                                                <button
+                                                                    type="button"
+                                                                    onClick={() => setAssetSearchQuery('')}
+                                                                    aria-label="Clear search"
+                                                                    title="Clear search"
+                                                                >
+                                                                    <X size={16} />
+                                                                </button>
+                                                            ) : undefined
+                                                        }
+                                                    />
+                                                </div>
+                                                <Select
+                                                    id="cbom-assets-type-filter"
+                                                    value={selectedAssetType}
+                                                    onChange={handleAssetTypeChange}
+                                                    options={assetTypeOptions}
+                                                    placeholder="Filter by asset type"
+                                                />
+                                            </div>
+
+                                            <CustomTable headers={componentHeaders} data={componentRows} hasPagination />
+                                        </>
+                                    )}
+                                </Widget>
+                            </Container>,
+                        ),
                     },
 
                     {
                         title: 'Raw JSON',
-                        content:
-                            isTabSwitching && activeTab === 2 && renderedTab !== 2 ? (
-                                tabSwitchLoadingContent
-                            ) : (
-                                <Container>
-                                    <Widget titleSize="large">
-                                        <div className="relative">
-                                            <div className="absolute top-3 right-5 flex gap-2 z-10">
-                                                <Button
-                                                    variant="transparent"
-                                                    color="secondary"
-                                                    type="button"
-                                                    title="Copy"
-                                                    onClick={handleCopyRawJson}
-                                                >
-                                                    <Copy size={18} aria-hidden="true" />
-                                                </Button>
-                                                <Button
-                                                    variant="transparent"
-                                                    color="secondary"
-                                                    type="button"
-                                                    title="Download"
-                                                    onClick={handleDownloadRawJson}
-                                                >
-                                                    <Download size={18} aria-hidden="true" />
-                                                </Button>
-                                            </div>
-                                            <JsonViewer value={rawJsonText} height={900} paddingTop={44} />
+                        content: tabContent(
+                            2,
+                            <Container>
+                                <Widget titleSize="large">
+                                    <div className="relative">
+                                        <div className="absolute top-3 right-5 flex gap-2 z-10">
+                                            <Button
+                                                variant="transparent"
+                                                color="secondary"
+                                                type="button"
+                                                title="Copy"
+                                                aria-label="Copy"
+                                                onClick={handleCopyRawJson}
+                                            >
+                                                <Copy size={18} aria-hidden="true" />
+                                            </Button>
+                                            <Button
+                                                variant="transparent"
+                                                color="secondary"
+                                                type="button"
+                                                title="Download"
+                                                aria-label="Download"
+                                                onClick={handleDownloadRawJson}
+                                            >
+                                                <Download size={18} aria-hidden="true" />
+                                            </Button>
                                         </div>
-                                    </Widget>
-                                </Container>
-                            ),
+                                        <JsonViewer value={rawJsonText} height={900} paddingTop={44} />
+                                    </div>
+                                </Widget>
+                            </Container>,
+                        ),
                     },
                     {
                         title: 'Attributes',
                         tabKey: 'attributes',
-                        content:
-                            isTabSwitching && activeTab === 3 && renderedTab !== 3 ? (
-                                tabSwitchLoadingContent
-                            ) : detail ? (
+                        content: tabContent(
+                            3,
+                            detail ? (
                                 <Container>
                                     <CustomAttributeWidget
                                         resource={Resource.Cboms}
@@ -940,6 +939,7 @@ export default function CbomDetail() {
                                     />
                                 </Container>
                             ) : null,
+                        ),
                     },
                 ]}
             />
