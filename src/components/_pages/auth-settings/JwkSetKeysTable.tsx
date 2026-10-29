@@ -59,13 +59,7 @@ const JwkSetKeysTable = ({ jwkSetKeys }: Props) => {
                 color="primary"
                 title="Public Key"
                 key="copy"
-                onClick={() =>
-                    copyToClipboard(
-                        publicKey,
-                        'Public key content was copied to clipboard',
-                        'Failed to copy public key content to clipboard',
-                    )
-                }
+                onClick={(e) => copyToClipboard(publicKey, e.currentTarget, 'Failed to copy public key content to clipboard')}
             >
                 <Copy size={16} />
             </Button>

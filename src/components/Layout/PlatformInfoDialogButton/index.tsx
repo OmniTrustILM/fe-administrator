@@ -110,12 +110,8 @@ const PlatformInfoDialogLink = ({ initiallyOpen = false, forceOpen }: PlatformIn
                                     className="mt-2"
                                     variant="transparent"
                                     title="Version Info"
-                                    onClick={() =>
-                                        copyToClipboard(
-                                            copyText,
-                                            'Platform version info was copied to clipboard',
-                                            'Failed to copy platform version info to clipboard',
-                                        )
+                                    onClick={(e) =>
+                                        copyToClipboard(copyText, e.currentTarget, 'Failed to copy platform version info to clipboard')
                                     }
                                 >
                                     <Copy size={16} />

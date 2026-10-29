@@ -356,11 +356,11 @@ export default function CustomFlowNode({ data, dragging, selected, xPos, yPos, i
                                                         {property?.copyable && property?.propertyValue && (
                                                             <button
                                                                 type="button"
-                                                                onClick={() => {
+                                                                onClick={(e) => {
                                                                     if (typeof property.propertyValue === 'string') {
                                                                         copyToClipboard(
                                                                             property.propertyValue,
-                                                                            `${property.propertyName} copied to clipboard`,
+                                                                            e.currentTarget,
                                                                             `Failed to copy ${property.propertyName} to clipboard`,
                                                                         );
                                                                     }

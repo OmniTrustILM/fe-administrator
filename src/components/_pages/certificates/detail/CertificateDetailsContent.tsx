@@ -371,10 +371,10 @@ export default function CertificateDetailsContent({ certificate, validationResul
                 icon: 'copy',
                 disabled: !certificate?.certificateContent,
                 tooltip: 'Copy certificate content',
-                onClick: () => {
+                onClick: (event) => {
                     copyToClipboard(
                         formatPEM(certificate?.certificateContent ?? ''),
-                        'Certificate content was copied to clipboard',
+                        event.currentTarget,
                         'Failed to copy certificate content to clipboard',
                     );
                 },
