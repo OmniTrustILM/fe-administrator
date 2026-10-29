@@ -4,7 +4,7 @@ import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react
 import { useDispatch, useSelector } from 'react-redux';
 import { useNavigate, useParams } from 'react-router';
 import Button from 'components/Button';
-import { Copy, Download, Info, X } from 'lucide-react';
+import { Copy, Download, Info, Search, X } from 'lucide-react';
 import Breadcrumb from 'components/Breadcrumb';
 import Container from 'components/Container';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
@@ -859,6 +859,7 @@ export default function CbomDetail() {
                                                         value={assetSearchQuery}
                                                         onChange={setAssetSearchQuery}
                                                         placeholder="Search assets (crypto asset, location, primitive)"
+                                                        iconLeft={<Search size={16} />}
                                                         buttonRight={
                                                             assetSearchQuery ? (
                                                                 <button

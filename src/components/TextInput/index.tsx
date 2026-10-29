@@ -25,6 +25,7 @@ type Props = {
     className?: string;
     required?: boolean;
     buttonRight?: ReactNode;
+    iconLeft?: ReactNode;
     dataTestId?: string;
     /** Id of an element describing the field (typically an error paragraph) — announced by screen readers. */
     ariaDescribedBy?: string;
@@ -50,6 +51,7 @@ function TextInput({
     className,
     required = false,
     buttonRight,
+    iconLeft,
     dataTestId,
     ariaDescribedBy,
     ariaLabel,
@@ -167,6 +169,7 @@ function TextInput({
                         {
                             'bg-surface': disabled,
                             'pr-10': !!buttonRight || type === 'password',
+                            'peer ps-10': !!iconLeft,
                         },
                         className,
                     )}
@@ -185,6 +188,14 @@ function TextInput({
                     data-form-type="other"
                     data-testid={dataTestId ?? (id ? `text-input-${id}` : 'text-input')}
                 />
+                {iconLeft && (
+                    <span
+                        className="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3.5 text-content-subtle peer-disabled:opacity-50"
+                        aria-hidden
+                    >
+                        {iconLeft}
+                    </span>
+                )}
                 {type === 'password' && (
                     <button
                         type="button"

@@ -27,7 +27,7 @@ export const CONTENT_FLUID_WIDTH_CLASSES = 'w-[var(--radix-popover-trigger-width
 export const SEARCH_WRAPPER_CLASSES = 'bg-surface-raised p-2 sticky top-0 z-10';
 
 export const SEARCH_INPUT_CLASSES =
-    'block w-full sm:text-sm border border-outline rounded-lg focus:ring-transparent bg-surface-raised text-content placeholder-content-hint py-1.5 sm:py-2 px-3';
+    'block w-full sm:text-sm border border-outline rounded-lg focus:ring-transparent bg-surface-raised text-content placeholder-content-hint py-1.5 sm:py-2 ps-8 pe-3';
 
 export const LISTBOX_CLASSES = 'p-1';
 
