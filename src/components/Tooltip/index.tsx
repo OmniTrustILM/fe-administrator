@@ -1,6 +1,6 @@
 import * as RadixTooltip from '@radix-ui/react-tooltip';
 import cn from 'classnames';
-import { cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
+import { cloneElement, isValidElement, type ReactElement, type ReactNode, useState } from 'react';
 
 export type TooltipPlacement = 'bottom' | 'right';
 
@@ -25,6 +25,7 @@ function Tooltip({
     disabled = false,
     suppress = false,
 }: Readonly<Props>) {
+    const [open, setOpen] = useState(false);
     if (disabled) {
         return (
             <span className={cn('relative inline-block pointer-events-none', className)}>
@@ -42,7 +43,7 @@ function Tooltip({
 
     return (
         <RadixTooltip.Provider delayDuration={400}>
-            <RadixTooltip.Root open={suppress ? false : undefined}>
+            <RadixTooltip.Root open={open && !suppress} onOpenChange={setOpen}>
                 <span className={cn('relative inline-block', className)}>
                     <RadixTooltip.Trigger asChild>{triggerChild}</RadixTooltip.Trigger>
                     <RadixTooltip.Portal>
