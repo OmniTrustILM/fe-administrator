@@ -415,15 +415,15 @@ function getAllowedMenuItems(allowedResources?: Resource[]): MenuItemMapping[] {
         }
 
         if ('children' in mapping) {
-            mapping.children = mapping.children.filter((el) => {
+            const children = mapping.children.filter((el) => {
                 // Filter out Trusted Certificates if disabled
                 if (el._key === `/${Resource.TrustedCertificates.toLowerCase()}` && !isTrustedCertificatesEnabled) {
                     return false;
                 }
                 return !!el.requiredResources?.some((resource) => allowedResources.includes(resource));
             });
-            if (mapping.children.length > 0) {
-                allowedLinks.push(mapping);
+            if (children.length > 0) {
+                allowedLinks.push({ ...mapping, children });
             }
             continue;
         }
