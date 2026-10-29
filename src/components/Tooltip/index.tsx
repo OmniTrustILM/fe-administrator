@@ -26,6 +26,10 @@ function Tooltip({
     suppress = false,
 }: Readonly<Props>) {
     const [open, setOpen] = useState(false);
+    // Radix reports no close while the controlled value is already false, so a stored open would outlive suppression.
+    if (suppress && open) {
+        setOpen(false);
+    }
     if (disabled) {
         return (
             <span className={cn('relative inline-block pointer-events-none', className)}>
@@ -43,7 +47,7 @@ function Tooltip({
 
     return (
         <RadixTooltip.Provider delayDuration={400}>
-            <RadixTooltip.Root open={open && !suppress} onOpenChange={setOpen}>
+            <RadixTooltip.Root open={open} onOpenChange={(next) => setOpen(next && !suppress)}>
                 <span className={cn('relative inline-block', className)}>
                     <RadixTooltip.Trigger asChild>{triggerChild}</RadixTooltip.Trigger>
                     <RadixTooltip.Portal>

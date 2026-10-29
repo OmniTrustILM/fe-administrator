@@ -215,6 +215,25 @@ test.describe('Sidebar', () => {
         await expect(page.getByRole('tooltip')).toHaveCount(0);
     });
 
+    test('collapsing does not reveal tooltips for entries visited while expanded', async ({ mount, page }) => {
+        const store = createMockStore();
+        const component = await mount(
+            withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
+        );
+        await component.getByRole('button', { name: 'Expand' }).click();
+
+        await component.getByTestId('sidebar-certificates').hover();
+        await component.getByTestId('sidebar-access-control').focus();
+        await page.waitForTimeout(600);
+        await component.getByTestId('sidebar-access-control').blur();
+        await component.getByRole('button', { name: 'Collapse' }).click();
+        await expect(component.getByRole('button', { name: 'Expand' })).toBeVisible();
+
+        await page.waitForTimeout(600);
+        await expect(page.getByRole('tooltip', { name: 'Certificates' })).toHaveCount(0);
+        await expect(page.getByRole('tooltip', { name: 'Access Control' })).toHaveCount(0);
+    });
+
     test('toggling the sidebar from the keyboard keeps focus on the toggle', async ({ mount }) => {
         const store = createMockStore();
         const component = await mount(withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }));
