@@ -17,6 +17,19 @@
     font-display: swap;
 }
 
+/* Registered so the width can transition: the rail and the main column both size from it. */
+@property --sidebar-width {
+    syntax: '<length>';
+    inherits: true;
+    initial-value: 84px;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+    :root.sidebar-animated {
+        transition: --sidebar-width 300ms ease-in-out;
+    }
+}
+
 :root {
     font-family: 'Inter', sans-serif;
     font-optical-sizing: auto;

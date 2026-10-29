@@ -72,7 +72,7 @@ function SidebarSubmenuItem({
                 data-testid={`sidebar-${parentSlug}-${childSlug}`}
                 className={({ isActive }) =>
                     cn(
-                        'font-medium text-sm block px-4 ml-8 py-2 no-underline hover:bg-surface-hover rounded-lg h-[38px] items-center',
+                        'font-medium text-sm block whitespace-nowrap px-4 ml-8 py-2 no-underline hover:bg-surface-hover rounded-lg h-[38px] items-center',
                         isActive && 'text-brand',
                     )
                 }
@@ -471,6 +471,8 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
     }, [menuSize, activeSectionKey]);
 
     function toggleMenuSize() {
+        // Added on the first toggle only, so restoring a stored size on load does not animate.
+        document.documentElement.classList.add('sidebar-animated');
         const newMenuSize = menuSize === 'small' ? 'large' : 'small';
         setMenuSize(newMenuSize);
         setOpenMenuItems(newMenuSize === 'large' && activeSectionKey ? [activeSectionKey] : []);
@@ -485,7 +487,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
             const isActive = openMenuItems.includes(mapping._key);
             const parentSlug = toTestIdSlug(mapping._key);
             return (
-                <li key={mapping.header} className={cn('flex justify-center', { 'flex-col': menuSize !== 'small' })}>
+                <li key={mapping.header} className={cn('flex', { 'flex-col': menuSize !== 'small' })}>
                     <Button
                         variant="transparent"
                         data-testid={`sidebar-${parentSlug}`}
@@ -503,7 +505,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                     >
                         <div className={cn('flex items-center gap-x-2', { 'text-brand': isChildActive })}>
                             {mapping.icon}
-                            <span className={cn('text-sm', { 'sr-only': menuSize === 'small' })}>{mapping.header}</span>
+                            <span className={cn('text-sm whitespace-nowrap', { 'sr-only': menuSize === 'small' })}>{mapping.header}</span>
                         </div>
                         {menuSize !== 'small' && <ChevronDown strokeWidth={1.5} size={16} className={cn({ isActive: 'rotate-180' })} />}
                     </Button>
@@ -529,7 +531,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
             );
         }
         return (
-            <li key={mapping._key} className="flex justify-center">
+            <li key={mapping._key} className="flex">
                 <NavLink
                     to={mapping.headerLink}
                     data-testid={`sidebar-${toTestIdSlug(mapping.headerLink)}`}
@@ -548,7 +550,9 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                     }
                 >
                     {mapping.icon}
-                    <span className={cn('text-sm font-medium', { 'sr-only': menuSize === 'small' })}>{mapping.header}</span>
+                    <span className={cn('text-sm font-medium whitespace-nowrap', { 'sr-only': menuSize === 'small' })}>
+                        {mapping.header}
+                    </span>
                 </NavLink>
             </li>
         );
@@ -572,7 +576,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                             width: '100%',
                         }}
                     >
-                        <nav className="p-4">
+                        <nav className="py-4 px-[18px]">
                             <ul className="list-none m-0 flex flex-col gap-y-1">{allowedMenuItems.map((item) => renderMenuItem(item))}</ul>
                         </nav>
                     </SimpleBar>
@@ -594,22 +598,29 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                 }}
                 data-testid="sidebar-sticky"
             >
-                <div className="p-4 w-full">
+                <div className="py-4 px-[18px] w-full overflow-hidden">
                     <nav className="pb-4">
                         <ul className="list-none m-0 flex flex-col gap-y-1">{allowedMenuItems.map((item) => renderMenuItem(item))}</ul>
                     </nav>
 
                     <hr className="border-divider" />
-                    <div className="flex justify-center pt-4">
+                    <div className="flex pt-4">
                         <Button
                             variant="transparent"
-                            className={cn('inline-flex px-4 py-2 border-none', {
+                            className={cn('inline-flex px-3 py-2 border-none', {
                                 'w-full gap-x-2': menuSize !== 'small',
                             })}
                             onClick={() => toggleMenuSize()}
                         >
-                            <ArrowRightToLine strokeWidth={1} size={24} className={cn(menuSize === 'large' && 'rotate-180')} />
-                            <span className={cn({ 'sr-only': menuSize === 'small' })}>Collapse</span>
+                            <ArrowRightToLine
+                                strokeWidth={1}
+                                size={24}
+                                className={cn(
+                                    'transition-transform duration-300 motion-reduce:transition-none',
+                                    menuSize === 'large' && 'rotate-180',
+                                )}
+                            />
+                            <span className={cn('whitespace-nowrap', { 'sr-only': menuSize === 'small' })}>Collapse</span>
                         </Button>
                     </div>
                 </div>
