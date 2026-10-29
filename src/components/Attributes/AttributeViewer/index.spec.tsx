@@ -183,6 +183,26 @@ test.describe('AttributeViewer', () => {
         await expect(component.getByTestId('delete-button')).toBeVisible();
     });
 
+    test('ATTRIBUTE_EDIT type: removing an attribute in edit mode clears its edit state for a later re-add', async ({ mount }) => {
+        const descriptors = [customDescriptor({ name: 'attr1', properties: { ...customDescriptor().properties, required: false } })];
+        const attributes = [attrResponse({ name: 'attr1', label: 'Attr 1' })];
+        const props = {
+            viewerType: ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE_EDIT,
+            descriptors,
+            onSubmit: async () => {},
+            onRemove: () => {},
+        };
+        const component = await mount(<AttributeViewerMountHarness {...props} attributes={attributes} />);
+        await component.getByTestId('edit-button').click();
+        await component.getByTestId('delete-button').click();
+
+        await component.update(<AttributeViewerMountHarness {...props} attributes={[]} />);
+        await component.update(<AttributeViewerMountHarness {...props} attributes={attributes} />);
+
+        await expect(component.getByTestId('edit-button')).toBeVisible();
+        await expect(component.getByTestId('save-custom-value')).toHaveCount(0);
+    });
+
     test('ATTRIBUTE_EDIT type: onSubmit called when form submitted', async ({ mount }) => {
         let wasSubmitted = false;
         const onSubmit = async (uuid: string, content: any[]) => {
@@ -205,6 +225,8 @@ test.describe('AttributeViewer', () => {
         await expect(component.getByTestId('save-custom-value')).toBeVisible();
         await component.getByTestId('save-custom-value').click();
         await expect.poll(() => wasSubmitted).toBeTruthy();
+        await expect(component.getByTestId('save-custom-value')).toHaveCount(0);
+        await expect(component.getByTestId('edit-button')).toBeVisible();
     });
 
     test('ATTRIBUTE_EDIT type: onRemove and delete button', async ({ mount }) => {
@@ -449,6 +471,7 @@ test.describe('AttributeViewer', () => {
                 viewerType={ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE_EDIT}
                 descriptors={[nonCustomDescriptor]}
                 attributes={[attrResponse({ name: 'attr1' })]}
+                onSubmit={async () => {}}
             />,
         );
         await expect(page.getByTestId('custom-table')).toBeVisible();

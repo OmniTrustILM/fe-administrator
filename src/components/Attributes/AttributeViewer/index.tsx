@@ -331,7 +331,10 @@ export default function AttributeViewer({
                     icon: 'trash',
                     disabled: descriptor.properties.required,
                     tooltip: descriptor.properties.required ? "Attribute is required, can't be removed" : 'Remove',
-                    onClick: () => onRemove(descriptor.uuid),
+                    onClick: () => {
+                        setEditingAttributesNames(editingAttributesNames.filter((n) => n !== attributeName));
+                        onRemove(descriptor.uuid);
+                    },
                 });
             return buttons;
         },
