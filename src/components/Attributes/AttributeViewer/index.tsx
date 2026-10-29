@@ -305,17 +305,17 @@ export default function AttributeViewer({
         (attribute: AttributeResponseModel, descriptor: CustomAttributeModel, attributeName: string) => {
             const buttons: WidgetButtonProps[] = [];
             if (!editingAttributesNames.includes(attributeName)) {
-                buttons.push(
-                    {
-                        id: 'copy',
-                        icon: 'copy',
-                        disabled: AttributeContentType.Secret === attribute.contentType,
-                        tooltip: 'Copy to clipboard',
-                        onClick: () => {
-                            onCopyContentClick(attribute);
-                        },
+                buttons.push({
+                    id: 'copy',
+                    icon: 'copy',
+                    disabled: AttributeContentType.Secret === attribute.contentType,
+                    tooltip: 'Copy to clipboard',
+                    onClick: () => {
+                        onCopyContentClick(attribute);
                     },
-                    {
+                });
+                onSubmit &&
+                    buttons.push({
                         id: 'edit',
                         icon: 'pencil',
                         disabled: descriptor.properties.readOnly,
@@ -323,8 +323,7 @@ export default function AttributeViewer({
                         onClick: () => {
                             setEditingAttributesNames([...editingAttributesNames, attributeName]);
                         },
-                    },
-                );
+                    });
             }
             onRemove &&
                 buttons.push({
@@ -336,7 +335,7 @@ export default function AttributeViewer({
                 });
             return buttons;
         },
-        [editingAttributesNames, onRemove, onCopyContentClick],
+        [editingAttributesNames, onSubmit, onRemove, onCopyContentClick],
     );
 
     const getAttributesEditTableData = useCallback(
