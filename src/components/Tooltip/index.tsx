@@ -12,6 +12,7 @@ type Props = {
     triggerClassName?: string;
     contentClassName?: string;
     disabled?: boolean;
+    suppress?: boolean;
 };
 
 function Tooltip({
@@ -22,6 +23,7 @@ function Tooltip({
     triggerClassName,
     contentClassName,
     disabled = false,
+    suppress = false,
 }: Readonly<Props>) {
     if (disabled) {
         return (
@@ -40,7 +42,7 @@ function Tooltip({
 
     return (
         <RadixTooltip.Provider delayDuration={400}>
-            <RadixTooltip.Root>
+            <RadixTooltip.Root open={suppress ? false : undefined}>
                 <span className={cn('relative inline-block', className)}>
                     <RadixTooltip.Trigger asChild>{triggerChild}</RadixTooltip.Trigger>
                     <RadixTooltip.Portal>

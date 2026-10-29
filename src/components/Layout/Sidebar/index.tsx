@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react';
+import { type ReactNode, useMemo, useState, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router';
 import cn from 'classnames';
 import SimpleBar from 'simplebar-react';
@@ -81,6 +81,16 @@ function SidebarSubmenuItem({
                 {child.name}
             </NavLink>
         </li>
+    );
+}
+
+// Always mounted and only suppressed while expanded, so toggling the sidebar never remounts the focused control.
+// The span is the trigger because Button forwards no ref and Radix's asChild would stringify NavLink's function className.
+function RailTooltip({ label, show, children }: Readonly<{ label: string; show: boolean; children: ReactNode }>) {
+    return (
+        <Tooltip content={label} placement="right" suppress={!show} className={cn({ 'w-full': !show })}>
+            <span className="flex">{children}</span>
+        </Tooltip>
     );
 }
 
@@ -489,29 +499,31 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
             const parentSlug = toTestIdSlug(mapping._key);
             return (
                 <li key={mapping.header} className={cn('flex justify-center', { 'flex-col': menuSize !== 'small' })}>
-                    <Button
-                        variant="transparent"
-                        data-testid={`sidebar-${parentSlug}`}
-                        title={isCollapsed ? mapping.header : undefined}
-                        tooltipPlacement="right"
-                        className={cn('!px-4 !py-2 border-none justify-between h-[38px]', {
-                            'flex w-full items-center': menuSize !== 'small',
-                        })}
-                        onClick={() => {
-                            if (menuSize === 'small') {
-                                setMenuSize('flying');
-                            }
-                            setOpenMenuItems((prev) => (isActive ? prev.filter((item) => item !== mapping._key) : [...prev, mapping._key]));
-                        }}
-                        aria-expanded={isActive}
-                        aria-controls={mapping._key}
-                    >
-                        <div className={cn('flex items-center gap-x-2', { 'text-brand': isChildActive })}>
-                            {mapping.icon}
-                            <span className={cn('text-sm', { 'sr-only': menuSize === 'small' })}>{mapping.header}</span>
-                        </div>
-                        {menuSize !== 'small' && <ChevronDown strokeWidth={1.5} size={16} className={cn({ isActive: 'rotate-180' })} />}
-                    </Button>
+                    <RailTooltip label={mapping.header} show={isCollapsed}>
+                        <Button
+                            variant="transparent"
+                            data-testid={`sidebar-${parentSlug}`}
+                            className={cn('!px-4 !py-2 border-none justify-between h-[38px]', {
+                                'flex w-full items-center': menuSize !== 'small',
+                            })}
+                            onClick={() => {
+                                if (menuSize === 'small') {
+                                    setMenuSize('flying');
+                                }
+                                setOpenMenuItems((prev) =>
+                                    isActive ? prev.filter((item) => item !== mapping._key) : [...prev, mapping._key],
+                                );
+                            }}
+                            aria-expanded={isActive}
+                            aria-controls={mapping._key}
+                        >
+                            <div className={cn('flex items-center gap-x-2', { 'text-brand': isChildActive })}>
+                                {mapping.icon}
+                                <span className={cn('text-sm', { 'sr-only': menuSize === 'small' })}>{mapping.header}</span>
+                            </div>
+                            {menuSize !== 'small' && <ChevronDown strokeWidth={1.5} size={16} className={cn({ isActive: 'rotate-180' })} />}
+                        </Button>
+                    </RailTooltip>
                     <ul
                         className={cn(
                             `transition-[max-height] duration-300 ease-in-out overflow-hidden relative before:content-[''] before:absolute before:left-6 before:top-0 before:h-full before:w-0.5 before:bg-divider`,
@@ -533,38 +545,30 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                 </li>
             );
         }
-        const link = (
-            <NavLink
-                to={mapping.headerLink}
-                data-testid={`sidebar-${toTestIdSlug(mapping.headerLink)}`}
-                onClick={() => {
-                    if (menuSize === 'flying') {
-                        setMenuSize('small');
-                        setOpenMenuItems([]);
-                    }
-                }}
-                className={({ isActive }) =>
-                    cn('font-medium flex px-4 py-2 no-underline hover:bg-surface-hover rounded-lg h-[38px] items-center', {
-                        'text-brand': isActive,
-                        'text-content': !isActive,
-                        'w-full gap-x-2': menuSize !== 'small',
-                    })
-                }
-            >
-                {mapping.icon}
-                <span className={cn('text-sm font-medium', { 'sr-only': menuSize === 'small' })}>{mapping.header}</span>
-            </NavLink>
-        );
         return (
             <li key={mapping._key} className="flex justify-center">
-                {isCollapsed ? (
-                    // A span is the trigger because Radix's asChild would stringify NavLink's function className.
-                    <Tooltip content={mapping.header} placement="right">
-                        <span className="inline-flex">{link}</span>
-                    </Tooltip>
-                ) : (
-                    link
-                )}
+                <RailTooltip label={mapping.header} show={isCollapsed}>
+                    <NavLink
+                        to={mapping.headerLink}
+                        data-testid={`sidebar-${toTestIdSlug(mapping.headerLink)}`}
+                        onClick={() => {
+                            if (menuSize === 'flying') {
+                                setMenuSize('small');
+                                setOpenMenuItems([]);
+                            }
+                        }}
+                        className={({ isActive }) =>
+                            cn('font-medium flex px-4 py-2 no-underline hover:bg-surface-hover rounded-lg h-[38px] items-center', {
+                                'text-brand': isActive,
+                                'text-content': !isActive,
+                                'w-full gap-x-2': menuSize !== 'small',
+                            })
+                        }
+                    >
+                        {mapping.icon}
+                        <span className={cn('text-sm font-medium', { 'sr-only': menuSize === 'small' })}>{mapping.header}</span>
+                    </NavLink>
+                </RailTooltip>
             </li>
         );
     }
@@ -616,18 +620,18 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
 
                     <hr className="border-divider" />
                     <div className="flex justify-center pt-4">
-                        <Button
-                            variant="transparent"
-                            className={cn('inline-flex px-4 py-2 border-none', {
-                                'w-full gap-x-2': menuSize !== 'small',
-                            })}
-                            onClick={() => toggleMenuSize()}
-                            title={isCollapsed ? 'Expand' : undefined}
-                            tooltipPlacement="right"
-                        >
-                            <ArrowRightToLine strokeWidth={1} size={24} className={cn(menuSize === 'large' && 'rotate-180')} />
-                            <span className={cn({ 'sr-only': isCollapsed })}>{isCollapsed ? 'Expand' : 'Collapse'}</span>
-                        </Button>
+                        <RailTooltip label="Expand" show={isCollapsed}>
+                            <Button
+                                variant="transparent"
+                                className={cn('inline-flex px-4 py-2 border-none', {
+                                    'w-full gap-x-2': menuSize !== 'small',
+                                })}
+                                onClick={() => toggleMenuSize()}
+                            >
+                                <ArrowRightToLine strokeWidth={1} size={24} className={cn(menuSize === 'large' && 'rotate-180')} />
+                                <span className={cn({ 'sr-only': isCollapsed })}>{isCollapsed ? 'Expand' : 'Collapse'}</span>
+                            </Button>
+                        </RailTooltip>
                     </div>
                 </div>
             </SimpleBar>

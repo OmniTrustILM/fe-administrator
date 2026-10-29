@@ -214,4 +214,16 @@ test.describe('Sidebar', () => {
         await page.waitForTimeout(600);
         await expect(page.getByRole('tooltip')).toHaveCount(0);
     });
+
+    test('toggling the sidebar from the keyboard keeps focus on the toggle', async ({ mount }) => {
+        const store = createMockStore();
+        const component = await mount(withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }));
+
+        await component.getByRole('button', { name: 'Expand' }).focus();
+        await component.getByRole('button', { name: 'Expand' }).press('Enter');
+        await expect(component.getByRole('button', { name: 'Collapse' })).toBeFocused();
+
+        await component.getByRole('button', { name: 'Collapse' }).press('Enter');
+        await expect(component.getByRole('button', { name: 'Expand' })).toBeFocused();
+    });
 });
