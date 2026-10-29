@@ -576,7 +576,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                             width: '100%',
                         }}
                     >
-                        <nav className="p-4">
+                        <nav className="py-4 px-[18px]">
                             <ul className="list-none m-0 flex flex-col gap-y-1">{allowedMenuItems.map((item) => renderMenuItem(item))}</ul>
                         </nav>
                     </SimpleBar>

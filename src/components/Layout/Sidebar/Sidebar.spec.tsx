@@ -198,6 +198,8 @@ test.describe('Sidebar', () => {
 
         test('animates the width, keeping labels on one line and inside the rail', async ({ mount, page }) => {
             await page.emulateMedia({ reducedMotion: 'no-preference' });
+            // Long enough that the transition is still running when the next round trip pauses it.
+            await page.addStyleTag({ content: ':root.sidebar-animated { transition-duration: 60s !important; }' });
             const store = createMockStore();
             const component = await mount(
                 withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
@@ -211,7 +213,7 @@ test.describe('Sidebar', () => {
                     .find((a) => (a as CSSTransition).transitionProperty === '--sidebar-width');
                 if (!transition) return Number.NaN;
                 transition.pause();
-                transition.currentTime = 50;
+                transition.currentTime = 10_000;
                 return Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width'));
             });
             expect(midway).toBeGreaterThan(84);
@@ -224,21 +226,36 @@ test.describe('Sidebar', () => {
             expect(overflows).toBe(false);
         });
 
-        test('centres the collapsed icons and the toggle arrow in the rail', async ({ mount }) => {
+        test('keeps the icons in one column, centred in the collapsed rail', async ({ mount, page }) => {
+            await page.emulateMedia({ reducedMotion: 'reduce' });
             const store = createMockStore();
             const component = await mount(
                 withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
             );
+            const toggle = component.getByRole('button', { name: /Collapse/i });
+            const icons = [
+                component.getByTestId('sidebar-certificates').locator('svg'),
+                component.getByTestId('sidebar-access-control').locator('svg').first(),
+                toggle.locator('svg'),
+            ];
+            const centresOf = () =>
+                Promise.all(
+                    icons.map(async (icon) => {
+                        const box = await icon.boundingBox();
+                        return (box?.x ?? 0) + (box?.width ?? 0) / 2;
+                    }),
+                );
             const rail = await component.locator('.simplebar-content-wrapper').boundingBox();
             const railCentre = (rail?.x ?? 0) + (rail?.width ?? 0) / 2;
-            const centreOf = async (icon: ReturnType<typeof component.locator>) => {
-                const box = await icon.boundingBox();
-                return (box?.x ?? 0) + (box?.width ?? 0) / 2;
-            };
 
-            expect(await centreOf(component.getByTestId('sidebar-certificates').locator('svg'))).toBeCloseTo(railCentre, 0);
-            expect(await centreOf(component.getByTestId('sidebar-access-control').locator('svg').first())).toBeCloseTo(railCentre, 0);
-            expect(await centreOf(component.getByRole('button', { name: /Collapse/i }).locator('svg'))).toBeCloseTo(railCentre, 0);
+            const collapsed = await centresOf();
+            for (const centre of collapsed) expect(centre).toBeCloseTo(railCentre, 0);
+
+            await toggle.click();
+            await expect(component.getByText('Collapse', { exact: true })).toBeVisible();
+            const expanded = await centresOf();
+            expect(expanded[0]).toBeCloseTo(collapsed[0], 0);
+            expect(expanded[1]).toBeCloseTo(collapsed[1], 0);
         });
 
         test('does not animate the size restored on load', async ({ mount, page }) => {
