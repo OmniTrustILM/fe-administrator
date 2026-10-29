@@ -21,8 +21,8 @@ export const InstallationInstructions = ({ title, instructions, className, id, '
     // If instructions is a string, split it by newline characters
     const instructionsAsArray = Array.isArray(instructions) ? instructions : instructions.split('\n');
 
-    const handleCopy = () => {
-        copyToClipboard(instructionsText, 'Installation instructions copied to clipboard.', 'Failed to copy to clipboard.');
+    const handleCopy = (event: React.MouseEvent) => {
+        copyToClipboard(instructionsText, event.currentTarget, 'Failed to copy to clipboard.');
     };
 
     const renderInstructions = () =>

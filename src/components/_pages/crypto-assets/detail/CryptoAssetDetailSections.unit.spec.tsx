@@ -553,7 +553,7 @@ describe('crypto asset detail sections', () => {
 
             expect(copyToClipboard).toHaveBeenCalledWith(
                 'TLS_AES_128_GCM_SHA256, TLS_CHACHA20_POLY1305_SHA256',
-                'Cipher suites was copied to clipboard',
+                copy,
                 'Failed to copy Cipher suites to clipboard',
             );
         });

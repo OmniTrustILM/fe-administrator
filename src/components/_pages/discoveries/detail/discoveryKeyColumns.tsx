@@ -98,7 +98,7 @@ export function PublicKeyDetails({
     discoveredKey: key,
     enums,
     onCopy,
-}: Readonly<{ discoveredKey: DiscoveredKeyDto; enums: KeyColumnEnums; onCopy: (publicKey: string) => void }>) {
+}: Readonly<{ discoveredKey: DiscoveredKeyDto; enums: KeyColumnEnums; onCopy: (publicKey: string, anchor: Element) => void }>) {
     const { publicKey } = key;
     return (
         <div className="flex flex-col gap-3">
@@ -117,7 +117,7 @@ export function PublicKeyDetails({
                         title="Copy public key"
                         aria-label="Copy public key"
                         className="p-1 shrink-0"
-                        onClick={() => onCopy(publicKey)}
+                        onClick={(e) => onCopy(publicKey, e.currentTarget)}
                         data-testid="copy-public-key"
                     >
                         <Copy size={16} />

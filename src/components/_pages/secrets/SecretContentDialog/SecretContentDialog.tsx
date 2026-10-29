@@ -22,13 +22,13 @@ const headers: TableHeader[] = [
     { id: 'action', content: 'Action' },
 ];
 
-function buildRows(content: SecretContent, copyToClipboard: (text: string, msg: string) => void): TableDataRow[] {
+function buildRows(content: SecretContent, copyToClipboard: (text: string, anchor: Element | null) => void): TableDataRow[] {
     const copyButton = (value: string, label: string) => (
         <Button
             key="copy"
             variant="transparent"
             color="secondary"
-            onClick={() => copyToClipboard(value, `"${label}" copied to clipboard`)}
+            onClick={(e) => copyToClipboard(value, e.currentTarget)}
             title={`Copy "${label}" to clipboard`}
             aria-label={`Copy "${label}" to clipboard`}
         >

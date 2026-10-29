@@ -123,8 +123,7 @@ export default function DiscoveryItemsTable({ discoveryUuid, resource }: Props) 
     );
 
     const copyPublicKey = useCallback(
-        (publicKey: string) =>
-            copyToClipboard(publicKey, 'Public key was copied to clipboard', 'Failed to copy the public key to clipboard'),
+        (publicKey: string, anchor: Element) => copyToClipboard(publicKey, anchor, 'Failed to copy the public key to clipboard'),
         [copyToClipboard],
     );
 

@@ -85,13 +85,13 @@ export default function AttributeViewer({
     const copyToClipboard = useCopyToClipboard();
 
     const onCopyContentClick = useCallback(
-        (attribute: AttributeResponseModel | MetadataItemModel) => {
+        (attribute: AttributeResponseModel | MetadataItemModel, anchor: Element) => {
             if (!attribute?.content?.length) return;
 
             const textToCopy = getAttributeCopyValue(attribute.contentType, attribute.content);
 
             if (attribute && textToCopy) {
-                copyToClipboard(textToCopy, 'Custom Attribute content was copied to clipboard', 'Failed to copy to clipboard');
+                copyToClipboard(textToCopy, anchor, 'Failed to copy to clipboard');
             }
         },
         [copyToClipboard],
@@ -269,8 +269,8 @@ export default function AttributeViewer({
                                 id: 'copy',
                                 icon: 'copy',
                                 disabled: AttributeContentType.Secret === attribute.contentType,
-                                onClick: () => {
-                                    onCopyContentClick(attribute);
+                                onClick: (event) => {
+                                    onCopyContentClick(attribute, event.currentTarget);
                                 },
                                 tooltip: 'Copy to clipboard',
                             },
@@ -310,8 +310,8 @@ export default function AttributeViewer({
                     icon: 'copy',
                     disabled: AttributeContentType.Secret === attribute.contentType,
                     tooltip: 'Copy to clipboard',
-                    onClick: () => {
-                        onCopyContentClick(attribute);
+                    onClick: (event) => {
+                        onCopyContentClick(attribute, event.currentTarget);
                     },
                 });
                 onSubmit &&

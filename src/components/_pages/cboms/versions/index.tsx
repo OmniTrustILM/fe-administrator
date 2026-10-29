@@ -48,10 +48,10 @@ export default function CbomVersionsHistory() {
     }, []);
 
     const handleCopyVersion = useCallback(
-        async (version: CbomDto) => {
+        async (version: CbomDto, anchor: Element) => {
             try {
                 const json = await getVersionJson(version.uuid);
-                copyToClipboard(json, `Version ${version.version} copied`, 'Failed to copy version');
+                copyToClipboard(json, anchor, 'Failed to copy version');
             } catch {
                 dispatch(alertActions.error('Failed to copy version'));
             }
@@ -116,7 +116,7 @@ export default function CbomVersionsHistory() {
                                 tooltip: 'Copy JSON',
                                 onClick: (e) => {
                                     e.stopPropagation();
-                                    void handleCopyVersion(version);
+                                    void handleCopyVersion(version, e.currentTarget);
                                 },
                             },
                             {

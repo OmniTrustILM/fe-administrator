@@ -69,10 +69,10 @@ function CbomsList() {
     }, []);
 
     const handleCopyCbomJson = useCallback(
-        async (uuid: string) => {
+        async (uuid: string, anchor: Element) => {
             try {
                 const json = await getCbomJson(uuid);
-                copyToClipboard(json, 'CBOM JSON copied', 'Failed to copy CBOM JSON');
+                copyToClipboard(json, anchor, 'Failed to copy CBOM JSON');
             } catch {
                 dispatch(alertActions.error('Failed to copy CBOM JSON'));
             }
@@ -112,7 +112,7 @@ function CbomsList() {
                             tooltip: 'Copy JSON',
                             onClick: (e) => {
                                 e.stopPropagation();
-                                void handleCopyCbomJson(cbom.uuid);
+                                void handleCopyCbomJson(cbom.uuid, e.currentTarget);
                             },
                         },
                         {

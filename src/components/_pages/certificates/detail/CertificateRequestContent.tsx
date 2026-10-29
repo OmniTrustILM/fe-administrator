@@ -65,7 +65,7 @@ export default function CertificateRequestContent({ certificate, isBusy, getFres
                             if (!certificate?.certificateRequest?.content) return;
                             copyToClipboard(
                                 formatPEM(certificate?.certificateRequest?.content ?? '', true),
-                                'Certificate request content was copied to clipboard',
+                                null,
                                 'Failed to copy certificate request content to clipboard',
                             );
                         },
