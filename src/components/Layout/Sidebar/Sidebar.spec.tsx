@@ -211,17 +211,34 @@ test.describe('Sidebar', () => {
                     .find((a) => (a as CSSTransition).transitionProperty === '--sidebar-width');
                 if (!transition) return Number.NaN;
                 transition.pause();
-                transition.currentTime = 150;
+                transition.currentTime = 50;
                 return Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width'));
             });
             expect(midway).toBeGreaterThan(84);
             expect(midway).toBeLessThan(260);
 
-            const label = component.getByTestId('sidebar-certificates').locator('span');
+            const label = component.getByTestId('sidebar-access-control').locator('span');
             const lineHeight = await label.evaluate((el) => Number.parseFloat(getComputedStyle(el).lineHeight));
             expect((await label.boundingBox())?.height).toBeLessThanOrEqual(lineHeight);
             const overflows = await component.locator('.simplebar-content-wrapper').evaluate((el) => el.scrollWidth > el.clientWidth);
             expect(overflows).toBe(false);
+        });
+
+        test('centres the collapsed icons and the toggle arrow in the rail', async ({ mount }) => {
+            const store = createMockStore();
+            const component = await mount(
+                withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
+            );
+            const rail = await component.locator('.simplebar-content-wrapper').boundingBox();
+            const railCentre = (rail?.x ?? 0) + (rail?.width ?? 0) / 2;
+            const centreOf = async (icon: ReturnType<typeof component.locator>) => {
+                const box = await icon.boundingBox();
+                return (box?.x ?? 0) + (box?.width ?? 0) / 2;
+            };
+
+            expect(await centreOf(component.getByTestId('sidebar-certificates').locator('svg'))).toBeCloseTo(railCentre, 0);
+            expect(await centreOf(component.getByTestId('sidebar-access-control').locator('svg').first())).toBeCloseTo(railCentre, 0);
+            expect(await centreOf(component.getByRole('button', { name: /Collapse/i }).locator('svg'))).toBeCloseTo(railCentre, 0);
         });
 
         test('does not animate the size restored on load', async ({ mount, page }) => {

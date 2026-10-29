@@ -598,7 +598,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                 }}
                 data-testid="sidebar-sticky"
             >
-                <div className="py-4 px-3.5 w-full overflow-hidden">
+                <div className="py-4 px-[18px] w-full overflow-hidden">
                     <nav className="pb-4">
                         <ul className="list-none m-0 flex flex-col gap-y-1">{allowedMenuItems.map((item) => renderMenuItem(item))}</ul>
                     </nav>
@@ -607,7 +607,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                     <div className="flex pt-4">
                         <Button
                             variant="transparent"
-                            className={cn('inline-flex px-4 py-2 border-none', {
+                            className={cn('inline-flex px-3 py-2 border-none', {
                                 'w-full gap-x-2': menuSize !== 'small',
                             })}
                             onClick={() => toggleMenuSize()}
