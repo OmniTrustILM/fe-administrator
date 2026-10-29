@@ -191,4 +191,62 @@ test.describe('Sidebar', () => {
         await expect(component.getByTestId('sidebar-certificates')).toHaveCSS('color', brandColor);
         await expect(component.getByTestId('sidebar-keys')).toHaveCSS('color', contentColor);
     });
+
+    test.describe('expand and collapse animation', () => {
+        const countWidthTransitions = () =>
+            document.documentElement.getAnimations().filter((a) => (a as CSSTransition).transitionProperty === '--sidebar-width').length;
+
+        test('animates the width, keeping labels on one line and inside the rail', async ({ mount, page }) => {
+            await page.emulateMedia({ reducedMotion: 'no-preference' });
+            const store = createMockStore();
+            const component = await mount(
+                withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
+            );
+
+            await component.getByRole('button', { name: /Collapse/i }).click();
+
+            const midway = await page.evaluate(() => {
+                const transition = document.documentElement
+                    .getAnimations()
+                    .find((a) => (a as CSSTransition).transitionProperty === '--sidebar-width');
+                if (!transition) return Number.NaN;
+                transition.pause();
+                transition.currentTime = 150;
+                return Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width'));
+            });
+            expect(midway).toBeGreaterThan(84);
+            expect(midway).toBeLessThan(260);
+
+            const label = component.getByTestId('sidebar-certificates').locator('span');
+            const lineHeight = await label.evaluate((el) => Number.parseFloat(getComputedStyle(el).lineHeight));
+            expect((await label.boundingBox())?.height).toBeLessThanOrEqual(lineHeight);
+            const overflows = await component.locator('.simplebar-content-wrapper').evaluate((el) => el.scrollWidth > el.clientWidth);
+            expect(overflows).toBe(false);
+        });
+
+        test('does not animate the size restored on load', async ({ mount, page }) => {
+            await page.emulateMedia({ reducedMotion: 'no-preference' });
+            await page.evaluate(() => localStorage.setItem('menu-size', JSON.stringify('large')));
+            const store = createMockStore();
+            const component = await mount(
+                withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }),
+            );
+
+            await expect(component.getByText('Collapse', { exact: true })).toBeVisible();
+            expect(await page.evaluate(countWidthTransitions)).toBe(0);
+        });
+
+        test('does not animate with reduced motion', async ({ mount, page }) => {
+            await page.emulateMedia({ reducedMotion: 'reduce' });
+            const store = createMockStore();
+            const component = await mount(
+                withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }),
+            );
+
+            await component.getByRole('button', { name: /Collapse/i }).click();
+
+            await expect(component.getByText('Collapse', { exact: true })).toBeVisible();
+            expect(await page.evaluate(countWidthTransitions)).toBe(0);
+        });
+    });
 });
