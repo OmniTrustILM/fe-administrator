@@ -1,5 +1,7 @@
 export const COPIED_FEEDBACK_MS = 1500;
 const GAP_PX = 8;
+// Screen readers miss a change made too soon after a live region starts being tracked.
+const ANNOUNCE_DELAY_MS = 100;
 
 let dismissCurrent: (() => void) | undefined;
 
@@ -22,6 +24,18 @@ function place(toast: HTMLElement, anchor: Element | null) {
     toast.style.top = `${top >= 0 ? top : rect.bottom + GAP_PX}px`;
 }
 
+// Inside an open modal dialog, content outside it is hidden from assistive technology.
+function announcerIn(container: Element): HTMLElement {
+    const existing = container.querySelector<HTMLElement>(':scope > [data-copy-announcer]');
+    if (existing) return existing;
+    const announcer = document.createElement('div');
+    announcer.dataset.copyAnnouncer = '';
+    announcer.setAttribute('role', 'status');
+    announcer.className = 'sr-only';
+    container.append(announcer);
+    return announcer;
+}
+
 export function showCopiedFeedback(anchor: Element | null) {
     dismissCurrent?.();
     const target = resolveAnchor(anchor);
@@ -36,21 +50,17 @@ export function showCopiedFeedback(anchor: Element | null) {
     document.body.append(toast);
     place(toast, target);
 
-    // Inside an open modal dialog, content outside it is hidden from assistive technology.
-    const announcer = document.createElement('div');
-    announcer.setAttribute('role', 'status');
-    announcer.className = 'sr-only';
-    (target?.closest('[role="dialog"]') ?? document.body).append(announcer);
-    // A live region is announced only when its content changes after it is in the document.
-    const frame = requestAnimationFrame(() => {
+    const announcer = announcerIn(target?.closest('[role="dialog"]') ?? document.body);
+    announcer.textContent = '';
+    const announce = setTimeout(() => {
         announcer.textContent = 'Copied';
-    });
+    }, ANNOUNCE_DELAY_MS);
 
     const dismiss = () => {
-        cancelAnimationFrame(frame);
+        clearTimeout(announce);
         clearTimeout(timeout);
         toast.remove();
-        announcer.remove();
+        announcer.textContent = '';
         if (dismissCurrent === dismiss) dismissCurrent = undefined;
     };
     const timeout = setTimeout(dismiss, COPIED_FEEDBACK_MS);

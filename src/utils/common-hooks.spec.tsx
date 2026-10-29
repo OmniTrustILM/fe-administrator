@@ -68,16 +68,45 @@ test.describe('useCopyToClipboard', () => {
 
         await expect(page.getByRole('status')).toHaveText('Copied');
         await expect(page.getByTestId('copied-feedback')).toHaveCount(0, { timeout: 2500 });
-        await expect(page.getByRole('status')).toHaveCount(0);
+        await expect(page.getByRole('status')).toHaveText('');
     });
 
-    test('inside a dialog the announcement stays within the dialog', async ({ mount, page }) => {
+    test('a repeated copy replaces the toast and reuses the live region', async ({ mount, page }) => {
+        await stubClipboard(page, true);
+        await mount(<UseCopyToClipboardWithStore />);
+        const button = page.getByTestId('copy-btn');
+
+        await button.click();
+        await expect(page.getByTestId('copied-feedback')).toHaveCount(1);
+        await button.click();
+
+        await expect(page.getByRole('status')).toHaveText('Copied');
+        await expect(page.getByTestId('copied-feedback')).toHaveCount(1);
+        await expect(page.getByRole('status')).toHaveCount(1);
+    });
+
+    test('a copy without an anchor still shows the toast', async ({ mount, page }) => {
+        await stubClipboard(page, true);
+        await mount(<UseCopyToClipboardWithStore />);
+
+        await page.getByTestId('copy-unanchored-btn').click();
+
+        await expect(page.getByTestId('copied-feedback')).toBeVisible();
+        await expect(page.getByRole('status')).toHaveText('Copied');
+    });
+
+    test('inside a transformed dialog the toast stays on the button and the announcement within the dialog', async ({ mount, page }) => {
         await stubClipboard(page, true);
         await mount(<UseCopyToClipboardWithStore inDialog />);
+        const button = page.getByTestId('copy-btn');
 
-        await page.getByTestId('copy-btn').click();
+        await button.click();
 
         await expect(page.getByRole('dialog').getByRole('status')).toHaveText('Copied');
+        const buttonBox = await button.boundingBox();
+        const toastBox = await page.getByTestId('copied-feedback').boundingBox();
+        expect((toastBox?.x ?? 0) + (toastBox?.width ?? 0) / 2).toBeCloseTo((buttonBox?.x ?? 0) + (buttonBox?.width ?? 0) / 2, 0);
+        expect((toastBox?.y ?? 0) + (toastBox?.height ?? 0)).toBeLessThanOrEqual(buttonBox?.y ?? 0);
     });
 
     test('a failed copy shows the global error alert and no toast', async ({ mount, page }) => {

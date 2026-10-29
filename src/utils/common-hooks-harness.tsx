@@ -29,9 +29,14 @@ export function UseDeviceTypeHarness() {
 export function UseCopyToClipboardHarness() {
     const copyToClipboard = useCopyToClipboard();
     return (
-        <button type="button" data-testid="copy-btn" onClick={(e) => copyToClipboard('copied text', e.currentTarget, 'Error')}>
-            Copy
-        </button>
+        <>
+            <button type="button" data-testid="copy-btn" onClick={(e) => copyToClipboard('copied text', e.currentTarget, 'Error')}>
+                Copy
+            </button>
+            <button type="button" data-testid="copy-unanchored-btn" onClick={() => copyToClipboard('copied text', null, 'Error')}>
+                Copy without anchor
+            </button>
+        </>
     );
 }
 
@@ -40,7 +45,10 @@ export function UseCopyToClipboardWithStore({ inDialog = false }: Readonly<{ inD
     return (
         <Provider store={store}>
             <div className="p-16">
-                <div role={inDialog ? 'dialog' : undefined} data-testid="copy-container">
+                <div
+                    role={inDialog ? 'dialog' : undefined}
+                    className={inDialog ? 'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2' : undefined}
+                >
                     <UseCopyToClipboardHarness />
                 </div>
                 <span data-testid="inverse-reference" className="bg-surface-inverse" />
