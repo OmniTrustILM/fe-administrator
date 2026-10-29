@@ -263,6 +263,14 @@ table a {
     font-weight: 600;
 }
 
+/* Layered so a `no-underline` utility opts out non-text anchors such as sidebar entries. */
+@layer base {
+    a:hover,
+    a:focus-visible {
+        text-decoration-line: underline;
+    }
+}
+
 table .table-badge {
     font-size: 10px;
 }

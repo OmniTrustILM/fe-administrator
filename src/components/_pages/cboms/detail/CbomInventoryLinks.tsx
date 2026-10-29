@@ -19,7 +19,7 @@ import { onSameTabClick } from 'utils/link-click';
 
 const CRYPTO_ASSETS_PATH = `/${Resource.CryptoAssets.toLowerCase()}`;
 const CBOMS_PATH = `/${Resource.Cboms.toLowerCase()}`;
-const LINK_CLASS = 'text-brand hover:underline';
+const LINK_CLASS = 'text-brand';
 
 type CbomInventory = {
     state: CbomInventoryState;

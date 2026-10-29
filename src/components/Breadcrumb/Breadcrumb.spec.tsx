@@ -24,6 +24,24 @@ test.describe('Breadcrumb', () => {
         await expect(component.getByRole('link', { name: 'Page' })).toBeVisible();
     });
 
+    test('underlines a text link on hover and keyboard focus only', async ({ mount, page }) => {
+        const component = await mountBreadcrumb(mount, [
+            { label: 'Home', href: '/' },
+            { label: 'Page', href: '/page' },
+        ]);
+        const home = component.getByRole('link', { name: 'Home' });
+
+        await page.mouse.move(400, 400);
+        await expect(home).not.toHaveCSS('text-decoration-line', 'underline');
+        await home.hover();
+        await expect(home).toHaveCSS('text-decoration-line', 'underline');
+
+        await page.mouse.move(400, 400);
+        await expect(home).not.toHaveCSS('text-decoration-line', 'underline');
+        await home.focus();
+        await expect(home).toHaveCSS('text-decoration-line', 'underline');
+    });
+
     test('should render items without href as span', async ({ mount }) => {
         const component = await mountBreadcrumb(mount, [{ label: 'Home', href: '/' }, { label: 'Current Page' }]);
 
