@@ -304,17 +304,7 @@ export default function AttributeViewer({
     const getButtons = useCallback(
         (attribute: AttributeResponseModel, descriptor: CustomAttributeModel, attributeName: string) => {
             const buttons: WidgetButtonProps[] = [];
-            if (editingAttributesNames.includes(attributeName)) {
-                buttons.push({
-                    id: 'cancel',
-                    icon: 'times',
-                    disabled: false,
-                    tooltip: 'Cancel',
-                    onClick: () => {
-                        setEditingAttributesNames(editingAttributesNames.filter((n) => n !== attributeName));
-                    },
-                });
-            } else {
+            if (!editingAttributesNames.includes(attributeName)) {
                 buttons.push(
                     {
                         id: 'copy',

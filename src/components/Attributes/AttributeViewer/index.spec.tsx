@@ -129,7 +129,7 @@ test.describe('AttributeViewer', () => {
         await expect(page.getByTestId('edit-button').first()).toBeVisible();
     });
 
-    test('ATTRIBUTE_EDIT type: edit button enters edit mode, cancel exits', async ({ mount }) => {
+    test('ATTRIBUTE_EDIT type: edit button enters edit mode, form Cancel exits', async ({ mount }) => {
         const descriptors = [customDescriptor({ name: 'attr1' })];
         const attributes = [attrResponse({ name: 'attr1', label: 'Attr 1' })];
         const component = await mount(
@@ -137,12 +137,32 @@ test.describe('AttributeViewer', () => {
                 viewerType={ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE_EDIT}
                 descriptors={descriptors}
                 attributes={attributes}
+                onSubmit={async () => {}}
             />,
         );
         await component.getByTestId('edit-button').click();
-        await expect(component.getByTestId('cancel-button')).toBeVisible();
-        await component.getByTestId('cancel-button').click();
+        await expect(component.getByTestId('cancel-custom-value')).toBeVisible();
+        await component.getByTestId('cancel-custom-value').click();
         await expect(component.getByTestId('edit-button')).toBeVisible();
+    });
+
+    test('ATTRIBUTE_EDIT type: edit mode shows no row cancel button, only the form Cancel and Save', async ({ mount }) => {
+        const descriptors = [customDescriptor({ name: 'attr1', properties: { ...customDescriptor().properties, required: false } })];
+        const attributes = [attrResponse({ name: 'attr1', label: 'Attr 1' })];
+        const component = await mount(
+            <AttributeViewerMountHarness
+                viewerType={ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE_EDIT}
+                descriptors={descriptors}
+                attributes={attributes}
+                onSubmit={async () => {}}
+                onRemove={() => {}}
+            />,
+        );
+        await component.getByTestId('edit-button').click();
+        await expect(component.getByTestId('cancel-custom-value')).toBeVisible();
+        await expect(component.getByTestId('save-custom-value')).toBeVisible();
+        await expect(component.getByTestId('cancel-button')).toHaveCount(0);
+        await expect(component.getByTestId('delete-button')).toBeVisible();
     });
 
     test('ATTRIBUTE_EDIT type: onSubmit called when form submitted', async ({ mount }) => {
