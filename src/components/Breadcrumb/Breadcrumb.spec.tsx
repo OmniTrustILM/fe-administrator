@@ -24,7 +24,7 @@ test.describe('Breadcrumb', () => {
         await expect(component.getByRole('link', { name: 'Page' })).toBeVisible();
     });
 
-    test('underlines a text link on hover and keyboard focus only', async ({ mount, page }) => {
+    test('underlines a text link on hover', async ({ mount, page }) => {
         const component = await mountBreadcrumb(mount, [
             { label: 'Home', href: '/' },
             { label: 'Page', href: '/page' },
@@ -35,11 +35,32 @@ test.describe('Breadcrumb', () => {
         await expect(home).not.toHaveCSS('text-decoration-line', 'underline');
         await home.hover();
         await expect(home).toHaveCSS('text-decoration-line', 'underline');
+    });
+
+    test('underlines a text link reached with the keyboard', async ({ mount, page, browserName }) => {
+        const component = await mountBreadcrumb(mount, [
+            { label: 'Home', href: '/' },
+            { label: 'Page', href: '/page' },
+        ]);
+        const home = component.getByRole('link', { name: 'Home' });
 
         await page.mouse.move(400, 400);
-        await expect(home).not.toHaveCSS('text-decoration-line', 'underline');
-        await home.focus();
+        // WebKit skips links on plain Tab unless the platform's full keyboard access is on.
+        await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
+        await expect(home).toBeFocused();
         await expect(home).toHaveCSS('text-decoration-line', 'underline');
+    });
+
+    test('does not underline a text link focused by a mouse click once the pointer leaves', async ({ mount, page }) => {
+        const component = await mountBreadcrumb(mount, [
+            { label: 'Home', href: '/' },
+            { label: 'Page', href: '/page' },
+        ]);
+        const home = component.getByRole('link', { name: 'Home' });
+
+        await home.click();
+        await page.mouse.move(400, 400);
+        await expect(home).not.toHaveCSS('text-decoration-line', 'underline');
     });
 
     test('should render items without href as span', async ({ mount }) => {

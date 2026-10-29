@@ -265,7 +265,13 @@ table a {
 
 /* Layered so a `no-underline` utility opts out non-text anchors such as sidebar entries. */
 @layer base {
-    a:hover,
+    /* Matches Tailwind's hover: variant, so a tapped link on a touch screen does not stay underlined. */
+    @media (hover: hover) {
+        a:hover {
+            text-decoration-line: underline;
+        }
+    }
+
     a:focus-visible {
         text-decoration-line: underline;
     }
