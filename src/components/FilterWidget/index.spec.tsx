@@ -38,12 +38,12 @@ async function configureMetaFilter(
 }
 
 test.describe('FilterWidget', () => {
-    test('renders controls and Add disabled by default', async ({ mount, page }) => {
+    test('renders controls and Apply disabled by default', async ({ mount, page }) => {
         await mount(<FilterWidgetTestWrapper title="Filter widget" />);
         await expect(page.getByText('Filter widget')).toBeVisible();
         await expect(page.getByTestId('select-group')).toBeVisible();
         await expect(page.getByTestId('select-field')).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeDisabled();
+        await expect(page.getByRole('button', { name: 'Apply', exact: true })).toBeDisabled();
     });
 
     test('adds text filter and shows badge content', async ({ mount, page }) => {
@@ -57,7 +57,7 @@ test.describe('FilterWidget', () => {
         );
         await configureMetaFilter(page, 'Status', 'status', 'Contains', FilterConditionOperator.Contains);
         await fillEditableInput(page, 'Enter filter value', 'active');
-        await page.getByRole('button', { name: 'Add', exact: true }).click();
+        await page.getByRole('button', { name: 'Apply', exact: true }).click();
 
         const firstBadge = page.getByTestId('badge').first();
         await expect(firstBadge).toContainText("'Status'");
@@ -75,11 +75,11 @@ test.describe('FilterWidget', () => {
         await mount(<FilterWidgetTestWrapper onFilterUpdate={() => {}} />);
         await configureMetaFilter(page, 'Status', 'status', 'Contains', FilterConditionOperator.Contains);
         await fillEditableInput(page, 'Enter filter value', 'one');
-        await page.getByRole('button', { name: 'Add', exact: true }).click();
+        await page.getByRole('button', { name: 'Apply', exact: true }).click();
 
         await configureMetaFilter(page, 'Status', 'status', 'Contains', FilterConditionOperator.Contains);
         await fillEditableInput(page, 'Enter filter value', 'two');
-        await page.getByRole('button', { name: 'Add', exact: true }).click();
+        await page.getByRole('button', { name: 'Apply', exact: true }).click();
 
         await expect(page.getByTestId('badge')).toHaveCount(1);
     });
@@ -95,7 +95,7 @@ test.describe('FilterWidget', () => {
         );
         await configureMetaFilter(page, 'Status', 'status', 'Contains', FilterConditionOperator.Contains);
         await fillEditableInput(page, 'Enter filter value', 'old');
-        await page.getByRole('button', { name: 'Add', exact: true }).click();
+        await page.getByRole('button', { name: 'Apply', exact: true }).click();
 
         await page.getByText("'Status'").click();
         await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeVisible();
@@ -107,8 +107,8 @@ test.describe('FilterWidget', () => {
     test('empty condition can be added without value', async ({ mount, page }) => {
         await mount(<FilterWidgetTestWrapper onFilterUpdate={() => {}} />);
         await configureMetaFilter(page, 'Custom Date', 'customDate', 'Empty', FilterConditionOperator.Empty);
-        await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeEnabled();
-        await page.getByRole('button', { name: 'Add', exact: true }).click();
+        await expect(page.getByRole('button', { name: 'Apply', exact: true })).toBeEnabled();
+        await page.getByRole('button', { name: 'Apply', exact: true }).click();
         await expect(page.getByText("'Custom Date'")).toBeVisible();
     });
 
@@ -116,7 +116,7 @@ test.describe('FilterWidget', () => {
         await mount(<FilterWidgetTestWrapper />);
         await configureMetaFilter(page, 'Status', 'status', 'Matches', FilterConditionOperator.Matches);
         await fillEditableInput(page, 'Enter regex value', '(');
-        await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeDisabled();
+        await expect(page.getByRole('button', { name: 'Apply', exact: true })).toBeDisabled();
         await expect(page.locator('p.text-danger')).toBeVisible();
     });
 
@@ -156,7 +156,7 @@ test.describe('FilterWidget', () => {
         );
         await configureMetaFilter(page, 'Status', 'status', 'Contains', FilterConditionOperator.Contains);
         await fillEditableInput(page, 'Enter filter value', 'x');
-        await page.getByRole('button', { name: 'Add', exact: true }).click();
+        await page.getByRole('button', { name: 'Apply', exact: true }).click();
         await expect(page.getByText("'Status'")).toBeVisible();
         await page.getByTestId('badge').first().getByRole('button', { name: 'Remove badge' }).click();
         await expect.poll(() => updated.length).toBe(0);
@@ -167,7 +167,7 @@ test.describe('FilterWidget', () => {
         await configureMetaFilter(page, 'Severity', 'severity', 'Equals', FilterConditionOperator.Equals);
         await expect(page.getByTestId('select-valueSelect')).toBeVisible();
         await chooseSelectOption(page, 'select-valueSelect-trigger', 'High');
-        await page.getByRole('button', { name: 'Add', exact: true }).click();
+        await page.getByRole('button', { name: 'Apply', exact: true }).click();
         await expect(page.getByText("'Severity'")).toBeVisible();
     });
 
@@ -176,7 +176,7 @@ test.describe('FilterWidget', () => {
         await configureMetaFilter(page, 'Enabled', 'enabled', 'Equals', FilterConditionOperator.Equals);
         await expect(page.getByTestId('select-valueSelect')).toBeVisible();
         await chooseSelectOption(page, 'select-valueSelect-trigger', 'True');
-        await page.getByRole('button', { name: 'Add', exact: true }).click();
+        await page.getByRole('button', { name: 'Apply', exact: true }).click();
         await expect(page.getByText("'Enabled'")).toBeVisible();
     });
 

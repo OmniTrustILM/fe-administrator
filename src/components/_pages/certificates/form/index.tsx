@@ -364,7 +364,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
 
     useEffect(() => {
         // Owner/Groups options are only needed by the Pre-register Ownership tab; fetch them when that
-        // mode is entered rather than on every Add Certificate mount.
+        // mode is entered rather than on every Create Certificate mount.
         if (isRegister) {
             dispatch(userActions.list());
             dispatch(certificateGroupActions.listGroups());
@@ -581,13 +581,13 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
             <Breadcrumb
                 items={[
                     { label: 'Certificates', href: '/certificates/list' },
-                    { label: 'Add Certificate', href: '' },
+                    { label: 'Create Certificate', href: '' },
                 ]}
             />
             <FormProvider {...methods}>
                 <form onSubmit={submitHandler} noValidate>
                     <div className="space-y-4">
-                        <Widget title="Add Certificate" busy={issuingCertificate || isFetchingResourceCustomAttributes}>
+                        <Widget title="Create Certificate" busy={issuingCertificate || isFetchingResourceCustomAttributes}>
                             <div className="space-y-4">
                                 <Controller
                                     control={control}

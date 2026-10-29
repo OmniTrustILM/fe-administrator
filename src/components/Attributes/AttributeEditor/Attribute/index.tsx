@@ -56,7 +56,7 @@ export function Attribute({
                 content: addNewAttributeValue.content,
                 isOpen: true,
                 size: 'xl',
-                title: `Add New ${addNewAttributeValue.name}`,
+                title: `Create ${addNewAttributeValue.name}`,
             }),
         );
     }, [dispatch, addNewAttributeValue]);
@@ -161,7 +161,7 @@ export function Attribute({
                     options={options}
                     busy={busy}
                     deleteButton={deleteButton}
-                    addNewAttributeValue={addNewAttributeValue ? { label: '+ Add new', value: '__add_new__' } : undefined}
+                    addNewAttributeValue={addNewAttributeValue ? { label: '+ Create new', value: '__add_new__' } : undefined}
                     onSelectChangeMulti={handleSelectChangeMulti}
                     onSelectChangeSingle={handleSelectChangeSingle}
                 />

@@ -960,7 +960,7 @@ export default function FilterWidgetRuleAction({
 
                         <div className="flex items-end">
                             <Button color="primary" className="py-3 min-w-[62px]" onClick={onUpdateClick} disabled={isUpdateButtonDisabled}>
-                                {selectedFilter === -1 ? 'Add' : 'Update'}
+                                {selectedFilter === -1 ? 'Apply' : 'Update'}
                             </Button>
                         </div>
                     </div>

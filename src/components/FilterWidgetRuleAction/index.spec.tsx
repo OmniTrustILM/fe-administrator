@@ -83,7 +83,7 @@ async function addStringAction(page: import('@playwright/test').Page, fieldLabel
     await selectFieldSourceMeta(page);
     await selectFieldOption(page, fieldLabel);
     await fillFilterValue(page, value);
-    await page.getByRole('button', { name: 'Add', exact: true }).click();
+    await page.getByRole('button', { name: 'Apply', exact: true }).click();
 }
 
 type MountFn = (jsx: any) => Promise<any>;
@@ -172,12 +172,12 @@ test.describe('FilterWidgetRuleAction', () => {
         await expect(page.getByTestId('select-group')).toBeVisible();
         await expect(page.getByTestId('select-field')).toBeVisible();
         await expect(page.getByPlaceholder('Enter filter value')).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Apply', exact: true })).toBeVisible();
     });
 
-    test('Add button is disabled when nothing selected', async ({ mount, page }) => {
+    test('Apply button is disabled when nothing selected', async ({ mount, page }) => {
         await mount(<FilterWidgetRuleActionTestWrapper />);
-        await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeDisabled();
+        await expect(page.getByRole('button', { name: 'Apply', exact: true })).toBeDisabled();
     });
 
     test('selecting Field Source enables Field dropdown and shows options', async ({ mount, page }) => {
@@ -188,12 +188,12 @@ test.describe('FilterWidgetRuleAction', () => {
         await expect(page.getByPlaceholder('Enter filter value')).toBeVisible();
     });
 
-    test('selecting Field Source and Field enables value input and Add', async ({ mount, page }) => {
+    test('selecting Field Source and Field enables value input and Apply', async ({ mount, page }) => {
         await mount(<FilterWidgetRuleActionTestWrapper />);
         await selectFieldSourceMeta(page);
         await selectFieldOption(page, 'Status');
         await fillFilterValue(page, 'active');
-        await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeEnabled();
+        await expect(page.getByRole('button', { name: 'Apply', exact: true })).toBeEnabled();
     });
 
     test('value input accepts spaces typed via keyboard', async ({ mount, page }) => {
@@ -209,7 +209,7 @@ test.describe('FilterWidgetRuleAction', () => {
         await expect(input).toHaveValue('hello world');
     });
 
-    test('Add creates a badge and calls onActionsUpdate', async ({ mount, page }) => {
+    test('Apply creates a badge and calls onActionsUpdate', async ({ mount, page }) => {
         const actions = await mountWithActions(mount);
         await addStringAction(page, 'Status', 'active');
 
@@ -368,15 +368,15 @@ test.describe('FilterWidgetRuleAction', () => {
         await expect(page.getByTestId('select-value-input')).toHaveValue('false');
     });
 
-    test('boolean selector allows selecting false and persists boolean false on Add', async ({ mount, page }) => {
+    test('boolean selector allows selecting false and persists boolean false on Apply', async ({ mount, page }) => {
         const actions = await mountWithActions(mount);
 
         await selectFieldSourceMeta(page);
         await selectFieldOption(page, 'Enabled');
         await selectValueOption(page, 'False', 'false');
 
-        await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeEnabled();
-        await page.getByRole('button', { name: 'Add', exact: true }).click();
+        await expect(page.getByRole('button', { name: 'Apply', exact: true })).toBeEnabled();
+        await page.getByRole('button', { name: 'Apply', exact: true }).click();
 
         expect(actions.current).toHaveLength(1);
         expect(firstAction(actions.current)).toMatchObject({ fieldSource: 'meta', fieldIdentifier: 'enabled', data: false });
@@ -469,7 +469,7 @@ test.describe('FilterWidgetRuleAction', () => {
         await selectFieldOption(page, 'Status');
         await fillFilterValue(page, 'clear');
         await page.getByTestId('select-group-clear').click();
-        await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeDisabled();
+        await expect(page.getByRole('button', { name: 'Apply', exact: true })).toBeDisabled();
     });
 
     test('single non-array datetime in list-type field hydrates label/value pair', async ({ mount, page }) => {
@@ -489,8 +489,8 @@ test.describe('FilterWidgetRuleAction', () => {
         await selectFieldOption(page, 'Kind');
         await selectValueOption(page, 'Kind One', 'k1');
 
-        await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeEnabled();
-        await page.getByRole('button', { name: 'Add', exact: true }).click();
+        await expect(page.getByRole('button', { name: 'Apply', exact: true })).toBeEnabled();
+        await page.getByRole('button', { name: 'Apply', exact: true }).click();
 
         expect(actions.current).toHaveLength(1);
         expect(firstAction(actions.current)).toMatchObject({ fieldSource: 'meta', fieldIdentifier: 'kind' });
@@ -505,19 +505,19 @@ test.describe('FilterWidgetRuleAction', () => {
         await selectFieldOption(page, 'Groups');
         await selectValueOption(page, 'Group One', 'g1');
 
-        await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeEnabled();
-        await page.getByRole('button', { name: 'Add', exact: true }).click();
+        await expect(page.getByRole('button', { name: 'Apply', exact: true })).toBeEnabled();
+        await page.getByRole('button', { name: 'Apply', exact: true }).click();
 
         expect(actions.current).toHaveLength(1);
         expect(firstAction(actions.current).fieldIdentifier).toBe('groups');
     });
 
-    test('toggling selected badge deselects it and resets to Add', async ({ mount, page }) => {
+    test('toggling selected badge deselects it and resets to Apply', async ({ mount, page }) => {
         await mountWithExecution(mount, { source: FilterFieldSource.Meta, fieldIdentifier: 'status', data: 'val' });
         await clickBadgeAndExpectUpdate(page, 'Status');
 
         await page.getByText("'Status'").click();
-        await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Apply', exact: true })).toBeVisible();
     });
 
     test('ExecutionsList with non-multiValue array data unwraps to single value', async ({ mount, page }) => {
@@ -620,15 +620,15 @@ test.describe('FilterWidgetRuleAction', () => {
         });
     }
 
-    test('changing field clears value and disables Add', async ({ mount, page }) => {
+    test('changing field clears value and disables Apply', async ({ mount, page }) => {
         await mount(<FilterWidgetRuleActionTestWrapper />);
         await selectFieldSourceMeta(page);
         await selectFieldOption(page, 'Status');
         await fillFilterValue(page, 'test');
-        await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeEnabled();
+        await expect(page.getByRole('button', { name: 'Apply', exact: true })).toBeEnabled();
 
         await selectFieldOption(page, 'Enabled');
-        await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeDisabled();
+        await expect(page.getByRole('button', { name: 'Apply', exact: true })).toBeDisabled();
     });
 
     for (const key of ['Enter', 'Space'] as const) {
@@ -639,7 +639,7 @@ test.describe('FilterWidgetRuleAction', () => {
             await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeVisible();
             await page.locator('#unselectFilters').focus();
             await page.keyboard.press(key);
-            await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeVisible();
+            await expect(page.getByRole('button', { name: 'Apply', exact: true })).toBeVisible();
         });
     }
 
@@ -764,9 +764,9 @@ test.describe('FilterWidgetRuleAction', () => {
             await expect(page.getByRole('option', { name: 'SourceStr', exact: true })).not.toBeVisible();
         });
 
-        test('Add disabled until both source fields picked', async ({ mount, page }) => {
+        test('Apply disabled until both source fields picked', async ({ mount, page }) => {
             await mount(<FilterWidgetRuleActionTestWrapper {...baseMappedProps} />);
-            const addBtn = page.getByRole('button', { name: 'Add', exact: true });
+            const addBtn = page.getByRole('button', { name: 'Apply', exact: true });
 
             await selectTargetAndEnterMapped(page);
             await expect(addBtn).toBeDisabled();
@@ -778,13 +778,13 @@ test.describe('FilterWidgetRuleAction', () => {
             await expect(addBtn).toBeEnabled();
         });
 
-        test('Add emits ExecutionItem with source fields and without data', async ({ mount, page }) => {
+        test('Apply emits ExecutionItem with source fields and without data', async ({ mount, page }) => {
             const capture = await mountWithActions(mount, baseMappedProps);
 
             await selectTargetAndEnterMapped(page);
             await pickSourceFieldSource(page, 'Data');
             await pickSourceField(page, 'SourceStr');
-            await page.getByRole('button', { name: 'Add', exact: true }).click();
+            await page.getByRole('button', { name: 'Apply', exact: true }).click();
 
             expect(capture.current).toHaveLength(1);
             const item = firstAction(capture.current);
