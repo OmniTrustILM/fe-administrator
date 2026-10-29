@@ -169,7 +169,7 @@ function TextInput({
                         {
                             'bg-surface': disabled,
                             'pr-10': !!buttonRight || type === 'password',
-                            'ps-10': !!iconLeft,
+                            'peer ps-10': !!iconLeft,
                         },
                         className,
                     )}
@@ -190,7 +190,7 @@ function TextInput({
                 />
                 {iconLeft && (
                     <span
-                        className="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3.5 text-content-subtle"
+                        className="pointer-events-none absolute inset-y-0 start-0 flex items-center ps-3.5 text-content-subtle peer-disabled:opacity-50"
                         aria-hidden
                     >
                         {iconLeft}
