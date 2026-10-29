@@ -122,6 +122,7 @@ test.describe('AttributeViewer', () => {
                 viewerType={ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE_EDIT}
                 descriptors={descriptors}
                 attributes={attributes}
+                onSubmit={async () => {}}
             />,
         );
         await expect(page.getByTestId('custom-table')).toBeVisible({ timeout: 10000 });
@@ -129,7 +130,24 @@ test.describe('AttributeViewer', () => {
         await expect(page.getByTestId('edit-button').first()).toBeVisible();
     });
 
-    test('ATTRIBUTE_EDIT type: edit button enters edit mode, cancel exits', async ({ mount }) => {
+    test('ATTRIBUTE_EDIT type: no edit button without onSubmit, so a row cannot enter an edit mode it cannot leave', async ({
+        mount,
+        page,
+    }) => {
+        const descriptors = [customDescriptor()];
+        const attributes = [attrResponse({ name: 'attr1', label: 'Attr 1' })];
+        await mount(
+            <AttributeViewerMountHarness
+                viewerType={ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE_EDIT}
+                descriptors={descriptors}
+                attributes={attributes}
+            />,
+        );
+        await expect(page.getByTestId('copy-button').first()).toBeVisible();
+        await expect(page.getByTestId('edit-button')).toHaveCount(0);
+    });
+
+    test('ATTRIBUTE_EDIT type: edit button enters edit mode, form Cancel exits', async ({ mount }) => {
         const descriptors = [customDescriptor({ name: 'attr1' })];
         const attributes = [attrResponse({ name: 'attr1', label: 'Attr 1' })];
         const component = await mount(
@@ -137,12 +155,52 @@ test.describe('AttributeViewer', () => {
                 viewerType={ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE_EDIT}
                 descriptors={descriptors}
                 attributes={attributes}
+                onSubmit={async () => {}}
             />,
         );
         await component.getByTestId('edit-button').click();
-        await expect(component.getByTestId('cancel-button')).toBeVisible();
-        await component.getByTestId('cancel-button').click();
+        await expect(component.getByTestId('cancel-custom-value')).toBeVisible();
+        await component.getByTestId('cancel-custom-value').click();
         await expect(component.getByTestId('edit-button')).toBeVisible();
+    });
+
+    test('ATTRIBUTE_EDIT type: edit mode shows no row cancel button, only the form Cancel and Save', async ({ mount }) => {
+        const descriptors = [customDescriptor({ name: 'attr1', properties: { ...customDescriptor().properties, required: false } })];
+        const attributes = [attrResponse({ name: 'attr1', label: 'Attr 1' })];
+        const component = await mount(
+            <AttributeViewerMountHarness
+                viewerType={ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE_EDIT}
+                descriptors={descriptors}
+                attributes={attributes}
+                onSubmit={async () => {}}
+                onRemove={() => {}}
+            />,
+        );
+        await component.getByTestId('edit-button').click();
+        await expect(component.getByTestId('cancel-custom-value')).toBeVisible();
+        await expect(component.getByTestId('save-custom-value')).toBeVisible();
+        await expect(component.getByTestId('cancel-button')).toHaveCount(0);
+        await expect(component.getByTestId('delete-button')).toBeVisible();
+    });
+
+    test('ATTRIBUTE_EDIT type: removing an attribute in edit mode clears its edit state for a later re-add', async ({ mount }) => {
+        const descriptors = [customDescriptor({ name: 'attr1', properties: { ...customDescriptor().properties, required: false } })];
+        const attributes = [attrResponse({ name: 'attr1', label: 'Attr 1' })];
+        const props = {
+            viewerType: ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE_EDIT,
+            descriptors,
+            onSubmit: async () => {},
+            onRemove: () => {},
+        };
+        const component = await mount(<AttributeViewerMountHarness {...props} attributes={attributes} />);
+        await component.getByTestId('edit-button').click();
+        await component.getByTestId('delete-button').click();
+
+        await component.update(<AttributeViewerMountHarness {...props} attributes={[]} />);
+        await component.update(<AttributeViewerMountHarness {...props} attributes={attributes} />);
+
+        await expect(component.getByTestId('edit-button')).toBeVisible();
+        await expect(component.getByTestId('save-custom-value')).toHaveCount(0);
     });
 
     test('ATTRIBUTE_EDIT type: onSubmit called when form submitted', async ({ mount }) => {
@@ -167,6 +225,8 @@ test.describe('AttributeViewer', () => {
         await expect(component.getByTestId('save-custom-value')).toBeVisible();
         await component.getByTestId('save-custom-value').click();
         await expect.poll(() => wasSubmitted).toBeTruthy();
+        await expect(component.getByTestId('save-custom-value')).toHaveCount(0);
+        await expect(component.getByTestId('edit-button')).toBeVisible();
     });
 
     test('ATTRIBUTE_EDIT type: onRemove and delete button', async ({ mount }) => {
@@ -211,6 +271,7 @@ test.describe('AttributeViewer', () => {
                 viewerType={ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE_EDIT}
                 descriptors={descriptors}
                 attributes={attributes}
+                onSubmit={async () => {}}
             />,
         );
         await expect(component.getByTestId('edit-button')).toBeDisabled();
@@ -410,6 +471,7 @@ test.describe('AttributeViewer', () => {
                 viewerType={ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE_EDIT}
                 descriptors={[nonCustomDescriptor]}
                 attributes={[attrResponse({ name: 'attr1' })]}
+                onSubmit={async () => {}}
             />,
         );
         await expect(page.getByTestId('custom-table')).toBeVisible();

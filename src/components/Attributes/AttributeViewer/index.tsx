@@ -304,28 +304,18 @@ export default function AttributeViewer({
     const getButtons = useCallback(
         (attribute: AttributeResponseModel, descriptor: CustomAttributeModel, attributeName: string) => {
             const buttons: WidgetButtonProps[] = [];
-            if (editingAttributesNames.includes(attributeName)) {
+            if (!editingAttributesNames.includes(attributeName)) {
                 buttons.push({
-                    id: 'cancel',
-                    icon: 'times',
-                    disabled: false,
-                    tooltip: 'Cancel',
+                    id: 'copy',
+                    icon: 'copy',
+                    disabled: AttributeContentType.Secret === attribute.contentType,
+                    tooltip: 'Copy to clipboard',
                     onClick: () => {
-                        setEditingAttributesNames(editingAttributesNames.filter((n) => n !== attributeName));
+                        onCopyContentClick(attribute);
                     },
                 });
-            } else {
-                buttons.push(
-                    {
-                        id: 'copy',
-                        icon: 'copy',
-                        disabled: AttributeContentType.Secret === attribute.contentType,
-                        tooltip: 'Copy to clipboard',
-                        onClick: () => {
-                            onCopyContentClick(attribute);
-                        },
-                    },
-                    {
+                onSubmit &&
+                    buttons.push({
                         id: 'edit',
                         icon: 'pencil',
                         disabled: descriptor.properties.readOnly,
@@ -333,8 +323,7 @@ export default function AttributeViewer({
                         onClick: () => {
                             setEditingAttributesNames([...editingAttributesNames, attributeName]);
                         },
-                    },
-                );
+                    });
             }
             onRemove &&
                 buttons.push({
@@ -342,11 +331,14 @@ export default function AttributeViewer({
                     icon: 'trash',
                     disabled: descriptor.properties.required,
                     tooltip: descriptor.properties.required ? "Attribute is required, can't be removed" : 'Remove',
-                    onClick: () => onRemove(descriptor.uuid),
+                    onClick: () => {
+                        setEditingAttributesNames(editingAttributesNames.filter((n) => n !== attributeName));
+                        onRemove(descriptor.uuid);
+                    },
                 });
             return buttons;
         },
-        [editingAttributesNames, onRemove, onCopyContentClick],
+        [editingAttributesNames, onSubmit, onRemove, onCopyContentClick],
     );
 
     const getAttributesEditTableData = useCallback(
