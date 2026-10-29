@@ -173,7 +173,7 @@ test.describe('AttributeFieldSelect', () => {
                 name="testSelect"
                 descriptor={descriptor}
                 options={options}
-                addNewAttributeValue={{ label: '+ Add new', value: '__add_new__' }}
+                addNewAttributeValue={{ label: '+ Create new', value: '__add_new__' }}
             />,
         );
 
@@ -201,7 +201,7 @@ test.describe('AttributeFieldSelect', () => {
                 name="testSelect"
                 descriptor={descriptor}
                 options={options}
-                addNewAttributeValue={{ label: '+ Add new', value: '__add_new__' }}
+                addNewAttributeValue={{ label: '+ Create new', value: '__add_new__' }}
                 defaultValues={{ testSelect: 'cred-a' }}
             />,
         );
@@ -231,13 +231,13 @@ test.describe('AttributeFieldSelect', () => {
                 name="testSelect"
                 descriptor={descriptor}
                 options={options}
-                addNewAttributeValue={{ label: '+ Add new', value: '__add_new__' }}
+                addNewAttributeValue={{ label: '+ Create new', value: '__add_new__' }}
             />,
         );
 
         await page.getByTestId('select-testSelectSelect-trigger').click();
         await page.getByRole('option', { name: 'Option A' }).click();
-        await page.getByRole('option', { name: '+ Add new' }).click();
+        await page.getByRole('option', { name: '+ Create new' }).click();
 
         // __add_new__ should be stripped; only 'a' remains
         const select = page.getByTestId('select-testSelectSelect-input');
@@ -255,7 +255,7 @@ test.describe('AttributeFieldSelect', () => {
                 name="testSelect"
                 descriptor={descriptor}
                 options={options}
-                addNewAttributeValue={{ label: '+ Add new', value: '__add_new__' }}
+                addNewAttributeValue={{ label: '+ Create new', value: '__add_new__' }}
             />,
         );
 

@@ -86,7 +86,7 @@ function DiscoveryList() {
             {
                 icon: 'plus',
                 disabled: false,
-                tooltip: 'Add',
+                tooltip: 'Create',
                 onClick: handleOpenAddModal,
             },
         ],
