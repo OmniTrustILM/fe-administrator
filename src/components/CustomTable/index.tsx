@@ -15,7 +15,7 @@ import Checkbox from 'components/Checkbox';
 import SimpleBar from 'components/SimpleBar';
 import cn from 'classnames';
 import { useLocation } from 'react-router';
-import { ArrowDown, ArrowDownUp, ArrowUp, TableProperties } from 'lucide-react';
+import { ArrowDown, ArrowDownUp, ArrowUp, Search, TableProperties } from 'lucide-react';
 import TableSkeleton, { TableSkeletonRows } from './TableSkeleton';
 
 export type { SortDirection, TableDataRow, TableHeader } from './types';
@@ -892,7 +892,7 @@ function CustomTable({
                 <>
                     {canSearch && (
                         <div className="flex justify-end mb-3">
-                            <div className="max-w-sm">
+                            <div className="relative max-w-sm">
                                 <input
                                     id="search"
                                     aria-label="Search"
@@ -901,7 +901,12 @@ function CustomTable({
                                     onChange={(event) => setSearchKey(event.target.value)}
                                     type="text"
                                     disabled={disableSearchControls}
-                                    className="py-2.5 sm:py-3 px-4 block w-full border-outline rounded-lg sm:text-sm focus:border-brand focus:ring-brand disabled:opacity-50 disabled:pointer-events-none bg-surface-raised text-content placeholder-content-hint"
+                                    className="peer py-2.5 sm:py-3 ps-10 pe-4 block w-full border-outline rounded-lg sm:text-sm focus:border-brand focus:ring-brand disabled:opacity-50 disabled:pointer-events-none bg-surface-raised text-content placeholder-content-hint"
+                                />
+                                <Search
+                                    size={16}
+                                    className="pointer-events-none absolute start-3.5 top-1/2 -translate-y-1/2 text-content-subtle peer-disabled:opacity-50"
+                                    aria-hidden
                                 />
                             </div>
                         </div>
