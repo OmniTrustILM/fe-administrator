@@ -43,6 +43,14 @@ test.describe('Sidebar', () => {
         await expect(component.getByTestId('sidebar-certificates')).toBeVisible();
     });
 
+    test('button-styled sidebar entry is not underlined on hover', async ({ mount }) => {
+        const store = createMockStore();
+        const component = await mount(withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }));
+        const entry = component.getByTestId('sidebar-certificates');
+        await entry.hover();
+        await expect(entry).toHaveCSS('text-decoration-line', 'none');
+    });
+
     test('section toggle and nested children expose stable data-testid attributes', async ({ mount }) => {
         const store = createMockStore();
         const component = await mount(

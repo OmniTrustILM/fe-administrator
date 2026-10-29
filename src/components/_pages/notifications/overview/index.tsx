@@ -88,7 +88,7 @@ function NotificationsOverview() {
                 >
                     <div className="max-h-[360px] overflow-y-auto pt-2">{notificationsList}</div>
                     <div className="sticky bottom-0 bg-surface-raised pt-2 border-t border-divider">
-                        <Link to="/notifications" className="w-full" onClick={() => setOpen(false)}>
+                        <Link to="/notifications" className="w-full no-underline" onClick={() => setOpen(false)}>
                             <Button color="secondary" className="w-full justify-center">
                                 View all notifications
                             </Button>
