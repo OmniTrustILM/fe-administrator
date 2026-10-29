@@ -73,7 +73,7 @@ function SidebarSubmenuItem({
                 data-testid={`sidebar-${parentSlug}-${childSlug}`}
                 className={({ isActive }) =>
                     cn(
-                        'font-medium text-sm block px-4 ml-8 py-2 no-underline hover:bg-surface-hover rounded-lg h-[38px] items-center',
+                        'font-medium text-sm block whitespace-nowrap px-4 ml-8 py-2 no-underline hover:bg-surface-hover rounded-lg h-[38px] items-center',
                         isActive && 'text-brand',
                     )
                 }
@@ -482,6 +482,8 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
     }, [menuSize, activeSectionKey]);
 
     function toggleMenuSize() {
+        // Added on the first toggle only, so restoring a stored size on load does not animate.
+        document.documentElement.classList.add('sidebar-animated');
         const newMenuSize = menuSize === 'small' ? 'large' : 'small';
         setMenuSize(newMenuSize);
         setOpenMenuItems(newMenuSize === 'large' && activeSectionKey ? [activeSectionKey] : []);
@@ -519,7 +521,9 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                         >
                             <div className={cn('flex items-center gap-x-2', { 'text-brand': isChildActive })}>
                                 {mapping.icon}
-                                <span className={cn('text-sm', { 'sr-only': menuSize === 'small' })}>{mapping.header}</span>
+                                <span className={cn('text-sm whitespace-nowrap', { 'sr-only': menuSize === 'small' })}>
+                                    {mapping.header}
+                                </span>
                             </div>
                             {menuSize !== 'small' && <ChevronDown strokeWidth={1.5} size={16} className={cn({ isActive: 'rotate-180' })} />}
                         </Button>
@@ -566,7 +570,9 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                         }
                     >
                         {mapping.icon}
-                        <span className={cn('text-sm font-medium', { 'sr-only': menuSize === 'small' })}>{mapping.header}</span>
+                        <span className={cn('text-sm font-medium whitespace-nowrap', { 'sr-only': menuSize === 'small' })}>
+                            {mapping.header}
+                        </span>
                     </NavLink>
                 </RailTooltip>
             </li>
@@ -613,7 +619,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                 }}
                 data-testid="sidebar-sticky"
             >
-                <div className="p-4 w-full">
+                <div className="py-4 px-3.5 w-full overflow-hidden">
                     <nav className="pb-4">
                         <ul className="list-none m-0 flex flex-col gap-y-1">{allowedMenuItems.map((item) => renderMenuItem(item))}</ul>
                     </nav>
@@ -628,8 +634,17 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                                 })}
                                 onClick={() => toggleMenuSize()}
                             >
-                                <ArrowRightToLine strokeWidth={1} size={24} className={cn(menuSize === 'large' && 'rotate-180')} />
-                                <span className={cn({ 'sr-only': isCollapsed })}>{isCollapsed ? 'Expand' : 'Collapse'}</span>
+                                <ArrowRightToLine
+                                    strokeWidth={1}
+                                    size={24}
+                                    className={cn(
+                                        'transition-transform duration-300 motion-reduce:transition-none',
+                                        menuSize === 'large' && 'rotate-180',
+                                    )}
+                                />
+                                <span className={cn('whitespace-nowrap', { 'sr-only': isCollapsed })}>
+                                    {isCollapsed ? 'Expand' : 'Collapse'}
+                                </span>
                             </Button>
                         </RailTooltip>
                     </div>
