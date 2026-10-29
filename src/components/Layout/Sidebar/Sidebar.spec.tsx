@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test';
 import { test, expect } from '../../../../playwright/ct-test';
 import { createMockStore, withProviders } from 'utils/test-helpers';
 import { Resource } from 'types/openapi';
@@ -193,8 +194,24 @@ test.describe('Sidebar', () => {
     });
 
     test.describe('expand and collapse animation', () => {
-        const countWidthTransitions = () =>
-            document.documentElement.getAnimations().filter((a) => (a as CSSTransition).transitionProperty === '--sidebar-width').length;
+        // transitionrun is recorded even for a transition that has already finished by the time it is checked.
+        const recordWidthTransitions = (page: Page) =>
+            page.evaluate(() => {
+                const record = globalThis as unknown as { widthTransitions: number };
+                record.widthTransitions = 0;
+                document.documentElement.addEventListener('transitionrun', (event) => {
+                    if (event.propertyName === '--sidebar-width') record.widthTransitions += 1;
+                });
+            });
+        const widthTransitionsRun = (page: Page) =>
+            page.evaluate(
+                () =>
+                    new Promise<number>((resolve) =>
+                        requestAnimationFrame(() =>
+                            requestAnimationFrame(() => resolve((globalThis as unknown as { widthTransitions: number }).widthTransitions)),
+                        ),
+                    ),
+            );
 
         test('animates the width, keeping labels on one line and inside the rail', async ({ mount, page }) => {
             await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -256,22 +273,25 @@ test.describe('Sidebar', () => {
             const expanded = await centresOf();
             expect(expanded[0]).toBeCloseTo(collapsed[0], 0);
             expect(expanded[1]).toBeCloseTo(collapsed[1], 0);
+            expect(expanded[2]).toBeCloseTo(collapsed[2], 0);
         });
 
         test('does not animate the size restored on load', async ({ mount, page }) => {
             await page.emulateMedia({ reducedMotion: 'no-preference' });
             await page.evaluate(() => localStorage.setItem('menu-size', JSON.stringify('large')));
+            await recordWidthTransitions(page);
             const store = createMockStore();
             const component = await mount(
                 withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }),
             );
 
             await expect(component.getByText('Collapse', { exact: true })).toBeVisible();
-            expect(await page.evaluate(countWidthTransitions)).toBe(0);
+            expect(await widthTransitionsRun(page)).toBe(0);
         });
 
         test('does not animate with reduced motion', async ({ mount, page }) => {
             await page.emulateMedia({ reducedMotion: 'reduce' });
+            await recordWidthTransitions(page);
             const store = createMockStore();
             const component = await mount(
                 withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }),
@@ -280,7 +300,7 @@ test.describe('Sidebar', () => {
             await component.getByRole('button', { name: /Collapse/i }).click();
 
             await expect(component.getByText('Collapse', { exact: true })).toBeVisible();
-            expect(await page.evaluate(countWidthTransitions)).toBe(0);
+            expect(await widthTransitionsRun(page)).toBe(0);
         });
     });
 });
