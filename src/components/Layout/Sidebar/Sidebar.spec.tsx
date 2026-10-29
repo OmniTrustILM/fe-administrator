@@ -55,6 +55,16 @@ test.describe('Sidebar', () => {
         await expect(component.getByTestId('sidebar-access-control-roles')).toBeAttached();
     });
 
+    test('restores a section child once a later profile grants its resource', async ({ mount }) => {
+        const first = await mount(withProviders(<Sidebar allowedResources={[Resource.Users]} />));
+        await expect(first.getByTestId('sidebar-access-control-users')).toBeAttached();
+        await expect(first.getByTestId('sidebar-access-control-roles')).toHaveCount(0);
+        await first.unmount();
+
+        const second = await mount(withProviders(<Sidebar allowedResources={[Resource.Users, Resource.Roles]} />));
+        await expect(second.getByTestId('sidebar-access-control-roles')).toBeAttached();
+    });
+
     test('toggle button can be clicked', async ({ mount }) => {
         const store = createMockStore();
         const component = await mount(withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }));
