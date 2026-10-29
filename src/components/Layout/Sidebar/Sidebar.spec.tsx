@@ -8,7 +8,7 @@ test.describe('Sidebar', () => {
         const store = createMockStore();
         const component = await mount(withProviders(<Sidebar />, { store, initialRoute: '/' }));
         await expect(component.locator('nav').first()).toBeAttached();
-        await expect(component.getByRole('button', { name: /Collapse/i })).toBeAttached();
+        await expect(component.getByRole('button', { name: 'Expand' })).toBeAttached();
     });
 
     test('with no allowedResources renders empty menu', async ({ mount }) => {
@@ -58,11 +58,9 @@ test.describe('Sidebar', () => {
     test('toggle button can be clicked', async ({ mount }) => {
         const store = createMockStore();
         const component = await mount(withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }));
-        const toggle = component.getByRole('button', { name: /Collapse/i });
-        await expect(toggle).toBeVisible();
-        await toggle.click();
-        await toggle.click();
-        await expect(component.locator('nav').first()).toBeAttached();
+        await component.getByRole('button', { name: 'Expand' }).click();
+        await component.getByRole('button', { name: 'Collapse' }).click();
+        await expect(component.getByRole('button', { name: 'Expand' })).toBeVisible();
     });
 
     test('when small, clicking section with children opens flying menu', async ({ mount }) => {
@@ -102,7 +100,7 @@ test.describe('Sidebar', () => {
         const component = await mount(
             withProviders(<Sidebar allowedResources={[Resource.Users, Resource.Roles]} />, { store, initialRoute: '/' }),
         );
-        await component.getByRole('button', { name: /Collapse/i }).click();
+        await component.getByRole('button', { name: 'Expand' }).click();
         await expect(component.getByRole('link', { name: 'Users' })).toBeVisible();
         await component.getByRole('button', { name: 'Access Control' }).click();
         await expect(component.getByRole('link', { name: 'Roles' })).toBeVisible();
@@ -111,7 +109,7 @@ test.describe('Sidebar', () => {
     test('with active child route opens section when large', async ({ mount }) => {
         const store = createMockStore();
         const component = await mount(withProviders(<Sidebar allowedResources={[Resource.Users]} />, { store, initialRoute: '/users' }));
-        await component.getByRole('button', { name: /Collapse/i }).click();
+        await component.getByRole('button', { name: 'Expand' }).click();
         await expect(component.getByRole('link', { name: 'Users' })).toBeVisible();
     });
 
@@ -146,7 +144,7 @@ test.describe('Sidebar', () => {
     test('empty allowedResources shows no menu items', async ({ mount }) => {
         const store = createMockStore();
         const component = await mount(withProviders(<Sidebar allowedResources={[]} />, { store, initialRoute: '/' }));
-        await expect(component.getByRole('button', { name: /Collapse/i })).toBeAttached();
+        await expect(component.getByRole('button', { name: 'Expand' })).toBeAttached();
         const links = component.getByRole('link');
         await expect(links).toHaveCount(0);
     });
@@ -182,5 +180,38 @@ test.describe('Sidebar', () => {
         await expect(component.getByTestId('sidebar-certificates')).toHaveAttribute('aria-current', 'page');
         await expect(component.getByTestId('sidebar-certificates')).toHaveCSS('color', brandColor);
         await expect(component.getByTestId('sidebar-keys')).toHaveCSS('color', contentColor);
+    });
+
+    test('collapsed entries show their label in a tooltip on hover and keyboard focus', async ({ mount, page }) => {
+        const store = createMockStore();
+        const component = await mount(
+            withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
+        );
+
+        await component.getByTestId('sidebar-certificates').hover();
+        await expect(page.getByRole('tooltip', { name: 'Certificates' })).toBeVisible();
+
+        await component.getByTestId('sidebar-access-control').focus();
+        await expect(page.getByRole('tooltip', { name: 'Access Control' })).toBeVisible();
+
+        await component.getByRole('button', { name: 'Expand' }).hover();
+        await expect(page.getByRole('tooltip', { name: 'Expand' })).toBeVisible();
+    });
+
+    test('expanded sidebar shows no tooltips and labels the toggle Collapse', async ({ mount, page }) => {
+        const store = createMockStore();
+        const component = await mount(
+            withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
+        );
+        await component.getByRole('button', { name: 'Expand' }).click();
+
+        const toggle = component.getByRole('button', { name: 'Collapse' });
+        await expect(toggle).toBeVisible();
+
+        await component.getByTestId('sidebar-certificates').hover();
+        await component.getByTestId('sidebar-access-control').focus();
+        await toggle.hover();
+        await page.waitForTimeout(600);
+        await expect(page.getByRole('tooltip')).toHaveCount(0);
     });
 });

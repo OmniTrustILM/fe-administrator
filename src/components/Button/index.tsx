@@ -1,5 +1,5 @@
 import cn from 'classnames';
-import Tooltip from 'components/Tooltip';
+import Tooltip, { type TooltipPlacement } from 'components/Tooltip';
 
 export type ButtonVariant = 'solid' | 'outline' | 'transparent';
 
@@ -13,6 +13,7 @@ export type Props = {
     disabled?: boolean;
     className?: string;
     title?: string;
+    tooltipPlacement?: TooltipPlacement;
     disabledTooltip?: string;
     type?: 'submit' | 'reset' | 'button';
     'data-testid'?: string;
@@ -63,6 +64,7 @@ function Button({
     disabled = false,
     color = 'primary',
     title,
+    tooltipPlacement,
     disabledTooltip,
     type = 'button',
     'data-testid': dataTestId,
@@ -94,12 +96,16 @@ function Button({
         // instead, and it does receive the hover -- the pointer passes through the button onto it.
         if (disabled && disabledTooltip) {
             return (
-                <Tooltip content={tooltipContent}>
+                <Tooltip content={tooltipContent} placement={tooltipPlacement}>
                     <span className="inline-flex">{buttonElement}</span>
                 </Tooltip>
             );
         }
-        return <Tooltip content={tooltipContent}>{buttonElement}</Tooltip>;
+        return (
+            <Tooltip content={tooltipContent} placement={tooltipPlacement}>
+                {buttonElement}
+            </Tooltip>
+        );
     }
 
     return buttonElement;

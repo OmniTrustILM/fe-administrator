@@ -26,6 +26,7 @@ import {
     ShieldCheck,
 } from 'lucide-react';
 import Button from 'components/Button';
+import Tooltip from 'components/Tooltip';
 import { Resource } from 'types/openapi';
 import { featureFlags } from 'utils/feature-flags';
 
@@ -477,6 +478,8 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
         setDefaultMenuSize(newMenuSize);
     }
 
+    const isCollapsed = menuSize === 'small';
+
     function renderMenuItem(mapping: MenuItemMapping) {
         if ('children' in mapping) {
             const childrenKeys = mapping.children.map((child) => child.link);
@@ -489,6 +492,8 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                     <Button
                         variant="transparent"
                         data-testid={`sidebar-${parentSlug}`}
+                        title={isCollapsed ? mapping.header : undefined}
+                        tooltipPlacement="right"
                         className={cn('!px-4 !py-2 border-none justify-between h-[38px]', {
                             'flex w-full items-center': menuSize !== 'small',
                         })}
@@ -528,28 +533,38 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                 </li>
             );
         }
+        const link = (
+            <NavLink
+                to={mapping.headerLink}
+                data-testid={`sidebar-${toTestIdSlug(mapping.headerLink)}`}
+                onClick={() => {
+                    if (menuSize === 'flying') {
+                        setMenuSize('small');
+                        setOpenMenuItems([]);
+                    }
+                }}
+                className={({ isActive }) =>
+                    cn('font-medium flex px-4 py-2 no-underline hover:bg-surface-hover rounded-lg h-[38px] items-center', {
+                        'text-brand': isActive,
+                        'text-content': !isActive,
+                        'w-full gap-x-2': menuSize !== 'small',
+                    })
+                }
+            >
+                {mapping.icon}
+                <span className={cn('text-sm font-medium', { 'sr-only': menuSize === 'small' })}>{mapping.header}</span>
+            </NavLink>
+        );
         return (
             <li key={mapping._key} className="flex justify-center">
-                <NavLink
-                    to={mapping.headerLink}
-                    data-testid={`sidebar-${toTestIdSlug(mapping.headerLink)}`}
-                    onClick={() => {
-                        if (menuSize === 'flying') {
-                            setMenuSize('small');
-                            setOpenMenuItems([]);
-                        }
-                    }}
-                    className={({ isActive }) =>
-                        cn('font-medium flex px-4 py-2 no-underline hover:bg-surface-hover rounded-lg h-[38px] items-center', {
-                            'text-brand': isActive,
-                            'text-content': !isActive,
-                            'w-full gap-x-2': menuSize !== 'small',
-                        })
-                    }
-                >
-                    {mapping.icon}
-                    <span className={cn('text-sm font-medium', { 'sr-only': menuSize === 'small' })}>{mapping.header}</span>
-                </NavLink>
+                {isCollapsed ? (
+                    // A span is the trigger because Radix's asChild would stringify NavLink's function className.
+                    <Tooltip content={mapping.header} placement="right">
+                        <span className="inline-flex">{link}</span>
+                    </Tooltip>
+                ) : (
+                    link
+                )}
             </li>
         );
     }
@@ -607,9 +622,11 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                                 'w-full gap-x-2': menuSize !== 'small',
                             })}
                             onClick={() => toggleMenuSize()}
+                            title={isCollapsed ? 'Expand' : undefined}
+                            tooltipPlacement="right"
                         >
                             <ArrowRightToLine strokeWidth={1} size={24} className={cn(menuSize === 'large' && 'rotate-180')} />
-                            <span className={cn({ 'sr-only': menuSize === 'small' })}>Collapse</span>
+                            <span className={cn({ 'sr-only': isCollapsed })}>{isCollapsed ? 'Expand' : 'Collapse'}</span>
                         </Button>
                     </div>
                 </div>
