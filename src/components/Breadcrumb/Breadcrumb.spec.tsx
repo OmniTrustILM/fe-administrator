@@ -51,7 +51,8 @@ test.describe('Breadcrumb', () => {
         await expect(home).toHaveCSS('text-decoration-line', 'underline');
     });
 
-    test('does not underline a text link focused by a mouse click once the pointer leaves', async ({ mount, page }) => {
+    test('does not underline a text link focused by a mouse click once the pointer leaves', async ({ mount, page, browserName }) => {
+        test.skip(browserName === 'webkit', 'WebKit does not focus a link on mouse click');
         const component = await mountBreadcrumb(mount, [
             { label: 'Home', href: '/' },
             { label: 'Page', href: '/page' },
@@ -59,6 +60,7 @@ test.describe('Breadcrumb', () => {
         const home = component.getByRole('link', { name: 'Home' });
 
         await home.click();
+        await expect(home).toBeFocused();
         await page.mouse.move(400, 400);
         await expect(home).not.toHaveCSS('text-decoration-line', 'underline');
     });
