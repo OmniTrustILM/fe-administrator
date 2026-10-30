@@ -855,6 +855,18 @@ describe('cryptographic-keys removal from the inventory after compromise, destru
         expect(next.cryptographicKey?.removableFromInventory).toBe(true);
     });
 
+    test.each([
+        [
+            'compromiseCryptographicKeySuccess',
+            () => actions.compromiseCryptographicKeySuccess({ uuid: 'key-2', request: { uuids: ['item-9'] } as any }),
+        ],
+        ['destroyCryptographicKeySuccess', () => actions.destroyCryptographicKeySuccess({ uuid: 'key-2', keyItemUuid: ['item-9'] })],
+    ])('%s keeps removal of the key on the detail page when the item is not on it', (_name, action) => {
+        const next = reducer(removableKey, action());
+
+        expect(next.cryptographicKey?.removableFromInventory).toBe(true);
+    });
+
     const removableRows = {
         ...initialState,
         cryptographicKeys: [
@@ -891,6 +903,15 @@ describe('cryptographic-keys removal from the inventory after compromise, destru
             ['item-2', false],
             ['item-3', true],
         ]);
+    });
+
+    test.each([
+        ['bulkDeleteCryptographicKeyItemsSuccess', () => actions.bulkDeleteCryptographicKeyItemsSuccess({ uuids: ['item-9'] })],
+        ['bulkDestroyCryptographicKeyItemsSuccess', () => actions.bulkDestroyCryptographicKeyItemsSuccess({ uuids: ['item-9'] })],
+    ])('%s keeps removal of every listed row when the item is not listed', (_name, action) => {
+        const next = reducer(removableRows, action());
+
+        expect(next.cryptographicKeys.map((row) => row.removableFromInventory)).toEqual([true, true, true]);
     });
 });
 

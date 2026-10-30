@@ -24,7 +24,7 @@ import KeyUsageSelect from '../KeyUsageSelect';
 import { buildKeyCellRegistry, KEY_COLUMNS } from '../keyTableHelpers';
 import { EnumColumnDescription } from 'components/EnumDescription';
 import CryptographicKeyForm from '../form';
-import { REMOVE_KEY_FROM_INVENTORY_NOTE, REMOVE_KEYS_FROM_INVENTORY_NOTE } from '../detail/constants';
+import { REMOVE_KEY_FROM_INVENTORY_NOTE, REMOVE_KEYS_FROM_INVENTORY_NOTE } from '../constants';
 
 const removalReportHeaders: TableHeader[] = [
     { id: 'name', content: 'Name' },

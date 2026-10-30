@@ -27,7 +27,7 @@ import CryptographicKeyItem from './CryptographicKeyItem';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import Breadcrumb from 'components/Breadcrumb';
 import Container from 'components/Container';
-import { keyWithoutTokenInstanceActionNotes, REMOVE_KEY_FROM_INVENTORY_NOTE } from './constants';
+import { keyWithoutTokenInstanceActionNotes, REMOVE_KEY_FROM_INVENTORY_NOTE } from '../constants';
 import CryptographicKeyForm from '../form';
 
 const allKeyUsages = Object.values(KeyUsage);

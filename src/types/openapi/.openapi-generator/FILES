@@ -442,6 +442,7 @@ models/KeyFormat.ts
 models/KeyImportRequestDto.ts
 models/KeyItemDetailDto.ts
 models/KeyItemDto.ts
+models/KeyItemListDto.ts
 models/KeyRequestDto.ts
 models/KeyRequestType.ts
 models/KeyState.ts

@@ -554,6 +554,17 @@ test.describe('CryptographicKeyDetail removal from the inventory', () => {
         await expect(page.getByRole('button', { name: 'Remove from inventory' })).toBeVisible();
     });
 
+    test('offers removal while the token profile is still loading', async ({ mount, page }) => {
+        const dispatched: UnknownAction[] = [];
+        const key = aSynchronizedKey().withTokenProfile(tokenProfile.uuid).removableFromInventory().build();
+
+        await mount(<CryptographicKeyDetailWithStore cryptographicKey={key} onAction={(action) => dispatched.push(action)} />);
+
+        await expect(page.getByRole('button', { name: 'Remove from inventory' })).toBeEnabled();
+        expect(dispatched.filter(profileActions.getTokenProfileDetail.match)).not.toHaveLength(0);
+        expect(dispatched.filter(profileActions.getTokenProfileDetailSuccess.match)).toHaveLength(0);
+    });
+
     test('hides removal for a key whose flag Core cleared', async ({ mount, page }) => {
         const key = aSynchronizedKey().withTokenProfile(tokenProfile.uuid).build();
 

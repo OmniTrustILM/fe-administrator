@@ -11,7 +11,7 @@ import pagingsReducer, { actions as pagingsActions, initialState as pagingsIniti
 import tokenKeysReducer, { actions as tokenKeysActions, initialState as tokenKeysInitialState } from 'ducks/token-keys';
 import { actions as tokenProfilesActions, initialState as tokenProfilesInitialState } from 'ducks/token-profiles';
 import { InspectedEntryKind, KeyState, KeyType } from 'types/openapi';
-import { REMOVE_KEY_FROM_INVENTORY_NOTE, REMOVE_KEYS_FROM_INVENTORY_NOTE } from '../detail/constants';
+import { REMOVE_KEY_FROM_INVENTORY_NOTE, REMOVE_KEYS_FROM_INVENTORY_NOTE } from '../constants';
 import { clickByText, clickByTitle } from '../../test-utils/domActions';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
 import { useDispatchMock, useSelectorMock } from '../../test-utils/reactReduxMockModule';
