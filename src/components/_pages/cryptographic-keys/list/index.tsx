@@ -11,7 +11,6 @@ import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EntityType, actions as filterActions } from 'ducks/filters';
 import { actions as pagingActions, selectors as pagingSelectors } from 'ducks/paging';
 import { selectors as tokenKeysSelectors } from 'ducks/token-keys';
-import { actions as tokenProfilesActions, selectors as tokenProfilesSelectors } from 'ducks/token-profiles';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Select from 'components/Select';
@@ -25,7 +24,7 @@ import KeyUsageSelect from '../KeyUsageSelect';
 import { buildKeyCellRegistry, KEY_COLUMNS } from '../keyTableHelpers';
 import { EnumColumnDescription } from 'components/EnumDescription';
 import CryptographicKeyForm from '../form';
-import { isRemovableFromInventory, REMOVE_KEY_FROM_INVENTORY_NOTE, REMOVE_KEYS_FROM_INVENTORY_NOTE } from '../inventoryRemoval';
+import { REMOVE_KEY_FROM_INVENTORY_NOTE, REMOVE_KEYS_FROM_INVENTORY_NOTE } from '../detail/constants';
 
 const removalReportHeaders: TableHeader[] = [
     { id: 'name', content: 'Name' },
@@ -36,21 +35,11 @@ function keyCount(count: number) {
     return count === 1 ? '1 key' : `${count} keys`;
 }
 
-/**
- * The checked rows are key items, while removal from the inventory acts on the key each item belongs to. A key is
- * judged by its rows on the page.
- */
-function removabilityOfCheckedKeys(
-    items: CryptographicKeyResponseModel[],
-    checkedItemUuids: string[],
-    keyListableProfileUuids: ReadonlySet<string>,
-) {
-    const checkedKeyUuids = new Set(items.filter((item) => checkedItemUuids.includes(item.uuid)).map((item) => item.keyWrapperUuid));
+/** Removal from the inventory acts on the key each checked item belongs to. Core gives every item its key's flag. */
+function removabilityOfCheckedKeys(items: CryptographicKeyResponseModel[], checkedItemUuids: string[]) {
     const removability = new Map<string, boolean>();
-    for (const keyUuid of checkedKeyUuids) {
-        const rows = items.filter((item) => item.keyWrapperUuid === keyUuid);
-        const tokenListsKeys = rows.every((row) => row.tokenProfileUuid !== undefined && keyListableProfileUuids.has(row.tokenProfileUuid));
-        removability.set(keyUuid, isRemovableFromInventory(tokenListsKeys, rows));
+    for (const item of items) {
+        if (checkedItemUuids.includes(item.uuid)) removability.set(item.keyWrapperUuid, item.removableFromInventory);
     }
     return removability;
 }
@@ -77,7 +66,6 @@ function CryptographicKeyList() {
     const keyUsageEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyUsage));
     const keyTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyType));
     const keyCompromiseReasonEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyCompromiseReason));
-    const keyListableProfileUuids = useSelector(tokenProfilesSelectors.keyListableTokenProfileUuids);
     const isBusy =
         isBulkDeleting ||
         isBulkEnabling ||
@@ -106,8 +94,8 @@ function CryptographicKeyList() {
     const [isRemovalReportOpen, setIsRemovalReportOpen] = useState<boolean>(false);
 
     const checkedKeyRemovability = useMemo(
-        () => removabilityOfCheckedKeys(cryptographicKeys, checkedRows, keyListableProfileUuids),
-        [cryptographicKeys, checkedRows, keyListableProfileUuids],
+        () => removabilityOfCheckedKeys(cryptographicKeys, checkedRows),
+        [cryptographicKeys, checkedRows],
     );
     const removableKeyUuids = useMemo(
         () => [...checkedKeyRemovability].filter(([, removable]) => removable).map(([keyUuid]) => keyUuid),
@@ -117,10 +105,6 @@ function CryptographicKeyList() {
 
     useEffect(() => {
         dispatch(actions.clearDeleteErrorMessages());
-    }, [dispatch]);
-
-    useEffect(() => {
-        dispatch(tokenProfilesActions.listKeyListableTokenProfiles());
     }, [dispatch]);
 
     const onEnableClick = useCallback(() => {

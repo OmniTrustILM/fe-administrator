@@ -11,7 +11,7 @@ import pagingsReducer, { actions as pagingsActions, initialState as pagingsIniti
 import tokenKeysReducer, { actions as tokenKeysActions, initialState as tokenKeysInitialState } from 'ducks/token-keys';
 import { actions as tokenProfilesActions, initialState as tokenProfilesInitialState } from 'ducks/token-profiles';
 import { InspectedEntryKind, KeyState, KeyType } from 'types/openapi';
-import { REMOVE_KEY_FROM_INVENTORY_NOTE, REMOVE_KEYS_FROM_INVENTORY_NOTE } from '../inventoryRemoval';
+import { REMOVE_KEY_FROM_INVENTORY_NOTE, REMOVE_KEYS_FROM_INVENTORY_NOTE } from '../detail/constants';
 import { clickByText, clickByTitle } from '../../test-utils/domActions';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
 import { useDispatchMock, useSelectorMock } from '../../test-utils/reactReduxMockModule';
@@ -224,8 +224,9 @@ describe('CryptographicKeyList removal from the inventory', () => {
         keyWrapperUuid: string,
         name: string,
         type: KeyType,
+        removableFromInventory: boolean,
         state = KeyState.Active,
-        tokenProfileUuid?: string,
+        tokenProfileUuid = LISTING_PROFILE,
     ) => ({
         uuid,
         keyWrapperUuid,
@@ -233,13 +234,14 @@ describe('CryptographicKeyList removal from the inventory', () => {
         type,
         state,
         tokenProfileUuid,
+        removableFromInventory,
     });
-    const pairPrivate = row('item-1', 'key-1', 'pair', KeyType.Private, KeyState.Active, LISTING_PROFILE);
-    const pairPublic = row('item-2', 'key-1', 'pair', KeyType.Public, KeyState.Active, LISTING_PROFILE);
-    const otherPairPrivate = row('item-3', 'key-2', 'other pair', KeyType.Private, KeyState.Active, LISTING_PROFILE);
-    const compromisedPrivate = row('item-4', 'key-3', 'compromised', KeyType.Private, KeyState.Compromised, LISTING_PROFILE);
-    const unlistedPrivate = row('item-5', 'key-4', 'unlisted', KeyType.Private, KeyState.Active, 'other-profile');
-    const publicKeyOnly = row('item-6', 'key-5', 'public key only', KeyType.Public);
+    const pairPrivate = row('item-1', 'key-1', 'pair', KeyType.Private, true);
+    const pairPublic = row('item-2', 'key-1', 'pair', KeyType.Public, true);
+    const otherPairPrivate = row('item-3', 'key-2', 'other pair', KeyType.Private, true);
+    const compromisedPrivate = row('item-4', 'key-3', 'compromised', KeyType.Private, false, KeyState.Compromised);
+    const refusedPrivate = row('item-5', 'key-4', 'refused', KeyType.Private, false);
+    const removableUnlistedPrivate = row('item-6', 'key-5', 'removable unlisted', KeyType.Private, true, KeyState.Active, 'other-profile');
 
     const renderList = () =>
         act(async () => {
@@ -277,7 +279,14 @@ describe('CryptographicKeyList removal from the inventory', () => {
         state = {
             cryptographicKeys: {
                 ...keysInitialState,
-                cryptographicKeys: [pairPrivate, pairPublic, otherPairPrivate, compromisedPrivate, unlistedPrivate, publicKeyOnly],
+                cryptographicKeys: [
+                    pairPrivate,
+                    pairPublic,
+                    otherPairPrivate,
+                    compromisedPrivate,
+                    refusedPrivate,
+                    removableUnlistedPrivate,
+                ],
             },
             tokenprofiles: { ...tokenProfilesInitialState, keyListableTokenProfiles: [{ uuid: LISTING_PROFILE }] },
             tokenKeys: tokenKeysInitialState,
@@ -293,58 +302,31 @@ describe('CryptographicKeyList removal from the inventory', () => {
         root = createRoot(container);
     });
 
-    it('asks which token profiles list keys', async () => {
+    it('asks for no key-listable token profiles', async () => {
         await renderList();
 
-        expect(dispatch).toHaveBeenCalledWith(tokenProfilesActions.listKeyListableTokenProfiles());
+        expect(dispatch).not.toHaveBeenCalledWith(tokenProfilesActions.listKeyListableTokenProfiles());
     });
 
-    it('is offered only for a selection holding a key that can leave the inventory', async () => {
+    it('is offered only for a selection holding a key Core flags as removable', async () => {
         await listWithChecked();
         expect(removeFromInventoryButton().disabled).toBe(true);
 
-        await listWithChecked(compromisedPrivate);
-        expect(removeFromInventoryButton().disabled).toBe(true);
-
-        await listWithChecked(unlistedPrivate);
-        expect(removeFromInventoryButton().disabled).toBe(true);
-
-        await listWithChecked(publicKeyOnly);
+        await listWithChecked(compromisedPrivate, refusedPrivate);
         expect(removeFromInventoryButton().disabled).toBe(true);
 
         await listWithChecked(compromisedPrivate, otherPairPrivate);
         expect(removeFromInventoryButton().disabled).toBe(false);
     });
 
-    it('is not offered for a key whose private key was destroyed or whose items were destroyed as compromised', async () => {
-        const destroyedPrivate = row('item-7', 'key-6', 'destroyed', KeyType.Private, KeyState.Destroyed, LISTING_PROFILE);
-        const destroyedCompromisedPublic = row('item-8', 'key-7', 'half', KeyType.Public, KeyState.DestroyedCompromised, LISTING_PROFILE);
-        const activePrivateOfHalf = row('item-9', 'key-7', 'half', KeyType.Private, KeyState.Active, LISTING_PROFILE);
-        state = {
-            ...state,
-            cryptographicKeys: {
-                ...state.cryptographicKeys,
-                cryptographicKeys: [destroyedPrivate, destroyedCompromisedPublic, activePrivateOfHalf],
-            },
-        };
+    it("follows Core's flag whatever the key's token profile", async () => {
+        await listWithChecked(removableUnlistedPrivate);
 
-        await listWithChecked(destroyedPrivate);
-        expect(removeFromInventoryButton().disabled).toBe(true);
-
-        await listWithChecked(activePrivateOfHalf);
-        expect(removeFromInventoryButton().disabled).toBe(true);
+        expect(removeFromInventoryButton().disabled).toBe(false);
     });
 
-    it('judges a key by all its rows on the page', async () => {
-        state = {
-            ...state,
-            cryptographicKeys: {
-                ...state.cryptographicKeys,
-                cryptographicKeys: [pairPrivate, { ...pairPublic, state: KeyState.Compromised }],
-            },
-        };
-
-        await listWithChecked(pairPrivate);
+    it('withholds a key whose flag Core cleared although its token lists keys', async () => {
+        await listWithChecked(refusedPrivate);
 
         expect(removeFromInventoryButton().disabled).toBe(true);
     });

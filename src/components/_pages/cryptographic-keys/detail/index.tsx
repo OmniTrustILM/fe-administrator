@@ -27,9 +27,8 @@ import CryptographicKeyItem from './CryptographicKeyItem';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import Breadcrumb from 'components/Breadcrumb';
 import Container from 'components/Container';
-import { keyWithoutTokenInstanceActionNotes } from './constants';
+import { keyWithoutTokenInstanceActionNotes, REMOVE_KEY_FROM_INVENTORY_NOTE } from './constants';
 import CryptographicKeyForm from '../form';
-import { isRemovableFromInventory, REMOVE_KEY_FROM_INVENTORY_NOTE } from '../inventoryRemoval';
 
 const allKeyUsages = Object.values(KeyUsage);
 
@@ -43,8 +42,9 @@ export default function CryptographicKeyDetail() {
     const tokenProfile = useSelector(tokenProfileSelectors.tokenProfile);
     const isFetchingTokenProfile = useSelector(tokenProfileSelectors.isFetchingDetail);
     const tokenProfileFetchSucceeded = useSelector(tokenProfileSelectors.detailFetchSucceeded);
-    const tokenInstanceUuid = cryptographicKey?.uuid === id ? cryptographicKey?.tokenInstanceUuid : undefined;
-    const tokenProfileUuid = cryptographicKey?.uuid === id ? cryptographicKey?.tokenProfileUuid : undefined;
+    const keyForCurrentRoute = cryptographicKey?.uuid === id ? cryptographicKey : undefined;
+    const tokenInstanceUuid = keyForCurrentRoute?.tokenInstanceUuid;
+    const tokenProfileUuid = keyForCurrentRoute?.tokenProfileUuid;
     // Synchronized keys may have no profile; KeyUsageSelect still filters these usages by key type.
     const profileKeyUsages =
         tokenProfileUuid &&
@@ -55,10 +55,7 @@ export default function CryptographicKeyDetail() {
         tokenProfile.tokenInstanceUuid === tokenInstanceUuid
             ? tokenProfile.usages
             : undefined;
-    const supportedKeyUsages = cryptographicKey && cryptographicKey.uuid === id && !tokenProfileUuid ? allKeyUsages : profileKeyUsages;
-    const keyListableProfilesListed = useSelector(tokenProfileSelectors.isKeyListableTokenProfilesListed);
-    const keyListableProfileUuids = useSelector(tokenProfileSelectors.keyListableTokenProfileUuids);
-    const tokenListsKeys = tokenProfileUuid !== undefined && keyListableProfileUuids.has(tokenProfileUuid);
+    const supportedKeyUsages = keyForCurrentRoute && !tokenProfileUuid ? allKeyUsages : profileKeyUsages;
     const state = useSelector(selectors.state);
     const isUpdatingKeyUsage = useSelector(selectors.isUpdatingKeyUsage);
 
@@ -124,10 +121,6 @@ export default function CryptographicKeyDetail() {
     useEffect(() => {
         loadProfileDetail();
     }, [loadProfileDetail]);
-
-    useEffect(() => {
-        if (!keyListableProfilesListed) dispatch(tokenProfileActions.listKeyListableTokenProfiles());
-    }, [dispatch, keyListableProfilesListed]);
 
     // The profile's detail says which items can be exported, so refreshing the key asks for it again too.
     const refreshKeyDetails = useCallback(() => {
@@ -277,7 +270,7 @@ export default function CryptographicKeyDetail() {
                     setConfirmDestroy(true);
                 },
             },
-            ...(cryptographicKey && isRemovableFromInventory(tokenListsKeys, cryptographicKey.items)
+            ...(keyForCurrentRoute?.removableFromInventory
                 ? [
                       {
                           icon: 'package-minus' as const,
@@ -289,7 +282,7 @@ export default function CryptographicKeyDetail() {
                   ]
                 : []),
         ],
-        [cryptographicKey, tokenListsKeys, isBusy, onEditClick, onDisableClick, onEnableClick, setConfirmCompromise, setConfirmDestroy],
+        [cryptographicKey, keyForCurrentRoute, isBusy, onEditClick, onDisableClick, onEnableClick, setConfirmCompromise, setConfirmDestroy],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);

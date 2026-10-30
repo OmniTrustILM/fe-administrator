@@ -795,6 +795,105 @@ describe('cryptographic-keys slice', () => {
     });
 });
 
+describe('cryptographic-keys removal from the inventory after compromise, destruction or deletion', () => {
+    const removableKey = {
+        ...initialState,
+        cryptographicKey: {
+            uuid: 'key-1',
+            removableFromInventory: true,
+            items: [
+                { uuid: 'item-1', state: KeyState.Active },
+                { uuid: 'item-2', state: KeyState.Active },
+            ],
+        },
+    } as any;
+
+    test.each([
+        [
+            'compromiseCryptographicKeySuccess on one item',
+            () => actions.compromiseCryptographicKeySuccess({ uuid: 'key-1', request: { uuids: ['item-1'] } as any }),
+        ],
+        [
+            'compromiseCryptographicKeySuccess on the whole key',
+            () => actions.compromiseCryptographicKeySuccess({ uuid: 'key-1', request: {} as any }),
+        ],
+        [
+            'compromiseCryptographicKeyFailure',
+            () => actions.compromiseCryptographicKeyFailure({ requestUuids: [], failedUuids: ['item-2'] }),
+        ],
+        [
+            'destroyCryptographicKeySuccess on one item',
+            () => actions.destroyCryptographicKeySuccess({ uuid: 'key-1', keyItemUuid: ['item-1'] }),
+        ],
+        [
+            'destroyCryptographicKeySuccess on the whole key',
+            () => actions.destroyCryptographicKeySuccess({ uuid: 'key-1', keyItemUuid: [] }),
+        ],
+        ['destroyCryptographicKeyFailure', () => actions.destroyCryptographicKeyFailure({ requestUuids: [], failedUuids: ['item-2'] })],
+        [
+            'deleteCryptographicKeySuccess on one item',
+            () => actions.deleteCryptographicKeySuccess({ uuid: 'key-1', keyItemUuid: ['item-1'] }),
+        ],
+    ])('%s withdraws removal of the key on the detail page', (_name, action) => {
+        const next = reducer(removableKey, action());
+
+        expect(next.cryptographicKey?.removableFromInventory).toBe(false);
+    });
+
+    test.each([
+        [
+            'compromiseCryptographicKeyFailure',
+            () => actions.compromiseCryptographicKeyFailure({ requestUuids: [], failedUuids: ['item-1', 'item-2'] }),
+        ],
+        [
+            'destroyCryptographicKeyFailure',
+            () => actions.destroyCryptographicKeyFailure({ requestUuids: [], failedUuids: ['item-1', 'item-2'] }),
+        ],
+    ])('%s keeps removal of the key on the detail page when every item failed', (_name, action) => {
+        const next = reducer(removableKey, action());
+
+        expect(next.cryptographicKey?.removableFromInventory).toBe(true);
+    });
+
+    const removableRows = {
+        ...initialState,
+        cryptographicKeys: [
+            { uuid: 'item-1', keyWrapperUuid: 'key-1', state: KeyState.Active, removableFromInventory: true },
+            { uuid: 'item-2', keyWrapperUuid: 'key-1', state: KeyState.Active, removableFromInventory: true },
+            { uuid: 'item-3', keyWrapperUuid: 'key-2', state: KeyState.Active, removableFromInventory: true },
+        ],
+    } as any;
+
+    test.each([
+        [
+            'bulkCompromiseCryptographicKeyItemsSuccess',
+            () => actions.bulkCompromiseCryptographicKeyItemsSuccess({ request: { uuids: ['item-1'] } as any }),
+        ],
+        [
+            'bulkCompromiseCryptographicKeyItemsFailure',
+            () => actions.bulkCompromiseCryptographicKeyItemsFailure({ requestUuids: ['item-1', 'item-3'], failedUuids: ['item-3'] }),
+        ],
+        ['bulkDestroyCryptographicKeyItemsSuccess', () => actions.bulkDestroyCryptographicKeyItemsSuccess({ uuids: ['item-1'] })],
+        [
+            'bulkDestroyCryptographicKeyItemsFailure',
+            () => actions.bulkDestroyCryptographicKeyItemsFailure({ requestUuids: ['item-1', 'item-3'], failedUuids: ['item-3'] }),
+        ],
+    ])('%s withdraws removal from every listed row of the changed key', (_name, action) => {
+        const next = reducer(removableRows, action());
+
+        expect(next.cryptographicKeys.map((row) => row.removableFromInventory)).toEqual([false, false, true]);
+    });
+
+    test('bulkDeleteCryptographicKeyItemsSuccess withdraws removal from the remaining rows of the changed key', () => {
+        const next = reducer(removableRows, actions.bulkDeleteCryptographicKeyItemsSuccess({ uuids: ['item-1'] }));
+
+        expect(next.cryptographicKeys.map((row) => [row.uuid, row.removableFromInventory])).toEqual([
+            ['item-2', false],
+            ['item-3', true],
+        ]);
+    });
+});
+
 describe('cryptographic-keys selectors', () => {
     test('all selectors read from feature state', () => {
         const featureState: any = {
