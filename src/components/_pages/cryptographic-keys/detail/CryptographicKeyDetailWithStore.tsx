@@ -16,7 +16,6 @@ import { actions as profileActions, slice as profileSlice, type State as Profile
 import type { CryptographicKeyDetailResponseModel } from 'types/cryptographic-keys';
 import type { TokenProfileDetailResponseModel } from 'types/token-profiles';
 import type { AttributeDescriptorModel } from 'types/attributes';
-import type { TokenProfileDto } from 'types/openapi';
 
 type State = Omit<ReturnType<typeof testReducers>, 'cryptographicKeys' | 'tokenprofiles' | 'cryptographicOperations'> & {
     cryptographicKeys: KeyState;
@@ -37,8 +36,6 @@ function reducer(state: State | undefined, action: UnknownAction): State {
 type Props = Readonly<{
     cryptographicKey: CryptographicKeyDetailResponseModel;
     tokenProfile?: TokenProfileDetailResponseModel;
-    /** Leaves the listing of the key-listable token profiles in flight when absent. */
-    keyListableTokenProfiles?: TokenProfileDto[];
     /** Leaves a key export in flight when absent. */
     exportAnswer?: ExportAnswer;
     /** Whether the signed-in user holds the key export permission. */
@@ -51,7 +48,6 @@ type Props = Readonly<{
 export default function CryptographicKeyDetailWithStore({
     cryptographicKey,
     tokenProfile,
-    keyListableTokenProfiles,
     exportAnswer,
     canExportKeys = true,
     signatureDescriptors,
@@ -70,8 +66,6 @@ export default function CryptographicKeyDetailWithStore({
             } else if (profileActions.getTokenProfileDetail.match(action) && tokenProfile && !hasResolvedProfileRequest) {
                 hasResolvedProfileRequest = true;
                 api.dispatch(profileActions.getTokenProfileDetailSuccess({ tokenProfile }));
-            } else if (profileActions.listKeyListableTokenProfiles.match(action) && keyListableTokenProfiles) {
-                api.dispatch(profileActions.listKeyListableTokenProfilesSuccess({ tokenProfiles: keyListableTokenProfiles }));
             } else if (keyActions.listExportKeyAttributeDescriptors.match(action)) {
                 api.dispatch(keyActions.listExportKeyAttributeDescriptorsSuccess({ request: action.payload, attributeDescriptors: [] }));
             } else if (keyActions.exportKey.match(action)) {
@@ -94,16 +88,7 @@ export default function CryptographicKeyDetailWithStore({
             middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(apiResponses),
             preloadedState: { ...reducer(undefined, { type: 'init' }), auth: keyPermissionsAuth({ exportKey: canExportKeys }) },
         });
-    }, [
-        cryptographicKey,
-        tokenProfile,
-        keyListableTokenProfiles,
-        exportAnswer,
-        canExportKeys,
-        signatureDescriptors,
-        failSignatureDescriptors,
-        onAction,
-    ]);
+    }, [cryptographicKey, tokenProfile, exportAnswer, canExportKeys, signatureDescriptors, failSignatureDescriptors, onAction]);
 
     return (
         <Provider store={store}>

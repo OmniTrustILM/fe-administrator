@@ -374,6 +374,7 @@ export * from './KeyFormat';
 export * from './KeyImportRequestDto';
 export * from './KeyItemDetailDto';
 export * from './KeyItemDto';
+export * from './KeyItemListDto';
 export * from './KeyRequestDto';
 export * from './KeyRequestType';
 export * from './KeyState';
