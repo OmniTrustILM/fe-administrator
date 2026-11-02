@@ -386,5 +386,78 @@ test.describe('Sidebar', () => {
             await expect(component.getByText('Collapse', { exact: true })).toBeVisible();
             expect(await widthTransitionsRun(page)).toBe(0);
         });
+
+        const seekWidthTransition = (page: Page, time: number | 'end') =>
+            page.evaluate((time) => {
+                const transition = document.documentElement
+                    .getAnimations()
+                    .find((a) => (a as CSSTransition).transitionProperty === '--sidebar-width');
+                if (!transition) return false;
+                if (time === 'end') {
+                    transition.finish();
+                } else {
+                    transition.pause();
+                    transition.currentTime = time;
+                }
+                return true;
+            }, time);
+
+        test('keeps the labels rendered while the rail collapses and hides them once it has', async ({ mount, page }) => {
+            await page.emulateMedia({ reducedMotion: 'no-preference' });
+            await page.evaluate(() => localStorage.setItem('menu-size', JSON.stringify('large')));
+            await page.addStyleTag({ content: ':root.sidebar-animated { transition-duration: 60s !important; }' });
+            const store = createMockStore();
+            const component = await mount(
+                withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
+            );
+            const labels = [
+                component.getByTestId('sidebar-certificates').locator('span'),
+                component.getByTestId('sidebar-access-control').locator('span'),
+                component.getByText('Collapse', { exact: true }),
+            ];
+
+            await component.getByRole('button', { name: /Collapse/i }).click();
+
+            expect(await seekWidthTransition(page, 30_000)).toBe(true);
+            for (const label of labels) await expect(label).not.toHaveClass(/\bsr-only\b/);
+
+            expect(await seekWidthTransition(page, 'end')).toBe(true);
+            for (const label of labels) await expect(label).toHaveClass(/\bsr-only\b/);
+        });
+
+        test('hides the labels at once when collapsing with reduced motion', async ({ mount, page }) => {
+            await page.emulateMedia({ reducedMotion: 'reduce' });
+            await page.evaluate(() => localStorage.setItem('menu-size', JSON.stringify('large')));
+            const store = createMockStore();
+            const component = await mount(
+                withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }),
+            );
+
+            await component.getByRole('button', { name: /Collapse/i }).click();
+
+            await expect(component.getByText('Collapse', { exact: true })).toHaveClass(/\bsr-only\b/);
+            await expect(component.getByTestId('sidebar-certificates').locator('span')).toHaveClass(/\bsr-only\b/);
+        });
+
+        test('keeps every icon at full size while the rail is still narrow', async ({ mount, page }) => {
+            await page.emulateMedia({ reducedMotion: 'no-preference' });
+            await page.addStyleTag({ content: ':root.sidebar-animated { transition-duration: 60s !important; }' });
+            const store = createMockStore();
+            const component = await mount(
+                withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
+            );
+            const toggle = component.getByRole('button', { name: /Collapse/i });
+
+            await toggle.click();
+            expect(await seekWidthTransition(page, 0)).toBe(true);
+
+            const iconWidths = await component
+                .getByRole('navigation')
+                .locator('svg')
+                .evaluateAll((icons) => icons.map((icon) => icon.getBoundingClientRect().width));
+            expect(iconWidths.length).toBeGreaterThan(0);
+            for (const width of iconWidths) expect(width).toBeCloseTo(16, 0);
+            expect((await toggle.locator('svg').boundingBox())?.width).toBeGreaterThanOrEqual(24);
+        });
     });
 });
