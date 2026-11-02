@@ -234,6 +234,28 @@ test.describe('Sidebar', () => {
         await expect(page.getByRole('tooltip', { name: 'Access Control' })).toHaveCount(0);
     });
 
+    test('flying menu entries show no tooltips on hover or keyboard focus', async ({ mount, page }) => {
+        const store = createMockStore();
+        const component = await mount(
+            withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
+        );
+        await component.getByRole('button', { name: 'Access Control' }).click();
+        const flying = component.getByRole('region', { name: 'Sidebar menu' });
+        await expect(flying).toBeAttached();
+
+        await flying.getByTestId('sidebar-certificates').hover();
+        await page.waitForTimeout(600);
+        await expect(page.getByRole('tooltip')).toHaveCount(0);
+
+        await flying.getByTestId('sidebar-access-control').focus();
+        await page.waitForTimeout(600);
+        await expect(page.getByRole('tooltip')).toHaveCount(0);
+
+        await flying.getByTestId('sidebar-access-control-users').hover();
+        await page.waitForTimeout(600);
+        await expect(page.getByRole('tooltip')).toHaveCount(0);
+    });
+
     test('toggling the sidebar from the keyboard keeps focus on the toggle', async ({ mount }) => {
         const store = createMockStore();
         const component = await mount(withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }));
