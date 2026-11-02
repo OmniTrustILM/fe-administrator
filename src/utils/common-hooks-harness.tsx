@@ -36,6 +36,37 @@ export function UseCopyToClipboardHarness() {
             <button type="button" data-testid="copy-unanchored-btn" onClick={() => copyToClipboard('copied text', null, 'Error')}>
                 Copy without anchor
             </button>
+            <button
+                type="button"
+                data-testid="copy-detached-btn"
+                onClick={(e) => {
+                    const detached = e.currentTarget;
+                    detached.nextElementSibling?.querySelector('button')?.focus();
+                    detached.remove();
+                    copyToClipboard('copied text', detached, 'Error');
+                }}
+            >
+                Copy from removed button
+            </button>
+            <span>
+                <button type="button" data-testid="focus-target">
+                    Focus target
+                </button>
+            </span>
+            <button
+                type="button"
+                data-testid="copy-left-edge-btn"
+                className="fixed left-0 top-1/2 size-4"
+                aria-label="Copy at left edge"
+                onClick={(e) => copyToClipboard('copied text', e.currentTarget, 'Error')}
+            />
+            <button
+                type="button"
+                data-testid="copy-right-edge-btn"
+                className="fixed right-0 top-1/2 size-4"
+                aria-label="Copy at right edge"
+                onClick={(e) => copyToClipboard('copied text', e.currentTarget, 'Error')}
+            />
         </>
     );
 }
@@ -52,6 +83,7 @@ export function UseCopyToClipboardWithStore({ inDialog = false }: Readonly<{ inD
                     <UseCopyToClipboardHarness />
                 </div>
                 <span data-testid="inverse-reference" className="bg-surface-inverse" />
+                <div className="h-[200vh]" />
                 <pre data-testid="dispatched-alerts">{JSON.stringify(dispatched)}</pre>
             </div>
         </Provider>

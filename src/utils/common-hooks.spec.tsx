@@ -95,6 +95,45 @@ test.describe('useCopyToClipboard', () => {
         await expect(page.getByRole('status')).toHaveText('Copied');
     });
 
+    test('a removed anchor falls back to the bottom of the viewport rather than the focused element', async ({ mount, page }) => {
+        await stubClipboard(page, true);
+        await mount(<UseCopyToClipboardWithStore />);
+
+        await page.getByTestId('copy-detached-btn').click();
+
+        await expect(page.getByTestId('focus-target')).toBeFocused();
+        const toastBox = await page.getByTestId('copied-feedback').boundingBox();
+        const viewport = page.viewportSize();
+        expect((toastBox?.x ?? 0) + (toastBox?.width ?? 0) / 2).toBeCloseTo((viewport?.width ?? 0) / 2, 0);
+        expect((toastBox?.y ?? 0) + (toastBox?.height ?? 0)).toBeGreaterThan((viewport?.height ?? 0) / 2);
+    });
+
+    for (const edge of ['left', 'right'] as const) {
+        test(`a copy button at the ${edge} viewport edge keeps the whole toast on screen`, async ({ mount, page }) => {
+            await stubClipboard(page, true);
+            await mount(<UseCopyToClipboardWithStore />);
+
+            await page.getByTestId(`copy-${edge}-edge-btn`).click();
+
+            const toastBox = await page.getByTestId('copied-feedback').boundingBox();
+            const viewportWidth = await page.evaluate(() => document.documentElement.clientWidth);
+            expect(toastBox?.x ?? -1).toBeGreaterThanOrEqual(0);
+            expect((toastBox?.x ?? 0) + (toastBox?.width ?? 0)).toBeLessThanOrEqual(viewportWidth);
+        });
+    }
+
+    test('scrolling hides the toast so it never floats away from its button', async ({ mount, page }) => {
+        await stubClipboard(page, true);
+        await mount(<UseCopyToClipboardWithStore />);
+
+        await page.getByTestId('copy-btn').click();
+        await expect(page.getByTestId('copied-feedback')).toBeVisible();
+        await page.mouse.wheel(0, 300);
+
+        await expect(page.getByTestId('copied-feedback')).toHaveCount(0);
+        await expect(page.getByRole('status')).toHaveText('Copied');
+    });
+
     test('inside a transformed dialog the toast stays on the button and the announcement within the dialog', async ({ mount, page }) => {
         await stubClipboard(page, true);
         await mount(<UseCopyToClipboardWithStore inDialog />);

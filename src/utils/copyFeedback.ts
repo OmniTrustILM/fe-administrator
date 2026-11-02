@@ -5,13 +5,6 @@ const ANNOUNCE_DELAY_MS = 100;
 
 let dismissCurrent: (() => void) | undefined;
 
-function resolveAnchor(anchor: Element | null): Element | null {
-    if (anchor?.isConnected) return anchor;
-    // A menu item is gone by the time the copy resolves; focus has returned to the menu trigger.
-    const focused = document.activeElement;
-    return focused && focused !== document.body ? focused : null;
-}
-
 function place(toast: HTMLElement, anchor: Element | null) {
     if (!anchor) {
         toast.style.left = '50%';
@@ -20,7 +13,10 @@ function place(toast: HTMLElement, anchor: Element | null) {
     }
     const rect = anchor.getBoundingClientRect();
     const top = rect.top - GAP_PX - toast.offsetHeight;
-    toast.style.left = `${rect.left + rect.width / 2}px`;
+    const half = toast.offsetWidth / 2;
+    const maxCenter = document.documentElement.clientWidth - half - GAP_PX;
+    const center = Math.max(half + GAP_PX, Math.min(rect.left + rect.width / 2, maxCenter));
+    toast.style.left = `${center}px`;
     toast.style.top = `${top >= 0 ? top : rect.bottom + GAP_PX}px`;
 }
 
@@ -38,7 +34,7 @@ function announcerIn(container: Element): HTMLElement {
 
 export function showCopiedFeedback(anchor: Element | null) {
     dismissCurrent?.();
-    const target = resolveAnchor(anchor);
+    const target = anchor?.isConnected ? anchor : null;
 
     // Kept out of any dialog: a transformed dialog would become the containing block of a fixed element.
     const toast = document.createElement('div');
@@ -56,10 +52,17 @@ export function showCopiedFeedback(anchor: Element | null) {
         announcer.textContent = 'Copied';
     }, ANNOUNCE_DELAY_MS);
 
+    // The toast is placed once, so any scroll or resize would leave it detached from the button.
+    const hideToast = () => toast.remove();
+    window.addEventListener('scroll', hideToast, { capture: true, passive: true });
+    window.addEventListener('resize', hideToast);
+
     const dismiss = () => {
         clearTimeout(announce);
         clearTimeout(timeout);
-        toast.remove();
+        window.removeEventListener('scroll', hideToast, { capture: true });
+        window.removeEventListener('resize', hideToast);
+        hideToast();
         announcer.textContent = '';
         if (dismissCurrent === dismiss) dismissCurrent = undefined;
     };
