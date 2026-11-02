@@ -114,27 +114,6 @@ test.describe('Attribute', () => {
         await expect(page.getByText('42')).toBeVisible();
     });
 
-    test('handleAddNew opens modal', async ({ mount, page }) => {
-        const descriptor = dataDescriptor({
-            contentType: AttributeContentType.Credential,
-            properties: { ...defaultProperties, list: true, label: 'Creds' } as any,
-        });
-        await mount(
-            <AttributeTestWrapper
-                name="field"
-                descriptor={descriptor}
-                options={[{ label: 'Cred A', value: 'ca' }]}
-                renderGlobalModal={false}
-            />,
-        );
-        await expect(page.getByTestId('label-fieldSelect')).toHaveText('Creds');
-
-        await page.getByTestId('select-fieldSelect-trigger').click();
-        await page.getByRole('option', { name: '+ Create new' }).click();
-
-        await expect(page.getByTestId('global-modal-state')).toHaveText('Create Credential');
-    });
-
     test('onUserInteraction sets userInteractedRef', async ({ mount, page }) => {
         const descriptor = dataDescriptor({
             properties: { ...defaultProperties, list: true, label: 'Pick one' } as any,
@@ -185,6 +164,7 @@ test.describe('Attribute', () => {
                 renderGlobalModal={false}
             />,
         );
+        await expect(page.getByTestId('label-fieldSelect')).toHaveText('Single Cred');
 
         await page.getByTestId('select-fieldSelect-trigger').click();
         await page.getByRole('option', { name: '+ Create new' }).click();

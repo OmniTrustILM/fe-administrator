@@ -162,23 +162,19 @@ test.describe('FilterWidget', () => {
         await expect.poll(() => updated.length).toBe(0);
     });
 
-    test('list field renders selectable value options', async ({ mount, page }) => {
-        await mount(<FilterWidgetTestWrapper />);
-        await configureMetaFilter(page, 'Severity', 'severity', 'Equals', FilterConditionOperator.Equals);
-        await expect(page.getByTestId('select-valueSelect')).toBeVisible();
-        await chooseSelectOption(page, 'select-valueSelect-trigger', 'High');
-        await page.getByRole('button', { name: 'Apply', exact: true }).click();
-        await expect(page.getByText("'Severity'")).toBeVisible();
-    });
-
-    test('boolean field renders select and allows choosing true', async ({ mount, page }) => {
-        await mount(<FilterWidgetTestWrapper />);
-        await configureMetaFilter(page, 'Enabled', 'enabled', 'Equals', FilterConditionOperator.Equals);
-        await expect(page.getByTestId('select-valueSelect')).toBeVisible();
-        await chooseSelectOption(page, 'select-valueSelect-trigger', 'True');
-        await page.getByRole('button', { name: 'Apply', exact: true }).click();
-        await expect(page.getByText("'Enabled'")).toBeVisible();
-    });
+    for (const { kind, fieldLabel, fieldValue, optionLabel } of [
+        { kind: 'list', fieldLabel: 'Severity', fieldValue: 'severity', optionLabel: 'High' },
+        { kind: 'boolean', fieldLabel: 'Enabled', fieldValue: 'enabled', optionLabel: 'True' },
+    ]) {
+        test(`${kind} field renders a value select and applies the chosen option`, async ({ mount, page }) => {
+            await mount(<FilterWidgetTestWrapper />);
+            await configureMetaFilter(page, fieldLabel, fieldValue, 'Equals', FilterConditionOperator.Equals);
+            await expect(page.getByTestId('select-valueSelect')).toBeVisible();
+            await chooseSelectOption(page, 'select-valueSelect-trigger', optionLabel);
+            await page.getByRole('button', { name: 'Apply', exact: true }).click();
+            await expect(page.getByText(`'${fieldLabel}'`)).toBeVisible();
+        });
+    }
 
     test('clicking preloaded badges hydrates edit state for mixed value types', async ({ mount, page }) => {
         await mount(
