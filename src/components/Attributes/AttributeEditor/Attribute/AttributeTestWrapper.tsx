@@ -20,7 +20,7 @@ export type AttributeTestWrapperProps = {
     /** Preloaded store state (e.g. userInterface.initiateAttributeCallback) */
     preloadedState?: Record<string, unknown>;
     /**
-     * Render the real GlobalModal. Turn this off for descriptors whose "Add new" content is a full
+     * Render the real GlobalModal. Turn this off for descriptors whose "Create new" content is a full
      * form (CredentialForm) that the no-op test reducers cannot satisfy — the probe below still
      * reports what Attribute dispatched.
      */

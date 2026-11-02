@@ -387,7 +387,7 @@ export default function AvailableRulesAndGroups({ profile, setSelectedEntityDeta
                                 <Button
                                     data-testid="add-internal-rule-button"
                                     variant="transparent"
-                                    title="Add internal rule"
+                                    title="Create internal rule"
                                     onClick={() => setIsAddingInternalRule(true)}
                                 >
                                     <Plus size={16} />
