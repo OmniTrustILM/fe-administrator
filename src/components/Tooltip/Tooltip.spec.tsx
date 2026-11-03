@@ -44,6 +44,42 @@ test.describe('Tooltip', () => {
         await expect(page.getByRole('tooltip')).toHaveCount(0);
     });
 
+    test('hides an open tooltip once it becomes suppressed', async ({ mount, page }) => {
+        const component = await mount(
+            <Tooltip content="Tooltip text">
+                <button type="button">Hover me</button>
+            </Tooltip>,
+        );
+        await page.getByRole('button', { name: 'Hover me' }).hover();
+        await expect(page.getByRole('tooltip')).toBeVisible();
+
+        await component.update(
+            <Tooltip content="Tooltip text" suppress>
+                <button type="button">Hover me</button>
+            </Tooltip>,
+        );
+        await expect(page.getByRole('tooltip')).toHaveCount(0);
+    });
+
+    test('does not reveal a hover made while suppressed once suppression lifts', async ({ mount, page }) => {
+        const component = await mount(
+            <Tooltip content="Tooltip text" suppress>
+                <button type="button">Hover me</button>
+            </Tooltip>,
+        );
+        await page.getByRole('button', { name: 'Hover me' }).hover();
+        await page.waitForTimeout(600);
+        await expect(page.getByRole('tooltip')).toHaveCount(0);
+
+        await component.update(
+            <Tooltip content="Tooltip text">
+                <button type="button">Hover me</button>
+            </Tooltip>,
+        );
+        await page.waitForTimeout(600);
+        await expect(page.getByRole('tooltip')).toHaveCount(0);
+    });
+
     test('content has data-side="bottom" by default', async ({ mount, page }) => {
         await mount(
             <Tooltip content="Tooltip text">

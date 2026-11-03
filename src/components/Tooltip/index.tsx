@@ -1,6 +1,6 @@
 import * as RadixTooltip from '@radix-ui/react-tooltip';
 import cn from 'classnames';
-import { cloneElement, isValidElement, type ReactElement, type ReactNode } from 'react';
+import { cloneElement, isValidElement, type ReactElement, type ReactNode, useState } from 'react';
 
 export type TooltipPlacement = 'bottom' | 'right';
 
@@ -12,6 +12,7 @@ type Props = {
     triggerClassName?: string;
     contentClassName?: string;
     disabled?: boolean;
+    suppress?: boolean;
 };
 
 function Tooltip({
@@ -22,7 +23,13 @@ function Tooltip({
     triggerClassName,
     contentClassName,
     disabled = false,
+    suppress = false,
 }: Readonly<Props>) {
+    const [open, setOpen] = useState(false);
+    // Radix reports no close while the controlled value is already false, so a stored open would outlive suppression.
+    if (suppress && open) {
+        setOpen(false);
+    }
     if (disabled) {
         return (
             <span className={cn('relative inline-block pointer-events-none', className)}>
@@ -40,7 +47,7 @@ function Tooltip({
 
     return (
         <RadixTooltip.Provider delayDuration={400}>
-            <RadixTooltip.Root>
+            <RadixTooltip.Root open={open} onOpenChange={(next) => setOpen(next && !suppress)}>
                 <span className={cn('relative inline-block', className)}>
                     <RadixTooltip.Trigger asChild>{triggerChild}</RadixTooltip.Trigger>
                     <RadixTooltip.Portal>
