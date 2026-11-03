@@ -302,7 +302,7 @@ export const TspProfileDetail = () => {
                 id: 'addCredential',
                 icon: 'plus',
                 disabled: !basicPasswordAllowed,
-                tooltip: 'Add Basic Credential',
+                tooltip: 'Create Basic Credential',
                 onClick: openCreateCredentialDialog,
             },
         ],
@@ -406,7 +406,7 @@ export const TspProfileDetail = () => {
 
             <Dialog
                 isOpen={credentialDialogOpen}
-                caption={editCredential ? 'Edit Basic Credential' : 'Add Basic Credential'}
+                caption={editCredential ? 'Edit Basic Credential' : 'Create Basic Credential'}
                 toggle={closeCredentialDialog}
                 body={
                     credentialDialogOpen && tspProfile ? (

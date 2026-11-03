@@ -27,7 +27,7 @@ const RenderTokenProfile = ({ type, name }: Props) => {
                 value: tokenProfile.uuid,
             })),
             {
-                label: '+ Add new',
+                label: '+ Create new',
                 value: '__add_new__',
                 disabled: false,
             },
@@ -49,7 +49,7 @@ const RenderTokenProfile = ({ type, name }: Props) => {
                 content: <TokenProfileForm usesGlobalModal />,
                 isOpen: true,
                 size: 'xl',
-                title: 'Add New Token Profile',
+                title: 'Create Token Profile',
             }),
         );
     }, [dispatch]);

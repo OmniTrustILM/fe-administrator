@@ -149,7 +149,7 @@ export default function CertificateList({
                       {
                           icon: 'plus',
                           disabled: false,
-                          tooltip: 'Add Certificate',
+                          tooltip: 'Create Certificate',
                           onClick: (event) => {
                               event.preventDefault();
                               void navigate(`/${Resource.Certificates.toLowerCase()}/add`);

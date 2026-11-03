@@ -38,7 +38,7 @@ const RenderRequestKey = ({ type, name, tokenProfileField }: Props) => {
                 value: key.uuid,
             })),
             {
-                label: '+ Add new',
+                label: '+ Create new',
                 value: '__add_new__',
                 disabled: false,
             },
@@ -78,7 +78,7 @@ const RenderRequestKey = ({ type, name, tokenProfileField }: Props) => {
                 content: <CryptographicKeyForm usesGlobalModal />,
                 isOpen: true,
                 size: 'xl',
-                title: 'Add New Key',
+                title: 'Create Key',
             }),
         );
     }, [dispatch]);

@@ -42,7 +42,7 @@ const expectEveryKeyUsageOffered = async (page: Page) => {
 
 test.describe('TokenProfileForm', () => {
     test('stays in create mode in the global modal, where the route :id belongs to another resource', async ({ mount, page }) => {
-        // Opened via "+ Add new" from the Complete Registration dialog: the page underneath is
+        // Opened via "+ Create new" from the Complete Registration dialog: the page underneath is
         // /certificates/detail/:id, so the route param is a certificate uuid, not a token profile.
         await mount(<TokenProfileFormWithStore usesGlobalModal />);
 
