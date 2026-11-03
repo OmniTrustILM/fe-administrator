@@ -122,6 +122,8 @@
         "ws@8": "8.21.1",
         "basic-ftp": "^6.2.3",
         "ip-address": "^10.7.4",
+        "glob": "^14.0.3",
+        "minimatch": "^11.0.4",
         "nyc": {
             "istanbul-lib-processinfo": {
                 "uuid": "^14.0.0"
