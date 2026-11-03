@@ -524,7 +524,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
             const parentSlug = toTestIdSlug(mapping._key);
             return (
                 <li key={mapping.header} className={cn('flex justify-center', { 'flex-col': labelsShown })}>
-                    <RailTooltip label={mapping.header} show={isCollapsed}>
+                    <RailTooltip label={mapping.header} show={!labelsShown}>
                         <Button
                             variant="transparent"
                             data-testid={`sidebar-${parentSlug}`}
@@ -574,7 +574,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
         }
         return (
             <li key={mapping._key} className="flex justify-center">
-                <RailTooltip label={mapping.header} show={isCollapsed}>
+                <RailTooltip label={mapping.header} show={!labelsShown}>
                     <NavLink
                         to={mapping.headerLink}
                         data-testid={`sidebar-${toTestIdSlug(mapping.headerLink)}`}
@@ -650,7 +650,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
 
                     <hr className="border-divider" />
                     <div className="flex justify-center pt-4">
-                        <RailTooltip label="Expand" show={isCollapsed}>
+                        <RailTooltip label="Expand" show={!labelsShown}>
                             <Button
                                 variant="transparent"
                                 className={cn('inline-flex px-3 py-2 border-none', {
