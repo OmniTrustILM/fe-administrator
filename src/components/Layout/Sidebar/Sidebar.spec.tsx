@@ -333,7 +333,7 @@ test.describe('Sidebar', () => {
             const component = await mount(
                 withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
             );
-            const toggle = component.getByRole('button', { name: /Collapse/i });
+            const toggle = component.getByRole('button', { name: /^(Expand|Collapse)$/ });
             const icons = [
                 component.getByTestId('sidebar-certificates').locator('svg'),
                 component.getByTestId('sidebar-access-control').locator('svg').first(),
@@ -413,10 +413,10 @@ test.describe('Sidebar', () => {
             const labels = [
                 component.getByTestId('sidebar-certificates').locator('span'),
                 component.getByTestId('sidebar-access-control').locator('span'),
-                component.getByText('Collapse', { exact: true }),
+                component.getByRole('button', { name: /^(Expand|Collapse)$/ }).locator('span'),
             ];
 
-            await component.getByRole('button', { name: /Collapse/i }).click();
+            await component.getByRole('button', { name: 'Collapse' }).click();
 
             expect(await seekWidthTransition(page, 30_000)).toBe(true);
             for (const label of labels) await expect(label).not.toHaveClass(/\bsr-only\b/);
@@ -433,9 +433,9 @@ test.describe('Sidebar', () => {
                 withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }),
             );
 
-            await component.getByRole('button', { name: /Collapse/i }).click();
+            await component.getByRole('button', { name: 'Collapse' }).click();
 
-            await expect(component.getByText('Collapse', { exact: true })).toHaveClass(/\bsr-only\b/);
+            await expect(component.getByRole('button', { name: 'Expand' }).locator('span')).toHaveClass(/\bsr-only\b/);
             await expect(component.getByTestId('sidebar-certificates').locator('span')).toHaveClass(/\bsr-only\b/);
         });
 
@@ -446,7 +446,7 @@ test.describe('Sidebar', () => {
             const component = await mount(
                 withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
             );
-            const toggle = component.getByRole('button', { name: /Collapse/i });
+            const toggle = component.getByRole('button', { name: /^(Expand|Collapse)$/ });
 
             await toggle.click();
             expect(await seekWidthTransition(page, 0)).toBe(true);
