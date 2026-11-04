@@ -2,6 +2,7 @@ import './ct-window-shim';
 import type { Page } from '@playwright/test';
 import { test, expect } from '../../playwright/ct-test';
 import { DeviceType } from './common-hooks';
+import { COPIED_FEEDBACK_MS } from './copyFeedback';
 import {
     UseWindowSizeHarness,
     UseDeviceTypeHarness,
@@ -67,7 +68,7 @@ test.describe('useCopyToClipboard', () => {
         await page.getByTestId('copy-btn').click();
 
         await expect(page.getByRole('status')).toHaveText('Copied');
-        await expect(page.getByTestId('copied-feedback')).toHaveCount(0, { timeout: 2500 });
+        await expect(page.getByTestId('copied-feedback')).toHaveCount(0, { timeout: COPIED_FEEDBACK_MS + 1000 });
         await expect(page.getByRole('status')).toHaveText('');
     });
 
@@ -83,6 +84,29 @@ test.describe('useCopyToClipboard', () => {
         await expect(page.getByRole('status')).toHaveText('Copied');
         await expect(page.getByTestId('copied-feedback')).toHaveCount(1);
         await expect(page.getByRole('status')).toHaveCount(1);
+    });
+
+    test('a repeated copy restarts the dismissal instead of inheriting the first deadline', async ({ mount, page }) => {
+        const stagger = COPIED_FEEDBACK_MS / 2;
+        await page.clock.install({ time: new Date('2026-01-01T00:00:00Z') });
+        await stubClipboard(page, true);
+        await mount(<UseCopyToClipboardWithStore />);
+        await page.clock.pauseAt(new Date('2026-01-01T00:00:10Z'));
+        const button = page.getByTestId('copy-btn');
+
+        await button.click();
+        await page.clock.runFor(stagger);
+        await expect(page.getByRole('status')).toHaveText('Copied');
+        await button.click();
+        await page.clock.runFor(COPIED_FEEDBACK_MS - stagger + 100);
+
+        await expect(page.getByRole('status')).toHaveText('Copied');
+        await expect(page.getByTestId('copied-feedback')).toHaveCount(1);
+
+        await page.clock.runFor(stagger);
+
+        await expect(page.getByRole('status')).toHaveText('');
+        await expect(page.getByTestId('copied-feedback')).toHaveCount(0);
     });
 
     test('a copy without an anchor still shows the toast', async ({ mount, page }) => {
