@@ -487,11 +487,10 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
             return;
         }
         let current = true;
-        transition.finished
-            .catch(() => undefined)
-            .then(() => {
-                if (current) setCollapsing(false);
-            });
+        const settle = () => {
+            if (current) setCollapsing(false);
+        };
+        transition.finished.then(settle, settle);
         return () => {
             current = false;
         };
@@ -547,7 +546,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                                 <span className={cn('text-sm whitespace-nowrap', { 'sr-only': !labelsShown })}>{mapping.header}</span>
                             </div>
                             {labelsShown && (
-                                <ChevronDown strokeWidth={1.5} size={16} className={cn('shrink-0', { isActive: 'rotate-180' })} />
+                                <ChevronDown strokeWidth={1.5} size={16} className={cn('shrink-0', { 'rotate-180': isActive })} />
                             )}
                         </Button>
                     </RailTooltip>
@@ -656,6 +655,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                                 className={cn('inline-flex px-3 py-2 border-none', {
                                     'w-full gap-x-2': labelsShown,
                                 })}
+                                aria-label={isCollapsed ? 'Expand' : 'Collapse'}
                                 onClick={() => toggleMenuSize()}
                             >
                                 <ArrowRightToLine
@@ -667,7 +667,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                                     )}
                                 />
                                 <span className={cn('whitespace-nowrap', { 'sr-only': !labelsShown })}>
-                                    {isCollapsed ? 'Expand' : 'Collapse'}
+                                    {labelsShown ? 'Collapse' : 'Expand'}
                                 </span>
                             </Button>
                         </RailTooltip>

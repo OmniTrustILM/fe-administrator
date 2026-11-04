@@ -115,6 +115,23 @@ test.describe('Sidebar', () => {
         await expect(component.getByRole('link', { name: 'Roles' })).toBeVisible();
     });
 
+    test('when large, a section chevron points up only while the section is open', async ({ mount }) => {
+        const store = createMockStore();
+        const component = await mount(
+            withProviders(<Sidebar allowedResources={[Resource.Users, Resource.Roles]} />, { store, initialRoute: '/' }),
+        );
+        await component.getByRole('button', { name: 'Expand' }).click();
+        const section = component.getByTestId('sidebar-access-control');
+        const chevron = section.locator('svg').last();
+        await expect(section).toHaveAttribute('aria-expanded', 'false');
+        await expect(chevron).not.toHaveClass(/\brotate-180\b/);
+
+        await section.click();
+
+        await expect(section).toHaveAttribute('aria-expanded', 'true');
+        await expect(chevron).toHaveClass(/\brotate-180\b/);
+    });
+
     test('with active child route opens section when large', async ({ mount }) => {
         const store = createMockStore();
         const component = await mount(withProviders(<Sidebar allowedResources={[Resource.Users]} />, { store, initialRoute: '/users' }));
@@ -297,6 +314,37 @@ test.describe('Sidebar', () => {
                     ),
             );
 
+        const seekWidthTransition = (page: Page, time: number | 'end') =>
+            page.evaluate((time) => {
+                const transition = document.documentElement
+                    .getAnimations()
+                    .find((a) => (a as CSSTransition).transitionProperty === '--sidebar-width');
+                if (!transition) return false;
+                if (time === 'end') {
+                    transition.finish();
+                } else {
+                    transition.pause();
+                    transition.currentTime = time;
+                }
+                return true;
+            }, time);
+
+        test('animates the width over 300ms once toggled', async ({ mount, page }) => {
+            await page.emulateMedia({ reducedMotion: 'no-preference' });
+            const store = createMockStore();
+            const component = await mount(
+                withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }),
+            );
+
+            await component.getByRole('button', { name: 'Expand' }).click();
+
+            const transition = await page.evaluate(() => {
+                const style = getComputedStyle(document.documentElement);
+                return { property: style.transitionProperty, duration: style.transitionDuration };
+            });
+            expect(transition).toEqual({ property: '--sidebar-width', duration: '0.3s' });
+        });
+
         test('animates the width, keeping labels on one line and inside the rail', async ({ mount, page }) => {
             await page.emulateMedia({ reducedMotion: 'no-preference' });
             // Long enough that the transition is still running when the next round trip pauses it.
@@ -308,15 +356,10 @@ test.describe('Sidebar', () => {
 
             await component.getByRole('button', { name: 'Expand' }).click();
 
-            const midway = await page.evaluate(() => {
-                const transition = document.documentElement
-                    .getAnimations()
-                    .find((a) => (a as CSSTransition).transitionProperty === '--sidebar-width');
-                if (!transition) return Number.NaN;
-                transition.pause();
-                transition.currentTime = 10_000;
-                return Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width'));
-            });
+            expect(await seekWidthTransition(page, 10_000)).toBe(true);
+            const midway = await page.evaluate(() =>
+                Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width')),
+            );
             expect(midway).toBeGreaterThan(84);
             expect(midway).toBeLessThan(260);
 
@@ -380,27 +423,21 @@ test.describe('Sidebar', () => {
             const component = await mount(
                 withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }),
             );
+            const arrow = component.getByRole('button', { name: 'Expand' }).locator('svg');
+            await arrow.evaluate((icon) => {
+                const record = globalThis as unknown as { arrowTransitions: number };
+                record.arrowTransitions = 0;
+                icon.addEventListener('transitionrun', () => {
+                    record.arrowTransitions += 1;
+                });
+            });
 
             await component.getByRole('button', { name: 'Expand' }).click();
 
             await expect(component.getByText('Collapse', { exact: true })).toBeVisible();
             expect(await widthTransitionsRun(page)).toBe(0);
+            expect(await page.evaluate(() => (globalThis as unknown as { arrowTransitions: number }).arrowTransitions)).toBe(0);
         });
-
-        const seekWidthTransition = (page: Page, time: number | 'end') =>
-            page.evaluate((time) => {
-                const transition = document.documentElement
-                    .getAnimations()
-                    .find((a) => (a as CSSTransition).transitionProperty === '--sidebar-width');
-                if (!transition) return false;
-                if (time === 'end') {
-                    transition.finish();
-                } else {
-                    transition.pause();
-                    transition.currentTime = time;
-                }
-                return true;
-            }, time);
 
         test('keeps the labels rendered while the rail collapses and hides them once it has', async ({ mount, page }) => {
             await page.emulateMedia({ reducedMotion: 'no-preference' });
@@ -427,11 +464,13 @@ test.describe('Sidebar', () => {
 
             expect(await seekWidthTransition(page, 30_000)).toBe(true);
             for (const label of labels) await expect(label).not.toHaveClass(/\bsr-only\b/);
+            await expect(labels[2]).toHaveText('Collapse');
             const midway = await leftEdges();
             for (const [i, x] of midway.entries()) expect(x).toBeCloseTo(expanded[i], 0);
 
             expect(await seekWidthTransition(page, 'end')).toBe(true);
             for (const label of labels) await expect(label).toHaveClass(/\bsr-only\b/);
+            await expect(labels[2]).toHaveText('Expand');
         });
 
         test('hides the labels at once when collapsing with reduced motion', async ({ mount, page }) => {
