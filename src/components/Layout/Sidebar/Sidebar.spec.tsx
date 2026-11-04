@@ -457,16 +457,22 @@ test.describe('Sidebar', () => {
                 component.getByTestId('sidebar-certificates').locator('svg'),
                 component.getByRole('button', { name: /^(Expand|Collapse)$/ }).locator('svg'),
             ];
-            const leftEdges = () => Promise.all(icons.map(async (icon) => (await icon.boundingBox())?.x ?? Number.NaN));
-            const expanded = await leftEdges();
+            const centres = () =>
+                Promise.all(
+                    icons.map(async (icon) => {
+                        const box = await icon.boundingBox();
+                        return box ? box.x + box.width / 2 : Number.NaN;
+                    }),
+                );
+            const expanded = await centres();
 
             await component.getByRole('button', { name: 'Collapse' }).click();
 
             expect(await seekWidthTransition(page, 30_000)).toBe(true);
+            const midway = await centres();
+            for (const [i, x] of midway.entries()) expect(x).toBeCloseTo(expanded[i], 0);
             for (const label of labels) await expect(label).not.toHaveClass(/\bsr-only\b/);
             await expect(labels[2]).toHaveText('Collapse');
-            const midway = await leftEdges();
-            for (const [i, x] of midway.entries()) expect(x).toBeCloseTo(expanded[i], 0);
 
             expect(await seekWidthTransition(page, 'end')).toBe(true);
             for (const label of labels) await expect(label).toHaveClass(/\bsr-only\b/);
