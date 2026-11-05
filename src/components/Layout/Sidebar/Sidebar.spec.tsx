@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test';
 import { test, expect } from '../../../../playwright/ct-test';
 import { createMockStore, withProviders } from 'utils/test-helpers';
 import { Resource } from 'types/openapi';
@@ -112,6 +113,23 @@ test.describe('Sidebar', () => {
         await expect(component.getByRole('link', { name: 'Users' })).toBeVisible();
         await component.getByRole('button', { name: 'Access Control' }).click();
         await expect(component.getByRole('link', { name: 'Roles' })).toBeVisible();
+    });
+
+    test('when large, a section chevron points up only while the section is open', async ({ mount }) => {
+        const store = createMockStore();
+        const component = await mount(
+            withProviders(<Sidebar allowedResources={[Resource.Users, Resource.Roles]} />, { store, initialRoute: '/' }),
+        );
+        await component.getByRole('button', { name: 'Expand' }).click();
+        const section = component.getByTestId('sidebar-access-control');
+        const chevron = section.locator('svg').last();
+        await expect(section).toHaveAttribute('aria-expanded', 'false');
+        await expect(chevron).not.toHaveClass(/\brotate-180\b/);
+
+        await section.click();
+
+        await expect(section).toHaveAttribute('aria-expanded', 'true');
+        await expect(chevron).toHaveClass(/\brotate-180\b/);
     });
 
     test('with active child route opens section when large', async ({ mount }) => {
@@ -274,5 +292,226 @@ test.describe('Sidebar', () => {
 
         await component.getByRole('button', { name: 'Collapse' }).press('Enter');
         await expect(component.getByRole('button', { name: 'Expand' })).toBeFocused();
+    });
+
+    test.describe('expand and collapse animation', () => {
+        // transitionrun is recorded even for a transition that has already finished by the time it is checked.
+        const recordWidthTransitions = (page: Page) =>
+            page.evaluate(() => {
+                const record = globalThis as unknown as { widthTransitions: number };
+                record.widthTransitions = 0;
+                document.documentElement.addEventListener('transitionrun', (event) => {
+                    if (event.propertyName === '--sidebar-width') record.widthTransitions += 1;
+                });
+            });
+        const widthTransitionsRun = (page: Page) =>
+            page.evaluate(
+                () =>
+                    new Promise<number>((resolve) =>
+                        requestAnimationFrame(() =>
+                            requestAnimationFrame(() => resolve((globalThis as unknown as { widthTransitions: number }).widthTransitions)),
+                        ),
+                    ),
+            );
+
+        const seekWidthTransition = (page: Page, time: number | 'end') =>
+            page.evaluate((time) => {
+                const transition = document.documentElement
+                    .getAnimations()
+                    .find((a) => (a as CSSTransition).transitionProperty === '--sidebar-width');
+                if (!transition) return false;
+                if (time === 'end') {
+                    transition.finish();
+                } else {
+                    transition.pause();
+                    transition.currentTime = time;
+                }
+                return true;
+            }, time);
+
+        test('animates the width over 300ms once toggled', async ({ mount, page }) => {
+            await page.emulateMedia({ reducedMotion: 'no-preference' });
+            const store = createMockStore();
+            const component = await mount(
+                withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }),
+            );
+
+            await component.getByRole('button', { name: 'Expand' }).click();
+
+            const transition = await page.evaluate(() => {
+                const style = getComputedStyle(document.documentElement);
+                return { property: style.transitionProperty, duration: style.transitionDuration };
+            });
+            expect(transition).toEqual({ property: '--sidebar-width', duration: '0.3s' });
+        });
+
+        test('animates the width, keeping labels on one line and inside the rail', async ({ mount, page }) => {
+            await page.emulateMedia({ reducedMotion: 'no-preference' });
+            // Long enough that the transition is still running when the next round trip pauses it.
+            await page.addStyleTag({ content: ':root.sidebar-animated { transition-duration: 60s !important; }' });
+            const store = createMockStore();
+            const component = await mount(
+                withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
+            );
+
+            await component.getByRole('button', { name: 'Expand' }).click();
+
+            expect(await seekWidthTransition(page, 10_000)).toBe(true);
+            const midway = await page.evaluate(() =>
+                Number.parseFloat(getComputedStyle(document.documentElement).getPropertyValue('--sidebar-width')),
+            );
+            expect(midway).toBeGreaterThan(84);
+            expect(midway).toBeLessThan(260);
+
+            const label = component.getByTestId('sidebar-access-control').locator('span');
+            const lineHeight = await label.evaluate((el) => Number.parseFloat(getComputedStyle(el).lineHeight));
+            expect((await label.boundingBox())?.height).toBeLessThanOrEqual(lineHeight);
+            const overflows = await component.locator('.simplebar-content-wrapper').evaluate((el) => el.scrollWidth > el.clientWidth);
+            expect(overflows).toBe(false);
+        });
+
+        test('keeps the icons in one column, centred in the collapsed rail', async ({ mount, page }) => {
+            await page.emulateMedia({ reducedMotion: 'reduce' });
+            const store = createMockStore();
+            const component = await mount(
+                withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
+            );
+            const toggle = component.getByRole('button', { name: /^(Expand|Collapse)$/ });
+            const icons = [
+                component.getByTestId('sidebar-certificates').locator('svg'),
+                component.getByTestId('sidebar-access-control').locator('svg').first(),
+                toggle.locator('svg'),
+            ];
+            const centresOf = () =>
+                Promise.all(
+                    icons.map(async (icon) => {
+                        const box = await icon.boundingBox();
+                        return (box?.x ?? 0) + (box?.width ?? 0) / 2;
+                    }),
+                );
+            const rail = await component.locator('.simplebar-content-wrapper').boundingBox();
+            const railCentre = (rail?.x ?? 0) + (rail?.width ?? 0) / 2;
+
+            const collapsed = await centresOf();
+            for (const centre of collapsed) expect(centre).toBeCloseTo(railCentre, 0);
+
+            await toggle.click();
+            await expect(component.getByText('Collapse', { exact: true })).toBeVisible();
+            const expanded = await centresOf();
+            expect(expanded[0]).toBeCloseTo(collapsed[0], 0);
+            expect(expanded[1]).toBeCloseTo(collapsed[1], 0);
+            expect(expanded[2]).toBeCloseTo(collapsed[2], 0);
+        });
+
+        test('does not animate the size restored on load', async ({ mount, page }) => {
+            await page.emulateMedia({ reducedMotion: 'no-preference' });
+            await page.evaluate(() => localStorage.setItem('menu-size', JSON.stringify('large')));
+            await recordWidthTransitions(page);
+            const store = createMockStore();
+            const component = await mount(
+                withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }),
+            );
+
+            await expect(component.getByText('Collapse', { exact: true })).toBeVisible();
+            expect(await widthTransitionsRun(page)).toBe(0);
+        });
+
+        test('does not animate with reduced motion', async ({ mount, page }) => {
+            await page.emulateMedia({ reducedMotion: 'reduce' });
+            await recordWidthTransitions(page);
+            const store = createMockStore();
+            const component = await mount(
+                withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }),
+            );
+            const arrow = component.getByRole('button', { name: 'Expand' }).locator('svg');
+            await arrow.evaluate((icon) => {
+                const record = globalThis as unknown as { arrowTransitions: number };
+                record.arrowTransitions = 0;
+                icon.addEventListener('transitionrun', () => {
+                    record.arrowTransitions += 1;
+                });
+            });
+
+            await component.getByRole('button', { name: 'Expand' }).click();
+
+            await expect(component.getByText('Collapse', { exact: true })).toBeVisible();
+            expect(await widthTransitionsRun(page)).toBe(0);
+            expect(await page.evaluate(() => (globalThis as unknown as { arrowTransitions: number }).arrowTransitions)).toBe(0);
+        });
+
+        test('keeps the labels rendered while the rail collapses and hides them once it has', async ({ mount, page }) => {
+            await page.emulateMedia({ reducedMotion: 'no-preference' });
+            await page.evaluate(() => localStorage.setItem('menu-size', JSON.stringify('large')));
+            await page.addStyleTag({ content: ':root.sidebar-animated { transition-duration: 60s !important; }' });
+            const store = createMockStore();
+            const component = await mount(
+                withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
+            );
+            const labels = [
+                component.getByTestId('sidebar-certificates').locator('span'),
+                component.getByTestId('sidebar-access-control').locator('span'),
+                component.getByRole('button', { name: /^(Expand|Collapse)$/ }).locator('span'),
+            ];
+
+            const icons = [
+                component.getByTestId('sidebar-certificates').locator('svg'),
+                component.getByRole('button', { name: /^(Expand|Collapse)$/ }).locator('svg'),
+            ];
+            const centres = () =>
+                Promise.all(
+                    icons.map(async (icon) => {
+                        const box = await icon.boundingBox();
+                        return box ? box.x + box.width / 2 : Number.NaN;
+                    }),
+                );
+            const expanded = await centres();
+
+            await component.getByRole('button', { name: 'Collapse' }).click();
+
+            expect(await seekWidthTransition(page, 30_000)).toBe(true);
+            const midway = await centres();
+            for (const [i, x] of midway.entries()) expect(x).toBeCloseTo(expanded[i], 0);
+            for (const label of labels) await expect(label).not.toHaveClass(/\bsr-only\b/);
+            await expect(labels[2]).toHaveText('Collapse');
+
+            expect(await seekWidthTransition(page, 'end')).toBe(true);
+            for (const label of labels) await expect(label).toHaveClass(/\bsr-only\b/);
+            await expect(labels[2]).toHaveText('Expand');
+        });
+
+        test('hides the labels at once when collapsing with reduced motion', async ({ mount, page }) => {
+            await page.emulateMedia({ reducedMotion: 'reduce' });
+            await page.evaluate(() => localStorage.setItem('menu-size', JSON.stringify('large')));
+            const store = createMockStore();
+            const component = await mount(
+                withProviders(<Sidebar allowedResources={[Resource.Certificates]} />, { store, initialRoute: '/' }),
+            );
+
+            await component.getByRole('button', { name: 'Collapse' }).click();
+
+            await expect(component.getByRole('button', { name: 'Expand' }).locator('span')).toHaveClass(/\bsr-only\b/);
+            await expect(component.getByTestId('sidebar-certificates').locator('span')).toHaveClass(/\bsr-only\b/);
+        });
+
+        test('keeps every icon at full size while the rail is still narrow', async ({ mount, page }) => {
+            await page.emulateMedia({ reducedMotion: 'no-preference' });
+            await page.addStyleTag({ content: ':root.sidebar-animated { transition-duration: 60s !important; }' });
+            const store = createMockStore();
+            const component = await mount(
+                withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
+            );
+            const toggle = component.getByRole('button', { name: /^(Expand|Collapse)$/ });
+
+            await toggle.click();
+            expect(await seekWidthTransition(page, 0)).toBe(true);
+
+            const iconWidths = await component
+                .getByRole('navigation')
+                .locator('svg')
+                .evaluateAll((icons) => icons.map((icon) => icon.getBoundingClientRect().width));
+            expect(iconWidths.length).toBeGreaterThan(0);
+            for (const width of iconWidths) expect(width).toBeCloseTo(16, 0);
+            expect((await toggle.locator('svg').boundingBox())?.width).toBeGreaterThanOrEqual(24);
+        });
     });
 });

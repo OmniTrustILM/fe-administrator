@@ -73,7 +73,7 @@ function SidebarSubmenuItem({
                 data-testid={`sidebar-${parentSlug}-${childSlug}`}
                 className={({ isActive }) =>
                     cn(
-                        'font-medium text-sm block px-4 ml-8 py-2 no-underline hover:bg-surface-hover rounded-lg h-[38px] items-center',
+                        'font-medium text-sm block whitespace-nowrap px-4 ml-8 py-2 no-underline hover:bg-surface-hover rounded-lg h-[38px] items-center',
                         isActive && 'text-brand',
                     )
                 }
@@ -470,10 +470,31 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
         return item ? item._key : null;
     }, [location.pathname, allowedMenuItems]);
 
+    const [collapsing, setCollapsing] = useState(false);
+    const labelsShown = menuSize !== 'small' || collapsing;
+
     useEffect(() => {
         if (menuSize === 'flying') return;
-        document.documentElement.style.setProperty('--sidebar-width', menuSize === 'small' ? '84px' : '260px');
-    }, [menuSize]);
+        const root = document.documentElement;
+        root.style.setProperty('--sidebar-width', menuSize === 'small' ? '84px' : '260px');
+        if (!collapsing) return;
+        // Labels stay rendered for the shrinking rail to clip, and are hidden once the width transition settles.
+        const transition = root
+            .getAnimations?.()
+            .find((animation) => (animation as CSSTransition).transitionProperty === '--sidebar-width');
+        if (!transition) {
+            setCollapsing(false);
+            return;
+        }
+        let current = true;
+        const settle = () => {
+            if (current) setCollapsing(false);
+        };
+        transition.finished.then(settle, settle);
+        return () => {
+            current = false;
+        };
+    }, [menuSize, collapsing]);
 
     useEffect(() => {
         if (menuSize === 'large' && activeSectionKey) {
@@ -482,8 +503,11 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
     }, [menuSize, activeSectionKey]);
 
     function toggleMenuSize() {
+        // Added on the first toggle only, so restoring a stored size on load does not animate.
+        document.documentElement.classList.add('sidebar-animated');
         const newMenuSize = menuSize === 'small' ? 'large' : 'small';
         setMenuSize(newMenuSize);
+        setCollapsing(newMenuSize === 'small');
         setOpenMenuItems(newMenuSize === 'large' && activeSectionKey ? [activeSectionKey] : []);
         setDefaultMenuSize(newMenuSize);
     }
@@ -498,13 +522,13 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
             const isActive = openMenuItems.includes(mapping._key);
             const parentSlug = toTestIdSlug(mapping._key);
             return (
-                <li key={mapping.header} className={cn('flex justify-center', { 'flex-col': menuSize !== 'small' })}>
-                    <RailTooltip label={mapping.header} show={isCollapsed}>
+                <li key={mapping.header} className={cn('flex justify-center', { 'flex-col': labelsShown })}>
+                    <RailTooltip label={mapping.header} show={!labelsShown}>
                         <Button
                             variant="transparent"
                             data-testid={`sidebar-${parentSlug}`}
                             className={cn('!px-4 !py-2 border-none justify-between h-[38px]', {
-                                'flex w-full items-center': menuSize !== 'small',
+                                'flex w-full items-center': labelsShown,
                             })}
                             onClick={() => {
                                 if (menuSize === 'small') {
@@ -517,11 +541,13 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                             aria-expanded={isActive}
                             aria-controls={mapping._key}
                         >
-                            <div className={cn('flex items-center gap-x-2', { 'text-brand': isChildActive })}>
+                            <div className={cn('flex items-center gap-x-2 [&>svg]:shrink-0', { 'text-brand': isChildActive })}>
                                 {mapping.icon}
-                                <span className={cn('text-sm', { 'sr-only': menuSize === 'small' })}>{mapping.header}</span>
+                                <span className={cn('text-sm whitespace-nowrap', { 'sr-only': !labelsShown })}>{mapping.header}</span>
                             </div>
-                            {menuSize !== 'small' && <ChevronDown strokeWidth={1.5} size={16} className={cn({ isActive: 'rotate-180' })} />}
+                            {labelsShown && (
+                                <ChevronDown strokeWidth={1.5} size={16} className={cn('shrink-0', { 'rotate-180': isActive })} />
+                            )}
                         </Button>
                     </RailTooltip>
                     <ul
@@ -547,7 +573,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
         }
         return (
             <li key={mapping._key} className="flex justify-center">
-                <RailTooltip label={mapping.header} show={isCollapsed}>
+                <RailTooltip label={mapping.header} show={!labelsShown}>
                     <NavLink
                         to={mapping.headerLink}
                         data-testid={`sidebar-${toTestIdSlug(mapping.headerLink)}`}
@@ -558,15 +584,18 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                             }
                         }}
                         className={({ isActive }) =>
-                            cn('font-medium flex px-4 py-2 no-underline hover:bg-surface-hover rounded-lg h-[38px] items-center', {
-                                'text-brand': isActive,
-                                'text-content': !isActive,
-                                'w-full gap-x-2': menuSize !== 'small',
-                            })
+                            cn(
+                                'font-medium flex px-4 py-2 no-underline hover:bg-surface-hover rounded-lg h-[38px] items-center [&>svg]:shrink-0',
+                                {
+                                    'text-brand': isActive,
+                                    'text-content': !isActive,
+                                    'w-full gap-x-2': labelsShown,
+                                },
+                            )
                         }
                     >
                         {mapping.icon}
-                        <span className={cn('text-sm font-medium', { 'sr-only': menuSize === 'small' })}>{mapping.header}</span>
+                        <span className={cn('text-sm font-medium whitespace-nowrap', { 'sr-only': !labelsShown })}>{mapping.header}</span>
                     </NavLink>
                 </RailTooltip>
             </li>
@@ -591,7 +620,7 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                             width: '100%',
                         }}
                     >
-                        <nav className="p-4">
+                        <nav className="py-4 px-[18px]">
                             <ul className="list-none m-0 flex flex-col gap-y-1">{allowedMenuItems.map((item) => renderMenuItem(item))}</ul>
                         </nav>
                     </SimpleBar>
@@ -613,23 +642,33 @@ export default function Sidebar({ allowedResources }: Readonly<Props>) {
                 }}
                 data-testid="sidebar-sticky"
             >
-                <div className="p-4 w-full">
+                <div className="py-4 px-[18px] w-full overflow-hidden">
                     <nav className="pb-4">
                         <ul className="list-none m-0 flex flex-col gap-y-1">{allowedMenuItems.map((item) => renderMenuItem(item))}</ul>
                     </nav>
 
                     <hr className="border-divider" />
                     <div className="flex justify-center pt-4">
-                        <RailTooltip label="Expand" show={isCollapsed}>
+                        <RailTooltip label="Expand" show={!labelsShown}>
                             <Button
                                 variant="transparent"
-                                className={cn('inline-flex px-4 py-2 border-none', {
-                                    'w-full gap-x-2': menuSize !== 'small',
+                                className={cn('inline-flex px-3 py-2 border-none', {
+                                    'w-full gap-x-2': labelsShown,
                                 })}
+                                aria-label={isCollapsed ? 'Expand' : 'Collapse'}
                                 onClick={() => toggleMenuSize()}
                             >
-                                <ArrowRightToLine strokeWidth={1} size={24} className={cn(menuSize === 'large' && 'rotate-180')} />
-                                <span className={cn({ 'sr-only': isCollapsed })}>{isCollapsed ? 'Expand' : 'Collapse'}</span>
+                                <ArrowRightToLine
+                                    strokeWidth={1}
+                                    size={24}
+                                    className={cn(
+                                        'shrink-0 transition-transform duration-300 motion-reduce:transition-none',
+                                        menuSize === 'large' && 'rotate-180',
+                                    )}
+                                />
+                                <span className={cn('whitespace-nowrap', { 'sr-only': !labelsShown })}>
+                                    {labelsShown ? 'Collapse' : 'Expand'}
+                                </span>
                             </Button>
                         </RailTooltip>
                     </div>
