@@ -514,6 +514,7 @@ function SecretDetail() {
                                 setIsUpdateOwnerOpen(true);
                             }}
                             title="Update Owner"
+                            aria-label="Update Owner"
                         >
                             <EditIcon size={16} />
                         </Button>
@@ -546,6 +547,7 @@ function SecretDetail() {
                                 setIsUpdateGroupsOpen(true);
                             }}
                             title="Update Groups"
+                            aria-label="Update Groups"
                         >
                             <EditIcon size={16} />
                         </Button>
@@ -566,6 +568,7 @@ function SecretDetail() {
                                 setIsUpdateVaultProfileOpen(true);
                             }}
                             title="Update Source Vault Profile"
+                            aria-label="Update Source Vault Profile"
                         >
                             <EditIcon size={16} />
                         </Button>

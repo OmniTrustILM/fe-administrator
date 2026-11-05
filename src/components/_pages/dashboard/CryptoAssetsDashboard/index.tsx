@@ -126,7 +126,7 @@ function CryptoAssetsDashboard() {
                             unassignedAssetCount > 0 ? (
                                 <Link
                                     to={LINK}
-                                    className="text-sm text-brand hover:underline"
+                                    className="text-sm text-brand"
                                     onClick={onSameTabClick(() =>
                                         dispatch(
                                             filterActions.setDrillDownFilters({
@@ -176,7 +176,7 @@ function CryptoAssetsDashboard() {
                                 <span key={state.code} className="text-sm text-content-muted tabular-nums">
                                     <Link
                                         to={CBOMS_LINK}
-                                        className="text-brand hover:underline"
+                                        className="text-brand"
                                         onClick={onSameTabClick(() =>
                                             dispatch(
                                                 filterActions.setDrillDownFilters({

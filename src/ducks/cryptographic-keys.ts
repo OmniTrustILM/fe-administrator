@@ -128,6 +128,17 @@ export const initialState: State = {
     keyHistory: [],
 };
 
+// Compromising, destroying or deleting an item only ever takes removability away. The next fetch of the key brings Core's flag back.
+function markDetailedKeyNotRemovable(state: State) {
+    if (state.cryptographicKey) state.cryptographicKey.removableFromInventory = false;
+}
+
+function markListedKeyNotRemovable(state: State, keyUuid: string) {
+    for (const row of state.cryptographicKeys) {
+        if (row.keyWrapperUuid === keyUuid) row.removableFromInventory = false;
+    }
+}
+
 export const slice = createSlice({
     name: 'cryptographicKeys',
 
@@ -465,6 +476,7 @@ export const slice = createSlice({
                         const keyItemIndex = state.cryptographicKey?.items.indexOf(keyItem);
                         if (keyItemIndex !== undefined && keyItemIndex !== -1) {
                             state.cryptographicKey?.items.splice(keyItemIndex, 1);
+                            markDetailedKeyNotRemovable(state);
                         }
                     }
                     return null;
@@ -541,11 +553,13 @@ export const slice = createSlice({
                     const keyItem = state.cryptographicKey?.items.find((keyItem) => keyItem.uuid === keyItemUuid);
                     if (keyItem) keyItem.state = KeyState.Compromised;
                     if (keyItem) keyItem.reason = action.payload.request.reason;
+                    if (keyItem) markDetailedKeyNotRemovable(state);
                 });
             } else {
                 state.cryptographicKey?.items.forEach((keyItem) => {
                     keyItem.state = KeyState.Compromised;
                     keyItem.reason = action.payload.request.reason;
+                    markDetailedKeyNotRemovable(state);
                 });
             }
         },
@@ -555,6 +569,7 @@ export const slice = createSlice({
                 state.cryptographicKey?.items.forEach((keyItem) => {
                     if (!action.payload.failedUuids.includes(keyItem.uuid)) {
                         keyItem.state = KeyState.Compromised;
+                        markDetailedKeyNotRemovable(state);
                     }
                 });
             }
@@ -571,12 +586,15 @@ export const slice = createSlice({
             if (action.payload.keyItemUuid.length > 0) {
                 action.payload.keyItemUuid.forEach((keyItemUuid) => {
                     const keyItem = state.cryptographicKey?.items.find((keyItem) => keyItem.uuid === keyItemUuid);
-                    if (keyItem)
+                    if (keyItem) {
                         keyItem.state = keyItem.state === KeyState.Compromised ? KeyState.DestroyedCompromised : KeyState.Destroyed;
+                        markDetailedKeyNotRemovable(state);
+                    }
                 });
             } else {
                 state.cryptographicKey?.items.forEach((keyItem) => {
                     keyItem.state = keyItem.state === KeyState.Compromised ? KeyState.DestroyedCompromised : KeyState.Destroyed;
+                    markDetailedKeyNotRemovable(state);
                 });
             }
         },
@@ -586,6 +604,7 @@ export const slice = createSlice({
                 state.cryptographicKey?.items.forEach((keyItem) => {
                     if (!action.payload.failedUuids.includes(keyItem.uuid)) {
                         keyItem.state = keyItem.state === KeyState.Compromised ? KeyState.DestroyedCompromised : KeyState.Destroyed;
+                        markDetailedKeyNotRemovable(state);
                     }
                 });
             }
@@ -622,7 +641,10 @@ export const slice = createSlice({
 
             action.payload.uuids.forEach((uuid) => {
                 const keyItemIndex = state.cryptographicKeys.findIndex((keyItem) => keyItem.uuid === uuid);
-                if (keyItemIndex >= 0) state.cryptographicKeys.splice(keyItemIndex, 1);
+                if (keyItemIndex >= 0) {
+                    const [deletedItem] = state.cryptographicKeys.splice(keyItemIndex, 1);
+                    markListedKeyNotRemovable(state, deletedItem.keyWrapperUuid);
+                }
             });
 
             if (state.cryptographicKey && action.payload.uuids.includes(state.cryptographicKey.uuid)) state.cryptographicKey = undefined;
@@ -804,6 +826,7 @@ export const slice = createSlice({
                 const keyItemIndex = state.cryptographicKeys.findIndex((keyItem) => keyItem.uuid === uuid);
                 if (keyItemIndex >= 0) {
                     state.cryptographicKeys[keyItemIndex].state = KeyState.Compromised;
+                    markListedKeyNotRemovable(state, state.cryptographicKeys[keyItemIndex].keyWrapperUuid);
                 }
             });
         },
@@ -814,6 +837,7 @@ export const slice = createSlice({
                     const keyItemIndex = state.cryptographicKeys.findIndex((keyItem) => keyItem.uuid === uuid);
                     if (keyItemIndex >= 0) {
                         state.cryptographicKeys[keyItemIndex].state = KeyState.Compromised;
+                        markListedKeyNotRemovable(state, state.cryptographicKeys[keyItemIndex].keyWrapperUuid);
                     }
                 }
             });
@@ -841,11 +865,13 @@ export const slice = createSlice({
 
             action.payload.uuids.forEach((uuid) => {
                 const keyItemIndex = state.cryptographicKeys.findIndex((keyItem) => keyItem.uuid === uuid);
-                if (keyItemIndex >= 0)
+                if (keyItemIndex >= 0) {
                     state.cryptographicKeys[keyItemIndex].state =
                         state.cryptographicKeys[keyItemIndex].state === KeyState.Compromised
                             ? KeyState.DestroyedCompromised
                             : KeyState.Destroyed;
+                    markListedKeyNotRemovable(state, state.cryptographicKeys[keyItemIndex].keyWrapperUuid);
+                }
             });
         },
 
@@ -858,6 +884,7 @@ export const slice = createSlice({
                             state.cryptographicKeys[keyItemIndex].state === KeyState.Compromised
                                 ? KeyState.DestroyedCompromised
                                 : KeyState.Destroyed;
+                        markListedKeyNotRemovable(state, state.cryptographicKeys[keyItemIndex].keyWrapperUuid);
                     }
                 }
             });

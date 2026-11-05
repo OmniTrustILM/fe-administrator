@@ -28,7 +28,7 @@ import SignVerifyData from './SignVerifyData';
 import KeyExportDialog from './KeyExportDialog';
 import { composeValidators, validateAlphaNumericWithSpecialChars, validateRequired } from 'utils/validators';
 import EditableTableCell from 'components/CustomTable/EditableTableCell';
-import { keyWithoutTokenInstanceActionNotes } from './constants';
+import { keyWithoutTokenInstanceActionNotes } from '../constants';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import Button from 'components/Button';
 import { Info } from 'lucide-react';

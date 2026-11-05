@@ -486,18 +486,6 @@ describe('tokenProfiles selectors', () => {
         expect(selectors.isImportableTokenProfilesListed(state)).toBe(true);
     });
 
-    test('keyListableTokenProfileUuids selector holds the UUID of each key-listable profile, enabled or not', () => {
-        const listing = { uuid: 'tp-1', enabled: true } as any;
-        const disabled = { uuid: 'tp-2', enabled: false } as any;
-
-        expect(
-            selectors.keyListableTokenProfileUuids({
-                tokenprofiles: { ...initialState, keyListableTokenProfiles: [listing, disabled] },
-            } as any),
-        ).toEqual(new Set(['tp-1', 'tp-2']));
-        expect(selectors.keyListableTokenProfileUuids({ tokenprofiles: initialState } as any)).toEqual(new Set());
-    });
-
     test('importableTokenProfilesError selector', () => {
         expect(selectors.importableTokenProfilesError(state)).toBe('Failed to get importable token profiles');
         expect(selectors.importableTokenProfilesError({ tokenprofiles: initialState } as any)).toBeUndefined();

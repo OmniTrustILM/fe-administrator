@@ -37,6 +37,7 @@ import {
 function CertificateIcon({ size = 24, className }: Readonly<{ size?: number; className?: string }>) {
     return (
         <svg
+            aria-hidden="true"
             className={cn('certificate-icon', className)}
             width={size}
             height={size}

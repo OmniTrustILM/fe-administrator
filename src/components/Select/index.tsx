@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type KeyboardEvent as ReactKeyboardEvent } from 'react';
 import * as Popover from '@radix-ui/react-popover';
-import { Check, ChevronsUpDown, X } from 'lucide-react';
+import { Check, ChevronsUpDown, Search, X } from 'lucide-react';
 import cn from 'classnames';
 import Label from 'components/Label';
 import Button from 'components/Button';
@@ -519,28 +519,35 @@ function Select({
                         >
                             {hasSearch && (
                                 <div className={SEARCH_WRAPPER_CLASSES}>
-                                    <input
-                                        ref={searchInputRef}
-                                        type="text"
-                                        className={SEARCH_INPUT_CLASSES}
-                                        placeholder="Search..."
-                                        value={searchTerm}
-                                        role="combobox"
-                                        aria-controls={listboxId}
-                                        aria-expanded={open}
-                                        aria-activedescendant={activeDescendantId}
-                                        onChange={(e) => {
-                                            const next = e.target.value;
-                                            setSearchTerm(next);
-                                            const needle = next.toLowerCase();
-                                            const filtered = next
-                                                ? options.filter((opt) => opt.label.toLowerCase().includes(needle))
-                                                : options;
-                                            const firstEnabled = filtered.findIndex((o) => !o.disabled);
-                                            setHighlightedIndex(firstEnabled);
-                                        }}
-                                        data-testid={dataTestId ? `${dataTestId}-search` : `select-${id}-search`}
-                                    />
+                                    <div className="relative">
+                                        <Search
+                                            size={16}
+                                            className="pointer-events-none absolute start-2.5 top-1/2 -translate-y-1/2 text-content-subtle"
+                                            aria-hidden
+                                        />
+                                        <input
+                                            ref={searchInputRef}
+                                            type="text"
+                                            className={SEARCH_INPUT_CLASSES}
+                                            placeholder="Search..."
+                                            value={searchTerm}
+                                            role="combobox"
+                                            aria-controls={listboxId}
+                                            aria-expanded={open}
+                                            aria-activedescendant={activeDescendantId}
+                                            onChange={(e) => {
+                                                const next = e.target.value;
+                                                setSearchTerm(next);
+                                                const needle = next.toLowerCase();
+                                                const filtered = next
+                                                    ? options.filter((opt) => opt.label.toLowerCase().includes(needle))
+                                                    : options;
+                                                const firstEnabled = filtered.findIndex((o) => !o.disabled);
+                                                setHighlightedIndex(firstEnabled);
+                                            }}
+                                            data-testid={dataTestId ? `${dataTestId}-search` : `select-${id}-search`}
+                                        />
+                                    </div>
                                 </div>
                             )}
                             <div // NOSONAR(S6819): custom combobox listbox built on Radix Popover — a native <select> cannot host this aria-activedescendant pattern

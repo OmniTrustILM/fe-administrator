@@ -85,7 +85,7 @@
         ]
     },
     "devDependencies": {
-        "@biomejs/biome": "2.6.3",
+        "@biomejs/biome": "2.6.4",
         "@openapitools/openapi-generator-cli": "^2.31.1",
         "@playwright/experimental-ct-react": "1.62.1",
         "@playwright/test": "1.62.1",
@@ -121,6 +121,7 @@
         "brace-expansion": "5.0.12",
         "ws@8": "8.21.1",
         "basic-ftp": "^6.2.3",
+        "ip-address": "^10.7.4",
         "nyc": {
             "istanbul-lib-processinfo": {
                 "uuid": "^14.0.0"

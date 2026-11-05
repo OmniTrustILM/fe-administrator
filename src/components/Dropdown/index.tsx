@@ -59,6 +59,7 @@ function Dropdown({
                     {title}
                     {!hideArrow && (
                         <svg
+                            aria-hidden="true"
                             className="group-data-[state=open]:rotate-180 size-4 transition-transform"
                             xmlns="http://www.w3.org/2000/svg"
                             width="24"

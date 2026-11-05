@@ -198,14 +198,14 @@ test.describe('Select', () => {
         await expect(page.getByTestId('sel-selected-description')).toHaveCount(0);
     });
 
-    test('"+ Add new" option gets brand medium-weight styling', async ({ mount, page }) => {
+    test('"+ Create new" option gets brand medium-weight styling', async ({ mount, page }) => {
         const opts = [
             { value: '1', label: 'One' },
-            { value: '__add_new__', label: '+ Add new' },
+            { value: '__add_new__', label: '+ Create new' },
         ];
         await mount(<Select id="an" value="" onChange={() => {}} options={opts} dataTestId="sel" />);
         await page.getByTestId('sel-trigger').click();
-        const addNew = page.getByRole('option', { name: '+ Add new' });
+        const addNew = page.getByRole('option', { name: '+ Create new' });
         await expect(addNew).toBeVisible();
         await expect(addNew.locator('span.text-brand-hover')).toHaveCount(1);
     });

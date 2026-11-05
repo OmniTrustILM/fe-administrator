@@ -375,11 +375,6 @@ const isFetchingImportable = createSelector(state, (state: State) => state.isFet
 const isImportableTokenProfilesListed = createSelector(state, (state: State) => state.importableTokenProfilesListed);
 const importableTokenProfilesError = createSelector(state, (state: State) => state.importableTokenProfilesError);
 const keyListableTokenProfiles = createSelector(state, (state: State) => state.keyListableTokenProfiles);
-/** The pages that offer removal from the inventory share this set, so they decide alike whether a key's token lists keys. */
-const keyListableTokenProfileUuids = createSelector(
-    keyListableTokenProfiles,
-    (profiles) => new Set(profiles.map((profile) => profile.uuid)),
-);
 const isKeyListableTokenProfilesListed = createSelector(state, (state: State) => state.keyListableTokenProfilesListed);
 const keyListableTokenProfilesError = createSelector(state, (state: State) => state.keyListableTokenProfilesError);
 
@@ -414,7 +409,6 @@ export const selectors = {
     isImportableTokenProfilesListed,
     importableTokenProfilesError,
     keyListableTokenProfiles,
-    keyListableTokenProfileUuids,
     isKeyListableTokenProfilesListed,
     keyListableTokenProfilesError,
 

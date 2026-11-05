@@ -164,7 +164,7 @@ test.describe('CompleteRegisteredDialog', () => {
         await expect(page.getByTestId('select-keyUuid-trigger')).toBeVisible();
     });
 
-    test('fetches token profiles on mount so the dropdown offers more than "+ Add new"', async ({ mount, page }) => {
+    test('fetches token profiles on mount so the dropdown offers more than "+ Create new"', async ({ mount, page }) => {
         await mount(
             <CompleteRegisteredDialogTestWrapper tokenProfilesOnFetch={[{ uuid: 'fetched-uuid', name: 'Fetched Token Profile' }]} />,
         );

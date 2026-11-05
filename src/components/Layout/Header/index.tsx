@@ -35,6 +35,7 @@ function Header({ sidebarToggle }: Readonly<Props>) {
                             <div className="flex items-center gap-2">
                                 {/* <User size={24} /> */}
                                 <svg
+                                    aria-hidden="true"
                                     width="38"
                                     height="38"
                                     viewBox="0 0 38 38"

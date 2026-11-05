@@ -70,7 +70,7 @@ test('the audit search accepts the Delegate field supplied by the backend', asyn
     await page.getByRole('option', { name: 'Equals', exact: true }).click();
     await page.getByPlaceholder('Enter filter value').focus();
     await page.getByPlaceholder('Enter filter value').fill('automation');
-    await page.getByRole('button', { name: 'Add', exact: true }).click();
+    await page.getByRole('button', { name: 'Apply', exact: true }).click();
 
     await expect
         .poll(() => filters)

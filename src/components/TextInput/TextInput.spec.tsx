@@ -1,4 +1,5 @@
 import { test, expect } from '../../../playwright/ct-test';
+import { Search } from 'lucide-react';
 import TextInput from './index';
 
 test.describe('TextInput', () => {
@@ -146,5 +147,20 @@ test.describe('TextInput', () => {
         await input.focus();
         await input.blur();
         expect(blurred).toBe(true);
+    });
+
+    test('iconLeft renders a decorative leading icon that the text clears and that dims when disabled', async ({ mount, page }) => {
+        await mount(<TextInput id="with-icon" value="" onChange={() => {}} ariaLabel="Search" iconLeft={<Search size={16} />} disabled />);
+
+        const input = page.getByRole('textbox', { name: 'Search' });
+        const iconWrapper = page.locator('#with-icon + span[aria-hidden="true"]');
+        await expect(iconWrapper.locator('svg.lucide-search')).toBeVisible();
+        await expect(iconWrapper).toHaveCSS('opacity', '0.5');
+
+        const inputBox = await input.boundingBox();
+        const iconBox = await iconWrapper.locator('svg').boundingBox();
+        const paddingStart = await input.evaluate((el) => Number.parseFloat(getComputedStyle(el).paddingInlineStart));
+        expect(inputBox && iconBox).toBeTruthy();
+        expect(inputBox!.x + paddingStart).toBeGreaterThanOrEqual(iconBox!.x + iconBox!.width);
     });
 });

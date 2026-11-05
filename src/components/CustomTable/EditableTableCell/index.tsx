@@ -103,10 +103,17 @@ const EditableTableCellInner = <TValue,>({
                     }}
                 />
                 <div>
-                    <Button variant="transparent" onClick={handleSubmit(onSubmit)} disabled={busy} type="button" title="Save">
+                    <Button
+                        variant="transparent"
+                        onClick={handleSubmit(onSubmit)}
+                        disabled={busy}
+                        type="button"
+                        title="Save"
+                        aria-label="Save"
+                    >
                         <Check size={16} />
                     </Button>
-                    <Button variant="transparent" onClick={handleCancel} disabled={busy} type="button" title="Cancel">
+                    <Button variant="transparent" onClick={handleCancel} disabled={busy} type="button" title="Cancel" aria-label="Cancel">
                         <X size={16} />
                     </Button>
                 </div>
@@ -179,6 +186,7 @@ const EditableTableCell = <TValue,>({
             <Spinner active={busy} />
             <Button
                 title="Edit"
+                aria-label="Edit"
                 data-testid="editable-cell-edit-btn"
                 variant="transparent"
                 onClick={(e) => {

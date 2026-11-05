@@ -62,6 +62,7 @@ function Pagination({ page, totalPages, onPageChange, dataTestId, disabled = fal
                     data-testid={dataTestId ? `${dataTestId}-prev` : 'pagination-prev'}
                 >
                     <svg
+                        aria-hidden="true"
                         className="shrink-0 size-3.5"
                         xmlns="http://www.w3.org/2000/svg"
                         width="24"
@@ -130,6 +131,7 @@ function Pagination({ page, totalPages, onPageChange, dataTestId, disabled = fal
                 >
                     <span>Next</span>
                     <svg
+                        aria-hidden="true"
                         className="shrink-0 size-3.5"
                         xmlns="http://www.w3.org/2000/svg"
                         width="24"

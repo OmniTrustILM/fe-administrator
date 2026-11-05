@@ -794,7 +794,7 @@ export default function FilterWidget({
                         onClick={onUpdateFilterClick}
                         className="py-3 min-w-[62px]"
                     >
-                        {selectedFilter === -1 ? 'Add' : 'Update'}
+                        {selectedFilter === -1 ? 'Apply' : 'Update'}
                     </Button>
                 </div>
                 <div className="flex gap-2 flex-wrap">

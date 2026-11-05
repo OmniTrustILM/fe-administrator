@@ -370,6 +370,7 @@ function DatePicker({
                                         onClick={handlePrevMonth}
                                     >
                                         <svg
+                                            aria-hidden="true"
                                             className="shrink-0 size-4"
                                             xmlns="http://www.w3.org/2000/svg"
                                             width="24"
@@ -402,6 +403,7 @@ function DatePicker({
                                         onClick={handleNextMonth}
                                     >
                                         <svg
+                                            aria-hidden="true"
                                             className="shrink-0 size-4"
                                             width="24"
                                             height="24"

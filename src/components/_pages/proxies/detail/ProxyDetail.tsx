@@ -159,6 +159,7 @@ export const ProxyDetail = () => {
                                     variant="transparent"
                                     color="secondary"
                                     title="Update Description"
+                                    aria-label="Update Description"
                                     onClick={onUpdateDescriptionConfirmed}
                                     disabled={isUpdatingProxy || updatedDescription === proxyDetails.description}
                                 >
@@ -168,6 +169,7 @@ export const ProxyDetail = () => {
                                     variant="transparent"
                                     color="danger"
                                     title="Cancel"
+                                    aria-label="Cancel"
                                     onClick={() => {
                                         setUpdateDescriptionEditEnable(false);
                                         setUpdatedDescription(proxyDetails?.description || '');
@@ -182,6 +184,7 @@ export const ProxyDetail = () => {
                                 variant="transparent"
                                 color="secondary"
                                 title="Update Description"
+                                aria-label="Update Description"
                                 onClick={() => {
                                     setUpdateDescriptionEditEnable(true);
                                 }}

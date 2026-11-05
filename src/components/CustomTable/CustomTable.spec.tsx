@@ -44,6 +44,22 @@ test.describe('CustomTable', () => {
         await expect(searchInput).toBeVisible();
     });
 
+    test('search input shows a decorative leading search icon that the text does not overlap', async ({ mount }) => {
+        const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={mockData} canSearch={true} />));
+
+        const searchInput = component.getByRole('textbox', { name: 'Search' });
+        const icon = component.locator('#search ~ svg.lucide-search');
+        await expect(icon).toBeVisible();
+        await expect(icon).toHaveAttribute('aria-hidden', 'true');
+
+        const inputBox = await searchInput.boundingBox();
+        const iconBox = await icon.boundingBox();
+        const paddingStart = await searchInput.evaluate((el) => Number.parseFloat(getComputedStyle(el).paddingInlineStart));
+        expect(inputBox && iconBox).toBeTruthy();
+        expect(iconBox!.x).toBeGreaterThan(inputBox!.x);
+        expect(inputBox!.x + paddingStart).toBeGreaterThanOrEqual(iconBox!.x + iconBox!.width);
+    });
+
     test('should filter data when search is used', async ({ mount }) => {
         const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={mockData} canSearch={true} />));
 
