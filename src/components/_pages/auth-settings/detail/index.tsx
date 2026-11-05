@@ -123,6 +123,7 @@ export default function OAuth2ProviderDetail() {
                       { id: 'userInfoUrl', columns: ['User Info Url', <>{selectedOAuth2Provider.userInfoUrl}</>] },
                       { id: 'scope', columns: ['Scope', <>{selectedOAuth2Provider.scope?.join(', ')}</>] },
                       { id: 'audiences', columns: ['Audiences', <>{selectedOAuth2Provider.audiences?.join(', ')}</>] },
+                      { id: 'usernameClaim', columns: ['Username claim', selectedOAuth2Provider.usernameClaim || 'username'] },
                       {
                           id: 'allowedDelegates',
                           columns: ['Allowed delegates', selectedOAuth2Provider.allowedDelegates?.join(', ') || 'None'],

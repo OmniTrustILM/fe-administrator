@@ -58,6 +58,7 @@ interface FormValues {
     postLogoutUrl: string;
     userInfoUrl: string;
     audiences: string[];
+    usernameClaim: string;
     allowedDelegates: string[];
     delegateClaim: string;
     skew: string;
@@ -108,6 +109,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                 postLogoutUrl: oauth2Provider.postLogoutUrl || '',
                 userInfoUrl: oauth2Provider.userInfoUrl || '',
                 audiences: oauth2Provider.audiences || [],
+                usernameClaim: oauth2Provider.usernameClaim || '',
                 allowedDelegates: oauth2Provider.allowedDelegates || [],
                 delegateClaim: oauth2Provider.delegateClaim || '',
                 skew: oauth2Provider.skew?.toString() || '',
@@ -129,6 +131,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                 postLogoutUrl: '',
                 userInfoUrl: '',
                 audiences: [],
+                usernameClaim: '',
                 allowedDelegates: [],
                 delegateClaim: '',
                 skew: '',
@@ -178,6 +181,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                 postLogoutUrl: values.postLogoutUrl || undefined,
                 userInfoUrl: values.userInfoUrl || undefined,
                 audiences: values.audiences && values.audiences.length > 0 ? values.audiences : undefined,
+                usernameClaim: values.usernameClaim.trim() || undefined,
                 allowedDelegates: values.allowedDelegates,
                 delegateClaim: values.delegateClaim.trim() || 'client_id',
                 skew: values.skew ? Number.parseInt(values.skew, 10) : undefined,
@@ -449,6 +453,19 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                                                         : []
                                                 }
                                             />
+                                        )}
+                                    />
+                                </div>
+
+                                <div>
+                                    <p className="text-sm text-content-subtle mb-2">
+                                        The token claim that identifies the user. Defaults to username.
+                                    </p>
+                                    <Controller
+                                        name="usernameClaim"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <TextInput {...field} id="usernameClaim" label="Username claim" placeholder="username" />
                                         )}
                                     />
                                 </div>
