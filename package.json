@@ -15,7 +15,7 @@
         "@radix-ui/react-tabs": "^1.1.13",
         "@radix-ui/react-tooltip": "^1.2.8",
         "@radix-ui/react-visually-hidden": "^1.2.4",
-        "@reduxjs/toolkit": "^2.13.0",
+        "@reduxjs/toolkit": "^2.14.0",
         "buffer": "^6.0.3",
         "classnames": "^2.5.1",
         "cron-expression-validator": "^1.0.20",
@@ -85,7 +85,7 @@
         ]
     },
     "devDependencies": {
-        "@biomejs/biome": "2.6.4",
+        "@biomejs/biome": "2.6.5",
         "@openapitools/openapi-generator-cli": "^2.31.1",
         "@playwright/experimental-ct-react": "1.62.1",
         "@playwright/test": "1.62.1",
