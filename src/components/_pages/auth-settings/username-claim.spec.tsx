@@ -41,7 +41,8 @@ test('a new provider submits a trimmed username claim', async ({ mount, page }) 
     await fillInput(page.getByLabel('Username claim', { exact: true }), ' oid ');
     await page.getByRole('button', { name: 'Create', exact: true }).click();
 
-    await expect.poll(() => submittedModel(page)).toMatchObject({ usernameClaim: 'oid' });
+    await expect.poll(() => submittedModel(page)).toBeDefined();
+    expect(await submittedModel(page)).toMatchObject({ usernameClaim: 'oid' });
 });
 
 test('saving another change keeps the stored username claim', async ({ mount, page }) => {
