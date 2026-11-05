@@ -22,6 +22,7 @@ import { actions, selectors } from 'ducks/cbom';
 import { CbomAssetName, CbomInventoryStatus, useCbomInventory } from './CbomInventoryLinks';
 import type { DashboardDict } from 'types/statisticsDashboard';
 import type { ComponentAssetLink } from 'utils/cbom-asset-links';
+import { useCopyToClipboard } from 'utils/common-hooks';
 import { dateFormatter } from 'utils/dateUtil';
 import { getDonutChartColorsByRandomNumberOfOptions } from 'utils/dashboard';
 
@@ -177,6 +178,7 @@ export const buildComponentRows = (
 
 export default function CbomDetail() {
     const dispatch = useDispatch();
+    const copyToClipboard = useCopyToClipboard();
     const navigate = useNavigate();
     const { id = '' } = useParams();
 
@@ -226,9 +228,10 @@ export default function CbomDetail() {
 
     const rawJsonText = useMemo(() => JSON.stringify(detail?.content ?? {}, null, 2), [detail]);
 
-    const handleCopyRawJson = useCallback(() => {
-        void navigator.clipboard.writeText(rawJsonText);
-    }, [rawJsonText]);
+    const handleCopyRawJson = useCallback(
+        (event: React.MouseEvent) => copyToClipboard(rawJsonText, event.currentTarget, 'Failed to copy CBOM JSON'),
+        [copyToClipboard, rawJsonText],
+    );
 
     const handleDownloadRawJson = useCallback(() => {
         const blob = new Blob([rawJsonText], { type: 'application/json;charset=utf-8' });
@@ -461,10 +464,13 @@ export default function CbomDetail() {
         ];
     }, [locationModalData, detail]);
 
-    const handleCopyAssetJson = useCallback(() => {
-        if (!locationModalData?.rawJson) return;
-        void navigator.clipboard.writeText(locationModalData.rawJson);
-    }, [locationModalData]);
+    const handleCopyAssetJson = useCallback(
+        (event: React.MouseEvent) => {
+            if (!locationModalData?.rawJson) return;
+            copyToClipboard(locationModalData.rawJson, event.currentTarget, 'Failed to copy asset JSON');
+        },
+        [copyToClipboard, locationModalData],
+    );
 
     const handleCloseLocationModal = useCallback(() => {
         setLocationModalData(undefined);

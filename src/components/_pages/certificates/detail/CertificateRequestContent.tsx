@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useMemo, useRef } from 'react';
 import { useSelector } from 'react-redux';
 import { Buffer } from 'buffer';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
@@ -29,6 +29,7 @@ type Props = Readonly<{
 
 export default function CertificateRequestContent({ certificate, isBusy, getFreshCertificateDetail, setSelectedAttributesInfo }: Props) {
     const copyToClipboard = useCopyToClipboard();
+    const csrDropdownTrigger = useRef<HTMLButtonElement>(null);
 
     const certificateRequestFormatEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateFormat));
     const certificateTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateType));
@@ -40,6 +41,7 @@ export default function CertificateRequestContent({ certificate, isBusy, getFres
     const downloadCSRDropDown = useMemo(
         () => (
             <Dropdown
+                buttonRef={csrDropdownTrigger}
                 title={
                     <>
                         <Download size={16} aria-hidden="true" />
@@ -65,7 +67,7 @@ export default function CertificateRequestContent({ certificate, isBusy, getFres
                             if (!certificate?.certificateRequest?.content) return;
                             copyToClipboard(
                                 formatPEM(certificate?.certificateRequest?.content ?? '', true),
-                                'Certificate request content was copied to clipboard',
+                                csrDropdownTrigger.current,
                                 'Failed to copy certificate request content to clipboard',
                             );
                         },

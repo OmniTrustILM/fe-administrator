@@ -162,6 +162,6 @@ describe('PublicKeyDetails', () => {
         const copyButton = container.querySelector<HTMLButtonElement>('[data-testid="copy-public-key"]');
         expect(copyButton?.getAttribute('aria-label')).toBe('Copy public key');
         await act(async () => copyButton?.click());
-        expect(copy).toHaveBeenCalledWith(PUBLIC_KEY);
+        expect(copy).toHaveBeenCalledWith(PUBLIC_KEY, copyButton);
     });
 });

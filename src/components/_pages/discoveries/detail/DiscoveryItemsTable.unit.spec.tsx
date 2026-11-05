@@ -301,8 +301,9 @@ describe('DiscoveryItemsTable', () => {
         await act(async () => container.querySelector<HTMLButtonElement>('[data-testid="show-public-key-item-1"]')?.click());
         expect(container.querySelector('[data-testid="public-key-value"]')?.textContent).toBe(publicKey);
 
-        await act(async () => container.querySelector<HTMLButtonElement>('[data-testid="copy-public-key"]')?.click());
-        expect(copyToClipboard).toHaveBeenCalledWith(publicKey, expect.any(String), expect.any(String));
+        const copyButton = container.querySelector<HTMLButtonElement>('[data-testid="copy-public-key"]');
+        await act(async () => copyButton?.click());
+        expect(copyToClipboard).toHaveBeenCalledWith(publicKey, copyButton, expect.any(String));
     });
 
     it('lists a key whose payload could not be decoded with its domain columns empty', async () => {

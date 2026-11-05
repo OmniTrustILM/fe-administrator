@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { actions as alertActions } from 'ducks/alerts';
 import { isObjectSame } from 'utils/common-utils';
+import { showCopiedFeedback } from 'utils/copyFeedback';
 
 interface WindowSizes {
     width: number;
@@ -62,15 +63,11 @@ export const useCopyToClipboard = () => {
     const dispatch = useDispatch();
 
     const copyToClipboard = useCallback(
-        (
-            text: string,
-            successMessage: string = 'Content was copied to clipboard',
-            errorMessage: string = 'Failed to copy content to clipboard',
-        ) => {
-            navigator.clipboard
-                .writeText(text)
-                .then(() => dispatch(alertActions.success(successMessage)))
-                .catch(() => dispatch(alertActions.error(errorMessage)));
+        (text: string, anchor: Element | null, errorMessage: string = 'Failed to copy content to clipboard') => {
+            navigator.clipboard.writeText(text).then(
+                () => showCopiedFeedback(anchor),
+                () => dispatch(alertActions.error(errorMessage)),
+            );
         },
         [dispatch],
     );

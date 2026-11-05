@@ -1,4 +1,6 @@
 import { useEffect, useState } from 'react';
+import { Provider } from 'react-redux';
+import { useRecordingStore } from './test-helpers';
 import {
     useWindowSize,
     useDeviceType,
@@ -27,9 +29,64 @@ export function UseDeviceTypeHarness() {
 export function UseCopyToClipboardHarness() {
     const copyToClipboard = useCopyToClipboard();
     return (
-        <button type="button" data-testid="copy-btn" onClick={() => copyToClipboard('copied text', 'Success', 'Error')}>
-            Copy
-        </button>
+        <>
+            <button type="button" data-testid="copy-btn" onClick={(e) => copyToClipboard('copied text', e.currentTarget, 'Error')}>
+                Copy
+            </button>
+            <button type="button" data-testid="copy-unanchored-btn" onClick={() => copyToClipboard('copied text', null, 'Error')}>
+                Copy without anchor
+            </button>
+            <button
+                type="button"
+                data-testid="copy-detached-btn"
+                onClick={(e) => {
+                    const detached = e.currentTarget;
+                    detached.nextElementSibling?.querySelector('button')?.focus();
+                    detached.remove();
+                    copyToClipboard('copied text', detached, 'Error');
+                }}
+            >
+                Copy from removed button
+            </button>
+            <span>
+                <button type="button" data-testid="focus-target">
+                    Focus target
+                </button>
+            </span>
+            <button
+                type="button"
+                data-testid="copy-left-edge-btn"
+                className="fixed left-0 top-1/2 size-4"
+                aria-label="Copy at left edge"
+                onClick={(e) => copyToClipboard('copied text', e.currentTarget, 'Error')}
+            />
+            <button
+                type="button"
+                data-testid="copy-right-edge-btn"
+                className="fixed right-0 top-1/2 size-4"
+                aria-label="Copy at right edge"
+                onClick={(e) => copyToClipboard('copied text', e.currentTarget, 'Error')}
+            />
+        </>
+    );
+}
+
+export function UseCopyToClipboardWithStore({ inDialog = false }: Readonly<{ inDialog?: boolean }>) {
+    const { store, dispatched } = useRecordingStore(undefined, 'alerts/');
+    return (
+        <Provider store={store}>
+            <div className="p-16">
+                <div
+                    role={inDialog ? 'dialog' : undefined}
+                    className={inDialog ? 'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2' : undefined}
+                >
+                    <UseCopyToClipboardHarness />
+                </div>
+                <span data-testid="inverse-reference" className="bg-surface-inverse" />
+                <div className="h-[200vh]" />
+                <pre data-testid="dispatched-alerts">{JSON.stringify(dispatched)}</pre>
+            </div>
+        </Provider>
     );
 }
 

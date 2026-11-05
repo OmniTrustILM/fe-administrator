@@ -121,14 +121,17 @@ export default function CustomAttributeDetail() {
 
     const copyToClipboard = useCopyToClipboard();
 
-    const onContentCopyClick = useCallback(() => {
-        if (!customAttribute?.content?.length) return;
+    const onContentCopyClick = useCallback(
+        (event: React.MouseEvent) => {
+            if (!customAttribute?.content?.length) return;
 
-        const textToCopy = getAttributeCopyValue(customAttribute.contentType, customAttribute.content);
-        if (!textToCopy) return;
+            const textToCopy = getAttributeCopyValue(customAttribute.contentType, customAttribute.content);
+            if (!textToCopy) return;
 
-        copyToClipboard(textToCopy, 'Custom Attribute content was copied to clipboard', 'Failed to Custom Attribute content to clipboard');
-    }, [customAttribute, copyToClipboard]);
+            copyToClipboard(textToCopy, event.currentTarget, 'Failed to copy Custom Attribute content to clipboard');
+        },
+        [customAttribute, copyToClipboard],
+    );
 
     const detailData: TableDataRow[] = useMemo(
         () =>

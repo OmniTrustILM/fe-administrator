@@ -380,7 +380,7 @@ export function CryptoAssetEvaluatedProperties({
                         className="!p-1"
                         title={`Copy ${label}`}
                         aria-label={`Copy ${label}`}
-                        onClick={() => copyToClipboard(shown, `${label} was copied to clipboard`, `Failed to copy ${label} to clipboard`)}
+                        onClick={(e) => copyToClipboard(shown, e.currentTarget, `Failed to copy ${label} to clipboard`)}
                     >
                         <Copy size={14} />
                     </Button>
