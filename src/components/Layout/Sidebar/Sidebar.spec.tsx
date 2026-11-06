@@ -256,6 +256,7 @@ test.describe('Sidebar', () => {
         await component.getByTestId('sidebar-access-control').blur();
         await component.getByRole('button', { name: 'Collapse' }).click();
         await expect(component.getByRole('button', { name: 'Expand' })).toBeVisible();
+        await expect(component.getByTestId('sidebar-certificates').locator('span')).toHaveClass(/\bsr-only\b/);
 
         await page.clock.runFor(600);
         await expect(page.getByRole('tooltip', { name: 'Certificates' })).toHaveCount(0);
