@@ -63,6 +63,40 @@ test('clearing the username claim returns the provider to the platform default',
     expect(await submittedModel(page)).not.toHaveProperty('usernameClaim');
 });
 
+test('editing warns only while the effective username claim differs from the stored one', async ({ mount, page }) => {
+    await mount(<OAuth2DelegationTestHarness mode="edit" provider={{ ...provider, usernameClaim: 'oid' }} />);
+    const warning = page.getByTestId('username-claim-change-warning');
+    await expect(page.getByLabel('Username claim', { exact: true })).toHaveValue('oid');
+    await expect(warning).toHaveCount(0);
+
+    await fillInput(page.getByLabel('Username claim', { exact: true }), 'email');
+    await expect(warning).toBeVisible();
+
+    await fillInput(page.getByLabel('Username claim', { exact: true }), ' oid ');
+    await expect(warning).toHaveCount(0);
+});
+
+test('editing treats an explicit default username claim as no change', async ({ mount, page }) => {
+    await mount(<OAuth2DelegationTestHarness mode="edit" provider={provider} />);
+    const warning = page.getByTestId('username-claim-change-warning');
+
+    await fillInput(page.getByLabel('Username claim', { exact: true }), 'username');
+    await expect(warning).toHaveCount(0);
+
+    await fillInput(page.getByLabel('Username claim', { exact: true }), 'oid');
+    await expect(warning).toBeVisible();
+});
+
+test('creating a provider does not warn about the username claim', async ({ mount, page }) => {
+    await mount(<OAuth2DelegationTestHarness mode="create" />);
+    await page.getByTestId('select-scheme-trigger').click();
+    await page.getByRole('option', { name: 'JWT Bearer', exact: true }).click();
+    await fillInput(page.getByLabel('Username claim', { exact: true }), 'oid');
+
+    await expect(page.getByLabel('Username claim', { exact: true })).toHaveValue('oid');
+    await expect(page.getByTestId('username-claim-change-warning')).toHaveCount(0);
+});
+
 test('provider detail displays the configured username claim', async ({ mount, page }) => {
     await mount(<OAuth2DelegationTestHarness mode="detail" provider={{ ...provider, usernameClaim: 'oid' }} />);
 

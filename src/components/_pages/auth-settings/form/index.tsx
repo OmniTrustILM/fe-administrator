@@ -6,6 +6,7 @@ import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import Select from 'components/Select';
 import Button from 'components/Button';
+import Callout from 'components/Callout';
 import Container from 'components/Container';
 import MultipleValueTextInput from 'components/Input/MultipleValueTextInput';
 import TextInput from 'components/TextInput';
@@ -27,6 +28,8 @@ enum AuthenticationScheme {
     JwtBearer = 'JwtBearer',
     OAuth2Flow = 'OAuth2Flow',
 }
+
+const DEFAULT_USERNAME_CLAIM = 'username';
 
 const authenticationSchemeOptions: Record<AuthenticationScheme, OptionType> = {
     [AuthenticationScheme.JwtBearer]: {
@@ -166,6 +169,16 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
         control,
         name: 'jwkSetUrl',
     });
+
+    const watchedUsernameClaim = useWatch({
+        control,
+        name: 'usernameClaim',
+    });
+
+    const isUsernameClaimChanged =
+        editMode &&
+        !!oauth2Provider &&
+        (watchedUsernameClaim.trim() || DEFAULT_USERNAME_CLAIM) !== (oauth2Provider.usernameClaim?.trim() || DEFAULT_USERNAME_CLAIM);
 
     const onSubmit = useCallback(
         (values: FormValues) => {
@@ -459,15 +472,33 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
 
                                 <div>
                                     <p className="text-sm text-content-subtle mb-2">
-                                        The token claim that identifies the user. Defaults to username.
+                                        The token claim whose value is the user's account name. Defaults to username. Changing it on a
+                                        provider already in use changes which account each token signs in to.
                                     </p>
                                     <Controller
                                         name="usernameClaim"
                                         control={control}
                                         render={({ field }) => (
-                                            <TextInput {...field} id="usernameClaim" label="Username claim" placeholder="username" />
+                                            <TextInput
+                                                {...field}
+                                                id="usernameClaim"
+                                                label="Username claim"
+                                                placeholder={DEFAULT_USERNAME_CLAIM}
+                                            />
                                         )}
                                     />
+                                    {isUsernameClaimChanged && (
+                                        <Callout
+                                            severity="warning"
+                                            role="status"
+                                            className="mt-2"
+                                            dataTestId="username-claim-change-warning"
+                                        >
+                                            Existing accounts are not renamed. Before saving, check that each user's value under the new
+                                            claim matches their account name, your own included, or they will no longer sign in to their
+                                            account.
+                                        </Callout>
+                                    )}
                                 </div>
 
                                 <div>
