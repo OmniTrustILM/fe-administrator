@@ -95,6 +95,7 @@ type Props<TRow extends object> = {
     extraFilterComponent?: React.ReactNode;
     /** Shown inside the widget, above the table. */
     notice?: React.ReactNode;
+    emptyStateDescription?: string;
     /**
      * Bumped by the page to make the host re-run its own request. A request the page assembled would
      * omit the applied columns and ordering, blanking every attribute column and ignoring the sort.
@@ -158,6 +159,7 @@ function PagedList<TRow extends object>({
     columnForDetail,
     extraFilterComponent,
     notice,
+    emptyStateDescription,
     refreshToken,
     backgroundRefreshToken,
 }: Readonly<Props<TRow>>) {
@@ -711,6 +713,10 @@ function PagedList<TRow extends object>({
         }
     }, [dispatch, entity, location.pathname, defaultSort]);
 
+    const onClearFilters = useCallback(() => {
+        dispatch(filterActions.setCurrentFilters({ entity, currentFilters: [] }));
+    }, [dispatch, entity]);
+
     const paginationData = useMemo(
         () => ({
             page: effectivePageNumber,
@@ -803,6 +809,8 @@ function PagedList<TRow extends object>({
                     disableSelectionControls={isBusy || isFetchingList}
                     disableSearchControls={isBusy || isFetchingList}
                     trailingHeaderAction={addColumnMenu}
+                    emptyStateDescription={emptyStateDescription}
+                    onClearFilters={currentFilters.length > 0 ? onClearFilters : undefined}
                 />
             </Widget>
             {onDeleteCallback && (
