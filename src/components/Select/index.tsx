@@ -585,7 +585,7 @@ function Select({
                                                 onMouseEnter={() => !opt.disabled && setHighlightedIndex(idx)}
                                                 onClick={() => handleOptionActivate(opt)}
                                             >
-                                                {isMulti ? (
+                                                {isMulti && !ADD_NEW_VALUES.has(getOptionValueString(opt.value)) ? (
                                                     <span className={OPTION_MULTI_ROW_CLASSES}>
                                                         <span
                                                             className={cn(

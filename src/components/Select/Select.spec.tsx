@@ -120,6 +120,22 @@ test.describe('Select', () => {
         await expect(page.getByTestId('value-display')).toHaveText(JSON.stringify([{ value: '2', label: 'Option 2' }]));
     });
 
+    test('multi mode gives the add-new action no checkbox', async ({ mount, page }) => {
+        await mount(
+            <Select
+                id="m"
+                isMulti
+                value={[]}
+                onChange={() => {}}
+                options={[...BASE_OPTIONS, { value: '__add_new__', label: '+ Create new' }]}
+                dataTestId="sel"
+            />,
+        );
+        await page.getByTestId('sel-trigger').click();
+        await expect(page.getByRole('option', { name: 'Option 1' }).getByTestId('select-option-checkbox')).toHaveCount(1);
+        await expect(page.getByRole('option', { name: '+ Create new' }).getByTestId('select-option-checkbox')).toHaveCount(0);
+    });
+
     test('single mode keeps the trailing check and shows no checkbox', async ({ mount, page }) => {
         await mount(<SingleHarness initial="2" />);
         await page.getByTestId('sel-trigger').click();
