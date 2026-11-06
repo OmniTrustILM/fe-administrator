@@ -1156,6 +1156,25 @@ function settingsTestReducer(state: SettingsTestState | undefined, _action: Unkn
     return state ?? settingsTestInitialState;
 }
 
+// Reducer key must match the real slice.name ('complianceProfiles') so the real compliance selectors
+// (used by the certificate request's compliance widget) can find this state.
+export type ComplianceProfilesTestState = {
+    complianceCheckResultByKey: Record<string, unknown>;
+    isFetchingComplianceCheckResultByKey: Record<string, boolean>;
+};
+
+const complianceProfilesTestInitialState: ComplianceProfilesTestState = {
+    complianceCheckResultByKey: {},
+    isFetchingComplianceCheckResultByKey: {},
+};
+
+function complianceProfilesTestReducer(
+    state: ComplianceProfilesTestState | undefined,
+    _action: UnknownAction,
+): ComplianceProfilesTestState {
+    return state ?? complianceProfilesTestInitialState;
+}
+
 // Reducer key must match the real slice.name ('users') so the real user selectors
 // (used by the certificate form's optional owner field) can find this state.
 export type UsersTestState = {
@@ -1690,6 +1709,7 @@ export const testReducers = combineReducers({
     tokens: tokensTestReducer,
     cryptographicKeys: cryptographicKeysTestReducer,
     users: usersTestReducer,
+    complianceProfiles: complianceProfilesTestReducer,
     roles: rolesTestReducer,
     certificateGroups: certificateGroupsTestReducer,
     approvals: approvalsTestReducer,
@@ -1734,6 +1754,7 @@ export const testInitialState = {
     tokens: tokensTestInitialState,
     cryptographicKeys: cryptographicKeysTestInitialState,
     users: usersTestInitialState,
+    complianceProfiles: complianceProfilesTestInitialState,
     roles: rolesTestInitialState,
     certificateGroups: certificateGroupsTestInitialState,
     approvals: approvalsTestInitialState,
