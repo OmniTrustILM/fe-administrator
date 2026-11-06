@@ -1,14 +1,18 @@
 import { Provider } from 'react-redux';
+import { MemoryRouter } from 'react-router';
 
 import type { testReducers } from 'ducks/test-reducers';
 import { useRecordingStore } from 'utils/test-helpers';
 
+import CertificateSettings from './CertificateSettings';
 import CertificateSettingsForm from './CertificateSettingsForm';
 
 export type CertificateSettingsFormTestWrapperProps = Readonly<{
     onCancel?: () => void;
     onSuccess?: () => void;
     preloadedState?: Partial<ReturnType<typeof testReducers>>;
+    /** Renders the read-only settings view beside the form, as the settings page does behind its edit dialog. */
+    withReadOnlyView?: boolean;
 }>;
 
 /**
@@ -18,11 +22,21 @@ export type CertificateSettingsFormTestWrapperProps = Readonly<{
  * throws. Building the store inside the mounted component (as done here) avoids that entirely.
  * See CertificateFormTestWrapper.tsx for the established precedent.
  */
-export function CertificateSettingsFormTestWrapper({ onCancel, onSuccess, preloadedState }: CertificateSettingsFormTestWrapperProps) {
+export function CertificateSettingsFormTestWrapper({
+    onCancel,
+    onSuccess,
+    preloadedState,
+    withReadOnlyView = false,
+}: CertificateSettingsFormTestWrapperProps) {
     const { store, dispatched } = useRecordingStore(preloadedState, 'settings/updatePlatformSettings');
 
     return (
         <Provider store={store}>
+            {withReadOnlyView && (
+                <MemoryRouter>
+                    <CertificateSettings platformSettings={preloadedState?.settings?.platformSettings} />
+                </MemoryRouter>
+            )}
             <CertificateSettingsForm onCancel={onCancel} onSuccess={onSuccess} />
             <output data-testid="update-platform-settings">{JSON.stringify(dispatched.map(({ payload }) => payload))}</output>
         </Provider>

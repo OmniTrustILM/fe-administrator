@@ -97,6 +97,14 @@ test.describe('CertificateSettingsForm - Upload subsection', () => {
         await expect(page.locator('#automaticOwnership')).not.toBeChecked();
     });
 
+    test('turns automatic ownership on when its switch is clicked while the read-only view is on the page', async ({ mount, page }) => {
+        await mount(<CertificateSettingsFormTestWrapper preloadedState={settingsWithAutomaticOwnership(false)} withReadOnlyView />);
+
+        await page.locator('label[for="automaticOwnership"]').last().click();
+
+        await expect(page.locator('#automaticOwnership')).toBeChecked();
+    });
+
     test('saves automatic ownership as on when the switch is turned on', async ({ mount, page }) => {
         await mount(<CertificateSettingsFormTestWrapper preloadedState={settingsWithAutomaticOwnership(false)} />);
 
