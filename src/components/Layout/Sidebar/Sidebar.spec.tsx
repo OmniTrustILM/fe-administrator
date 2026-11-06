@@ -225,6 +225,7 @@ test.describe('Sidebar', () => {
     });
 
     test('expanded sidebar shows no tooltips and labels the toggle Collapse', async ({ mount, page }) => {
+        await page.clock.install();
         const store = createMockStore();
         const component = await mount(
             withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
@@ -237,11 +238,12 @@ test.describe('Sidebar', () => {
         await component.getByTestId('sidebar-certificates').hover();
         await component.getByTestId('sidebar-access-control').focus();
         await toggle.hover();
-        await page.waitForTimeout(600);
+        await page.clock.runFor(600);
         await expect(page.getByRole('tooltip')).toHaveCount(0);
     });
 
     test('collapsing does not reveal tooltips for entries visited while expanded', async ({ mount, page }) => {
+        await page.clock.install();
         const store = createMockStore();
         const component = await mount(
             withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
@@ -250,17 +252,19 @@ test.describe('Sidebar', () => {
 
         await component.getByTestId('sidebar-certificates').hover();
         await component.getByTestId('sidebar-access-control').focus();
-        await page.waitForTimeout(600);
+        await page.clock.runFor(600);
         await component.getByTestId('sidebar-access-control').blur();
         await component.getByRole('button', { name: 'Collapse' }).click();
         await expect(component.getByRole('button', { name: 'Expand' })).toBeVisible();
+        await expect(component.getByTestId('sidebar-certificates').locator('span')).toHaveClass(/\bsr-only\b/);
 
-        await page.waitForTimeout(600);
+        await page.clock.runFor(600);
         await expect(page.getByRole('tooltip', { name: 'Certificates' })).toHaveCount(0);
         await expect(page.getByRole('tooltip', { name: 'Access Control' })).toHaveCount(0);
     });
 
     test('flying menu entries show no tooltips on hover or keyboard focus', async ({ mount, page }) => {
+        await page.clock.install();
         const store = createMockStore();
         const component = await mount(
             withProviders(<Sidebar allowedResources={[Resource.Certificates, Resource.Users]} />, { store, initialRoute: '/' }),
@@ -270,15 +274,15 @@ test.describe('Sidebar', () => {
         await expect(flying).toBeAttached();
 
         await flying.getByTestId('sidebar-certificates').hover();
-        await page.waitForTimeout(600);
+        await page.clock.runFor(600);
         await expect(page.getByRole('tooltip')).toHaveCount(0);
 
         await flying.getByTestId('sidebar-access-control').focus();
-        await page.waitForTimeout(600);
+        await page.clock.runFor(600);
         await expect(page.getByRole('tooltip')).toHaveCount(0);
 
         await flying.getByTestId('sidebar-access-control-users').hover();
-        await page.waitForTimeout(600);
+        await page.clock.runFor(600);
         await expect(page.getByRole('tooltip')).toHaveCount(0);
     });
 

@@ -62,13 +62,14 @@ test.describe('Tooltip', () => {
     });
 
     test('does not reveal a hover made while suppressed once suppression lifts', async ({ mount, page }) => {
+        await page.clock.install();
         const component = await mount(
             <Tooltip content="Tooltip text" suppress>
                 <button type="button">Hover me</button>
             </Tooltip>,
         );
         await page.getByRole('button', { name: 'Hover me' }).hover();
-        await page.waitForTimeout(600);
+        await page.clock.runFor(600);
         await expect(page.getByRole('tooltip')).toHaveCount(0);
 
         await component.update(
@@ -76,7 +77,7 @@ test.describe('Tooltip', () => {
                 <button type="button">Hover me</button>
             </Tooltip>,
         );
-        await page.waitForTimeout(600);
+        await page.clock.runFor(600);
         await expect(page.getByRole('tooltip')).toHaveCount(0);
     });
 
