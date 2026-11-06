@@ -85,6 +85,8 @@ const CertificateSettings = ({ platformSettings }: Props) => {
                     <Switch
                         key="automaticOwnership"
                         id="uploadAutomaticOwnership"
+                        label="Make the uploader the owner"
+                        labelClassName="sr-only"
                         disabled
                         checked={upload.automaticOwnership}
                         onChange={() => {}}
