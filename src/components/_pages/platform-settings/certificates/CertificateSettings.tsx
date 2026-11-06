@@ -81,11 +81,11 @@ const CertificateSettings = ({ platformSettings }: Props) => {
             rows.push({
                 id: 'automaticOwnership',
                 columns: [
-                    'Make the uploader the owner',
+                    'Automatic Ownership',
                     <Switch
                         key="automaticOwnership"
                         id="uploadAutomaticOwnership"
-                        label="Make the uploader the owner"
+                        label="Automatic Ownership"
                         labelClassName="sr-only"
                         disabled
                         checked={upload.automaticOwnership}

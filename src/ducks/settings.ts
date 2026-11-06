@@ -63,8 +63,10 @@ export const slice = createSlice({
                 ...(certificates && {
                     certificates: {
                         ...certificates,
-                        // Core stores an upload group sent without the flag as off.
-                        upload: certificates.upload && { automaticOwnership: certificates.upload.automaticOwnership ?? false },
+                        // Core stores an upload group sent without the flag as off, and leaves the stored group alone when none is sent.
+                        upload: certificates.upload
+                            ? { automaticOwnership: certificates.upload.automaticOwnership ?? false }
+                            : state.platformSettings?.certificates?.upload,
                     },
                 }),
             };

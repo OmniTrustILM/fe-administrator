@@ -49,7 +49,15 @@ describe('settings slice', () => {
         expect(next.platformSettings?.certificates?.upload).toEqual({ automaticOwnership: false });
     });
 
-    test('updatePlatformSettingsSuccess leaves no upload group when the update sent none', () => {
+    test('updatePlatformSettingsSuccess keeps the stored upload group when the update sent none', () => {
+        const stored = { ...initialState, platformSettings: { certificates: { upload: { automaticOwnership: true } } } };
+
+        const next = reducer(stored, actions.updatePlatformSettingsSuccess({ certificates: { validation: { enabled: true } } }));
+
+        expect(next.platformSettings?.certificates?.upload).toEqual({ automaticOwnership: true });
+    });
+
+    test('updatePlatformSettingsSuccess leaves no upload group when none is stored and the update sent none', () => {
         const next = reducer(initialState, actions.updatePlatformSettingsSuccess({ certificates: { validation: { enabled: true } } }));
 
         expect(next.platformSettings?.certificates?.upload).toBeUndefined();

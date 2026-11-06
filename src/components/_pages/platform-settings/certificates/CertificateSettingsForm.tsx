@@ -54,6 +54,9 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
         const registrationDefaults = {
             defaultIssuanceWindowDays: registrationSettings?.defaultIssuanceWindowDays?.toString() || DEFAULT_ISSUANCE_WINDOW_DAYS,
             maxFailedAttempts: registrationSettings?.maxFailedAttempts?.toString() || DEFAULT_MAX_FAILED_ATTEMPTS,
+        };
+
+        const uploadDefaults = {
             automaticOwnership: platformSettings?.certificates?.upload?.automaticOwnership ?? false,
         };
 
@@ -63,6 +66,7 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                 expiringThreshold: DEFAULT_EXPIRING_THRESHOLD,
                 frequency: DEFAULT_FREQUENCY,
                 ...registrationDefaults,
+                ...uploadDefaults,
             };
         }
 
@@ -71,6 +75,7 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
             expiringThreshold: validationSettings.expiringThreshold?.toString() || DEFAULT_EXPIRING_THRESHOLD,
             frequency: validationSettings.frequency?.toString() || DEFAULT_FREQUENCY,
             ...registrationDefaults,
+            ...uploadDefaults,
         };
     }, [platformSettings?.certificates?.validation, platformSettings?.certificates?.registration, platformSettings?.certificates?.upload]);
 
@@ -246,7 +251,7 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                                     id="automaticOwnership"
                                     checked={field.value}
                                     onChange={field.onChange}
-                                    label="Make the uploader the owner"
+                                    label="Automatic Ownership"
                                 />
                             )}
                         />

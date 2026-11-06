@@ -105,10 +105,22 @@ test.describe('CertificateSettingsForm - Upload subsection', () => {
         await expect(page.locator('#automaticOwnership')).toBeChecked();
     });
 
+    test('shows the read-only automatic ownership switch on when the platform setting is on', async ({ mount, page }) => {
+        await mount(<CertificateSettingsFormTestWrapper preloadedState={settingsWithAutomaticOwnership(true)} withReadOnlyView />);
+
+        await expect(page.locator('#uploadAutomaticOwnership')).toBeChecked();
+    });
+
+    test('shows the read-only automatic ownership switch off when the platform setting is off', async ({ mount, page }) => {
+        await mount(<CertificateSettingsFormTestWrapper preloadedState={settingsWithAutomaticOwnership(false)} withReadOnlyView />);
+
+        await expect(page.locator('#uploadAutomaticOwnership')).not.toBeChecked();
+    });
+
     test('names the read-only automatic ownership switch for assistive technology', async ({ mount, page }) => {
         await mount(<CertificateSettingsFormTestWrapper preloadedState={settingsWithAutomaticOwnership(true)} withReadOnlyView />);
 
-        await expect(page.locator('#uploadAutomaticOwnership')).toHaveAccessibleName('Make the uploader the owner');
+        await expect(page.locator('#uploadAutomaticOwnership')).toHaveAccessibleName('Automatic Ownership');
     });
 
     test('saves automatic ownership as on when the switch is turned on', async ({ mount, page }) => {
