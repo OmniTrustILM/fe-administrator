@@ -1000,6 +1000,7 @@ export default function FilterWidgetRuleAction({
                             const arrayOrScalarValue = Array.isArray(f.data) ? (
                                 <FilterValueChips
                                     values={f.data.map((v) => formatBadgeDataValue(v, field, platformEnums))}
+                                    filterLabel={label}
                                     onRemoveValue={disableBadgeRemove ? undefined : (valueIndex) => onRemoveActionValueClick(i, valueIndex)}
                                 />
                             ) : (

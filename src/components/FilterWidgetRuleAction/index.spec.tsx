@@ -580,7 +580,7 @@ test.describe('FilterWidgetRuleAction', () => {
         const chips = page.getByTestId('filter-value-chip');
         await expect(chips).toHaveText(['Tag One', 'Tag Two']);
 
-        await page.getByRole('button', { name: 'Remove Tag One', exact: true }).click();
+        await page.getByRole('button', { name: 'Remove Tag One from Tags', exact: true }).click();
 
         await expect(chips).toHaveText(['Tag Two']);
         await expect.poll(() => updates.length).toBeGreaterThan(0);

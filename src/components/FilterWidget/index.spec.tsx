@@ -275,14 +275,14 @@ test.describe('FilterWidget', () => {
         await expect(chips).toHaveText(['Alice', 'Bob']);
         await expect(page.getByText(/OR/)).toHaveCount(0);
 
-        await page.getByRole('button', { name: 'Remove Alice', exact: true }).click();
+        await page.getByRole('button', { name: 'Remove Alice from Owners', exact: true }).click();
 
         await expect(chips).toHaveText(['Bob']);
         await expect.poll(() => updates.length).toBe(1);
         expect(JSON.stringify(updates[0])).not.toContain('Alice');
         expect(JSON.stringify(updates[0])).toContain('Bob');
 
-        await page.getByRole('button', { name: 'Remove Bob', exact: true }).click();
+        await page.getByRole('button', { name: 'Remove Bob from Owners', exact: true }).click();
         await expect(page.getByText("'Owners'")).toHaveCount(0);
     });
 

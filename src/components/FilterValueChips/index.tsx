@@ -2,10 +2,11 @@ import { X } from 'lucide-react';
 
 type Props = Readonly<{
     values: string[];
+    filterLabel?: string;
     onRemoveValue?: (index: number) => void;
 }>;
 
-function FilterValueChips({ values, onRemoveValue }: Props) {
+function FilterValueChips({ values, filterLabel, onRemoveValue }: Props) {
     return (
         <span className="inline-flex flex-wrap items-center gap-1">
             {values.map((value, index) => (
@@ -20,7 +21,7 @@ function FilterValueChips({ values, onRemoveValue }: Props) {
                         <span
                             role="button" // NOSONAR(S6819): the chip sits inside the filter badge's own <button>, so a nested <button> would be invalid
                             tabIndex={0}
-                            aria-label={`Remove ${value}`}
+                            aria-label={filterLabel ? `Remove ${value} from ${filterLabel}` : `Remove ${value}`}
                             className="shrink-0 inline-flex items-center justify-center rounded-full size-3.5 hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-brand"
                             onClick={(event) => {
                                 event.stopPropagation();

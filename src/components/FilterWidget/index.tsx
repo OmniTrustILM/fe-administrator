@@ -828,6 +828,7 @@ export default function FilterWidget({
                         const value = Array.isArray(badgeValue) ? (
                             <FilterValueChips
                                 values={badgeValue}
+                                filterLabel={label}
                                 onRemoveValue={disableBadgeRemove ? undefined : (valueIndex) => onRemoveFilterValueClick(i, valueIndex)}
                             />
                         ) : (

@@ -59,7 +59,7 @@ test.describe('condition-badges', () => {
         await expect(span).toContainText(/'test'/);
     });
 
-    test('renderConditionItems formats array value as OR-separated', async ({ mount }) => {
+    test('renderConditionItems renders each array value as its own read-only chip', async ({ mount }) => {
         const conditionItems: ConditionItemDto[] = [
             {
                 fieldSource: FilterFieldSource.Meta,
@@ -75,7 +75,9 @@ test.describe('condition-badges', () => {
         });
 
         const component = await mount(<div>{result}</div>);
-        await expect(component.getByText(/'a' OR 'b'/)).toBeVisible();
+        await expect(component.getByTestId('filter-value-chip')).toHaveText(['a', 'b']);
+        await expect(component.getByText(/OR/)).toHaveCount(0);
+        await expect(component.getByRole('button')).toHaveCount(0);
     });
 
     test('renderConditionItems keeps a zero value', async ({ mount }) => {
