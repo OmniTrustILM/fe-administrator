@@ -83,7 +83,9 @@ Vite is configured with path aliases — always use these instead of relative pa
   never changes on its own. Most reducers in `ducks/test-reducers.ts` are stubs that handle only the
   actions a component test dispatches. To run a slice's real reducer, build one with
   `overlaySliceReducer` from `utils/test-helpers.tsx` and pass it to `useRecordingStore` inside the
-  wrapper, which also records the dispatched actions.
+  wrapper, which also records the dispatched actions. It rebuilds the store whenever an argument
+  changes identity, so build the reducer at module scope and pass a constant or memoised preload. It
+  merges that preload only at the top level, so each preloaded slice spreads `testInitialState.<slice>`.
 - Import a component from its own module, not through a barrel's named re-export. CT registers
   components by identifier, and a name reachable both ways fails the whole run with
   `Identifier 'X' has already been declared`.
@@ -98,8 +100,8 @@ Vite is configured with path aliases — always use these instead of relative pa
   the settled value.
 - New tests use neither a forced click nor a fixed wait; Sonar flags both. To prove an
   `aria-disabled` control does nothing, click it with `dispatchEvent`. For a natively `disabled`
-  element assert `toBeDisabled()` instead: the browser drops a dispatched click before any handler
-  runs, so that test could not fail. Advance a fake clock rather than waiting.
+  element assert `toBeDisabled()` instead: a dispatched click never reaches its handler,
+  so that test could not fail. Advance a fake clock rather than waiting.
 
 ### Styling
 
