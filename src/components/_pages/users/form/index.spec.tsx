@@ -30,9 +30,13 @@ test.describe('UserForm', () => {
 
         const label = page.locator('label[for="enabled"]', { hasText: 'Enabled' });
         const help = page.getByTestId('user-enabled-help');
-        const labelBox = await label.boundingBox();
-        const helpBox = await help.boundingBox();
-        expect(labelBox && helpBox && labelBox.x < helpBox.x).toBe(true);
+        const [labelBox, helpBox, switchBox] = await Promise.all([
+            label.boundingBox(),
+            help.boundingBox(),
+            page.getByTestId('switch-enabled').boundingBox(),
+        ]);
+        expect(labelBox?.x).toBeLessThan(helpBox?.x ?? Number.NEGATIVE_INFINITY);
+        expect(helpBox?.x).toBeLessThan(switchBox?.x ?? Number.NEGATIVE_INFINITY);
 
         await help.click();
         await expect(page.getByText('A disabled user cannot sign in. The account and its assigned roles are kept.')).toBeVisible();
