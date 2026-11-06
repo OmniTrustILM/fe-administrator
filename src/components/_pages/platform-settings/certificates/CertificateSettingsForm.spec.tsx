@@ -126,7 +126,8 @@ test.describe('CertificateSettingsForm - Upload subsection', () => {
     test('saves automatic ownership as on when the switch is turned on', async ({ mount, page }) => {
         await mount(<CertificateSettingsFormTestWrapper preloadedState={settingsWithAutomaticOwnership(false)} />);
 
-        await page.locator('#automaticOwnership').setChecked(true, { force: true });
+        await page.getByText('Automatic Ownership', { exact: true }).click();
+        await expect(page.locator('#automaticOwnership')).toBeChecked();
         await page.getByRole('button', { name: 'Save' }).click();
 
         await expect(page.getByTestId('update-platform-settings')).toContainText('"upload":{"automaticOwnership":true}');
@@ -135,7 +136,8 @@ test.describe('CertificateSettingsForm - Upload subsection', () => {
     test('saves automatic ownership as off when the switch is turned off', async ({ mount, page }) => {
         await mount(<CertificateSettingsFormTestWrapper preloadedState={settingsWithAutomaticOwnership(true)} />);
 
-        await page.locator('#automaticOwnership').setChecked(false, { force: true });
+        await page.getByText('Automatic Ownership', { exact: true }).click();
+        await expect(page.locator('#automaticOwnership')).not.toBeChecked();
         await page.getByRole('button', { name: 'Save' }).click();
 
         await expect(page.getByTestId('update-platform-settings')).toContainText('"upload":{"automaticOwnership":false}');

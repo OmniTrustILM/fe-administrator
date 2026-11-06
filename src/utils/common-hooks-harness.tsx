@@ -1,3 +1,4 @@
+import Dialog from 'components/Dialog';
 import { useEffect, useState } from 'react';
 import { Provider } from 'react-redux';
 import { useRecordingStore } from './test-helpers';
@@ -76,12 +77,7 @@ export function UseCopyToClipboardWithStore({ inDialog = false }: Readonly<{ inD
     return (
         <Provider store={store}>
             <div className="p-16">
-                <div
-                    role={inDialog ? 'dialog' : undefined}
-                    className={inDialog ? 'fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2' : undefined}
-                >
-                    <UseCopyToClipboardHarness />
-                </div>
+                {inDialog ? <Dialog isOpen caption="Copy" body={<UseCopyToClipboardHarness />} /> : <UseCopyToClipboardHarness />}
                 <span data-testid="inverse-reference" className="bg-surface-inverse" />
                 <div className="h-[200vh]" />
                 <pre data-testid="dispatched-alerts">{JSON.stringify(dispatched)}</pre>
