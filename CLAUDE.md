@@ -94,9 +94,10 @@ Vite is configured with path aliases — always use these instead of relative pa
 - Sonar rule S2699 does not count `expect.poll` as an assertion, and it only sees assertions written
   directly in the test body. When a test waits with `expect.poll`, follow it with a plain `expect` on
   the settled value.
-- New tests that prove a disabled control does nothing use `dispatchEvent` rather than a forced
-  click, and advance a fake clock rather than waiting a fixed time; Sonar flags both `force` and
-  fixed waits.
+- New tests use neither a forced click nor a fixed wait; Sonar flags both. To prove an
+  `aria-disabled` control does nothing, click it with `dispatchEvent`. For a natively `disabled`
+  element assert `toBeDisabled()` instead: the browser drops a dispatched click before any handler
+  runs, so that test could not fail. Advance a fake clock rather than waiting.
 
 ### Styling
 
@@ -288,8 +289,9 @@ add new issues to the analysis.
   - S7772 (`node:buffer`): `buffer` is the npm browser polyfill; `node:buffer` breaks the Vite build.
   - S7741 (compare with `undefined` instead of `typeof`): `window`, `document` and other environment
     globals must keep `typeof`, because a direct reference throws where the global is not defined.
-  - S6819 (`role="button"`): an element already inside a real `<button>` cannot become a `<button>`
-    without nesting interactive content.
+  - S6819 (ARIA role where a native element exists): an element already inside a real `<button>`
+    cannot become a `<button>` without nesting interactive content. Biome flags the same construct,
+    so such a site carries `biome-ignore lint/a11y/useSemanticElements` alongside the `NOSONAR`.
 - The Sonar rules that shape tests are listed under [Testing Strategy](#testing-strategy).
 - Trust the SonarCloud results over a local SonarQube scan: the local quality profile omits rules
   SonarCloud enforces.
