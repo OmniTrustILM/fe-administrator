@@ -565,6 +565,45 @@ test.describe('FilterWidgetRuleAction', () => {
         expect(actions.current).toHaveLength(1);
     });
 
+    test('renders each value of a multi-value action as its own chip and removes one at a time', async ({ mount, page }) => {
+        const updates: unknown[][] = [];
+        await mountWithExecution(mount, {
+            source: FilterFieldSource.Property,
+            fieldDef: tagsFieldDef,
+            fieldIdentifier: 'tags',
+            data: [
+                { uuid: 't1', name: 'Tag One' },
+                { uuid: 't2', name: 'Tag Two' },
+            ],
+            extraProps: { onActionsUpdate: (actions) => updates.push(actions) },
+        });
+        const chips = page.getByTestId('filter-value-chip');
+        await expect(chips).toHaveText(['Tag One', 'Tag Two']);
+
+        await page.getByRole('button', { name: 'Remove Tag One', exact: true }).click();
+
+        await expect(chips).toHaveText(['Tag Two']);
+        await expect.poll(() => updates.length).toBeGreaterThan(0);
+        const last = JSON.stringify(updates.at(-1));
+        expect(last).not.toContain('t1');
+        expect(last).toContain('t2');
+    });
+
+    test('offers no per-value removal on a read-only action badge', async ({ mount, page }) => {
+        await mountWithExecution(mount, {
+            source: FilterFieldSource.Property,
+            fieldDef: tagsFieldDef,
+            fieldIdentifier: 'tags',
+            data: [
+                { uuid: 't1', name: 'Tag One' },
+                { uuid: 't2', name: 'Tag Two' },
+            ],
+            extraProps: { disableBadgeRemove: true },
+        });
+        await expect(page.getByTestId('filter-value-chip')).toHaveText(['Tag One', 'Tag Two']);
+        await expect(page.getByRole('button', { name: /^Remove Tag/ })).toHaveCount(0);
+    });
+
     test('multi-value list execution item with array of objects hydrates as array', async ({ mount, page }) => {
         await mountWithExecution(mount, {
             source: FilterFieldSource.Property,

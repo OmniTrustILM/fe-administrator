@@ -50,5 +50,9 @@ export const CHIP_REMOVE_CLASSES =
 export const CHIP_LABEL_CLASSES = 'truncate min-w-0 cursor-default block';
 
 export const SELECTED_ICON_CLASSES = 'shrink-0 size-3.5 text-brand ml-2';
+export const OPTION_MULTI_ROW_CLASSES = 'flex items-center gap-x-2 min-w-0';
+export const OPTION_CHECKBOX_CLASSES = 'shrink-0 size-4 inline-flex items-center justify-center rounded-sm border text-content-on-brand';
+export const OPTION_CHECKBOX_UNCHECKED_CLASSES = 'border-outline bg-surface-raised';
+export const OPTION_CHECKBOX_CHECKED_CLASSES = 'border-brand-solid bg-brand-solid';
 
 export const NO_OPTIONS_CLASSES = 'py-2 px-3 text-sm text-content-subtle';

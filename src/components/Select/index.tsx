@@ -28,6 +28,10 @@ import {
     CHIP_REMOVE_CLASSES,
     CHIP_LABEL_CLASSES,
     SELECTED_ICON_CLASSES,
+    OPTION_MULTI_ROW_CLASSES,
+    OPTION_CHECKBOX_CLASSES,
+    OPTION_CHECKBOX_CHECKED_CLASSES,
+    OPTION_CHECKBOX_UNCHECKED_CLASSES,
     NO_OPTIONS_CLASSES,
 } from './classes';
 
@@ -581,8 +585,28 @@ function Select({
                                                 onMouseEnter={() => !opt.disabled && setHighlightedIndex(idx)}
                                                 onClick={() => handleOptionActivate(opt)}
                                             >
-                                                {renderOptionLabel(opt)}
-                                                {selected && <Check className={SELECTED_ICON_CLASSES} aria-hidden />}
+                                                {isMulti ? (
+                                                    <span className={OPTION_MULTI_ROW_CLASSES}>
+                                                        <span
+                                                            className={cn(
+                                                                OPTION_CHECKBOX_CLASSES,
+                                                                selected
+                                                                    ? OPTION_CHECKBOX_CHECKED_CLASSES
+                                                                    : OPTION_CHECKBOX_UNCHECKED_CLASSES,
+                                                            )}
+                                                            data-testid="select-option-checkbox"
+                                                            aria-hidden
+                                                        >
+                                                            {selected && <Check className="size-3" strokeWidth={3} />}
+                                                        </span>
+                                                        {renderOptionLabel(opt)}
+                                                    </span>
+                                                ) : (
+                                                    <>
+                                                        {renderOptionLabel(opt)}
+                                                        {selected && <Check className={SELECTED_ICON_CLASSES} aria-hidden />}
+                                                    </>
+                                                )}
                                             </div>
                                         );
                                     })

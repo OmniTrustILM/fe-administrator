@@ -12,6 +12,7 @@ import Label from 'components/Label';
 import TextInput from 'components/TextInput';
 import DatePicker from 'components/DatePicker';
 import Badge from 'components/Badge';
+import FilterValueChips from 'components/FilterValueChips';
 import type { Observable } from 'rxjs';
 import type { SearchFieldListModel } from 'types/certificate';
 import type { PlatformEnumModel } from 'types/enums';
@@ -502,6 +503,24 @@ export default function FilterWidgetRuleAction({
         [actions, onActionsUpdate, notifyActionsUpdate],
     );
 
+    const onRemoveActionValueClick = useCallback(
+        (index: number, valueIndex: number) => {
+            const action = actions[index];
+            if (!Array.isArray(action?.data) || action.data.length <= 1) {
+                onRemoveFilterClick(index);
+                return;
+            }
+            const updated = { ...action, data: action.data.filter((_, i) => i !== valueIndex) };
+            const newActions = actions.map((a, i) => (i === index ? updated : a));
+            setActions(newActions);
+            if (onActionsUpdate) {
+                notifyActionsUpdate(newActions);
+            }
+            setSelectedFilter(-1);
+        },
+        [actions, onActionsUpdate, notifyActionsUpdate, onRemoveFilterClick],
+    );
+
     const toggleFilter = useCallback(
         (index: number) => {
             setSelectedFilter(selectedFilter === index ? -1 : index);
@@ -738,7 +757,7 @@ export default function FilterWidgetRuleAction({
     );
 
     const renderBadgeContent = useCallback(
-        (itemNumber: number, value: string, label?: string, fieldSource?: string, isMapped?: boolean) => (
+        (itemNumber: number, value: React.ReactNode, label?: string, fieldSource?: string, isMapped?: boolean) => (
             <React.Fragment key={itemNumber}>
                 <b>{fieldSource && getEnumLabel(searchGroupEnum, fieldSource)}&nbsp;</b>'{label}
                 '&nbsp;to&nbsp;
@@ -971,16 +990,21 @@ export default function FilterWidgetRuleAction({
                         const field = findFieldDef(availableFilters, f.fieldSource, f.fieldIdentifier);
                         const label = field ? field.fieldLabel : f.fieldIdentifier;
                         const isMapped = !!f.sourceFieldSource && !!f.sourceFieldIdentifier;
-                        let value: string;
+                        let value: React.ReactNode;
                         if (isMapped) {
                             const sourceField = findFieldDef(sourceAvailableFilters, f.sourceFieldSource, f.sourceFieldIdentifier);
                             const sourceLabel = sourceField?.fieldLabel ?? f.sourceFieldIdentifier;
                             value = `${getEnumLabel(searchGroupEnum, f.sourceFieldSource!)} '${sourceLabel}'`;
                         } else {
                             const nonArrayValue = f.data ? `'${formatBadgeDataValue(f.data, field, platformEnums)}'` : '';
-                            const arrayOrScalarValue = Array.isArray(f.data)
-                                ? f.data.map((v) => `'${formatBadgeDataValue(v, field, platformEnums)}'`).join(', ')
-                                : nonArrayValue;
+                            const arrayOrScalarValue = Array.isArray(f.data) ? (
+                                <FilterValueChips
+                                    values={f.data.map((v) => formatBadgeDataValue(v, field, platformEnums))}
+                                    onRemoveValue={disableBadgeRemove ? undefined : (valueIndex) => onRemoveActionValueClick(i, valueIndex)}
+                                />
+                            ) : (
+                                nonArrayValue
+                            );
                             value =
                                 field?.type === FilterFieldType.Boolean
                                     ? `'${booleanOptions.find((b) => !!f.data === b.value)?.label}'`
