@@ -46,6 +46,21 @@ test.describe('PageHeader', () => {
     });
 });
 
+test.describe('PageHeader widget lock', () => {
+    test('makes every action unavailable while the page is locked, giving the lock as the reason', async ({ mount, page }) => {
+        await mount(<PageHeaderHarness locked primaryAction={{ id: 'create', label: 'Create', icon: 'plus' }} actions={MENU} />);
+
+        await expect(page.getByRole('button', { name: 'Create' })).toBeDisabled();
+        await page.getByRole('button', { name: 'More actions' }).click();
+        const importEntry = page.getByRole('menuitem', { name: 'Import', exact: true });
+        await expect(importEntry).toHaveAttribute('aria-disabled', 'true');
+        await expect(importEntry).toHaveAccessibleDescription('Access denied');
+
+        await importEntry.dispatchEvent('click');
+        await expect(page.getByTestId('ran')).toHaveText('');
+    });
+});
+
 test.describe('ActionsMenu', () => {
     test('lists each entry with an icon and a label, destructive entries last after a separator', async ({ mount, page }) => {
         await mount(<PageHeaderHarness actions={MENU} />);
@@ -72,9 +87,9 @@ test.describe('ActionsMenu', () => {
         await mount(<PageHeaderHarness actions={MENU} />);
         await page.getByRole('button', { name: 'More actions' }).click();
 
-        const archive = page.getByRole('menuitem', { name: /Archive/ });
+        const archive = page.getByRole('menuitem', { name: 'Archive', exact: true });
         await expect(archive).toHaveAttribute('aria-disabled', 'true');
-        await expect(archive).toContainText('Select one or more certificates');
+        await expect(archive).toHaveAccessibleDescription('Select one or more certificates');
 
         await archive.dispatchEvent('click');
 
@@ -89,7 +104,7 @@ test.describe('ActionsMenu', () => {
         await expect(page.getByRole('menuitem', { name: 'Import' })).toBeFocused();
 
         await page.keyboard.press('ArrowDown');
-        await expect(page.getByRole('menuitem', { name: /Archive/ })).toBeFocused();
+        await expect(page.getByRole('menuitem', { name: 'Archive', exact: true })).toBeFocused();
         await page.keyboard.press('ArrowDown');
         await expect(page.getByRole('menuitem', { name: 'Export' })).toBeFocused();
         await page.keyboard.press('Enter');

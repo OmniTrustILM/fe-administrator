@@ -51,10 +51,13 @@ test.describe('CertificateDetailHeader — actions', () => {
         await expect(items.last()).toHaveClass(/text-danger/);
         await expect(page.getByRole('separator')).toHaveCount(1);
 
-        await expect(page.getByRole('menuitem', { name: /Issue/ })).toHaveAttribute('aria-disabled', 'true');
-        await expect(page.getByRole('menuitem', { name: /Issue/ })).toContainText('Only for requested certificates');
-        await expect(page.getByRole('menuitem', { name: /Copy certificate content/ })).toContainText('The certificate has no content');
-        await expect(page.getByRole('menuitem', { name: /^Renew/ })).not.toHaveAttribute('aria-disabled', 'true');
+        const issue = page.getByRole('menuitem', { name: 'Issue', exact: true });
+        await expect(issue).toHaveAttribute('aria-disabled', 'true');
+        await expect(issue).toHaveAccessibleDescription('Only for requested certificates');
+        await expect(page.getByRole('menuitem', { name: 'Copy certificate content', exact: true })).toHaveAccessibleDescription(
+            'The certificate has no content',
+        );
+        await expect(page.getByRole('menuitem', { name: 'Renew', exact: true })).not.toHaveAttribute('aria-disabled', 'true');
     });
 });
 

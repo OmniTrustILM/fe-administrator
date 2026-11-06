@@ -1,8 +1,8 @@
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
-import cn from 'classnames';
 import { EllipsisVertical } from 'lucide-react';
 import { useRef } from 'react';
 import Dropdown from 'components/Dropdown';
+import MenuItem from 'components/MenuItem';
 import type { IconName } from 'types/icons';
 import { iconRegistry } from 'utils/icons';
 
@@ -26,37 +26,23 @@ function ActionsMenu({ actions }: Props) {
     const regular = actions.filter((action) => !action.destructive);
     const destructive = actions.filter((action) => action.destructive);
 
-    // aria-disabled rather than Radix's disabled: a disabled item drops out of keyboard reach, and its reason with it.
     const renderItem = (action: PageAction) => {
         const Icon = iconRegistry[action.icon];
         return (
-            <DropdownMenu.Item
+            <MenuItem
                 key={action.id}
-                aria-disabled={action.disabled || undefined}
-                data-testid={`page-action-${action.id}`}
-                className={cn(
-                    'flex items-start gap-x-3 py-2 px-3 w-full text-left rounded-lg text-sm focus:outline-hidden focus:bg-surface-hover',
-                    action.disabled ? 'cursor-not-allowed text-content-subtle' : 'cursor-pointer hover:bg-surface-hover',
-                    !action.disabled && (action.destructive ? 'text-danger' : 'text-content'),
-                )}
-                onSelect={(event) => {
-                    if (action.disabled) {
-                        event.preventDefault();
-                        return;
-                    }
-                    action.onClick(triggerRef.current);
-                }}
-            >
-                <span className="shrink-0 mt-0.5" aria-hidden>
-                    <Icon size={16} />
-                </span>
-                <span className="flex flex-col min-w-0">
-                    <span>{action.label}</span>
-                    {action.disabled && action.disabledReason && (
-                        <span className="text-xs text-content-subtle">{action.disabledReason}</span>
-                    )}
-                </span>
-            </DropdownMenu.Item>
+                icon={
+                    <span className="shrink-0" aria-hidden>
+                        <Icon size={16} />
+                    </span>
+                }
+                label={action.label}
+                disabled={!!action.disabled}
+                description={action.disabled ? action.disabledReason : undefined}
+                destructive={action.destructive}
+                dataTestId={`page-action-${action.id}`}
+                onSelect={() => action.onClick(triggerRef.current)}
+            />
         );
     };
 

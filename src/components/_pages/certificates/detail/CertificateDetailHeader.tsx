@@ -10,6 +10,7 @@ import type { AttributeRequestModel } from 'types/attributes';
 import type { CertificateDetailResponseModel, CertificateRegistrationRequestModel } from 'types/certificate';
 import { CertificateRegistrationState, CertificateRequestFormat, CertificateState as CertStatus } from 'types/openapi';
 import { formatPEM } from 'utils/certificate';
+import { LockWidgetNameEnum } from 'types/user-interface';
 import { useCopyToClipboard } from 'utils/common-hooks';
 import CertificateRekeyDialog from '../CertificateRekeyDialog';
 import CertificateRenewDialog from '../CertificateRenewDialog';
@@ -272,7 +273,12 @@ export default function CertificateDetailHeader({ certificate, breadcrumbs, getF
 
     return (
         <>
-            <PageHeader breadcrumbs={breadcrumbs} primaryAction={primaryAction} actions={menuActions} />
+            <PageHeader
+                breadcrumbs={breadcrumbs}
+                primaryAction={primaryAction}
+                actions={menuActions}
+                widgetLockName={LockWidgetNameEnum.CertificateDetailsWidget}
+            />
 
             <Dialog
                 isOpen={confirmDelete}

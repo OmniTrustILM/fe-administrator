@@ -5,7 +5,7 @@ import { useCallback, useMemo, useState } from 'react';
 import Spinner from 'components/Spinner';
 import WidgetButtons, { type WidgetButtonProps } from 'components/WidgetButtons';
 import WidgetLock from 'components/WidgetLock';
-import { selectors } from 'ducks/user-interface';
+import { useWidgetLock } from './useWidgetLock';
 import { actions as tablePaginationActions, selectors as tablePaginationSelectors } from 'ducks/table-pagination';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useLocation } from 'react-router';
@@ -74,10 +74,7 @@ function Widget({
     noBorder = false,
     enableBusyOverlay = false,
 }: Readonly<Props>) {
-    const widgetLocks = useSelector(selectors.selectWidgetLocks) || [];
-    const storeLock = widgetLocks.find(
-        (lock) => lock.widgetName === widgetLockName || (Array.isArray(widgetLockName) && widgetLockName.includes(lock.widgetName)),
-    );
+    const storeLock = useWidgetLock(widgetLockName);
     const widgetLock = ownLock ?? storeLock;
     const [showWidgetInfo, setShowWidgetInfo] = useState(false);
 

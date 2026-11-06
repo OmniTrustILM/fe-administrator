@@ -722,11 +722,12 @@ function PagedList<TRow extends object>({
             <PageHeader
                 breadcrumbs={pageHeader.breadcrumbs}
                 title={pageHeader.title}
+                widgetLockName={pageWidgetLockName}
                 primaryAction={primaryAction}
                 actions={[...(pageHeader.actions ?? []), ...deleteActions]}
             />
         );
-    }, [pageHeader, addHidden, navigate, onDeleteCallback, checkedRows.length, entityNamePlural]);
+    }, [pageHeader, addHidden, navigate, onDeleteCallback, checkedRows.length, entityNamePlural, pageWidgetLockName]);
 
     // An ordering the page did not declare counts, or there would be no way back from it. Measured
     // against `defaultSort` rather than against no ordering at all, so a page that opens sorted is not

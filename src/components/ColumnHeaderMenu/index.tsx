@@ -2,6 +2,7 @@ import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import cn from 'classnames';
 import type { SortDirection } from 'components/CustomTable/types';
 import Dialog from 'components/Dialog';
+import MenuItem from 'components/MenuItem';
 import TextInput from 'components/TextInput';
 import {
     ArrowDown,
@@ -15,7 +16,7 @@ import {
     Pencil,
     RotateCcw,
 } from 'lucide-react';
-import { type ReactNode, useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 import { type ColumnMove, getMoveTarget } from './columnMoves';
 
 const NOT_SORTABLE_REASON = 'This field cannot be used for ordering.';
@@ -29,41 +30,6 @@ const CATALOGUE_FAILED_REASON = 'Could not load which fields can be ordered.';
 const LAST_COLUMN_REASON = 'A view must keep at least one column.';
 
 const ICON_CLASS = 'size-4 shrink-0';
-
-type ItemProps = Readonly<{
-    icon: ReactNode;
-    label: string;
-    disabled: boolean;
-    dataTestId: string;
-    /** The element carrying the reason the entry is unavailable, announced when it takes focus. */
-    describedBy?: string;
-    onSelect: () => void;
-}>;
-
-/**
- * Unavailable entries are marked `aria-disabled` rather than handed to Radix's `disabled`, which drops
- * them from its roving focus — an entry arrow keys cannot reach is one whose reason nobody hears.
- * Selecting one is made inert instead, and leaves the menu open.
- */
-function MenuItem({ icon, label, disabled, dataTestId, describedBy, onSelect }: ItemProps) {
-    return (
-        <DropdownMenu.Item
-            aria-disabled={disabled || undefined}
-            aria-describedby={describedBy}
-            onSelect={(event) => (disabled ? event.preventDefault() : onSelect())}
-            data-testid={dataTestId}
-            className={cn(
-                'flex items-center gap-2 rounded-md px-2 py-1.5 text-sm focus:bg-surface-hover focus:outline-hidden',
-                // Focus repaints the text as well: `content-subtle` on the focus background is 4.28:1 in
-                // the light theme, under AA, and the token suite asserts that pairing nowhere.
-                disabled ? 'cursor-not-allowed text-content-subtle focus:text-content' : 'cursor-pointer text-content',
-            )}
-        >
-            {icon}
-            {label}
-        </DropdownMenu.Item>
-    );
-}
 
 type Props = Readonly<{
     /** The column this control belongs to, keyed the way the table's header ids are. */

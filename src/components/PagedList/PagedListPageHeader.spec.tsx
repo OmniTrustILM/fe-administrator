@@ -41,9 +41,9 @@ test.describe('PagedList page header', () => {
         await expect(page.getByText('acme.example')).toBeVisible();
 
         await page.getByRole('button', { name: 'More actions' }).click();
-        const deleteEntry = page.getByRole('menuitem', { name: /Delete/ });
+        const deleteEntry = page.getByRole('menuitem', { name: 'Delete', exact: true });
         await expect(deleteEntry).toHaveAttribute('aria-disabled', 'true');
-        await expect(deleteEntry).toContainText('Select one or more certificates');
+        await expect(deleteEntry).toHaveAccessibleDescription('Select one or more certificates');
         await page.keyboard.press('Escape');
 
         await page.locator('tbody input[type="checkbox"]').first().check();
