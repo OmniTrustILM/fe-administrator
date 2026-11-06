@@ -11,7 +11,12 @@
  * Do not edit the class manually.
  */
 
-import type { CertificateRegistrationSettingsDto, CertificateRequestAttributesSettingsDto, CertificateValidationSettingsDto } from './';
+import type {
+    CertificateRegistrationSettingsDto,
+    CertificateRequestAttributesSettingsDto,
+    CertificateUploadSettingsDto,
+    CertificateValidationSettingsDto,
+} from './';
 
 /**
  * @export
@@ -33,4 +38,10 @@ export interface CertificateSettingsDto {
      * @memberof CertificateSettingsDto
      */
     registration?: CertificateRegistrationSettingsDto;
+    /**
+     * Certificate upload settings, which govern ownership of certificates added by manual upload and by file import
+     * @type {CertificateUploadSettingsDto}
+     * @memberof CertificateSettingsDto
+     */
+    upload?: CertificateUploadSettingsDto;
 }

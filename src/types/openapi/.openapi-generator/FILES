@@ -204,6 +204,8 @@ models/CertificateState.ts
 models/CertificateSubjectType.ts
 models/CertificateType.ts
 models/CertificateUpdateObjectsDto.ts
+models/CertificateUploadSettingsDto.ts
+models/CertificateUploadSettingsUpdateDto.ts
 models/CertificateValidationCheck.ts
 models/CertificateValidationCheckDto.ts
 models/CertificateValidationResultDto.ts

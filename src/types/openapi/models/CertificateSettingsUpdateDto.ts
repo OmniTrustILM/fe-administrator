@@ -14,6 +14,7 @@
 import type {
     CertificateRegistrationSettingsUpdateDto,
     CertificateRequestAttributesSettingsUpdateDto,
+    CertificateUploadSettingsUpdateDto,
     CertificateValidationSettingsUpdateDto,
 } from './';
 
@@ -40,4 +41,10 @@ export interface CertificateSettingsUpdateDto {
      * @memberof CertificateSettingsUpdateDto
      */
     registration?: CertificateRegistrationSettingsUpdateDto;
+    /**
+     * Certificate upload settings
+     * @type {CertificateUploadSettingsUpdateDto}
+     * @memberof CertificateSettingsUpdateDto
+     */
+    upload?: CertificateUploadSettingsUpdateDto;
 }

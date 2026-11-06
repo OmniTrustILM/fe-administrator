@@ -55,3 +55,89 @@ test.describe('CertificateSettingsForm - Registration subsection', () => {
         await expect(page.getByText('Value must be a non-zero integer')).toBeVisible();
     });
 });
+
+test.describe('CertificateSettingsForm - Upload subsection', () => {
+    const settingsWithAutomaticOwnership = (automaticOwnership: boolean) => ({
+        settings: {
+            platformSettings: {
+                certificates: {
+                    upload: { automaticOwnership },
+                },
+            },
+            isFetchingPlatform: false,
+            isUpdatingPlatform: false,
+        },
+    });
+
+    test('shows automatic ownership off when the platform setting is off', async ({ mount, page }) => {
+        await mount(<CertificateSettingsFormTestWrapper preloadedState={settingsWithAutomaticOwnership(false)} />);
+
+        await expect(page.locator('#automaticOwnership')).not.toBeChecked();
+    });
+
+    test('shows automatic ownership on when the platform setting is on', async ({ mount, page }) => {
+        await mount(<CertificateSettingsFormTestWrapper preloadedState={settingsWithAutomaticOwnership(true)} />);
+
+        await expect(page.locator('#automaticOwnership')).toBeChecked();
+    });
+
+    test('shows automatic ownership off when the platform settings carry no upload group', async ({ mount, page }) => {
+        await mount(
+            <CertificateSettingsFormTestWrapper
+                preloadedState={{
+                    settings: {
+                        platformSettings: { certificates: {} },
+                        isFetchingPlatform: false,
+                        isUpdatingPlatform: false,
+                    },
+                }}
+            />,
+        );
+
+        await expect(page.locator('#automaticOwnership')).not.toBeChecked();
+    });
+
+    test('turns automatic ownership on when its switch is clicked while the read-only view is on the page', async ({ mount, page }) => {
+        await mount(<CertificateSettingsFormTestWrapper preloadedState={settingsWithAutomaticOwnership(false)} withReadOnlyView />);
+
+        await page.locator('label[for="automaticOwnership"]').last().click();
+
+        await expect(page.locator('#automaticOwnership')).toBeChecked();
+    });
+
+    test('shows the read-only automatic ownership switch on when the platform setting is on', async ({ mount, page }) => {
+        await mount(<CertificateSettingsFormTestWrapper preloadedState={settingsWithAutomaticOwnership(true)} withReadOnlyView />);
+
+        await expect(page.locator('#uploadAutomaticOwnership')).toBeChecked();
+    });
+
+    test('shows the read-only automatic ownership switch off when the platform setting is off', async ({ mount, page }) => {
+        await mount(<CertificateSettingsFormTestWrapper preloadedState={settingsWithAutomaticOwnership(false)} withReadOnlyView />);
+
+        await expect(page.locator('#uploadAutomaticOwnership')).not.toBeChecked();
+    });
+
+    test('names the read-only automatic ownership switch for assistive technology', async ({ mount, page }) => {
+        await mount(<CertificateSettingsFormTestWrapper preloadedState={settingsWithAutomaticOwnership(true)} withReadOnlyView />);
+
+        await expect(page.locator('#uploadAutomaticOwnership')).toHaveAccessibleName('Automatic Ownership');
+    });
+
+    test('saves automatic ownership as on when the switch is turned on', async ({ mount, page }) => {
+        await mount(<CertificateSettingsFormTestWrapper preloadedState={settingsWithAutomaticOwnership(false)} />);
+
+        await page.locator('#automaticOwnership').setChecked(true, { force: true });
+        await page.getByRole('button', { name: 'Save' }).click();
+
+        await expect(page.getByTestId('update-platform-settings')).toContainText('"upload":{"automaticOwnership":true}');
+    });
+
+    test('saves automatic ownership as off when the switch is turned off', async ({ mount, page }) => {
+        await mount(<CertificateSettingsFormTestWrapper preloadedState={settingsWithAutomaticOwnership(true)} />);
+
+        await page.locator('#automaticOwnership').setChecked(false, { force: true });
+        await page.getByRole('button', { name: 'Save' }).click();
+
+        await expect(page.getByTestId('update-platform-settings')).toContainText('"upload":{"automaticOwnership":false}');
+    });
+});

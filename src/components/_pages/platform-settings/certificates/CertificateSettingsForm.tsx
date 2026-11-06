@@ -17,6 +17,7 @@ type FormValues = {
     expiringThreshold?: string;
     defaultIssuanceWindowDays?: string;
     maxFailedAttempts?: string;
+    automaticOwnership: boolean;
 };
 
 interface CertificateSettingsFormProps {
@@ -55,12 +56,17 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
             maxFailedAttempts: registrationSettings?.maxFailedAttempts?.toString() || DEFAULT_MAX_FAILED_ATTEMPTS,
         };
 
+        const uploadDefaults = {
+            automaticOwnership: platformSettings?.certificates?.upload?.automaticOwnership ?? false,
+        };
+
         if (!validationSettings) {
             return {
                 enabled: false,
                 expiringThreshold: DEFAULT_EXPIRING_THRESHOLD,
                 frequency: DEFAULT_FREQUENCY,
                 ...registrationDefaults,
+                ...uploadDefaults,
             };
         }
 
@@ -69,8 +75,9 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
             expiringThreshold: validationSettings.expiringThreshold?.toString() || DEFAULT_EXPIRING_THRESHOLD,
             frequency: validationSettings.frequency?.toString() || DEFAULT_FREQUENCY,
             ...registrationDefaults,
+            ...uploadDefaults,
         };
-    }, [platformSettings?.certificates?.validation, platformSettings?.certificates?.registration]);
+    }, [platformSettings?.certificates?.validation, platformSettings?.certificates?.registration, platformSettings?.certificates?.upload]);
 
     const methods = useForm<FormValues>({
         defaultValues,
@@ -111,6 +118,9 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                                 ? Number.parseInt(values.defaultIssuanceWindowDays, 10)
                                 : undefined,
                             maxFailedAttempts: values.maxFailedAttempts ? Number.parseInt(values.maxFailedAttempts, 10) : undefined,
+                        },
+                        upload: {
+                            automaticOwnership: values.automaticOwnership,
                         },
                     },
                 }),
@@ -227,6 +237,28 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                         />
                         <p className="text-sm text-content-subtle mt-2">
                             Maximum failed challenge-verification attempts before the registration authorization locks.
+                        </p>
+                    </div>
+                </div>
+                <div className="rounded-xl border border-divider p-4 md:p-5 shadow-2xs bg-surface-raised space-y-4">
+                    <h3 className="text-lg font-bold text-content">Upload</h3>
+                    <div>
+                        <Controller
+                            name="automaticOwnership"
+                            control={control}
+                            render={({ field }) => (
+                                <Switch
+                                    id="automaticOwnership"
+                                    checked={field.value}
+                                    onChange={field.onChange}
+                                    label="Automatic Ownership"
+                                />
+                            )}
+                        />
+                        <p className="text-sm text-content-subtle mt-2">
+                            The user who uploads a certificate, or imports it from a file, becomes its owner. An owner set by an upload
+                            trigger takes precedence. The owner has full rights over the certificate, such as updating, archiving and
+                            deleting it.
                         </p>
                     </div>
                 </div>

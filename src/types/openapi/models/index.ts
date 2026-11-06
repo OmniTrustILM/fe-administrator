@@ -136,6 +136,8 @@ export * from './CertificateState';
 export * from './CertificateSubjectType';
 export * from './CertificateType';
 export * from './CertificateUpdateObjectsDto';
+export * from './CertificateUploadSettingsDto';
+export * from './CertificateUploadSettingsUpdateDto';
 export * from './CertificateValidationCheck';
 export * from './CertificateValidationCheckDto';
 export * from './CertificateValidationResultDto';
