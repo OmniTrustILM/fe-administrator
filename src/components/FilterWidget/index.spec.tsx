@@ -301,7 +301,7 @@ test.describe('FilterWidget', () => {
             />,
         );
         await expect(page.getByTestId('filter-value-chip')).toHaveText(['Alice', 'Bob']);
-        await expect(page.getByRole('button', { name: /^Remove (Alice|Bob)$/ })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: /^Remove (Alice|Bob) from Owners$/ })).toHaveCount(0);
     });
 
     test('preloaded date/datetime/list values render in badges', async ({ mount, page }) => {
