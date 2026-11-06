@@ -2,11 +2,13 @@ import cn from 'classnames';
 import { Link } from 'react-router';
 import type React from 'react';
 
+export type BreadcrumbItem = {
+    label: string;
+    href?: string;
+};
+
 type Props = {
-    items: {
-        label: string;
-        href?: string;
-    }[];
+    items: BreadcrumbItem[];
     title?: string;
     rightContent?: React.ReactNode;
 };

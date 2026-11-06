@@ -9,9 +9,9 @@ import type { CertificateDetailResponseModel } from 'types/certificate';
 import { type CertificateRegistrationState, CertificateState } from 'types/openapi';
 import { overlaySliceReducer, useRecordingStore } from 'utils/test-helpers';
 
-import CertificateDetailsContent from './CertificateDetailsContent';
+import CertificateDetailHeader from './CertificateDetailHeader';
 
-export type CertificateDetailsContentTestWrapperProps = Readonly<{
+export type CertificateDetailHeaderTestWrapperProps = Readonly<{
     /** State of the certificate's registration authorization; omitted means the certificate has none. */
     registrationState?: CertificateRegistrationState;
 }>;
@@ -47,7 +47,7 @@ const loadedRegisterSchema = { certificates: { ...testInitialState.certificates,
 
 const rootReducer = overlaySliceReducer('certificates', certificatesReducer, dialogActions);
 
-export function CertificateDetailsContentTestWrapper({ registrationState }: CertificateDetailsContentTestWrapperProps) {
+export function CertificateDetailHeaderTestWrapper({ registrationState }: CertificateDetailHeaderTestWrapperProps) {
     const certificate = useMemo(() => testCertificate(registrationState), [registrationState]);
     const [refetches, setRefetches] = useState(0);
 
@@ -56,10 +56,9 @@ export function CertificateDetailsContentTestWrapper({ registrationState }: Cert
     return (
         <Provider store={store}>
             <MemoryRouter>
-                <CertificateDetailsContent
+                <CertificateDetailHeader
                     certificate={certificate}
-                    validationResult={undefined}
-                    isBusy={false}
+                    breadcrumbs={[{ label: 'Certificates', href: '/certificates' }, { label: certificate.commonName }]}
                     getFreshCertificateDetail={() => setRefetches((count) => count + 1)}
                 />
                 {/* Stand-ins for the epics' outcomes. */}
@@ -91,4 +90,4 @@ export function CertificateDetailsContentTestWrapper({ registrationState }: Cert
     );
 }
 
-export default CertificateDetailsContentTestWrapper;
+export default CertificateDetailHeaderTestWrapper;
