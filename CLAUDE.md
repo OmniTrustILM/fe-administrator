@@ -78,19 +78,25 @@ Vite is configured with path aliases — always use these instead of relative pa
 
 - A Redux store built in the Node test body does not reach the browser, so its preloaded state never
   applies. Preload through a `*WithStore.tsx` component that calls `createMockStore(preloadedState)`
-  in its own body and mount that wrapper. CT runs no epics, and the reducers in
-  `ducks/test-reducers.ts` are no-ops, so state that a fetch would normally fill never changes on its own.
+  in its own body and mount that wrapper. CT runs no epics, so state that a fetch would normally fill
+  never changes on its own. Most reducers in `ducks/test-reducers.ts` are stubs that handle only the
+  actions a component test dispatches; to drive a slice's real reducer, use `overlaySliceReducer` or
+  `createRecordingStore` from `utils/test-helpers.tsx`.
 - Import a component from its own module, not through a barrel's named re-export. CT registers
   components by identifier, and a name reachable both ways fails the whole run with
   `Identifier 'X' has already been declared`.
 - `npm run typecheck` excludes `*.spec.*` files, so a type error in a spec passes it. Check edited
-  specs with `npx tsc --noEmit -p tsconfig.json` as well.
+  specs with `npx tsc --noEmit -p tsconfig.json --ignoreDeprecations 6.0` and filter the output to
+  the files you changed: the specs carry existing errors, so a clean run is not the bar.
 - Assert the property the requirement names, not a correlate of it: a contrast requirement asserts
   the computed ratio against its threshold, not that two colours differ. After writing a regression
   test, revert only the fix and confirm the test fails.
 - Sonar rule S2699 does not count `expect.poll` as an assertion, and it only sees assertions written
   directly in the test body. When a test waits with `expect.poll`, follow it with a plain `expect` on
   the settled value.
+- New tests that prove a disabled control does nothing use `dispatchEvent` rather than a forced
+  click, and advance a fake clock rather than waiting a fixed time; Sonar flags both `force` and
+  fixed waits.
 
 ### Styling
 
@@ -263,9 +269,10 @@ Biome enforces linting and formatting: 4-space indent, 140-char line width, sing
 - Removing `any` or narrowing a type does not make a runtime guard redundant. Keep `?.`, `??` and
   null checks on values that come from the store, the API or the router: types are erased at runtime,
   and selectors are called with `undefined` state in tests.
-- Never put an object or function prop in a hook dependency array when the caller may pass it as a
-  literal. Depend on its individual values instead; an unstable identity there refires the effect on
-  every render, and on a fetching component that loops until React aborts with error #185.
+- When an object prop feeds an effect that fetches or dispatches, destructure it and depend on its
+  fields, never on the object. A caller passing it as a literal gives it a new identity every render,
+  which refires the effect and loops until React aborts with error #185. `PagedList` does this for
+  its column config.
 - Comments explain why, never what. Add one only for something the code cannot say itself: a
   non-obvious algorithm, a workaround, or an invariant a reader would otherwise break. No issue
   references, `TODO`s, changelog narration or commented-out code.
@@ -283,8 +290,7 @@ add new issues to the analysis.
     globals must keep `typeof`, because a direct reference throws where the global is not defined.
   - S6819 (`role="button"`): an element already inside a real `<button>` cannot become a `<button>`
     without nesting interactive content.
-- Tests that prove a disabled control does nothing use `dispatchEvent` rather than a forced click, and
-  advance a fake clock rather than waiting a fixed time; Sonar flags both `force` and fixed waits.
+- The Sonar rules that shape tests are listed under [Testing Strategy](#testing-strategy).
 - Trust the SonarCloud results over a local SonarQube scan: the local quality profile omits rules
   SonarCloud enforces.
 
