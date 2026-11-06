@@ -77,8 +77,9 @@ Vite is configured with path aliases — always use these instead of relative pa
 **Writing component tests:**
 
 - A Redux store built in the Node test body does not reach the browser, so its preloaded state never
-  applies. Preload through a `*WithStore.tsx` component that calls `createMockStore(preloadedState)`
-  in its own body and mount that wrapper. CT runs no epics, so state that a fetch would normally fill
+  applies. Preload through a `*WithStore.tsx` component that creates the store once with
+  `useState(() => createMockStore(preloadedState))` and mount that wrapper; a store built on every
+  render drops whatever state the test has dispatched into it. CT runs no epics, so state that a fetch would normally fill
   never changes on its own. Most reducers in `ducks/test-reducers.ts` are stubs that handle only the
   actions a component test dispatches. To run a slice's real reducer, build one with
   `overlaySliceReducer` from `utils/test-helpers.tsx` and pass it to `useRecordingStore` inside the
@@ -271,10 +272,11 @@ Biome enforces linting and formatting: 4-space indent, 140-char line width, sing
 - Removing `any` or narrowing a type does not make a runtime guard redundant. Keep `?.`, `??` and
   null checks on values that come from the store, the API or the router: types are erased at runtime,
   and selectors are called with `undefined` state in tests.
-- When an object prop feeds an effect that fetches or dispatches, destructure it and depend on its
-  fields, never on the object. A caller passing it as a literal gives it a new identity every render,
-  which refires the effect and loops until React aborts with error #185. `PagedList` does this for
-  its column config.
+- When an object or array prop feeds an effect that fetches or dispatches, never depend on its
+  identity. A caller passing it as a literal gives it a new identity every render, which refires the
+  effect and loops until React aborts with error #185. Depend on primitive fields or a serialised key
+  instead, as `PagedList` keys its fetch on a JSON snapshot of the request, and memoise such config
+  at the call site.
 - Comments explain why, never what. Add one only for something the code cannot say itself: a
   non-obvious algorithm, a workaround, or an invariant a reader would otherwise break. No issue
   references, `TODO`s, changelog narration or commented-out code.
@@ -291,8 +293,8 @@ add new issues to the analysis.
   - S7741 (compare with `undefined` instead of `typeof`): `window`, `document` and other environment
     globals must keep `typeof`, because a direct reference throws where the global is not defined.
   - S6819 (ARIA role where a native element exists): an element already inside a real `<button>`
-    cannot become a `<button>` without nesting interactive content. Biome flags the same construct,
-    so such a site carries `biome-ignore lint/a11y/useSemanticElements` alongside the `NOSONAR`.
+    cannot become a `<button>` without nesting interactive content. Biome's `useSemanticElements`
+    flags `role="button"` too, so those sites also carry a `biome-ignore` for it.
 - The Sonar rules that shape tests are listed under [Testing Strategy](#testing-strategy).
 - Trust the SonarCloud results over a local SonarQube scan: the local quality profile omits rules
   SonarCloud enforces.
