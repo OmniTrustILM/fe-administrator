@@ -33,6 +33,28 @@ describe('settings slice', () => {
         expect(next.isUpdatingPlatform).toBe(false);
     });
 
+    test('updatePlatformSettingsSuccess keeps the upload group the update sent', () => {
+        const next = reducer(
+            { ...initialState, platformSettings: { utils: {} } as any },
+            actions.updatePlatformSettingsSuccess({ certificates: { upload: { automaticOwnership: true } } }),
+        );
+
+        expect(next.platformSettings?.certificates?.upload).toEqual({ automaticOwnership: true });
+        expect(next.platformSettings?.utils).toEqual({});
+    });
+
+    test('updatePlatformSettingsSuccess stores an upload group sent without the flag as off', () => {
+        const next = reducer(initialState, actions.updatePlatformSettingsSuccess({ certificates: { upload: {} } }));
+
+        expect(next.platformSettings?.certificates?.upload).toEqual({ automaticOwnership: false });
+    });
+
+    test('updatePlatformSettingsSuccess leaves no upload group when the update sent none', () => {
+        const next = reducer(initialState, actions.updatePlatformSettingsSuccess({ certificates: { validation: { enabled: true } } }));
+
+        expect(next.platformSettings?.certificates?.upload).toBeUndefined();
+    });
+
     test('getEventsSettings / success / failure', () => {
         let next = reducer({ ...initialState, updateEventSettingsSucceeded: true }, actions.getEventsSettings());
         expect(next.isFetchingEventsSetting).toBe(true);

@@ -1,8 +1,7 @@
-import { configureStore } from '@reduxjs/toolkit';
-import { useMemo } from 'react';
 import { Provider } from 'react-redux';
 
-import { testInitialState, testReducers } from 'ducks/test-reducers';
+import type { testReducers } from 'ducks/test-reducers';
+import { useRecordingStore } from 'utils/test-helpers';
 
 import CertificateSettingsForm from './CertificateSettingsForm';
 
@@ -20,19 +19,12 @@ export type CertificateSettingsFormTestWrapperProps = Readonly<{
  * See CertificateFormTestWrapper.tsx for the established precedent.
  */
 export function CertificateSettingsFormTestWrapper({ onCancel, onSuccess, preloadedState }: CertificateSettingsFormTestWrapperProps) {
-    const store = useMemo(
-        () =>
-            configureStore({
-                reducer: testReducers,
-                middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }),
-                preloadedState: { ...testInitialState, ...preloadedState },
-            }),
-        [preloadedState],
-    );
+    const { store, dispatched } = useRecordingStore(preloadedState, 'settings/updatePlatformSettings');
 
     return (
         <Provider store={store}>
             <CertificateSettingsForm onCancel={onCancel} onSuccess={onSuccess} />
+            <output data-testid="update-platform-settings">{JSON.stringify(dispatched.map(({ payload }) => payload))}</output>
         </Provider>
     );
 }

@@ -56,7 +56,18 @@ export const slice = createSlice({
 
         updatePlatformSettingsSuccess: (state, action: PayloadAction<SettingsPlatformUpdateModel>) => {
             state.isUpdatingPlatform = false;
-            state.platformSettings = { ...state.platformSettings, ...action.payload };
+            const { certificates, ...otherSections } = action.payload;
+            state.platformSettings = {
+                ...state.platformSettings,
+                ...otherSections,
+                ...(certificates && {
+                    certificates: {
+                        ...certificates,
+                        // Core stores an upload group sent without the flag as off.
+                        upload: certificates.upload && { automaticOwnership: certificates.upload.automaticOwnership ?? false },
+                    },
+                }),
+            };
         },
 
         updatePlatformSettingsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
