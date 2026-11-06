@@ -80,8 +80,9 @@ Vite is configured with path aliases — always use these instead of relative pa
   applies. Preload through a `*WithStore.tsx` component that calls `createMockStore(preloadedState)`
   in its own body and mount that wrapper. CT runs no epics, so state that a fetch would normally fill
   never changes on its own. Most reducers in `ducks/test-reducers.ts` are stubs that handle only the
-  actions a component test dispatches; to drive a slice's real reducer, use `overlaySliceReducer` or
-  `createRecordingStore` from `utils/test-helpers.tsx`.
+  actions a component test dispatches. To run a slice's real reducer, build one with
+  `overlaySliceReducer` from `utils/test-helpers.tsx` and pass it to `useRecordingStore` inside the
+  wrapper, which also records the dispatched actions.
 - Import a component from its own module, not through a barrel's named re-export. CT registers
   components by identifier, and a name reachable both ways fails the whole run with
   `Identifier 'X' has already been declared`.
