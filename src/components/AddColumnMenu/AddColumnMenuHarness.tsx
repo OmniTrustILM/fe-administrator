@@ -10,7 +10,7 @@ type Props = Readonly<{
     isCatalogueLoaded?: boolean;
     /** False mounts the menu as its host leaves it while the page is still settling. */
     canToggle?: boolean;
-    /** The platform column set the reset entry goes back to; absent withholds the entry. */
+    /** The platform column set the page ships, which the reset entry goes back to; absent withholds the entry. */
     standardColumns?: ColumnDefinition[];
     /** Keys of the columns whose field is gone, which a view cannot store. An array, since a function cannot cross the props boundary. */
     goneKeys?: string[];
@@ -37,11 +37,15 @@ export default function AddColumnMenuHarness({
                 fields={fields}
                 isCatalogueLoaded={isCatalogueLoaded}
                 columns={applied}
-                onToggle={canToggle ? (field) => setApplied((current) => toggleColumn(current, field, [], isStorable)) : undefined}
+                shippedColumns={standardColumns}
+                onToggle={
+                    canToggle ? (field) => setApplied((current) => toggleColumn(current, field, standardColumns, isStorable)) : undefined
+                }
                 onReset={canToggle && standardColumns ? () => setApplied(standardColumns) : undefined}
                 isStorable={isStorable}
             />
             <div data-testid="applied-columns">{JSON.stringify(applied.map(getColumnKey))}</div>
+            <div data-testid="applied-definitions">{JSON.stringify(applied)}</div>
         </div>
     );
 }

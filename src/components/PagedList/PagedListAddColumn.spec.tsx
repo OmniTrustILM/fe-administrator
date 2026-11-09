@@ -214,6 +214,43 @@ test.describe('PagedList · add column menu', () => {
         await expect.poll(() => requestCount(page)).toBe(before + 1);
     });
 
+    test('offers a shipped column the catalogue does not publish back, as the page ships it, beside the unsaved columns', async ({
+        mount,
+        page,
+    }) => {
+        const associations: ColumnDefinition = {
+            fieldSource: FilterFieldSource.Property,
+            fieldIdentifier: 'ASSOCIATIONS',
+            catalogueLabel: 'Associations',
+            label: 'Linked',
+            align: 'center',
+            displayOnly: true,
+        };
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows.map((row) => ({ ...row, associations: 2 }))}
+                standardColumns={[...standardColumns, associations]}
+                catalogue={catalogue}
+            />,
+        );
+        await openMenu(page);
+        await page.getByTestId('add-column-menu-field-custom:department|STRING').check();
+
+        await page.getByTestId('add-column-menu-field-property:ASSOCIATIONS').uncheck();
+        await expect.poll(() => headings(page)).not.toContain('property:ASSOCIATIONS');
+        const propertySource = page.getByTestId('add-column-menu-source-property');
+        await expect(propertySource.getByTestId('add-column-menu-field-property:ASSOCIATIONS')).not.toBeChecked();
+        await expect(propertySource).toContainText('Linked');
+        await page.getByTestId('add-column-menu-field-property:ASSOCIATIONS').check();
+
+        await expect
+            .poll(() => headings(page))
+            .toEqual(['property:ASSOCIATIONS', 'custom:department|STRING', 'property:COMMON_NAME', 'property:NOT_AFTER']);
+        const header = page.locator('thead th[data-id="property:ASSOCIATIONS"]');
+        await expect(header).toContainText('Linked');
+        await expect(header.locator('.justify-center').first()).toBeVisible();
+    });
+
     test('takes the column away again when the field is unchecked', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
         await openMenu(page);
