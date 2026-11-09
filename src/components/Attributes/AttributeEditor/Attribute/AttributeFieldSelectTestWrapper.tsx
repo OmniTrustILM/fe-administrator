@@ -12,6 +12,7 @@ export type AttributeFieldSelectTestWrapperProps = {
     deleteButton?: React.ReactNode;
     addNewAttributeValue?: { label: string; value: string; disabled?: boolean };
     defaultValues?: Record<string, unknown>;
+    mode?: ReactHookForm.UseFormProps['mode'];
 };
 
 export function AttributeFieldSelectTestWrapper({
@@ -22,12 +23,14 @@ export function AttributeFieldSelectTestWrapper({
     deleteButton,
     addNewAttributeValue,
     defaultValues = {},
+    mode,
 }: Readonly<AttributeFieldSelectTestWrapperProps>) {
     const methods = ReactHookForm.useForm({
         defaultValues: {
             [name]: undefined,
             ...defaultValues,
         },
+        mode,
     });
     const [submitted, setSubmitted] = useState(false);
 

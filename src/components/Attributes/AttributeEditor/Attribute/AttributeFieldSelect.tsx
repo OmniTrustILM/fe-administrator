@@ -1,6 +1,6 @@
 import type React from 'react';
 import { useCallback, useRef, useState } from 'react';
-import { Controller, useFormContext } from 'react-hook-form';
+import { Controller, useFormContext, useFormState } from 'react-hook-form';
 import Select from 'components/Select';
 import Label from 'components/Label';
 import Button from 'components/Button';
@@ -32,6 +32,7 @@ export function AttributeFieldSelect({
     onSelectChangeSingle,
 }: Readonly<AttributeFieldSelectProps>): React.ReactNode {
     const { control } = useFormContext();
+    const { submitCount } = useFormState({ control });
     const [showAddCustom, setShowAddCustom] = useState(false);
     const [singleSelectKey, setSingleSelectKey] = useState(0);
     const fieldValueRef = useRef<unknown>(undefined);
@@ -59,7 +60,8 @@ export function AttributeFieldSelect({
             render={({ field, fieldState }) => {
                 fieldValueRef.current = field.value;
                 const selectValue = getSelectValueFromField(field.value, descriptor.properties.multiSelect);
-                const invalidClass = fieldState.isTouched && fieldState.invalid ? 'border-danger' : '';
+                const fieldErrorVisible = fieldState.invalid && (fieldState.isTouched || submitCount > 0);
+                const invalidClass = fieldErrorVisible ? 'border-danger' : '';
 
                 const baseOptions = options;
                 let currentValues: unknown[];
@@ -148,7 +150,10 @@ export function AttributeFieldSelect({
                                     multiSelect={descriptor.properties.multiSelect}
                                     readOnly={descriptor.properties.readOnly}
                                     fieldValue={field.value}
-                                    onFieldChange={field.onChange}
+                                    onFieldChange={(value) => {
+                                        field.onChange(value);
+                                        field.onBlur();
+                                    }}
                                     parseValue={(v) => parseListValueByContentType(descriptor.contentType, v) ?? v}
                                 />
                             </>
@@ -156,7 +161,7 @@ export function AttributeFieldSelect({
                         {descriptor.properties.visible && (
                             <>
                                 {descriptor.description && <p className="text-xs text-content-muted mt-1">{descriptor.description}</p>}
-                                {fieldState.isTouched && fieldState.invalid && (
+                                {fieldErrorVisible && (
                                     <div className="mt-1 text-sm text-danger">
                                         {typeof fieldState.error === 'string' ? fieldState.error : fieldState.error?.message}
                                     </div>

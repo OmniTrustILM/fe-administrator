@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test';
 import { test, expect } from '../../../../../playwright/ct-test';
 import { AttributeFieldSelectTestWrapper } from './AttributeFieldSelectTestWrapper';
 import type { DataAttributeModel } from 'types/attributes';
@@ -344,29 +345,54 @@ test.describe('AttributeFieldSelect', () => {
         await expect(page.getByRole('option', { name: 'extra' })).toBeVisible();
     });
 
-    test('extensible list checks a custom value against the range constraint', async ({ mount, page }) => {
-        const descriptor = minimalDescriptor({
-            contentType: AttributeContentType.Integer,
-            properties: { ...defaultProperties, list: true, extensibleList: true, label: 'Parallel executions' },
-            constraints: [{ type: AttributeConstraintType.Range, data: { from: 1, to: 100 }, errorMessage: 'Between 1 and 100' }],
-        } as any);
-        await mount(<AttributeFieldSelectTestWrapper name="testSelect" descriptor={descriptor} options={[{ label: '1', value: 1 }]} />);
+    test.describe('extensible list with a range constraint', () => {
+        const rangeMessage = 'Between 1 and 100';
+        const rangeDescriptor = () =>
+            minimalDescriptor({
+                contentType: AttributeContentType.Integer,
+                properties: { ...defaultProperties, list: true, extensibleList: true, label: 'Parallel executions' },
+                constraints: [{ type: AttributeConstraintType.Range, data: { from: 1, to: 100 }, errorMessage: rangeMessage }],
+            } as any);
 
-        const addCustomValue = async (value: string) => {
+        const addCustomValue = async (page: Page, value: string) => {
             await page.getByRole('button', { name: 'Add custom value' }).click();
             await page.getByTestId('testSelect-add-custom-panel').locator('input[type="number"]').fill(value);
             await page.getByTestId('testSelect-add-custom-value').click();
         };
 
-        await addCustomValue('101');
-        await page.getByTestId('submit-form').click();
-        await expect(page.getByTestId('submit-count')).toHaveText('1');
-        await expect(page.getByTestId('submit-success')).toHaveCount(0);
+        test('shows the constraint message as soon as an out-of-range custom value is added', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldSelectTestWrapper
+                    name="testSelect"
+                    descriptor={rangeDescriptor()}
+                    options={[{ label: '1', value: 1 }]}
+                    mode="onChange"
+                />,
+            );
 
-        await addCustomValue('100');
-        await page.getByTestId('submit-form').click();
-        await expect(page.getByTestId('submit-count')).toHaveText('2');
-        await expect(page.getByTestId('submit-success')).toBeVisible();
+            await addCustomValue(page, '101');
+            await expect(page.getByText(rangeMessage)).toBeVisible();
+
+            await addCustomValue(page, '100');
+            await expect(page.getByText(rangeMessage)).toHaveCount(0);
+        });
+
+        test('blocks the submit with the constraint message and submits once the value is in range', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldSelectTestWrapper name="testSelect" descriptor={rangeDescriptor()} options={[{ label: '1', value: 1 }]} />,
+            );
+
+            await addCustomValue(page, '101');
+            await page.getByTestId('submit-form').click();
+            await expect(page.getByTestId('submit-count')).toHaveText('1');
+            await expect(page.getByText(rangeMessage)).toBeVisible();
+            await expect(page.getByTestId('submit-success')).toHaveCount(0);
+
+            await addCustomValue(page, '100');
+            await expect(page.getByText(rangeMessage)).toHaveCount(0);
+            await page.getByTestId('submit-form').click();
+            await expect(page.getByTestId('submit-success')).toBeVisible();
+        });
     });
 
     test('extensible list multi-select adds extra options for current values not in options', async ({ mount, page }) => {
