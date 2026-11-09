@@ -2044,3 +2044,188 @@ test.describe('ViewTabs', () => {
         await expect(page.getByRole('button', { name: 'Actions for Standard' })).toBeDisabled();
     });
 });
+
+test.describe('ViewTabs switch notice', () => {
+    const notice = (page: Page) => page.getByTestId('view-tabs-switched');
+
+    test('reports the filters and ordering a view applies as the user switches to it', async ({ mount, page }) => {
+        await mount(strip());
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await expect(page.getByRole('status').filter({ hasText: 'Switching to' })).toHaveText(
+            'Switching to "Expiry watch" applied its filters and ordering.',
+        );
+        const slice = await appliedSlice(page);
+        expect(slice.filters).toEqual([stateFilter]);
+        expect(slice.sort).toEqual({ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'NOT_AFTER', direction: 'asc' });
+    });
+
+    test('reports a view that carries no filters as having cleared the ones typed', async ({ mount, page }) => {
+        await mount(strip({ views: [expiryWatch(), audit()], driftFilter: stateFilter }));
+
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('view-tabs-tab-view-2').click();
+
+        await expect(notice(page)).toHaveText('Switching to "Audit" cleared the filters, as it carries none.');
+        expect((await appliedSlice(page)).filters).toEqual([]);
+    });
+
+    test('tells the filters a view applies apart from the ordering it clears', async ({ mount, page }) => {
+        await mount(strip({ views: [expiryWatch({ defaultView: true }), audit({ filters: [{ ...stateFilter, value: 'revoked' }] })] }));
+
+        await page.getByTestId('view-tabs-tab-view-2').click();
+
+        await expect(notice(page)).toHaveText('Switching to "Audit" applied its filters and cleared the ordering, as it carries none.');
+    });
+
+    test('reports nothing when the view lists under the filters and ordering already applied', async ({ mount, page }) => {
+        await mount(strip({ views: [expiryWatch(), audit()] }));
+
+        await page.getByTestId('view-tabs-tab-view-2').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-2')).toHaveAttribute('aria-selected', 'true');
+        await settle(page);
+        await expect(notice(page)).toBeEmpty();
+        await expect(notice(page)).toHaveRole('status');
+    });
+
+    test('keeps the empty announcement region out of the layout, so it opens no gap under the tabs', async ({ mount, page }) => {
+        await mount(strip());
+
+        await expect(notice(page)).toBeEmpty();
+        await expect(notice(page)).toHaveCSS('position', 'absolute');
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await expect(notice(page)).toHaveCSS('position', 'static');
+    });
+
+    test('says nothing on the view the strip opens on, which no switch replaced anything for', async ({ mount, page }) => {
+        await mount(strip({ views: [expiryWatch({ defaultView: true })] }));
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await settle(page);
+        await expect(notice(page)).toBeEmpty();
+    });
+
+    test('replaces the report with the next switch, and drops it when the next switch changes nothing', async ({ mount, page }) => {
+        await mount(strip({ views: [expiryWatch(), audit()] }));
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await expect(notice(page)).toContainText('Switching to');
+
+        await page.getByTestId('view-tabs-tab-standard').click();
+        await expect(notice(page)).toHaveText('Switching to "Standard" cleared the filters and ordering, as it carries none.');
+
+        await page.getByTestId('view-tabs-tab-view-2').click();
+        await expect(page.getByTestId('view-tabs-tab-view-2')).toHaveAttribute('aria-selected', 'true');
+        await expect(notice(page)).toBeEmpty();
+    });
+
+    test('goes away when dismissed', async ({ mount, page }) => {
+        await mount(strip());
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await notice(page).getByRole('button', { name: 'Dismiss' }).click();
+
+        await expect(notice(page)).toBeEmpty();
+        expect((await appliedSlice(page)).filters).toEqual([stateFilter]);
+    });
+
+    test('goes away once the user changes the filters or the ordering the switch applied', async ({ mount, page }) => {
+        await mount(strip({ driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' } }));
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await expect(notice(page)).toContainText('Switching to');
+
+        await page.getByTestId('drift-sort').click();
+
+        await expect(notice(page)).toBeEmpty();
+    });
+
+    test('stays up when the page lists the switched-to view under an ordering it sieved', async ({ mount, page }) => {
+        await mount(strip({ dropsUnshownSort: true, views: [expiryWatch({ columns: [stored('COMMON_NAME')] })] }));
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await expect(notice(page)).toHaveText('Switching to "Expiry watch" applied its filters.');
+        expect((await appliedSlice(page)).sort).toBeUndefined();
+        await settle(page);
+        await expect(notice(page)).toContainText('Switching to');
+    });
+
+    test("says an ordering it cleared was the view's own one the page could not apply, not one it lacks", async ({ mount, page }) => {
+        await mount(
+            strip({
+                dropsUnshownSort: true,
+                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
+                views: [expiryWatch({ columns: [stored('COMMON_NAME')] })],
+            }),
+        );
+
+        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await expect(notice(page)).toHaveText(
+            'Switching to "Expiry watch" applied its filters and cleared the ordering, as its own cannot be applied here.',
+        );
+        expect((await appliedSlice(page)).sort).toBeUndefined();
+    });
+
+    test("says filters it cleared were the view's own held-back ones, not ones it lacks", async ({ mount, page }) => {
+        await mount(
+            strip({
+                fields: withRetired,
+                driftFilter: stateFilter,
+                views: [expiryWatch({ columns: [stored('COMMON_NAME')], filters: [replaced(retiredFilter)], sort: undefined })],
+            }),
+        );
+
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await expect(notice(page)).toHaveText('Switching to "Expiry watch" cleared the filters, as its own cannot be applied here.');
+        await expect(page.getByTestId('view-tabs-held-filters')).toBeVisible();
+        expect((await appliedSlice(page)).filters).toEqual([]);
+    });
+
+    test('goes away once the view switched to is kept as a new view, which takes over the tab', async ({ mount, page }) => {
+        await mount(strip());
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await expect(notice(page)).toContainText('Switching to');
+
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+
+        await expect(page.getByTestId('view-tabs-tab-pending-view')).toHaveAttribute('aria-selected', 'true');
+        await expect(notice(page)).toBeEmpty();
+    });
+
+    test('names the view switched to by its new name once it is renamed', async ({ mount, page }) => {
+        await mount(strip());
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Rename…' }).click();
+        await page.getByTestId('view-tabs-rename-input').click();
+        await page.getByTestId('view-tabs-rename-input').fill('Expiring soon');
+        await page.getByTestId('view-tabs-rename').getByRole('button', { name: 'Rename' }).click();
+
+        await expect(notice(page)).toHaveText('Switching to "Expiring soon" applied its filters and ordering.');
+    });
+
+    test('reports what deleting the open view did as the strip falls back to another', async ({ mount, page }) => {
+        await mount(strip());
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Delete view' }).click();
+        await page.getByTestId('view-tabs-delete').getByRole('button', { name: 'Delete' }).click();
+
+        await expect(page.getByTestId('view-tabs-tab-standard')).toHaveAttribute('aria-selected', 'true');
+        await expect(notice(page)).toHaveText('Switching to "Standard" cleared the filters and ordering, as it carries none.');
+        expect((await appliedSlice(page)).filters).toEqual([]);
+    });
+});

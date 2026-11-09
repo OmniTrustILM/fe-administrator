@@ -37,12 +37,14 @@ import {
     type ViewTab as ViewTabModel,
 } from 'utils/listViews';
 import { type ColumnSort, getColumnKey } from 'utils/tableColumns';
+import { describeViewSwitch, listingSignature, toViewSwitchChanges, type ViewSwitchChanges } from 'utils/viewSwitch';
 import HeldFiltersNotice from './HeldFiltersNotice';
 import NameViewDialog from './NameViewDialog';
 import OverflowViewsMenu from './OverflowViewsMenu';
 import ReturnedColumnsNotice from './ReturnedColumnsNotice';
 import UnresolvedColumnsNotice from './UnresolvedColumnsNotice';
 import ViewSummaryBar from './ViewSummaryBar';
+import ViewSwitchNotice from './ViewSwitchNotice';
 import ViewTab from './ViewTab';
 
 export type ViewTabsProps = Readonly<{
@@ -97,6 +99,9 @@ export type ViewTabsProps = Readonly<{
 type PendingDialog = 'rename' | 'create' | 'new' | 'delete';
 
 const NO_KEYS: ReadonlySet<string> = new Set();
+
+type Listing = Pick<ViewSlice, 'filters' | 'sort'>;
+type SwitchNotice = { viewId: string; from: Listing; carried: Listing; landedOn?: string; changes?: ViewSwitchChanges };
 
 const heldKeysOf = (view: ListViewModel | undefined): ReadonlySet<string> => (view ? heldKeys(view) : NO_KEYS);
 
@@ -181,6 +186,8 @@ export default function ViewTabs({
     const [requestedFor, setRequestedFor] = useState<Resource | undefined>(undefined);
     const [dismissedNotices, setDismissedNotices] = useState<ReadonlySet<string>>(() => new Set());
     const [targetId, setTargetId] = useState<string | undefined>(undefined);
+    // Described from the listing the page lands on, not from the view: the page may sieve what the view asked for.
+    const [switchNotice, setSwitchNotice] = useState<SwitchNotice | undefined>(undefined);
 
     const catalogueFields = useMemo(() => toCatalogueFields(catalogue, renderableProperties), [catalogue, renderableProperties]);
 
@@ -361,14 +368,37 @@ export default function ViewTabs({
         [sliceOf, standardColumns, standardSort],
     );
 
+    const switchTo = useCallback(
+        (view: ListViewModel | undefined) => {
+            const { filters, sort } = liveSlice.current;
+            const target = view ? sliceOf(view) : toStandardSlice(standardColumns, standardSort);
+            // What the view stores, before held-back filters are withheld: those it carries but cannot apply.
+            const carried = view ? { ...target, filters: (view.filters ?? []).map(toTableFilter) } : target;
+            setSwitchNotice({ viewId: view?.uuid ?? STANDARD_VIEW_ID, from: { filters, sort }, carried });
+            applyRef.current(target);
+        },
+        [sliceOf, standardColumns, standardSort],
+    );
+
     const select = useCallback(
         (id: string) => {
             setDrillDownFilters(undefined);
             setActiveId(id);
-            apply(views.find((view) => view.uuid === id));
+            switchTo(views.find((view) => view.uuid === id));
         },
-        [apply, views],
+        [switchTo, views],
     );
+
+    const liveListing = listingSignature({ filters, sort });
+    useEffect(() => {
+        if (!switchNotice) return;
+        if (switchNotice.viewId !== activeId) setSwitchNotice(undefined);
+        else if (switchNotice.landedOn === undefined) {
+            const changes = toViewSwitchChanges(switchNotice.from, { filters, sort }, switchNotice.carried);
+            const isChanged = changes.filters !== undefined || changes.sort !== undefined;
+            setSwitchNotice(isChanged ? { ...switchNotice, landedOn: liveListing, changes } : undefined);
+        } else if (switchNotice.landedOn !== liveListing) setSwitchNotice(undefined);
+    }, [switchNotice, activeId, liveListing, filters, sort]);
 
     useEffect(() => {
         dispatch(listViewActions.listViews({ resource }));
@@ -619,8 +649,8 @@ export default function ViewTabs({
         const fallback = resolveInitialViewId(remaining);
         pendingDelete.current = { uuid: targetView.uuid, fallbackId: fallback };
         setActiveId(fallback);
-        apply(remaining.find((view) => view.uuid === fallback));
-    }, [dispatch, resource, targetView, activeId, views, apply]);
+        switchTo(remaining.find((view) => view.uuid === fallback));
+    }, [dispatch, resource, targetView, activeId, views, switchTo]);
 
     /** The table with the held-back columns of the active view under `keys` put on it, with their stored filters. */
     const confirmedSlice = useCallback(
@@ -914,6 +944,16 @@ export default function ViewTabs({
                     dataTestId={`${dataTestId}-notice`}
                 />
             )}
+
+            <ViewSwitchNotice
+                message={
+                    switchNotice?.changes && switchNotice.viewId === activeId
+                        ? describeViewSwitch(activeTab.name, switchNotice.changes)
+                        : undefined
+                }
+                onDismiss={() => setSwitchNotice(undefined)}
+                dataTestId={`${dataTestId}-switched`}
+            />
 
             <ViewSummaryBar
                 columns={columns}
