@@ -1,10 +1,12 @@
+import type { Page } from '@playwright/test';
 import { test, expect } from '../../../../../playwright/ct-test';
 import {
     CBOM_REPOSITORY_HEALTH_WARNING_MESSAGE,
     getCbomRepositoryHealthWarning,
     validateCbomRepositoryUrl,
 } from './UtilsSettingsForm.validation';
-import { CBOM_SYNC_TUNABLES, describeTunable, parseOptionalInteger } from './UtilsSettings.tunables';
+import { describeTunable, parseOptionalInteger } from '../tunables';
+import { CBOM_SYNC_TUNABLES } from './UtilsSettings.tunables';
 import { UtilsSettingsFormTestWrapper } from './UtilsSettingsFormTestWrapper';
 import type { SettingsPlatformUpdateModel } from 'types/settings';
 
@@ -95,7 +97,7 @@ test.describe('UtilsSettingsForm - CBOM sync tunables', () => {
         await retries.click();
         await retries.fill('3e');
         await retries.blur();
-        await expect(page.getByText('Value must be a positive integer')).toBeVisible();
+        await expect(page.getByText('Value must be a whole number')).toBeVisible();
 
         const retention = page.locator('#cbomSyncSkipRetentionDays');
         await retention.click();
@@ -172,5 +174,49 @@ test.describe('UtilsSettingsForm - CBOM sync tunables', () => {
         expect(parseOptionalInteger('')).toBeUndefined();
         expect(parseOptionalInteger('0')).toBe(0);
         expect(parseOptionalInteger('120')).toBe(120);
+    });
+});
+
+test.describe('UtilsSettingsForm - saving', () => {
+    const saveEditedOverlap = async (page: Page) => {
+        const overlap = page.locator('#cbomSyncOverlapSeconds');
+        await overlap.click();
+        await overlap.fill('120');
+        await page.getByRole('button', { name: 'Save' }).click();
+    };
+
+    test('closes once the update is saved', async ({ mount, page }) => {
+        let closed = false;
+        await mount(
+            <UtilsSettingsFormTestWrapper
+                preloadedState={seededSettings}
+                onSuccess={() => {
+                    closed = true;
+                }}
+            />,
+        );
+
+        await saveEditedOverlap(page);
+        await page.getByTestId('simulate-update-success').click();
+
+        await expect.poll(() => closed).toBe(true);
+    });
+
+    test('stays open when the update fails', async ({ mount, page }) => {
+        let closed = false;
+        await mount(
+            <UtilsSettingsFormTestWrapper
+                preloadedState={seededSettings}
+                onSuccess={() => {
+                    closed = true;
+                }}
+            />,
+        );
+
+        await saveEditedOverlap(page);
+        await page.getByTestId('simulate-update-failure').click();
+
+        await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled();
+        expect(closed).toBe(false);
     });
 });

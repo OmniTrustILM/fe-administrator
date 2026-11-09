@@ -33,6 +33,37 @@ describe('settings slice', () => {
         expect(next.isUpdatingPlatform).toBe(false);
     });
 
+    test('updatePlatformSettings clears the outcome of the previous update', () => {
+        const settled = {
+            ...initialState,
+            updatePlatformSettingsSucceeded: true,
+            platformSettingsFieldErrors: { 'signing.maxItemsPerRequest': 'old' },
+        };
+
+        const next = reducer(settled, actions.updatePlatformSettings({ signing: {} }));
+
+        expect(next.updatePlatformSettingsSucceeded).toBe(false);
+        expect(next.platformSettingsFieldErrors).toBeUndefined();
+    });
+
+    test('updatePlatformSettingsSuccess marks the update as succeeded', () => {
+        const next = reducer({ ...initialState, isUpdatingPlatform: true }, actions.updatePlatformSettingsSuccess({ signing: {} }));
+
+        expect(next.updatePlatformSettingsSucceeded).toBe(true);
+    });
+
+    test('updatePlatformSettingsFailure keeps the refused fields and leaves the update unsucceeded', () => {
+        const fieldErrors = { 'signing.maxItemsPerRequest': 'must not exceed 1000' };
+
+        const next = reducer(
+            { ...initialState, isUpdatingPlatform: true },
+            actions.updatePlatformSettingsFailure({ error: 'err', fieldErrors }),
+        );
+
+        expect(next.updatePlatformSettingsSucceeded).toBe(false);
+        expect(next.platformSettingsFieldErrors).toStrictEqual(fieldErrors);
+    });
+
     test('updatePlatformSettingsSuccess keeps the upload group the update sent', () => {
         const next = reducer(
             { ...initialState, platformSettings: { utils: {} } as any },

@@ -3,11 +3,11 @@ import ProgressButton from 'components/ProgressButton';
 import TextInput from 'components/TextInput';
 import Container from 'components/Container';
 import Button from 'components/Button';
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import { actions, selectors } from 'ducks/settings';
-import { useAreDefaultValuesSame } from 'utils/common-hooks';
+import { useAreDefaultValuesSame, useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { validateNonZeroInteger, validatePositiveInteger } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 
@@ -36,6 +36,7 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
     const platformSettings = useSelector(selectors.platformSettings);
     const isFetching = useSelector(selectors.isFetchingPlatform);
     const isUpdating = useSelector(selectors.isUpdatingPlatform);
+    const updateSucceeded = useSelector(selectors.updatePlatformSettingsSucceeded);
 
     const getFreshSettings = useCallback(() => {
         dispatch(actions.getPlatformSettings());
@@ -129,16 +130,7 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
         [dispatch],
     );
 
-    const wasUpdating = useRef(isUpdating);
-
-    useEffect(() => {
-        if (wasUpdating.current && !isUpdating) {
-            if (onSuccess) {
-                onSuccess();
-            }
-        }
-        wasUpdating.current = isUpdating;
-    }, [isUpdating, onSuccess]);
+    useRunOnSuccessfulFinish(isUpdating, updateSucceeded, onSuccess);
 
     const areDefaultValuesSame = useAreDefaultValuesSame(defaultValues);
 

@@ -1,4 +1,5 @@
 import CertificateSettingsForm from 'components/_pages/platform-settings/certificates/CertificateSettingsForm';
+import SigningSettingsForm from 'components/_pages/platform-settings/signing/SigningSettingsForm';
 import UtilsSettingsForm from 'components/_pages/platform-settings/utils/UtilsSettingsForm';
 import TabLayout from 'components/Layout/TabLayout';
 import Widget from 'components/Widget';
@@ -30,6 +31,10 @@ export default function PlatformSettingsForm({ onCancel, onSuccess }: PlatformSe
                     {
                         title: 'Certificates',
                         content: <CertificateSettingsForm onCancel={onCancel} onSuccess={onSuccess} />,
+                    },
+                    {
+                        title: 'Signing',
+                        content: <SigningSettingsForm onCancel={onCancel} onSuccess={onSuccess} />,
                     },
                 ]}
             />

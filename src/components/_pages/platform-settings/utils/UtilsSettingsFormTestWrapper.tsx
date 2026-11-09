@@ -3,9 +3,10 @@ import { useMemo } from 'react';
 import { Provider } from 'react-redux';
 
 import { actions } from 'ducks/settings';
-import { testInitialState, testReducers } from 'ducks/test-reducers';
+import { testInitialState, type testReducers } from 'ducks/test-reducers';
 import type { SettingsPlatformUpdateModel } from 'types/settings';
 
+import { PlatformSettingsUpdateOutcomes, platformSettingsUpdateReducer } from '../PlatformSettingsUpdateTestHarness';
 import UtilsSettingsForm from './UtilsSettingsForm';
 
 export type UtilsSettingsFormTestWrapperProps = Readonly<{
@@ -29,7 +30,7 @@ export function UtilsSettingsFormTestWrapper({ onCancel, onSuccess, onUpdate, pr
             return next(action);
         };
         return configureStore({
-            reducer: testReducers,
+            reducer: platformSettingsUpdateReducer,
             middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(reportUpdates),
             preloadedState: { ...testInitialState, ...preloadedState },
         });
@@ -38,6 +39,7 @@ export function UtilsSettingsFormTestWrapper({ onCancel, onSuccess, onUpdate, pr
     return (
         <Provider store={store}>
             <UtilsSettingsForm onCancel={onCancel} onSuccess={onSuccess} />
+            <PlatformSettingsUpdateOutcomes />
         </Provider>
     );
 }

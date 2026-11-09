@@ -7,11 +7,14 @@ import type {
     EventsSettingsDto,
     EventSettingsDto,
 } from '../types/settings';
+import type { PlatformSettingsFieldErrors } from '../utils/platform-settings';
 
 export type State = {
     platformSettings?: SettingsPlatformModel;
     isFetchingPlatform: boolean;
     isUpdatingPlatform: boolean;
+    updatePlatformSettingsSucceeded: boolean;
+    platformSettingsFieldErrors?: PlatformSettingsFieldErrors;
 
     eventsSettings?: EventsSettingsDto;
     isFetchingEventsSetting: boolean;
@@ -26,6 +29,7 @@ export type State = {
 export const initialState: State = {
     isFetchingPlatform: false,
     isUpdatingPlatform: false,
+    updatePlatformSettingsSucceeded: false,
     isFetchingEventsSetting: false,
     isUpdatingEventsSetting: false,
     updateEventSettingsSucceeded: false,
@@ -52,10 +56,13 @@ export const slice = createSlice({
 
         updatePlatformSettings: (state, action: PayloadAction<SettingsPlatformUpdateModel>) => {
             state.isUpdatingPlatform = true;
+            state.updatePlatformSettingsSucceeded = false;
+            state.platformSettingsFieldErrors = undefined;
         },
 
         updatePlatformSettingsSuccess: (state, action: PayloadAction<SettingsPlatformUpdateModel>) => {
             state.isUpdatingPlatform = false;
+            state.updatePlatformSettingsSucceeded = true;
             const { certificates, ...otherSections } = action.payload;
             state.platformSettings = {
                 ...state.platformSettings,
@@ -72,8 +79,12 @@ export const slice = createSlice({
             };
         },
 
-        updatePlatformSettingsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+        updatePlatformSettingsFailure: (
+            state,
+            action: PayloadAction<{ error: string | undefined; fieldErrors?: PlatformSettingsFieldErrors }>,
+        ) => {
             state.isUpdatingPlatform = false;
+            state.platformSettingsFieldErrors = action.payload.fieldErrors;
         },
 
         getEventsSettings: (state, action: PayloadAction<void>) => {
@@ -146,6 +157,8 @@ const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 const platformSettings = createSelector(state, (state: State) => state.platformSettings);
 const isFetchingPlatform = createSelector(state, (state: State) => state.isFetchingPlatform);
 const isUpdatingPlatform = createSelector(state, (state: State) => state.isUpdatingPlatform);
+const updatePlatformSettingsSucceeded = createSelector(state, (state: State) => state.updatePlatformSettingsSucceeded);
+const platformSettingsFieldErrors = createSelector(state, (state: State) => state.platformSettingsFieldErrors);
 
 const eventsSettings = createSelector(state, (state: State) => state.eventsSettings);
 const isFetchingEventsSetting = createSelector(state, (state: State) => state.isFetchingEventsSetting);
@@ -161,6 +174,8 @@ export const selectors = {
     platformSettings,
     isFetchingPlatform,
     isUpdatingPlatform,
+    updatePlatformSettingsSucceeded,
+    platformSettingsFieldErrors,
 
     eventsSettings,
     isFetchingEventsSetting,

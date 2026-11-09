@@ -5,6 +5,7 @@ import { catchError, filter, mergeMap, switchMap } from 'rxjs/operators';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { extractError } from 'utils/net';
+import { fieldErrorsShownOnForms } from 'utils/platform-settings';
 import { updateBackendUtilsClients } from '../api';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
@@ -58,7 +59,10 @@ const updatePlatformSettings: AppEpic = (action$, state$, deps) => {
                 }),
                 catchError((err) =>
                     of(
-                        slice.actions.updatePlatformSettingsFailure({ error: extractError(err, 'Failed to update platform settings') }),
+                        slice.actions.updatePlatformSettingsFailure({
+                            error: extractError(err, 'Failed to update platform settings'),
+                            fieldErrors: fieldErrorsShownOnForms(err),
+                        }),
                         appRedirectActions.fetchError({ error: err, message: 'Failed to update platform settings' }),
                     ),
                 ),

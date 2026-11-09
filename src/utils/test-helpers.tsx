@@ -92,19 +92,26 @@ export function createRecordingStore(
     });
 }
 
-/** Keeps the dispatched actions whose type starts with `prefix`. Call it inside the mounted tree: a store made in a CT spec does not reach the browser. */
-export function useRecordingStore(preloadedState: TestState | undefined, prefix: string, reducer?: typeof testReducers) {
+/** An action creator, which matches its own actions only. */
+type ActionMatcher = { match: (action: unknown) => boolean };
+
+/**
+ * Keeps the dispatched actions whose type starts with `kept`, or that `kept` matches when it is an action creator. Call it inside the
+ * mounted tree, since a store made in a CT spec stays on the Node side.
+ */
+export function useRecordingStore(preloadedState: TestState | undefined, kept: string | ActionMatcher, reducer?: typeof testReducers) {
     const [dispatched, setDispatched] = useState<RecordedAction[]>([]);
     const store = useMemo(
         () =>
             createRecordingStore(
                 preloadedState,
-                ({ type, payload }) => {
-                    if (type.startsWith(prefix)) setDispatched((seen) => [...seen, { type, payload }]);
+                (action) => {
+                    const isKept = typeof kept === 'string' ? action.type.startsWith(kept) : kept.match(action);
+                    if (isKept) setDispatched((seen) => [...seen, { type: action.type, payload: action.payload }]);
                 },
                 reducer,
             ),
-        [preloadedState, prefix, reducer],
+        [preloadedState, kept, reducer],
     );
     return { store, dispatched };
 }
