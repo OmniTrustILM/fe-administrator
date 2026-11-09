@@ -200,6 +200,7 @@ test.describe('UtilsSettingsForm - saving', () => {
         await page.getByTestId('simulate-update-success').click();
 
         await expect.poll(() => closed).toBe(true);
+        expect(closed).toBe(true);
     });
 
     test('stays open when the update fails', async ({ mount, page }) => {

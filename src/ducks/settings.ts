@@ -15,6 +15,7 @@ export type State = {
     isUpdatingPlatform: boolean;
     updatePlatformSettingsSucceeded: boolean;
     platformSettingsFieldErrors?: PlatformSettingsFieldErrors;
+    platformSettingsUpdateError?: string;
 
     eventsSettings?: EventsSettingsDto;
     isFetchingEventsSetting: boolean;
@@ -58,6 +59,7 @@ export const slice = createSlice({
             state.isUpdatingPlatform = true;
             state.updatePlatformSettingsSucceeded = false;
             state.platformSettingsFieldErrors = undefined;
+            state.platformSettingsUpdateError = undefined;
         },
 
         updatePlatformSettingsSuccess: (state, action: PayloadAction<SettingsPlatformUpdateModel>) => {
@@ -85,6 +87,7 @@ export const slice = createSlice({
         ) => {
             state.isUpdatingPlatform = false;
             state.platformSettingsFieldErrors = action.payload.fieldErrors;
+            state.platformSettingsUpdateError = action.payload.error;
         },
 
         getEventsSettings: (state, action: PayloadAction<void>) => {
@@ -159,6 +162,7 @@ const isFetchingPlatform = createSelector(state, (state: State) => state.isFetch
 const isUpdatingPlatform = createSelector(state, (state: State) => state.isUpdatingPlatform);
 const updatePlatformSettingsSucceeded = createSelector(state, (state: State) => state.updatePlatformSettingsSucceeded);
 const platformSettingsFieldErrors = createSelector(state, (state: State) => state.platformSettingsFieldErrors);
+const platformSettingsUpdateError = createSelector(state, (state: State) => state.platformSettingsUpdateError);
 
 const eventsSettings = createSelector(state, (state: State) => state.eventsSettings);
 const isFetchingEventsSetting = createSelector(state, (state: State) => state.isFetchingEventsSetting);
@@ -176,6 +180,7 @@ export const selectors = {
     isUpdatingPlatform,
     updatePlatformSettingsSucceeded,
     platformSettingsFieldErrors,
+    platformSettingsUpdateError,
 
     eventsSettings,
     isFetchingEventsSetting,

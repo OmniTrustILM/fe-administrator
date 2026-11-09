@@ -89,6 +89,7 @@ test.describe('SigningSettingsForm', () => {
         await page.getByTestId('simulate-update-success').click();
 
         await expect.poll(() => closed).toBe(true);
+        expect(closed).toBe(true);
     });
 
     test("shows Core's refusal on the field and stays open", async ({ mount, page }) => {

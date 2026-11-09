@@ -38,12 +38,14 @@ describe('settings slice', () => {
             ...initialState,
             updatePlatformSettingsSucceeded: true,
             platformSettingsFieldErrors: { 'signing.maxItemsPerRequest': 'old' },
+            platformSettingsUpdateError: 'old',
         };
 
         const next = reducer(settled, actions.updatePlatformSettings({ signing: {} }));
 
         expect(next.updatePlatformSettingsSucceeded).toBe(false);
         expect(next.platformSettingsFieldErrors).toBeUndefined();
+        expect(next.platformSettingsUpdateError).toBeUndefined();
     });
 
     test('updatePlatformSettingsSuccess marks the update as succeeded', () => {
@@ -52,15 +54,14 @@ describe('settings slice', () => {
         expect(next.updatePlatformSettingsSucceeded).toBe(true);
     });
 
-    test('updatePlatformSettingsFailure keeps the refused fields and leaves the update unsucceeded', () => {
+    test('updatePlatformSettingsFailure keeps the error and the refused fields, and leaves the update unsucceeded', () => {
+        const error = 'Failed to update platform settings (422): signing.maxItemsPerRequest must not exceed 1000';
         const fieldErrors = { 'signing.maxItemsPerRequest': 'must not exceed 1000' };
 
-        const next = reducer(
-            { ...initialState, isUpdatingPlatform: true },
-            actions.updatePlatformSettingsFailure({ error: 'err', fieldErrors }),
-        );
+        const next = reducer({ ...initialState, isUpdatingPlatform: true }, actions.updatePlatformSettingsFailure({ error, fieldErrors }));
 
         expect(next.updatePlatformSettingsSucceeded).toBe(false);
+        expect(next.platformSettingsUpdateError).toBe(error);
         expect(next.platformSettingsFieldErrors).toStrictEqual(fieldErrors);
     });
 
