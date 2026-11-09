@@ -1,4 +1,5 @@
 import type React from 'react';
+import { useState } from 'react';
 import * as ReactHookForm from 'react-hook-form';
 import { AttributeFieldSelect } from './AttributeFieldSelect';
 import type { DataAttributeModel } from 'types/attributes';
@@ -28,6 +29,7 @@ export function AttributeFieldSelectTestWrapper({
             ...defaultValues,
         },
     });
+    const [submitted, setSubmitted] = useState(false);
 
     const onSelectChangeMulti = (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => {
         const selected: unknown[] = Array.isArray(newValue) ? newValue : [];
@@ -47,16 +49,23 @@ export function AttributeFieldSelectTestWrapper({
 
     return (
         <ReactHookForm.FormProvider {...methods}>
-            <AttributeFieldSelect
-                name={name}
-                descriptor={descriptor}
-                options={options}
-                busy={busy}
-                deleteButton={deleteButton}
-                addNewAttributeValue={addNewAttributeValue}
-                onSelectChangeMulti={onSelectChangeMulti}
-                onSelectChangeSingle={onSelectChangeSingle}
-            />
+            <form onSubmit={methods.handleSubmit(() => setSubmitted(true))}>
+                <AttributeFieldSelect
+                    name={name}
+                    descriptor={descriptor}
+                    options={options}
+                    busy={busy}
+                    deleteButton={deleteButton}
+                    addNewAttributeValue={addNewAttributeValue}
+                    onSelectChangeMulti={onSelectChangeMulti}
+                    onSelectChangeSingle={onSelectChangeSingle}
+                />
+                <button type="submit" data-testid="submit-form">
+                    Submit
+                </button>
+                <span data-testid="submit-count">{methods.formState.submitCount}</span>
+                {submitted && <span data-testid="submit-success">submitted</span>}
+            </form>
         </ReactHookForm.FormProvider>
     );
 }

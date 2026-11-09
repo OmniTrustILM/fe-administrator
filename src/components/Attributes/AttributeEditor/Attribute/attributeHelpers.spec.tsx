@@ -205,11 +205,11 @@ test.describe('attributeHelpers', () => {
             expect(fn('abc')).toBeUndefined();
         });
 
-        const withRange = (data: Record<string, unknown>, list = false) => {
+        const withRange = (data: Record<string, unknown>, properties: Record<string, unknown> = {}) => {
             const d = minimalDataDescriptor(AttributeContentType.Integer, false);
             return {
                 ...d,
-                properties: { ...d.properties, list },
+                properties: { ...d.properties, ...properties },
                 constraints: [{ type: AttributeConstraintType.Range, data, errorMessage: 'Out of range' }],
             };
         };
@@ -235,9 +235,16 @@ test.describe('attributeHelpers', () => {
             expect(buildAttributeValidators(withRange({ from: null, to: null }))('999')).toBeUndefined();
         });
 
-        test('Range constraint is not applied to a list attribute', () => {
-            const fn = buildAttributeValidators(withRange({ from: 1, to: 100 }, true));
+        test('Range constraint is not applied to a list attribute with fixed options', () => {
+            const fn = buildAttributeValidators(withRange({ from: 1, to: 100 }, { list: true }));
             expect(fn({ data: 101 })).toBeUndefined();
+        });
+
+        test('Range constraint still applies to the custom values of an extensible list', () => {
+            const fn = buildAttributeValidators(withRange({ from: 1, to: 100 }, { list: true, extensibleList: true }));
+            expect(fn(101)).toBe('Out of range');
+            expect(fn([{ data: 50 }, 101])).toBe('Out of range');
+            expect(fn(100)).toBeUndefined();
         });
     });
 

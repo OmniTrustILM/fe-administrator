@@ -120,7 +120,7 @@ function addDataAttributeConstraintValidators(descriptor: DataAttributeModel, va
         const pattern = new RegExp((regexValidator as RegexpAttributeConstraintModel).data ?? '');
         validators.push(validatePattern(pattern, regexValidator.errorMessage));
     }
-    if (descriptor.properties.list === true) return;
+    if (descriptor.properties.list === true && descriptor.properties.extensibleList !== true) return;
     const rangeValidator = descriptor.constraints?.find((c) => c.type === AttributeConstraintType.Range);
     if (!rangeValidator?.data) return;
     const rangeData = rangeValidator.data as RangeAttributeConstraintData;
@@ -140,7 +140,8 @@ export function buildAttributeValidators(descriptor: AttributeDescriptorModel | 
     if (descriptor.properties.required) validators.push(validateRequired());
 
     // For list/select attributes (like RSA key size) we trust backend-provided values and do not attach
-    // numeric validators (integer, float, range constraint) on the frontend to avoid blocking the form
+    // numeric validators on the frontend to avoid blocking the form. The range constraint follows the same
+    // rule, except for an extensible list, whose custom values are typed by the user.
     const isListAttribute = descriptor.properties.list === true;
 
     if (!isListAttribute && descriptor.contentType === AttributeContentType.Integer) {

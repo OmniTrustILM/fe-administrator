@@ -1,7 +1,7 @@
 import { test, expect } from '../../../../../playwright/ct-test';
 import { AttributeFieldSelectTestWrapper } from './AttributeFieldSelectTestWrapper';
 import type { DataAttributeModel } from 'types/attributes';
-import { AttributeContentType, AttributeType } from 'types/openapi';
+import { AttributeConstraintType, AttributeContentType, AttributeType } from 'types/openapi';
 
 const defaultProperties = {
     label: 'Test Select',
@@ -342,6 +342,31 @@ test.describe('AttributeFieldSelect', () => {
         await page.getByTestId('select-testSelectSelect-trigger').click();
         await expect(page.getByRole('option', { name: 'Known' })).toBeVisible();
         await expect(page.getByRole('option', { name: 'extra' })).toBeVisible();
+    });
+
+    test('extensible list checks a custom value against the range constraint', async ({ mount, page }) => {
+        const descriptor = minimalDescriptor({
+            contentType: AttributeContentType.Integer,
+            properties: { ...defaultProperties, list: true, extensibleList: true, label: 'Parallel executions' },
+            constraints: [{ type: AttributeConstraintType.Range, data: { from: 1, to: 100 }, errorMessage: 'Between 1 and 100' }],
+        } as any);
+        await mount(<AttributeFieldSelectTestWrapper name="testSelect" descriptor={descriptor} options={[{ label: '1', value: 1 }]} />);
+
+        const addCustomValue = async (value: string) => {
+            await page.getByRole('button', { name: 'Add custom value' }).click();
+            await page.getByTestId('testSelect-add-custom-panel').locator('input[type="number"]').fill(value);
+            await page.getByTestId('testSelect-add-custom-value').click();
+        };
+
+        await addCustomValue('101');
+        await page.getByTestId('submit-form').click();
+        await expect(page.getByTestId('submit-count')).toHaveText('1');
+        await expect(page.getByTestId('submit-success')).toHaveCount(0);
+
+        await addCustomValue('100');
+        await page.getByTestId('submit-form').click();
+        await expect(page.getByTestId('submit-count')).toHaveText('2');
+        await expect(page.getByTestId('submit-success')).toBeVisible();
     });
 
     test('extensible list multi-select adds extra options for current values not in options', async ({ mount, page }) => {
