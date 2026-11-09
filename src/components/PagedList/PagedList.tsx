@@ -522,6 +522,11 @@ function PagedList<TRow extends object>({
         [sortableStandardColumns],
     );
 
+    const onRetryCatalogue = useMemo(
+        () => (getAvailableFiltersApi ? () => dispatch(filterActions.getAvailableFilters({ entity, getAvailableFiltersApi })) : undefined),
+        [dispatch, entity, getAvailableFiltersApi],
+    );
+
     const renderHeaderAction = useCallback(
         (header: TableHeader) => {
             // Withheld until the strip is up: the opening view replaces the columns and the ordering when
@@ -538,6 +543,7 @@ function PagedList<TRow extends object>({
                     columnKeys={columnKeys}
                     sortable={column.sortable === true}
                     hasCatalogueFailed={hasCatalogueFailed}
+                    onRetryCatalogue={onRetryCatalogue}
                     onSort={(direction) => onSortChanged(header.id, direction)}
                     onMove={onMoveColumn}
                     onRename={(next) => onRenameColumn(header.id, next)}
@@ -553,6 +559,7 @@ function PagedList<TRow extends object>({
             appliedColumns,
             columnKeys,
             hasCatalogueFailed,
+            onRetryCatalogue,
             onSortChanged,
             onMoveColumn,
             onRenameColumn,

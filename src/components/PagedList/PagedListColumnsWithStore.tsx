@@ -11,7 +11,7 @@ import type { ListViewModel } from 'types/listViews';
 import { FilterFieldSource, Resource } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
 import type { ColumnSort } from 'utils/tableColumns';
-import { createMockStore } from 'utils/test-helpers';
+import { createRecordingStore } from 'utils/test-helpers';
 import PagedList from './PagedList';
 
 export type StubRow = {
@@ -235,38 +235,44 @@ export default function PagedListColumnsWithStore({
     typedFilters,
     retypedFilters,
 }: Props) {
+    const [catalogueReads, setCatalogueReads] = useState(0);
     const [store] = useState(() =>
-        createMockStore({
-            listViews: {
-                byResource: {
-                    [Resource.Certificates]: { views, isFetching: withheldViews, hasLoaded: !withheldViews, isMutating: false },
+        createRecordingStore(
+            {
+                listViews: {
+                    byResource: {
+                        [Resource.Certificates]: { views, isFetching: withheldViews, hasLoaded: !withheldViews, isMutating: false },
+                    },
+                    dispatched: [],
                 },
-                dispatched: [],
-            },
-            filters: {
-                filters: [
-                    {
-                        entity: EntityType.CERTIFICATE,
-                        filter: {
-                            availableFilters: withheldCatalogue ? [] : catalogue,
-                            currentFilters: drillDownFilters ?? initialFilters,
-                            handedIn: drillDownFilters ? { source: 'drill-down' as const, scope: '/certificates' } : undefined,
-                            isFetchingFilters: withheldCatalogue || isRefetchingCatalogue,
-                            hasLoadedFilters: !withheldCatalogue,
-                            hasFailedFilters: failedCatalogue,
+                filters: {
+                    filters: [
+                        {
+                            entity: EntityType.CERTIFICATE,
+                            filter: {
+                                availableFilters: withheldCatalogue ? [] : catalogue,
+                                currentFilters: drillDownFilters ?? initialFilters,
+                                handedIn: drillDownFilters ? { source: 'drill-down' as const, scope: '/certificates' } : undefined,
+                                isFetchingFilters: withheldCatalogue || isRefetchingCatalogue,
+                                hasLoadedFilters: !withheldCatalogue,
+                                hasFailedFilters: failedCatalogue,
+                            },
                         },
-                    },
-                ],
+                    ],
+                },
+                pagings: {
+                    pagings: [
+                        {
+                            entity: EntityType.CERTIFICATE,
+                            paging: { totalItems: rows.length, checkedRows: [], isFetchingList: false, pageNumber: 1, pageSize: 10 },
+                        },
+                    ],
+                },
             },
-            pagings: {
-                pagings: [
-                    {
-                        entity: EntityType.CERTIFICATE,
-                        paging: { totalItems: rows.length, checkedRows: [], isFetchingList: false, pageNumber: 1, pageSize: 10 },
-                    },
-                ],
+            ({ type }) => {
+                if (type === filterActions.getAvailableFilters.type) setCatalogueReads((count) => count + 1);
             },
-        }),
+        ),
     );
 
     const [answeredRows, setAnsweredRows] = useState(rows);
@@ -342,6 +348,7 @@ export default function PagedListColumnsWithStore({
                     </button>
                 )}
 
+                <div data-testid="catalogue-reads">{catalogueReads}</div>
                 <ListRequests requests={requests} />
                 <CurrentFilters />
                 <HandedIn />
