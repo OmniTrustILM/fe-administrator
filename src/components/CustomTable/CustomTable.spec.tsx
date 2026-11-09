@@ -1454,6 +1454,19 @@ test.describe('CustomTable', () => {
             expect(await emailCell.getAttribute('aria-sort')).toBeNull();
         });
 
+        test('a sortable and a non-sortable heading in the same row share the same capitalisation', async ({ mount }) => {
+            const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={mockData} />));
+
+            const textTransform = (id: string) =>
+                component
+                    .locator(`th[data-id="${id}"] [id]`)
+                    .first()
+                    .evaluate((el) => getComputedStyle(el).textTransform);
+
+            expect(await textTransform('name')).toBe('uppercase');
+            expect(await textTransform('email')).toBe('uppercase');
+        });
+
         test('shows an indicator only on the sorted column, with the idle affordance kept for hover', async ({ mount }) => {
             const sortableHeaders: TableHeader[] = [
                 { id: 'name', content: 'Name', sortable: true },
