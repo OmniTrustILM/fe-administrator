@@ -8,6 +8,7 @@ import {
     formatColumnCount,
     getColumnHeading,
     getColumnKey,
+    getColumnName,
     getColumnSizing,
     getProjectedContent,
     parseColumnKey,
@@ -33,8 +34,19 @@ describe('getColumnHeading', () => {
         expect(getColumnHeading(column({ label: 'Cost centre (FY26)' }))).toBe('Cost centre (FY26)');
     });
 
-    it('treats an empty override as absent, so the column keeps following the catalogue', () => {
-        expect(getColumnHeading(column({ label: '' }))).toBe('Cost centre');
+    it('keeps an empty override empty, because a cleared heading is not an absent one', () => {
+        expect(getColumnHeading(column({ label: '' }))).toBe('');
+    });
+});
+
+describe('getColumnName', () => {
+    it('is the heading while there is one', () => {
+        expect(getColumnName(column({ label: 'Cost centre (FY26)' }))).toBe('Cost centre (FY26)');
+        expect(getColumnName(column())).toBe('Cost centre');
+    });
+
+    it.each(['', '   '])('falls back to the catalogue label for the cleared heading %j', (label) => {
+        expect(getColumnName(column({ label }))).toBe('Cost centre');
     });
 });
 
@@ -234,6 +246,23 @@ describe('renderColumnHeading', () => {
 
         expect(html).toContain('Cost centre (FY26)');
         expect(html).toContain('Custom attribute');
+    });
+
+    it('paints nothing for a cleared property heading but keeps the catalogue label for a screen reader', () => {
+        const html = markup(renderColumnHeading(column({ fieldSource: FilterFieldSource.Property, label: '' })));
+
+        expect(html).toBe('<span class="sr-only">Cost centre</span>');
+    });
+
+    it('keeps the source in the hidden name of a cleared attribute heading, so it is not read as the property', () => {
+        const host = document.createElement('div');
+        host.innerHTML = markup(renderColumnHeading(column({ label: '' })));
+
+        const wrapper = host.firstElementChild;
+        expect(wrapper?.className).toBe('sr-only');
+        expect(host.children).toHaveLength(1);
+        expect(wrapper?.querySelector('.sr-only')?.textContent).toBe('Custom attribute');
+        expect(wrapper?.textContent).toContain('Custom attribute Cost centre');
     });
 });
 

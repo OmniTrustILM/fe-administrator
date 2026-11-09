@@ -464,18 +464,86 @@ test.describe('PagedList · column header menu', () => {
         await expect(page.getByRole('button', { name: 'Common Name', exact: true })).toHaveCount(0);
     });
 
-    test('falls back to the shipped heading when the rename field is emptied', async ({ mount, page }) => {
+    test('clears the heading when the rename field is emptied, still naming the column by its catalogue label', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={abbreviatedColumns} catalogue={catalogue} />);
         await expect(page.getByRole('button', { name: 'Host', exact: true })).toBeVisible();
 
         await openMenu(page, COMMON_NAME);
         await page.getByTestId(`column-header-menu-${COMMON_NAME}-rename`).click();
-        const field = page.getByTestId(`column-header-menu-${COMMON_NAME}-rename-field`);
-        await field.fill('');
+        await page.getByTestId(`column-header-menu-${COMMON_NAME}-rename-field`).fill('');
         await page.getByRole('button', { name: 'Rename', exact: true }).click();
 
+        const cell = page.locator(`thead th[data-id="${COMMON_NAME}"]`);
+        await expect(cell.getByText('Host', { exact: true })).toHaveCount(0);
+        await expect(cell.getByText('Common Name', { exact: true })).toHaveClass('sr-only');
+        await expect(cell).toHaveAccessibleName('Common Name');
+        await expect(page.getByRole('button', { name: 'Common Name', exact: true })).toBeVisible();
+        await expect(trigger(page, COMMON_NAME)).toHaveAccessibleName('Column options for Common Name');
+        await expect(grip(page, COMMON_NAME)).toHaveAttribute('title', 'Reorder Common Name');
+    });
+
+    test('keeps the source in the name of a cleared attribute heading', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
+        await expect.poll(() => headings(page)).toHaveLength(3);
+
+        await openMenu(page, DEPARTMENT);
+        await page.getByTestId(`column-header-menu-${DEPARTMENT}-rename`).click();
+        await page.getByTestId(`column-header-menu-${DEPARTMENT}-rename-field`).fill('');
+        await page.getByRole('button', { name: 'Rename', exact: true }).click();
+
+        const cell = page.locator(`thead th[data-id="${DEPARTMENT}"]`);
+        await expect(cell).toHaveAccessibleName('Custom attribute Department');
+        await expect(cell.locator('span.sr-only').filter({ has: page.getByTestId('source-badge') })).toHaveCount(1);
+        await expect(cell.getByText('Department', { exact: true })).toHaveCount(0);
+        await expect(trigger(page, DEPARTMENT)).toHaveAccessibleName('Column options for Department');
+    });
+
+    test('resets a cleared heading to the one the page ships', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={abbreviatedColumns} catalogue={catalogue} />);
         await expect(page.getByRole('button', { name: 'Host', exact: true })).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Common Name', exact: true })).toHaveCount(0);
+
+        await openMenu(page, COMMON_NAME);
+        await page.getByTestId(`column-header-menu-${COMMON_NAME}-rename`).click();
+        await page.getByTestId(`column-header-menu-${COMMON_NAME}-rename-field`).fill('');
+        await page.getByRole('button', { name: 'Rename', exact: true }).click();
+        await expect(page.getByRole('button', { name: 'Common Name', exact: true })).toBeVisible();
+
+        await openMenu(page, COMMON_NAME);
+        await page.getByTestId(`column-header-menu-${COMMON_NAME}-reset-heading`).click();
+
+        await expect(page.getByRole('button', { name: 'Host', exact: true })).toBeVisible();
+        await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveCount(0);
+    });
+
+    test('opens a view holding a cleared heading as saved, and saves a newly cleared one empty', async ({ mount, page }) => {
+        const cleared: ListViewModel = {
+            ...expiryWatch,
+            columns: [{ ...expiryWatch.columns[0], label: '' }, expiryWatch.columns[1], expiryWatch.columns[2]],
+        };
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} views={[cleared]} />);
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toBeVisible();
+        await expect.poll(() => headings(page)).toHaveLength(3);
+
+        await expect(page.locator(`thead th[data-id="${COMMON_NAME}"]`)).toHaveAccessibleName('Common Name');
+        await expect(page.locator(`thead th[data-id="${COMMON_NAME}"]`).getByText('Common Name')).toHaveClass('sr-only');
+        await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveCount(0);
+
+        await openMenu(page, NOT_AFTER);
+        await page.getByTestId(`column-header-menu-${NOT_AFTER}-rename`).click();
+        await page.getByTestId(`column-header-menu-${NOT_AFTER}-rename-field`).fill('');
+        await page.getByRole('button', { name: 'Rename', exact: true }).click();
+        await page.getByTestId('view-tabs-summary-save').click();
+
+        const updates = async () =>
+            (
+                JSON.parse((await page.getByTestId('dispatched').textContent()) ?? '[]') as Array<{
+                    type: string;
+                    payload: { view: { columns?: ListViewModel['columns'] } };
+                }>
+            ).filter((action) => action.type === 'listViews/updateView');
+        await expect
+            .poll(async () => (await updates()).at(-1)?.payload.view.columns?.map((column) => column.label))
+            .toEqual(['', '', undefined]);
     });
 
     test('opens the rename dialog with the field focused, and commits on Enter', async ({ mount, page }) => {
