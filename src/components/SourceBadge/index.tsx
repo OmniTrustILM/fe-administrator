@@ -1,12 +1,8 @@
 import Badge, { type BadgeColor } from 'components/Badge';
 import { FilterFieldSource } from 'types/openapi';
 
-/**
- * Default labels for the four field sources. The platform publishes its own through
- * `PlatformEnum.FilterFieldSource`; a caller that has them passes one in, and these are what a
- * caller without them — or the picker before the enums have loaded — falls back to.
- */
-export const DEFAULT_SOURCE_LABELS: Readonly<Record<FilterFieldSource, string>> = {
+/** The full name of each field source, as shown on the column source badge and in the add-column menu. */
+export const SOURCE_LABELS: Readonly<Record<FilterFieldSource, string>> = {
     [FilterFieldSource.Property]: 'Property',
     [FilterFieldSource.Custom]: 'Custom attribute',
     [FilterFieldSource.Meta]: 'Metadata',
@@ -31,11 +27,10 @@ const SOURCE_ABBREVIATIONS: Readonly<Record<FilterFieldSource, string>> = {
 
 type Props = Readonly<{
     source: FilterFieldSource;
-    /** The full source name, announced to screen readers and shown on hover in place of the abbreviation. */
-    label?: string;
 }>;
 
-export default function SourceBadge({ source, label = DEFAULT_SOURCE_LABELS[source] }: Props) {
+export default function SourceBadge({ source }: Props) {
+    const label = SOURCE_LABELS[source];
     return (
         // normal-case is load-bearing: a table header row is `uppercase`, and a sortable heading's
         // button resets it while a plain one does not, so inheriting renders the same badge two ways.
