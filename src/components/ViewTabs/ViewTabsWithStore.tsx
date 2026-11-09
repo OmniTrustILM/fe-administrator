@@ -31,6 +31,7 @@ type Props = Readonly<{
     dropsUnshownSort?: boolean;
     /** Passed straight through, so a test can say the catalogue read has settled on nothing. */
     isCatalogueLoaded?: boolean;
+    isCatalogueFailed?: boolean;
     /** As an array: a `Set` does not survive the props boundary. */
     renderableProperties?: string[];
     /** What the drift buttons below change, i.e. an edit the page made outside the view. */
@@ -39,6 +40,8 @@ type Props = Readonly<{
     driftFilter?: SearchFilterModel;
     /** Opens as a return from a detail page to this view, with the filters the list held when it was left. */
     returnTo?: { viewId: string; filters: SearchFilterModel[] };
+    /** Opens as a Dashboard drill-down, with the filters it hands in. */
+    drillDownFilters?: SearchFilterModel[];
 }>;
 
 const withShownSort = (slice: ViewSlice): ViewSlice => {
@@ -76,11 +79,13 @@ export default function ViewTabsWithStore({
     withheldCatalogue = false,
     dropsUnshownSort = false,
     isCatalogueLoaded,
+    isCatalogueFailed,
     renderableProperties,
     driftColumn,
     driftSort,
     driftFilter,
     returnTo,
+    drillDownFilters,
 }: Props) {
     const [store] = useState(() =>
         createMockStore({
@@ -91,10 +96,15 @@ export default function ViewTabsWithStore({
         }),
     );
 
-    const [slice, setSlice] = useState<ViewSlice>({ columns: standardColumns, filters: returnTo?.filters ?? [], sort: undefined });
-    const [handedIn] = useState<HandedInFilters | undefined>(() =>
-        returnTo ? { source: 'return', position: { viewId: returnTo.viewId, isDrillDown: false } } : undefined,
-    );
+    const [slice, setSlice] = useState<ViewSlice>({
+        columns: standardColumns,
+        filters: returnTo?.filters ?? drillDownFilters ?? [],
+        sort: undefined,
+    });
+    const [handedIn] = useState<HandedInFilters | undefined>(() => {
+        if (returnTo) return { source: 'return', position: { viewId: returnTo.viewId, isDrillDown: false } };
+        return drillDownFilters ? { source: 'drill-down', scope: '/certificates' } : undefined;
+    });
     const [isCatalogueReleased, setIsCatalogueReleased] = useState(!withheldCatalogue);
     const [mountKey, setMountKey] = useState(0);
     const gate = useMemo(() => (renderableProperties ? new Set(renderableProperties) : undefined), [renderableProperties]);
@@ -115,6 +125,7 @@ export default function ViewTabsWithStore({
                     resource={resource}
                     catalogue={isCatalogueReleased ? catalogue : []}
                     isCatalogueLoaded={isCatalogueReleased ? isCatalogueLoaded : false}
+                    isCatalogueFailed={isCatalogueFailed}
                     standardColumns={standardColumns}
                     renderableProperties={gate}
                     columns={slice.columns}

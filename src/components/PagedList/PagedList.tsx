@@ -751,6 +751,7 @@ function PagedList<TRow extends object>({
                     resource={columnsResource}
                     catalogue={catalogue}
                     isCatalogueLoaded={hasCatalogueForViews}
+                    isCatalogueFailed={hasCatalogueFailed && !isFetchingCatalogue}
                     standardColumns={sortableStandardColumns}
                     standardSort={defaultSort}
                     renderableProperties={renderableProperties}

@@ -16,6 +16,7 @@ import {
     MAX_VISIBLE_TABS,
     STANDARD_VIEW_ID,
     STANDARD_VIEW_NAME,
+    areFiltersDifferent,
     canOrderBy,
     duplicateName,
     heldKeys,
@@ -467,6 +468,8 @@ describe('isSliceDirty', () => {
 
         expect(isSliceDirty(stored, filtered, 'view')).toBe(true);
         expect(isSliceDirty(filtered, filtered, 'view')).toBe(false);
+        expect(areFiltersDifferent(stored.filters, filtered.filters)).toBe(true);
+        expect(areFiltersDifferent(filtered.filters, [...filtered.filters])).toBe(false);
     });
 
     it('ignores a display-only column against a stored view, which never stores one, but not against Standard', () => {
