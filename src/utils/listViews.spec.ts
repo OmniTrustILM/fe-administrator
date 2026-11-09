@@ -504,13 +504,22 @@ describe('isSliceDirty', () => {
         expect(isSliceDirty(fallback, fallback, 'view')).toBe(false);
     });
 
-    it('sees the sort move and the sort direction flip', () => {
+    it('does not report an ordering change alone, against a view or Standard', () => {
         const asc = { ...stored, sort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'asc' } };
         const desc = { ...asc, sort: { ...asc.sort, direction: 'desc' } };
 
-        expect(isSliceDirty(stored, asc, 'view')).toBe(true);
-        expect(isSliceDirty(asc, desc, 'view')).toBe(true);
-        expect(isSliceDirty(asc, asc, 'view')).toBe(false);
+        for (const against of ['view', 'standard'] as const) {
+            expect(isSliceDirty(stored, asc, against)).toBe(false);
+            expect(isSliceDirty(asc, desc, against)).toBe(false);
+            expect(isSliceDirty(asc, stored, against)).toBe(false);
+        }
+    });
+
+    it('still reports a column change made alongside an ordering change', () => {
+        const sorted = { ...stored, sort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'asc' } };
+
+        expect(isSliceDirty(stored, { ...sorted, columns: [standardColumns[0]] }, 'view')).toBe(true);
+        expect(isSliceDirty(stored, { ...sorted, columns: [standardColumns[1], standardColumns[0]] }, 'standard')).toBe(true);
     });
 });
 
