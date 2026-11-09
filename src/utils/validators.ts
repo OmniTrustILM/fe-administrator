@@ -78,21 +78,29 @@ export const validateCustomIp = (value: string) => {
     return !value || IP_REGEX.test(value) ? undefined : 'Value must be a valid ip address';
 };
 
-/** A numeric floor; leaves non-numbers to the pattern validator composed before it. `'0'` is a value, not empty. */
-export const validateMinimum = (min: number) => (value: unknown) => {
-    const validationInput = getValueFromObject(value);
-    if (validationInput === undefined || validationInput === null || validationInput === '') return undefined;
-    const number = Number(validationInput);
-    return Number.isNaN(number) || number >= min ? undefined : `Value must be at least ${min}`;
+const rangeMessage = (from?: number, to?: number) => {
+    if (from !== undefined && to !== undefined) return `Value must be between ${from} and ${to}`;
+    return from === undefined ? `Value must not exceed ${to}` : `Value must be at least ${from}`;
 };
 
-/** A numeric ceiling; leaves non-numbers to the pattern validator composed before it. */
-export const validateMaximum = (max: number) => (value: unknown) => {
-    const validationInput = getValueFromObject(value);
-    if (!validationInput) return undefined;
-    const number = Number(validationInput);
-    return Number.isNaN(number) || number <= max ? undefined : `Value must not exceed ${max}`;
+/** Inclusive bounds, each optional; checks every item of a multi-value field and leaves blanks and non-numbers to the validators composed before it. */
+export const validateRange = (from?: number, to?: number, message?: string) => (value: unknown) => {
+    const isInRange = (item: unknown) => {
+        const validationInput = getValueFromObject(item);
+        if (validationInput === undefined || validationInput === null || String(validationInput).trim() === '') return true;
+        const number = Number(validationInput);
+        if (Number.isNaN(number)) return true;
+        return (from === undefined || number >= from) && (to === undefined || number <= to);
+    };
+    const isValid = Array.isArray(value) ? value.every(isInRange) : isInRange(value);
+    return isValid ? undefined : message || rangeMessage(from, to);
 };
+
+/** A numeric floor: `validateRange` with only the lower bound. `'0'` is a value, not empty. */
+export const validateMinimum = (min: number) => validateRange(min);
+
+/** A numeric ceiling: `validateRange` with only the upper bound. */
+export const validateMaximum = (max: number) => validateRange(undefined, max);
 
 export const validateLength = (min: number, max: number) => (value: unknown) => {
     const validationInput = getValueFromObject(value);

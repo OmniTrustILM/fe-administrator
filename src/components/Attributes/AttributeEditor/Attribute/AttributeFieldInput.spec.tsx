@@ -1,7 +1,7 @@
 import { test, expect } from '../../../../../playwright/ct-test';
 import { AttributeFieldInputTestWrapper } from './AttributeFieldInputTestWrapper';
 import type { DataAttributeModel } from 'types/attributes';
-import { AttributeContentType, AttributeType, FieldType, ObjectType } from 'types/openapi';
+import { AttributeConstraintType, AttributeContentType, AttributeType, FieldType, ObjectType } from 'types/openapi';
 import type { FieldMapping } from 'types/openapi';
 
 const defaultProperties = {
@@ -140,6 +140,25 @@ test.describe('AttributeFieldInput', () => {
         const input = page.locator('#testField');
         await expect(input).toBeVisible();
         await expect(input).toHaveAttribute('type', 'number');
+    });
+
+    test('integer input shows the range constraint message for a value above the upper bound', async ({ mount, page }) => {
+        const rangeMessage = 'Invalid value for parallel executions, it can be between 1 and 100';
+        const descriptor = minimalDescriptor(AttributeContentType.Integer, {
+            properties: { ...defaultProperties, label: 'Number of parallel executions' },
+            constraints: [{ type: AttributeConstraintType.Range, data: { from: 1, to: 100 }, errorMessage: rangeMessage }],
+        } as any);
+        await mount(<AttributeFieldInputTestWrapper name="testField" descriptor={descriptor} />);
+
+        const input = page.locator('#testField');
+        await input.click();
+        await input.fill('101');
+        await page.getByTestId('outside-blur-target').click();
+        await expect(page.getByText(rangeMessage)).toBeVisible();
+
+        await input.click();
+        await input.fill('100');
+        await expect(page.getByText(rangeMessage)).toHaveCount(0);
     });
 
     test('does not render label or input when descriptor.properties.visible is false', async ({ mount, page }) => {

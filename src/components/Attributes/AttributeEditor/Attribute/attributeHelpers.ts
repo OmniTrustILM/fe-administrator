@@ -3,7 +3,7 @@ import { AttributeConstraintType, AttributeContentType, type RangeAttributeConst
 import { isCustomAttributeModel, isDataAttributeModel } from 'types/attributes';
 import type { AttributeSelectOption, AttributeSelectOptionValue } from 'utils/attributes/attributes';
 import { getFormattedDateTime } from 'utils/dateUtil';
-import { composeValidators, validateFloat, validateInteger, validatePattern, validateRequired } from 'utils/validators';
+import { composeValidators, validateFloat, validateInteger, validatePattern, validateRange, validateRequired } from 'utils/validators';
 
 /** A form-field validator: returns an error message, or undefined when the value is valid. */
 export type FieldValidator = (value: unknown, allValues?: object, fieldState?: unknown) => string | undefined;
@@ -120,15 +120,14 @@ function addDataAttributeConstraintValidators(descriptor: DataAttributeModel, va
         const pattern = new RegExp((regexValidator as RegexpAttributeConstraintModel).data ?? '');
         validators.push(validatePattern(pattern, regexValidator.errorMessage));
     }
+    if (descriptor.properties.list === true) return;
     const rangeValidator = descriptor.constraints?.find((c) => c.type === AttributeConstraintType.Range);
     if (!rangeValidator?.data) return;
     const rangeData = rangeValidator.data as RangeAttributeConstraintData;
-    const { from, to } = rangeData;
-    if (from && to) {
-        const fromAlt = from === 1 ? String.raw`[1-9]\d{0,${to.toString().length - 1}}` : String(from);
-        const pattern = new RegExp(`^(?:${fromAlt}|${to})$`);
-        validators.push(validatePattern(pattern, rangeValidator.errorMessage));
-    }
+    const from = rangeData.from ?? undefined;
+    const to = rangeData.to ?? undefined;
+    if (from === undefined && to === undefined) return;
+    validators.push(validateRange(from, to, rangeValidator.errorMessage));
 }
 
 export function buildAttributeValidators(descriptor: AttributeDescriptorModel | undefined): FieldValidator {
@@ -140,8 +139,8 @@ export function buildAttributeValidators(descriptor: AttributeDescriptorModel | 
     }
     if (descriptor.properties.required) validators.push(validateRequired());
 
-    // For list/select attributes (like RSA key size) we trust backend-provided values
-    // and do not attach numeric validators on the frontend to avoid blocking the form
+    // For list/select attributes (like RSA key size) we trust backend-provided values and do not attach
+    // numeric validators (integer, float, range constraint) on the frontend to avoid blocking the form
     const isListAttribute = descriptor.properties.list === true;
 
     if (!isListAttribute && descriptor.contentType === AttributeContentType.Integer) {
