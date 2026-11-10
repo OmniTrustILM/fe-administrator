@@ -35,7 +35,7 @@ export default function PlatformSettingsForm({ onCancel, onSuccess }: PlatformSe
         <Widget noBorder busy={isBusy}>
             {/* The open dialog hides the page's toasts from screen readers, so it announces the failure itself. */}
             {finishedUpdateError && !isUpdatingPlatform && (
-                <Callout severity="danger" role="alert" className="mb-4" dataTestId="platform-settings-update-error">
+                <Callout severity="danger" role="alert" className="mb-4 whitespace-pre-line" dataTestId="platform-settings-update-error">
                     {finishedUpdateError}
                 </Callout>
             )}

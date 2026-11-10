@@ -30,6 +30,16 @@ test.describe('PlatformSettingsForm', () => {
         await expect(page.getByRole('alert')).toHaveText('Failed to update platform settings');
     });
 
+    test('shows each message of a failed update on its own line', async ({ mount, page }) => {
+        const twoRefusals = 'Failed to update platform settings (422): first refusal\nsecond refusal';
+        await mount(<PlatformSettingsFormTestWrapper preloadedState={storedSettings()} failureMessage={twoRefusals} />);
+
+        await saveSigningLimit(page, '500');
+        await page.getByTestId('simulate-update-failure').click();
+
+        await expect(page.getByRole('alert')).toHaveJSProperty('innerText', twoRefusals);
+    });
+
     test('withdraws the failure while the next update is in flight', async ({ mount, page }) => {
         await mount(<PlatformSettingsFormTestWrapper preloadedState={storedSettings()} />);
         await saveSigningLimit(page, '500');

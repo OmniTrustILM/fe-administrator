@@ -15,13 +15,14 @@ export const platformSettingsUpdateReducer = overlaySliceReducer('settings', set
 type Props = Readonly<{
     /** What Core refuses on the simulated refusal, keyed by update-body path. */
     fieldErrors?: PlatformSettingsFieldErrors;
+    failureMessage?: string;
 }>;
 
 /** The form meets the outcome with its field still focused, as after a save with Enter. */
 const keepFocusInTheForm = (event: MouseEvent) => event.preventDefault();
 
 /** Ends the update in flight with one of the settings slice's outcomes: saved, refused on a field, or failed. */
-export function PlatformSettingsUpdateOutcomes({ fieldErrors }: Props) {
+export function PlatformSettingsUpdateOutcomes({ fieldErrors, failureMessage = 'Failed to update platform settings' }: Props) {
     const dispatch = useDispatch();
 
     return (
@@ -46,7 +47,7 @@ export function PlatformSettingsUpdateOutcomes({ fieldErrors }: Props) {
                 type="button"
                 data-testid="simulate-update-failure"
                 onMouseDown={keepFocusInTheForm}
-                onClick={() => dispatch(actions.updatePlatformSettingsFailure({ error: 'Failed to update platform settings' }))}
+                onClick={() => dispatch(actions.updatePlatformSettingsFailure({ error: failureMessage }))}
             >
                 Simulate failure
             </button>

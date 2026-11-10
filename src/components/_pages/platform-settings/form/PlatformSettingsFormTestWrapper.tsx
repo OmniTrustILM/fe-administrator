@@ -10,9 +10,10 @@ import PlatformSettingsForm from '.';
 
 export type PlatformSettingsFormTestWrapperProps = Readonly<{
     preloadedState?: Partial<ReturnType<typeof testReducers>>;
+    failureMessage?: string;
 }>;
 
-export function PlatformSettingsFormTestWrapper({ preloadedState }: PlatformSettingsFormTestWrapperProps) {
+export function PlatformSettingsFormTestWrapper({ preloadedState, failureMessage }: PlatformSettingsFormTestWrapperProps) {
     const { store } = useRecordingStore(preloadedState, actions.updatePlatformSettings, platformSettingsUpdateReducer);
 
     return (
@@ -20,7 +21,7 @@ export function PlatformSettingsFormTestWrapper({ preloadedState }: PlatformSett
             <MemoryRouter>
                 <PlatformSettingsForm />
             </MemoryRouter>
-            <PlatformSettingsUpdateOutcomes />
+            <PlatformSettingsUpdateOutcomes failureMessage={failureMessage} />
         </Provider>
     );
 }

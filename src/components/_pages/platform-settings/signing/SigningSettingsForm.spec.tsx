@@ -27,7 +27,7 @@ test.describe('SigningSettings', () => {
         await expect(page.getByRole('row', { name: /Max Items per Request/ })).toContainText('250 items');
     });
 
-    test('shows the platform default while no limit is stored', async ({ mount, page }) => {
+    test('shows the platform default when Core returns no limit', async ({ mount, page }) => {
         await mount(<SigningSettingsFormTestWrapper preloadedState={storedLimit()} withReadOnlyView />);
 
         await expect(page.getByRole('row', { name: /Max Items per Request/ })).toContainText('platform default (100 items)');
