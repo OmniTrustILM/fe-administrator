@@ -4,6 +4,7 @@ import {
     validatePattern,
     validateInteger,
     validatePositiveInteger,
+    validateWholeNumber,
     validateNonZeroInteger,
     validateFloat,
     validateEmail,
@@ -142,6 +143,19 @@ describe('validators', () => {
         test('should reject negatives and non-integers', () => {
             expect(validatePositiveInteger()('-1')).toBe('Value must be a positive integer');
             expect(validatePositiveInteger()('12.5')).toBe('Value must be a positive integer');
+        });
+    });
+
+    describe('validateWholeNumber', () => {
+        test('accepts zero and the counting numbers', () => {
+            expect(validateWholeNumber()('0')).toBeUndefined();
+            expect(validateWholeNumber()('123')).toBeUndefined();
+        });
+
+        test('refuses negatives, fractions and exponents', () => {
+            expect(validateWholeNumber()('-1')).toBe('Value must be a whole number');
+            expect(validateWholeNumber()('12.5')).toBe('Value must be a whole number');
+            expect(validateWholeNumber()('3e')).toBe('Value must be a whole number');
         });
     });
 

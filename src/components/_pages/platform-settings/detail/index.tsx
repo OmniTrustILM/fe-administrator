@@ -2,6 +2,7 @@ import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import AppearanceSettings from 'components/_pages/platform-settings/appearance/AppearanceSettings';
 import CertificateSettings from 'components/_pages/platform-settings/certificates/CertificateSettings';
 import RequestAttributesSettings from 'components/_pages/platform-settings/request-attributes/RequestAttributesSettings';
+import SigningSettings from 'components/_pages/platform-settings/signing/SigningSettings';
 import UtilsSettings from 'components/_pages/platform-settings/utils/UtilsSettings';
 import TabLayout from 'components/Layout/TabLayout';
 import Widget from 'components/Widget';
@@ -77,6 +78,10 @@ export default function PlatformSettingsDetail() {
         {
             title: 'Certificates',
             content: <CertificateSettings platformSettings={platformSettings} />,
+        },
+        {
+            title: 'Signing',
+            content: <SigningSettings platformSettings={platformSettings} />,
         },
         {
             title: 'Request Attributes',

@@ -6,7 +6,8 @@ import { useEffect, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { SettingsPlatformModel } from 'types/settings';
 import { AlertCircle } from 'lucide-react';
-import { CBOM_SYNC_TUNABLES, describeTunable } from './UtilsSettings.tunables';
+import { describeTunable } from '../tunables';
+import { CBOM_SYNC_TUNABLES } from './UtilsSettings.tunables';
 
 const StatusIcon = ({ ok }: { ok?: boolean }) =>
     ok ? (

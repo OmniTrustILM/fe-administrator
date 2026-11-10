@@ -46,6 +46,8 @@ export const validateInteger = () => validatePattern(/^[+-]?(\d*)$/, 'Value must
 
 export const validatePositiveInteger = () => validatePattern(/^\d+$/, 'Value must be a positive integer');
 
+export const validateWholeNumber = () => validatePattern(/^\d+$/, 'Value must be a whole number');
+
 export const validateNonZeroInteger = () => validatePattern(/^[+-]?([1-9]\d*)$/, 'Value must be a non-zero integer');
 
 export const validateFloat = () => validatePattern(/^[+-]?(\d*[.])?\d+$/, 'Value must be a float without an exponent.');
