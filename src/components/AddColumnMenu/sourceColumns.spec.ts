@@ -111,4 +111,12 @@ describe('toMenuContents', () => {
 
         expect(toMenuContents(fields, columns, '').shown[0].fieldLabel).toBe('Certs');
     });
+
+    it('names a column whose heading was cleared by its catalogue label', () => {
+        const columns = [
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CK_ASSOCIATIONS', catalogueLabel: 'Associations', label: '' },
+        ];
+
+        expect(toMenuContents(fields, columns, '').shown[0].fieldLabel).toBe('Associations');
+    });
 });

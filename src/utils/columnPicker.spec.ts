@@ -202,6 +202,11 @@ describe('resolveColumns', () => {
         expect(resolveColumns(withOverride, fields)[0]).toMatchObject({ label: 'Host', catalogueLabel: 'Common Name' });
     });
 
+    it('keeps a cleared heading across the refresh instead of reading it as no override', () => {
+        const cleared = [{ ...stored[0], label: '' }];
+        expect(resolveColumns(cleared, fields)[0]).toMatchObject({ label: '', catalogueLabel: 'Common Name' });
+    });
+
     it('leaves an unavailable column exactly as it was stored, since nothing can refresh it', () => {
         expect(resolveColumns(stored, fields)[1]).toMatchObject({ catalogueLabel: 'Gone', label: 'Was renamed', available: false });
     });

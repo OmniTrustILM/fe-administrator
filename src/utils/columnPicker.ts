@@ -111,7 +111,7 @@ export function resolveColumns(
         if (!field) {
             const standard = standardByKey.get(key);
             if (!standard) return { ...column, available: false };
-            return { ...standard, ...(column.label ? { label: column.label } : {}), available: true };
+            return { ...standard, ...(column.label === undefined ? {} : { label: column.label }), available: true };
         }
 
         // Alignment is the page's choice, not the catalogue's: a centred icon column stays centred whether
@@ -123,7 +123,7 @@ export function resolveColumns(
         return {
             ...toColumnDefinition(field),
             ...(align ? { align } : {}),
-            ...(column.label ? { label: column.label } : {}),
+            ...(column.label === undefined ? {} : { label: column.label }),
             available: true,
         };
     });

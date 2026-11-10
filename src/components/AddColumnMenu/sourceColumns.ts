@@ -1,7 +1,7 @@
 import { FilterFieldSource } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
 import { groupCatalogueFields, matchesFieldSearch } from 'utils/columnPicker';
-import { getColumnHeading, getColumnKey } from 'utils/tableColumns';
+import { getColumnName, getColumnKey } from 'utils/tableColumns';
 
 /** The order the menu lays the sources out in, left to right. */
 export const MENU_SOURCE_ORDER: readonly FilterFieldSource[] = [
@@ -55,7 +55,7 @@ export function toMenuContents(fields: SourcedCatalogueField[], columns: ColumnD
         // search for the name the operator gave it.
         return {
             ...(published ?? { fieldSource: column.fieldSource, fieldIdentifier: column.fieldIdentifier }),
-            fieldLabel: getColumnHeading(column),
+            fieldLabel: getColumnName(column),
         } as SourcedCatalogueField;
     });
 

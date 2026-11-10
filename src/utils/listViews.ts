@@ -187,7 +187,7 @@ export function toStoredColumns(columns: readonly ColumnDefinition[]): ListViewC
     return columns.map((column) => ({
         fieldSource: column.fieldSource,
         fieldIdentifier: column.fieldIdentifier,
-        ...(column.label ? { label: column.label } : {}),
+        ...(column.label === undefined ? {} : { label: column.label }),
     }));
 }
 
@@ -426,8 +426,9 @@ export function resolveView(
         fieldIdentifier: column.fieldIdentifier,
         // A stand-in until the catalogue answers. An unresolved column shows its identifier instead,
         // which is what tells an administrator what the column used to be.
-        catalogueLabel: column.label ?? column.fieldIdentifier,
-        ...(column.label ? { label: column.label } : {}),
+        catalogueLabel: column.label?.trim() ? column.label : column.fieldIdentifier,
+        // Null means absent just as a missing key does; only a string, empty included, is an override.
+        ...(column.label == null ? {} : { label: column.label }),
     }));
 
     const columns = resolveColumns(asDefinitions, [...fields], standardColumns);

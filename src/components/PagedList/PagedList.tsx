@@ -29,7 +29,14 @@ import type { Resource } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
 import { moveColumn, toCatalogueFields } from 'utils/columnPicker';
 import { storableColumnTest } from 'utils/listViews';
-import { type ColumnSort, buildColumnHeaders, countStorableColumns, getColumnHeading, getColumnKey } from 'utils/tableColumns';
+import {
+    type ColumnSort,
+    buildColumnHeaders,
+    countStorableColumns,
+    getColumnHeading,
+    getColumnKey,
+    getColumnName,
+} from 'utils/tableColumns';
 import {
     buildListRequest,
     getRenderableProperties,
@@ -534,7 +541,8 @@ function PagedList<TRow extends object>({
             return (
                 <ColumnHeaderMenu
                     columnKey={header.id}
-                    label={getColumnHeading(column)}
+                    label={getColumnName(column)}
+                    heading={getColumnHeading(column)}
                     columnKeys={columnKeys}
                     sortable={column.sortable === true}
                     hasCatalogueFailed={hasCatalogueFailed}
@@ -572,7 +580,7 @@ function PagedList<TRow extends object>({
             return (
                 <ColumnDragHandle
                     columnKey={header.id}
-                    label={getColumnHeading(column)}
+                    label={getColumnName(column)}
                     columnKeys={columnKeys}
                     onMove={onMoveColumn}
                     dataTestId={`column-drag-handle-${header.id}`}
