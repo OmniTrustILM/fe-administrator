@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 
 import CertificateList from './index';
+import { EntityType } from 'ducks/filters';
 import certificatesReducer, { actions as certificatesActions, initialState as certificatesInitialState } from 'ducks/certificates';
 import { clickByText, clickByTitle } from '../../test-utils/domActions';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
@@ -20,11 +21,19 @@ vi.mock('react-router', () => ({
 }));
 
 vi.mock('components/PagedList/PagedList', () => ({
-    default: ({ additionalButtons, refreshToken }: any) => (
+    default: ({ pageHeader, refreshToken }: any) => (
         <div data-testid="paged-list" data-refresh-token={refreshToken}>
-            {(additionalButtons || []).map((button: any) => (
-                <button key={button.tooltip ?? button.icon} type="button" title={button.tooltip} onClick={button.onClick}>
-                    {button.icon}
+            {[pageHeader?.primaryAction, ...(pageHeader?.actions ?? [])].filter(Boolean).map((action: any) => (
+                <button
+                    key={action.id}
+                    type="button"
+                    title={action.label}
+                    data-primary={action === pageHeader.primaryAction || undefined}
+                    data-disabled-reason={action.disabled ? action.disabledReason : undefined}
+                    disabled={action.disabled}
+                    onClick={() => action.onClick(null)}
+                >
+                    {action.icon}
                 </button>
             ))}
         </div>
@@ -95,6 +104,34 @@ describe('CertificateList', () => {
 
         expect(importDialog()).toBeNull();
         expect(listRefreshToken()).toBe('1');
+    });
+
+    it('offers Create as the primary action and the rest in the actions menu', async () => {
+        await renderList();
+
+        expect(container.querySelector('button[data-primary]')?.getAttribute('title')).toBe('Create');
+        expect(container.querySelectorAll('button:not([data-primary])').length).toBeGreaterThan(0);
+    });
+
+    it('keeps bulk actions disabled, with a reason, until certificates are selected', async () => {
+        await renderList();
+        const overrideGroups = () => container.querySelector<HTMLButtonElement>('button[title="Override groups"]');
+        expect(overrideGroups()?.disabled).toBe(true);
+        expect(overrideGroups()?.dataset.disabledReason).toBe('Select one or more certificates');
+        expect(container.querySelector<HTMLButtonElement>(`button[title="${IMPORT_ACTION}"]`)?.disabled).toBe(false);
+
+        state = { ...state, pagings: { pagings: [{ entity: EntityType.CERTIFICATE, paging: { checkedRows: ['cert-1'] } }] } };
+        await renderList();
+
+        expect(overrideGroups()?.disabled).toBe(false);
+    });
+
+    it('renders no page header in the certificate picker', async () => {
+        await act(async () => {
+            root.render(<CertificateList selectCertsOnly hideWidgetButtons />);
+        });
+
+        expect(container.querySelector('button')).toBeNull();
     });
 
     it('keeps the import dialog open while an import runs', async () => {

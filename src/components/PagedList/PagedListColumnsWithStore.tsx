@@ -48,6 +48,8 @@ type Props = Readonly<{
      * applying the opening view is itself a reset, and runs before a test can act.
      */
     withPagingControl?: boolean;
+    /** Mounts the host with a page header, a Create route and a Delete handler. */
+    withPageHeader?: boolean;
     /** Supplies the column configuration a tick after mount, as a page still fetching its catalogue does. */
     withDeferredConfig?: boolean;
     /** Renders a control that lands the catalogue, so a test can act on the table before it arrives. */
@@ -65,6 +67,9 @@ type Props = Readonly<{
     /** Renders a second such control, for a user typing a different set of filters afterwards. */
     retypedFilters?: SearchFilterModel[];
 }>;
+
+const PAGE_HEADER = { breadcrumbs: [{ label: 'Certificates Inventory' }] };
+const noop = () => {};
 
 const registry: CellRegistry<StubRow> = {
     'property:COMMON_NAME': (row) => row.commonName,
@@ -226,6 +231,7 @@ export default function PagedListColumnsWithStore({
     withRemountControl = false,
     withRefreshControl = false,
     withPagingControl = false,
+    withPageHeader = false,
     withDeferredConfig = false,
     withCatalogueControl = false,
     refreshedCatalogue,
@@ -310,7 +316,10 @@ export default function PagedListColumnsWithStore({
                         filterTitle="Certificate Inventory Filter"
                         getAvailableFiltersApi={getAvailableFiltersApi}
                         onListCallback={onListCallback}
-                        addHidden
+                        addHidden={!withPageHeader}
+                        pageHeader={withPageHeader ? PAGE_HEADER : undefined}
+                        onDeleteCallback={withPageHeader ? noop : undefined}
+                        entityNamePlural={withPageHeader ? 'Certificates' : undefined}
                         configurableColumns={config}
                         refreshToken={refreshToken}
                     />
