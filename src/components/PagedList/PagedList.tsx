@@ -336,6 +336,7 @@ function PagedList<TRow extends object>({
                     fields={catalogueFields}
                     isCatalogueLoaded={hasLoadedCatalogue}
                     columns={appliedColumns}
+                    shippedColumns={sortableStandardColumns}
                     // Both withheld until the strip is up: applying the opening view replaces the column
                     // set wholesale, so a change made before that would be wiped without a trace.
                     onToggle={isStripReady ? onToggleColumn : undefined}
@@ -343,7 +344,17 @@ function PagedList<TRow extends object>({
                     isStorable={isStorable}
                 />
             ) : undefined,
-        [isColumnDriven, catalogueFields, hasLoadedCatalogue, appliedColumns, onToggleColumn, onResetColumns, isStripReady, isStorable],
+        [
+            isColumnDriven,
+            catalogueFields,
+            hasLoadedCatalogue,
+            appliedColumns,
+            sortableStandardColumns,
+            onToggleColumn,
+            onResetColumns,
+            isStripReady,
+            isStorable,
+        ],
     );
 
     const currentFiltersSnapshot = useMemo(() => JSON.stringify(currentFilters ?? []), [currentFilters]);

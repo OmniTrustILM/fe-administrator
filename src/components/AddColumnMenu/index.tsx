@@ -11,6 +11,7 @@ import { type MenuSourceColumn, toMenuContents } from './sourceColumns';
 
 const LOCKED_AT_LAST_COLUMN = 'A view must keep at least one column';
 const LOCKED_WHILE_LOADING = 'Columns cannot be changed while the page is loading';
+const NO_COLUMNS: readonly ColumnDefinition[] = [];
 
 function getEmptyState(column: MenuSourceColumn, isCatalogueLoaded: boolean): string {
     // Three different answers, and reading them as one is what makes an exhausted source claim the
@@ -35,6 +36,11 @@ type Props = Readonly<{
      * change something else is about to overwrite.
      */
     onToggle?: (field: SourcedCatalogueField) => void;
+    /**
+     * The column set the page ships. One the catalogue does not publish is offered back from here once
+     * removed; the catalogue is otherwise the only thing the source columns are built from.
+     */
+    shippedColumns?: readonly ColumnDefinition[];
     /** Puts the platform's own column set back. Left out where there is nothing to go back to. */
     onReset?: () => void;
     /** Which columns a view can store, so the last of them is the one held. Defaults to every column not display-only. */
@@ -95,6 +101,7 @@ export default function AddColumnMenu({
     fields,
     isCatalogueLoaded = true,
     columns,
+    shippedColumns = NO_COLUMNS,
     onToggle,
     onReset,
     isStorable = isNotDisplayOnly,
@@ -126,7 +133,11 @@ export default function AddColumnMenu({
         // between the two lists. Keyed on anything stable, this would only ever run on mount.
     }, [dataTestId, columns]);
 
-    const { shown, sources } = useMemo(() => toMenuContents(fields, columns, search), [fields, columns, search]);
+    // Held back until the catalogue settles: before then every shipped column looks unpublished.
+    const { shown, sources } = useMemo(
+        () => toMenuContents(fields, columns, search, isCatalogueLoaded ? shippedColumns : NO_COLUMNS),
+        [fields, columns, search, isCatalogueLoaded, shippedColumns],
+    );
 
     const onOpenChange = useCallback((open: boolean) => {
         setIsOpen(open);

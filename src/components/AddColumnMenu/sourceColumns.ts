@@ -30,6 +30,13 @@ export interface MenuContents {
     sources: MenuSourceColumn[];
 }
 
+const toMenuField = (column: ColumnDefinition) =>
+    ({
+        fieldSource: column.fieldSource,
+        fieldIdentifier: column.fieldIdentifier,
+        fieldLabel: getColumnHeading(column),
+    }) as SourcedCatalogueField;
+
 /**
  * The catalogue as the menu shows it: what is already on the table first, then the four source
  * columns holding everything else.
@@ -41,9 +48,18 @@ export interface MenuContents {
  * Every source gets a column whether or not it has fields left to put in it: a search that empties
  * one column must not shift the other three sideways, and a resource with no custom attributes should
  * say so where they would have been.
+ *
+ * A column the page ships but the catalogue does not publish is offered under its source too, or once
+ * taken off the table it could only come back by resetting every other column with it.
  */
-export function toMenuContents(fields: SourcedCatalogueField[], columns: ColumnDefinition[], search: string): MenuContents {
+export function toMenuContents(
+    fields: SourcedCatalogueField[],
+    columns: ColumnDefinition[],
+    search: string,
+    shipped: readonly ColumnDefinition[] = [],
+): MenuContents {
     const byKey = new Map(fields.map((field) => [getColumnKey(field), field]));
+    const offered = [...fields, ...shipped.filter((column) => !byKey.has(getColumnKey(column))).map(toMenuField)];
 
     // Built from the columns themselves, enriched from the catalogue where it publishes a match. A
     // platform column the catalogue does not carry — the keys inventory ships one — is still on the
@@ -53,16 +69,13 @@ export function toMenuContents(fields: SourcedCatalogueField[], columns: ColumnD
         // Headed the way the table heads it, published or not: listing a renamed column under its
         // catalogue name makes the section disagree with the header, and puts it out of reach of a
         // search for the name the operator gave it.
-        return {
-            ...(published ?? { fieldSource: column.fieldSource, fieldIdentifier: column.fieldIdentifier }),
-            fieldLabel: getColumnHeading(column),
-        } as SourcedCatalogueField;
+        return published ? { ...published, fieldLabel: getColumnHeading(column) } : toMenuField(column);
     });
 
     // Taken out of the source columns whether or not the search keeps them in the shown section, or a
     // search that hides a column from the top would put it back among the fields on offer.
     const shownKeys = new Set(onTable.map(getColumnKey));
-    const remaining = fields.filter((field) => !shownKeys.has(getColumnKey(field)));
+    const remaining = offered.filter((field) => !shownKeys.has(getColumnKey(field)));
     const shown = onTable.filter((field) => matchesFieldSearch(field, search));
     const matched = new Map(groupCatalogueFields(remaining, search).map((group) => [group.source, group.fields]));
 
@@ -71,7 +84,7 @@ export function toMenuContents(fields: SourcedCatalogueField[], columns: ColumnD
         sources: MENU_SOURCE_ORDER.map((source) => ({
             source,
             fields: matched.get(source) ?? [],
-            isPublishing: fields.some((field) => field.fieldSource === source),
+            isPublishing: offered.some((field) => field.fieldSource === source),
             isExhausted: !remaining.some((field) => field.fieldSource === source),
         })),
     };
