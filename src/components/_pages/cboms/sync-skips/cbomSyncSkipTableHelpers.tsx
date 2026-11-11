@@ -3,6 +3,7 @@ import type { TableDataRow, TableHeader } from 'components/CustomTable';
 import WidgetButtons, { type WidgetButtonProps } from 'components/WidgetButtons';
 import type { EnumItemModel } from 'types/enums';
 import { type CbomSyncSkipDto, CbomSyncSkipState } from 'types/openapi';
+import type { Availability } from 'utils/availability';
 
 type PlatformEnumMap = { [key: string]: EnumItemModel } | undefined;
 
@@ -12,6 +13,7 @@ export interface BuildCbomSyncSkipRowsOpts {
     dateFormatter: (date: string | Date) => string;
     /** The row a retry is in flight for. While one is, every row's button refuses a click, not only that row's. */
     retryingUuid?: string;
+    retryRequires?: Availability;
     onRetry: (skip: CbomSyncSkipDto) => void;
 }
 
@@ -33,7 +35,7 @@ export const CBOM_SYNC_SKIP_HEADERS: TableHeader[] = [
 
 export function buildCbomSyncSkipRows(
     skips: readonly CbomSyncSkipDto[],
-    { stateEnum, getEnumLabel, dateFormatter, retryingUuid, onRetry }: BuildCbomSyncSkipRowsOpts,
+    { stateEnum, getEnumLabel, dateFormatter, retryingUuid, retryRequires, onRetry }: BuildCbomSyncSkipRowsOpts,
 ): TableDataRow[] {
     return skips.map((skip) => ({
         id: skip.uuid,
@@ -51,13 +53,18 @@ export function buildCbomSyncSkipRows(
                 {skip.firstSkippedAt ? dateFormatter(skip.firstSkippedAt) : ''}
             </span>,
             skip.reason,
-            renderActions(skip, retryingUuid, onRetry),
+            renderActions(skip, retryingUuid, retryRequires, onRetry),
         ],
     }));
 }
 
 /** Only a written-off row offers a retry: a retrying row is already on the next run's list. */
-function renderActions(skip: CbomSyncSkipDto, retryingUuid: string | undefined, onRetry: (skip: CbomSyncSkipDto) => void): ReactNode {
+function renderActions(
+    skip: CbomSyncSkipDto,
+    retryingUuid: string | undefined,
+    retryRequires: Availability | undefined,
+    onRetry: (skip: CbomSyncSkipDto) => void,
+): ReactNode {
     if (skip.state !== CbomSyncSkipState.PermanentlySkipped) {
         return null;
     }
@@ -68,6 +75,7 @@ function renderActions(skip: CbomSyncSkipDto, retryingUuid: string | undefined, 
             disabled: retryingUuid !== undefined,
             tooltip: 'Retry on the next sync run',
             disabledTooltip: 'A retry is already in flight',
+            requires: retryRequires,
             'aria-label': 'Retry skipped document',
             onClick: (e) => {
                 e.stopPropagation();

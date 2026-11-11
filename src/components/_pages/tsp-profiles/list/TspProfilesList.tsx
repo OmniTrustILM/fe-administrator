@@ -14,11 +14,13 @@ import { EntityType } from 'ducks/filters';
 import { selectors as pagingSelectors } from 'ducks/paging';
 import { actions, selectors } from 'ducks/tsp-profiles';
 import type { SearchRequestModel } from 'types/certificate';
-import { Resource } from 'types/openapi';
+import { Resource, ResourceAction } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 export const TspProfilesList = () => {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.TspProfiles);
     const navigate = useNavigate();
 
     const checkedRows = useSelector(pagingSelectors.checkedRows(EntityType.TSP_PROFILE));
@@ -135,6 +137,7 @@ export const TspProfilesList = () => {
             <PagedList
                 entity={EntityType.TSP_PROFILE}
                 onListCallback={onListCallback}
+                deleteRequires={can(ResourceAction.Delete, { onObjects: true })}
                 onDeleteCallback={(uuids) => dispatch(actions.bulkDeleteTspProfiles({ uuids }))}
                 headers={tableHeader}
                 data={tableData}
@@ -154,22 +157,25 @@ export const TspProfilesList = () => {
                             icon: 'plus' as const,
                             disabled: false,
                             tooltip: 'Create TSP Profile',
+                            requires: can(ResourceAction.Create),
                             onClick: () => navigate('./add'),
                         },
                         {
                             icon: 'check' as const,
                             disabled: checkedRows.length === 0,
                             tooltip: 'Enable',
+                            requires: can(ResourceAction.Enable, { onObjects: true }),
                             onClick: onEnableClick,
                         },
                         {
                             icon: 'times' as const,
                             disabled: checkedRows.length === 0,
                             tooltip: 'Disable',
+                            requires: can(ResourceAction.Enable, { onObjects: true }),
                             onClick: onDisableClick,
                         },
                     ],
-                    [checkedRows, navigate, onEnableClick, onDisableClick],
+                    [checkedRows, navigate, onEnableClick, onDisableClick, can],
                 )}
                 addHidden
                 hasCheckboxes

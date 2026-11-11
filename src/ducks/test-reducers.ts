@@ -360,10 +360,14 @@ function authTestReducer(state: AuthTestState | undefined, _action: UnknownActio
 }
 
 export type ResourceTestState = {
+    resourcesList: Array<{ resource: string; hasObjectAccess: boolean; hasOwner: boolean }>;
+    isFetchingResourcesList: boolean;
     objectAllowedActions: Record<string, { status: 'loading' | 'failed' } | { status: 'loaded'; allowedActions?: string[] }>;
 };
 
 const resourceTestInitialState: ResourceTestState = {
+    resourcesList: [],
+    isFetchingResourcesList: false,
     objectAllowedActions: {},
 };
 

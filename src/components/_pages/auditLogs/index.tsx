@@ -15,8 +15,9 @@ import CustomTable, { type TableDataRow } from 'components/CustomTable';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import type { SearchRequestModel } from 'types/certificate';
 import PagedList from 'components/PagedList/PagedList';
-import { type AuditLogDto, PlatformEnum } from 'types/openapi';
+import { type AuditLogDto, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
 import { auditLogsDetailRowHeaders, auditLogsRowHeaders, createAuditLogDetailData, createAuditLogsList } from './utils';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 type AuditLogDetailItem = {
     property: string;
@@ -25,6 +26,7 @@ type AuditLogDetailItem = {
 
 function AuditLogs() {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.AuditLogs);
     const navigate = useNavigate();
 
     const auditLogs = useSelector(selectors.auditLogs);
@@ -56,6 +58,7 @@ function AuditLogs() {
                 icon: 'download',
                 disabled: false,
                 tooltip: 'Export Audit logs',
+                requires: can(ResourceAction.Export),
                 onClick: () => {
                     exportCallback();
                 },
@@ -64,12 +67,13 @@ function AuditLogs() {
                 icon: 'trash',
                 disabled: false,
                 tooltip: 'Purge Audit logs',
+                requires: can(ResourceAction.Delete),
                 onClick: () => {
                     purgeCallback();
                 },
             },
         ],
-        [exportCallback, purgeCallback],
+        [exportCallback, purgeCallback, can],
     );
 
     const onLinkClick = useCallback(() => {

@@ -46,6 +46,8 @@ test.describe('useActionAvailability', () => {
                     auth: { profile: profileWithout },
                     enums,
                     resource: {
+                        resourcesList: [],
+                        isFetchingResourcesList: false,
                         objectAllowedActions: {
                             [`${Resource.Secrets}/uuid-1`]: { status: 'loaded', allowedActions: [ResourceAction.Update] },
                         },

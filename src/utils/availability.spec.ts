@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { UserProfileDetailModel } from 'types/auth';
+import type { ResourceModel } from 'types/resource';
 import { Resource, ResourceAction } from 'types/openapi';
 import { type ActionRule, missingPermissionReason, resolveAvailability } from './availability';
-import { objectAnswerFor } from './useActionAvailability';
+import { objectAccessOf, objectAnswerFor } from './useActionAvailability';
 
 const profileWith = (allowedActions: UserProfileDetailModel['permissions']['allowedActions']): UserProfileDetailModel =>
     ({ permissions: { allowedListings: [], allowedActions } }) as unknown as UserProfileDetailModel;
@@ -88,5 +89,62 @@ describe('objectAnswerFor', () => {
 
     it('returns no answer when no object is requested', () => {
         expect(objectAnswerFor({ status: 'failed' }, undefined)).toBeUndefined();
+    });
+});
+
+describe('resolveAvailability for an action on objects', () => {
+    const onObjects: ActionRule = { ...rule, onObjects: true };
+
+    it('stays available on a resource with object access the profile grants nothing on, and the server decides', () => {
+        expect(resolveAvailability({ rule: onObjects, profile: withoutGrants, objectAccess: true, labels })).toEqual(available);
+    });
+
+    it('lets the profile decide on a resource without object access', () => {
+        expect(resolveAvailability({ rule: onObjects, profile: withoutGrants, objectAccess: false, labels })).toEqual(denied);
+    });
+
+    it('reports loading while object access is unknown', () => {
+        expect(resolveAvailability({ rule: onObjects, profile: withoutGrants, objectAccess: 'loading', labels })).toEqual({
+            available: false,
+            hidden: false,
+            loading: true,
+        });
+    });
+
+    it('lets an object answer decide even on a resource with object access', () => {
+        expect(
+            resolveAvailability({
+                rule: onObjects,
+                profile: withoutGrants,
+                objectAnswer: { status: 'loaded', allowedActions: [ResourceAction.Detail] },
+                objectAccess: true,
+                labels,
+            }),
+        ).toEqual(denied);
+    });
+
+    it('does not apply object access to an action not on objects', () => {
+        expect(resolveAvailability({ rule, profile: withoutGrants, objectAccess: true, labels })).toEqual(denied);
+    });
+});
+
+describe('objectAccessOf', () => {
+    const entry = (resource: Resource, hasObjectAccess: boolean, hasOwner: boolean) =>
+        ({ resource, hasObjectAccess, hasOwner }) as ResourceModel;
+
+    it('reports object access for a resource whose objects can be granted', () => {
+        expect(objectAccessOf([entry(Resource.RaProfiles, true, false)], true, Resource.RaProfiles)).toBe(true);
+    });
+
+    it('reports no object access for an owned resource, whose actions also check the resource', () => {
+        expect(objectAccessOf([entry(Resource.Secrets, false, true)], true, Resource.Secrets)).toBe(false);
+    });
+
+    it('reports loading until the list settles', () => {
+        expect(objectAccessOf([], false, Resource.Secrets)).toBe('loading');
+    });
+
+    it('reports no object access for a resource missing from a settled list, as after a failed request', () => {
+        expect(objectAccessOf([], true, Resource.Secrets)).toBe(false);
     });
 });

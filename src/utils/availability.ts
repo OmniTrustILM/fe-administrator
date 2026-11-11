@@ -6,6 +6,11 @@ export type ActionRule = {
     resource: Resource;
     action: ResourceAction;
     hideWhenDenied?: boolean;
+    /**
+     * The action acts on existing objects, such as the rows selected in a list, and core checks it on each object.
+     * Leave it unset for an action core checks only on the resource as a whole, even on objects.
+     */
+    onObjects?: boolean;
 };
 
 /**
@@ -35,23 +40,34 @@ export const missingPermissionReason = ({ resource, action }: AvailabilityLabels
 const LOADING: Availability = { available: false, hidden: false, loading: true };
 const AVAILABLE: Availability = { available: true, hidden: false, loading: false };
 
+/** Whether the resource's objects can be granted one by one; `'loading'` until the resource list is in. */
+export type ObjectAccess = boolean | 'loading';
+
 /**
  * Decides whether one action is offered. An object answer, when there is one, decides on its own, because it already
- * counts ownership, group access and grants on the object, none of which the profile reports. Without one, or when the
- * request for it failed, the resource-level grants in the profile decide.
+ * counts ownership, group access and grants on the object, none of which the profile reports. Without one, an action on
+ * objects of a resource with object access stays available and the server decides, since the user may hold it on some
+ * objects. Otherwise, or when the request for the answer failed, the resource-level grants in the profile decide.
  */
 export function resolveAvailability({
     rule,
     profile,
     objectAnswer,
+    objectAccess,
     labels,
 }: {
     rule: ActionRule;
     profile: UserProfileDetailModel | undefined;
     objectAnswer?: ObjectAllowedActionsAnswer;
+    objectAccess?: ObjectAccess;
     labels: AvailabilityLabels;
 }): Availability {
     if (!profile || objectAnswer?.status === 'loading') return LOADING;
+
+    if (rule.onObjects && objectAnswer?.status !== 'loaded') {
+        if (objectAccess === 'loading') return LOADING;
+        if (objectAccess) return AVAILABLE;
+    }
 
     const allowed =
         objectAnswer?.status === 'loaded'
