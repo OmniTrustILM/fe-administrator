@@ -198,3 +198,8 @@ export const optionListSelectMockModule = () => ({
         </button>
     ),
 });
+
+/** Offers every action, for a page test about something other than permissions. */
+export const actionAvailabilityMockModule = () => ({
+    useActionAvailability: () => () => ({ available: true, hidden: false, loading: false }),
+});

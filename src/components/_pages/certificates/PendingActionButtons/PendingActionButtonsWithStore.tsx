@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import { type CertificatesTestState, testInitialState } from 'ducks/test-reducers';
+import { Resource, ResourceAction } from 'types/openapi';
 import { useRecordingStore } from 'utils/test-helpers';
 import PendingActionButtons from './index';
 import PendingActionDialogs from './PendingActionDialogs';
@@ -24,8 +25,19 @@ function ButtonsAndDialogs({ certificate, compact }: Omit<PendingActionButtonsWi
     );
 }
 
+const pendingActionsProfile = {
+    username: 'operator',
+    permissions: {
+        allowedListings: [],
+        allowedActions: [{ resource: Resource.Certificates, actions: [ResourceAction.Issue, ResourceAction.Revoke] }],
+    },
+};
+
 export default function PendingActionButtonsWithStore({ preloadedState, ...props }: PendingActionButtonsWithStoreProps) {
-    const state = useMemo(() => ({ certificates: { ...testInitialState.certificates, ...preloadedState } }), [preloadedState]);
+    const state = useMemo(
+        () => ({ certificates: { ...testInitialState.certificates, ...preloadedState }, auth: { profile: pendingActionsProfile } }),
+        [preloadedState],
+    );
     const { store, dispatched } = useRecordingStore(state, 'certificates/manuallyIssueCertificate');
     const manualIssuePayload = dispatched.at(-1)?.payload;
 

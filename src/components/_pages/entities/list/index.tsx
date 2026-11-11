@@ -16,9 +16,12 @@ import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { EntityType } from 'ducks/filters';
 import type { SearchRequestModel } from 'types/certificate';
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 function EntityList() {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.Entities);
 
     const entities = useSelector(selectors.entities);
 
@@ -103,10 +106,11 @@ function EntityList() {
                 icon: 'plus',
                 disabled: isBusy,
                 tooltip: 'Create',
+                requires: can(ResourceAction.Create),
                 onClick: handleOpenAddModal,
             },
         ],
-        [isBusy, handleOpenAddModal],
+        [isBusy, handleOpenAddModal, can],
     );
 
     return (
@@ -114,6 +118,7 @@ function EntityList() {
             <PagedList
                 entity={EntityType.ENTITY}
                 onListCallback={onListCallback}
+                deleteRequires={can(ResourceAction.Delete, { onObjects: true })}
                 onDeleteCallback={(uuids) => dispatch(actions.bulkDeleteEntities({ uuids }))}
                 getAvailableFiltersApi={useCallback((apiClients: ApiClients) => apiClients.entities.getEntitySearchableFields(), [])}
                 headers={entitiesRowHeaders}

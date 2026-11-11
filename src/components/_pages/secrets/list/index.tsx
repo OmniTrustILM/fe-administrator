@@ -18,13 +18,15 @@ import { actions as vaultProfileActions, selectors as vaultProfileSelectors } fr
 
 import type { SearchRequestModel } from 'types/certificate';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { PlatformEnum, Resource, type SecretDto } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction, type SecretDto } from 'types/openapi';
 import { buildSecretCellRegistry, SECRET_COLUMNS } from '../secretTableHelpers';
 
 import SecretForm from '../form';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 export default function SecretsList() {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.Secrets);
 
     const secrets = useSelector(selectors.secrets);
     const checkedRows = useSelector(pagingSelectors.checkedRows(EntityType.SECRET));
@@ -102,40 +104,46 @@ export default function SecretsList() {
                 icon: 'plus',
                 disabled: false,
                 tooltip: 'Create Secret',
+                requires: can(ResourceAction.Create),
                 onClick: () => setIsAddOpen(true),
             },
             {
                 icon: 'check',
                 disabled: checkedRows.length === 0,
                 tooltip: 'Enable selected Secrets',
+                requires: can(ResourceAction.Enable),
                 onClick: () => setIsEnableSecretsOpen(true),
             },
             {
                 icon: 'times',
                 disabled: checkedRows.length === 0,
                 tooltip: 'Disable selected Secrets',
+                requires: can(ResourceAction.Enable),
                 onClick: () => setIsDisableSecretsOpen(true),
             },
             {
                 icon: 'user-check',
                 disabled: checkedRows.length === 0,
                 tooltip: 'Override Owner',
+                requires: can(ResourceAction.Update),
                 onClick: () => setIsUpdateOwnerOpen(true),
             },
             {
                 icon: 'group',
                 disabled: checkedRows.length === 0,
                 tooltip: 'Override Groups',
+                requires: can(ResourceAction.Update),
                 onClick: () => setIsUpdateGroupsOpen(true),
             },
             {
                 icon: 'shield-check',
                 disabled: checkedRows.length === 0,
                 tooltip: 'Override Source Vault Profile',
+                requires: can(ResourceAction.Update),
                 onClick: () => setIsUpdateVaultProfileOpen(true),
             },
         ],
-        [checkedRows, setIsUpdateGroupsOpen, setIsUpdateOwnerOpen, setIsUpdateVaultProfileOpen],
+        [checkedRows, setIsUpdateGroupsOpen, setIsUpdateOwnerOpen, setIsUpdateVaultProfileOpen, can],
     );
 
     const userOptions = useMemo(
@@ -219,6 +227,7 @@ export default function SecretsList() {
             <PagedList
                 entity={EntityType.SECRET}
                 onListCallback={onListCallback}
+                deleteRequires={can(ResourceAction.Delete)}
                 onDeleteCallback={handleDeleteSecrets}
                 configurableColumns={configurableColumns}
                 isBusy={isBusy}

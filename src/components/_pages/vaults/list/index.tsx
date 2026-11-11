@@ -13,12 +13,14 @@ import { EntityType } from 'ducks/filters';
 
 import type { SearchRequestModel } from 'types/certificate';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { Resource } from 'types/openapi';
+import { Resource, ResourceAction } from 'types/openapi';
 
 import VaultForm from '../form';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 export default function VaultsList() {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.Vaults);
 
     const vaults = useSelector(vaultSelectors.vaults);
 
@@ -83,10 +85,11 @@ export default function VaultsList() {
                 icon: 'plus',
                 disabled: false,
                 tooltip: 'Create Vault',
+                requires: can(ResourceAction.Create),
                 onClick: () => setIsAddOpen(true),
             },
         ],
-        [],
+        [can],
     );
 
     return (
@@ -94,6 +97,7 @@ export default function VaultsList() {
             <PagedList
                 entity={EntityType.VAULT}
                 onListCallback={onListCallback}
+                deleteRequires={can(ResourceAction.Delete)}
                 onDeleteCallback={(uuids) => uuids.forEach((uuid) => dispatch(vaultActions.deleteVault({ uuid: String(uuid) })))}
                 headers={headers}
                 data={rows}

@@ -7,10 +7,15 @@ import enumsReducer from 'ducks/enums';
 import filtersReducer from 'ducks/filters';
 import pagingReducer from 'ducks/paging';
 import userInterfaceReducer from 'ducks/user-interface';
-import type { CbomSyncSkipDto } from 'types/openapi';
+import { type CbomSyncSkipDto, Resource, ResourceAction } from 'types/openapi';
 import CbomSyncSkipsList from './index';
 
+const retryingProfile = {
+    permissions: { allowedListings: [], allowedActions: [{ resource: Resource.Cboms, actions: [ResourceAction.Update] }] },
+};
+
 const reducer = combineReducers({
+    auth: (state: { profile?: typeof retryingProfile } = { profile: retryingProfile }) => state,
     pagings: pagingReducer,
     filters: filtersReducer,
     userInterface: userInterfaceReducer,
