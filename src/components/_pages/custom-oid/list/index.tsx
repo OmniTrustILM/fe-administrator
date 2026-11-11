@@ -141,7 +141,7 @@ export default function CustomOIDList() {
             <PagedList
                 entity={EntityType.OID}
                 onListCallback={onListCallback}
-                deleteRequires={can(ResourceAction.Delete, { onObjects: true })}
+                deleteRequires={can(ResourceAction.Delete)}
                 onDeleteCallback={onDeleteCallback}
                 getAvailableFiltersApi={useCallback((apiClients: ApiClients) => apiClients.oids.getCustomOidEntrySearchableFields(), [])}
                 headers={oidsRowHeaders}
