@@ -77,7 +77,7 @@ function Button({
 
     const denied = !!requires && !requires.available;
     const isDisabled = disabled || denied;
-    const disabledReason = (denied ? requires?.reason : undefined) ?? disabledTooltip;
+    const disabledReason = (denied ? requires?.reason : undefined) ?? (disabled ? disabledTooltip : undefined);
 
     const buttonElement = (
         <button
