@@ -1,5 +1,6 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
-import type { Resource } from 'types/openapi';
+import type { Resource, ResourceAction } from 'types/openapi';
+import type { ObjectAllowedActionsAnswer } from 'utils/availability';
 import type { ResourceEventModel, ResourceModel } from 'types/resource';
 import { resetSliceState } from 'ducks/reducerUtils';
 import type { AppState } from 'ducks';
@@ -10,6 +11,7 @@ export type State = {
     resourceEvents: ResourceEventModel[];
     isFetchingResourcesList: boolean;
     isFetchingResourceEvents: boolean;
+    objectAllowedActions: Record<string, ObjectAllowedActionsAnswer>;
 };
 
 export const initialState: State = {
@@ -18,7 +20,10 @@ export const initialState: State = {
     resourceEvents: [],
     isFetchingResourcesList: false,
     isFetchingResourceEvents: false,
+    objectAllowedActions: {},
 };
+
+export const objectKey = (resource: Resource, uuid: string): string => `${resource}/${uuid}`;
 
 export const slice = createSlice({
     name: 'resource',
@@ -69,6 +74,22 @@ export const slice = createSlice({
 
         listResourceEventsFailure(state, action: PayloadAction<{ error: string | undefined }>) {
             state.isFetchingResourceEvents = false;
+        },
+
+        listObjectAllowedActions: (state, action: PayloadAction<{ resource: Resource; uuid: string }>) => {
+            state.objectAllowedActions[objectKey(action.payload.resource, action.payload.uuid)] = { status: 'loading' };
+        },
+
+        listObjectAllowedActionsSuccess(
+            state,
+            action: PayloadAction<{ resource: Resource; uuid: string; allowedActions: ResourceAction[] | undefined }>,
+        ) {
+            const { resource, uuid, allowedActions } = action.payload;
+            state.objectAllowedActions[objectKey(resource, uuid)] = { status: 'loaded', allowedActions };
+        },
+
+        listObjectAllowedActionsFailure(state, action: PayloadAction<{ resource: Resource; uuid: string }>) {
+            state.objectAllowedActions[objectKey(action.payload.resource, action.payload.uuid)] = { status: 'failed' };
         },
     },
 });

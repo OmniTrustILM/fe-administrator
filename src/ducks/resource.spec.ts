@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
-import reducer, { actions, initialState, selectors } from './resource';
+import { Resource, ResourceAction } from 'types/openapi';
+import reducer, { actions, initialState, objectKey, selectors } from './resource';
 
 const sampleResource = { name: 'CERTIFICATES', hasComplianceProfiles: true } as any;
 const sampleResourceNoCompliance = { name: 'KEYS', hasComplianceProfiles: false } as any;
@@ -142,5 +143,30 @@ describe('resource slice', () => {
             const s = { resource: { ...store.resource, resourcesList: [sampleResourceNoCompliance] } };
             expect(selectors.resourcesWithComplianceProfiles(s)).toEqual([]);
         });
+    });
+
+    test('listObjectAllowedActions marks the object as loading', () => {
+        const state = reducer(initialState, actions.listObjectAllowedActions({ resource: Resource.Secrets, uuid: 'uuid-1' }));
+        expect(state.objectAllowedActions[objectKey(Resource.Secrets, 'uuid-1')]).toEqual({ status: 'loading' });
+    });
+
+    test('listObjectAllowedActionsSuccess stores the object answer', () => {
+        const state = reducer(
+            initialState,
+            actions.listObjectAllowedActionsSuccess({
+                resource: Resource.Secrets,
+                uuid: 'uuid-1',
+                allowedActions: [ResourceAction.Update],
+            }),
+        );
+        expect(state.objectAllowedActions[objectKey(Resource.Secrets, 'uuid-1')]).toEqual({
+            status: 'loaded',
+            allowedActions: [ResourceAction.Update],
+        });
+    });
+
+    test('listObjectAllowedActionsFailure marks the object as failed', () => {
+        const state = reducer(initialState, actions.listObjectAllowedActionsFailure({ resource: Resource.Secrets, uuid: 'uuid-1' }));
+        expect(state.objectAllowedActions[objectKey(Resource.Secrets, 'uuid-1')]).toEqual({ status: 'failed' });
     });
 });

@@ -1,6 +1,6 @@
 import type { AppEpic } from 'ducks';
 import { iif, of } from 'rxjs';
-import { catchError, filter, map, switchMap } from 'rxjs/operators';
+import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
 import { extractError } from 'utils/net';
 import { slice } from './resource';
 
@@ -48,6 +48,25 @@ const listAllResourceEvents: AppEpic = (action$, state, deps) => {
     );
 };
 
-const epics = [listResources, listResourceEvents, listAllResourceEvents];
+// Failure is not reported: without an object answer the profile's resource-level grants still decide the controls.
+const listObjectAllowedActions: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.listObjectAllowedActions.match),
+        mergeMap(({ payload: { resource, uuid } }) =>
+            deps.apiClients.resources.listObjectAllowedActions({ resource, objectAllowedActionsRequestDto: { uuids: [uuid] } }).pipe(
+                map((response) =>
+                    slice.actions.listObjectAllowedActionsSuccess({
+                        resource,
+                        uuid,
+                        allowedActions: response.items.find((item) => item.uuid === uuid)?.allowedActions,
+                    }),
+                ),
+                catchError(() => of(slice.actions.listObjectAllowedActionsFailure({ resource, uuid }))),
+            ),
+        ),
+    );
+};
+
+const epics = [listResources, listResourceEvents, listAllResourceEvents, listObjectAllowedActions];
 
 export default epics;
