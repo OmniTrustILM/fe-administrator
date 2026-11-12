@@ -30,14 +30,13 @@ export const objectAccessOf = (resourcesList: ResourceModel[], settled: boolean,
     return settled ? false : 'loading';
 };
 
+export type ActionAvailability = (action: ResourceAction, options?: { hideWhenDenied?: boolean; onObjects?: boolean }) => Availability;
+
 /**
  * Answers which actions on `resource` are offered. Given `objectUuid`, it asks the server once for the actions allowed
  * on that object, so a page should call it once and pass the uuid it is about to fetch the detail for.
  */
-export function useActionAvailability(
-    resource: Resource,
-    objectUuid?: string,
-): (action: ResourceAction, options?: { hideWhenDenied?: boolean; onObjects?: boolean }) => Availability {
+export function useActionAvailability(resource: Resource, objectUuid?: string): ActionAvailability {
     const dispatch = useDispatch();
     const store = useStore<AppState>();
     const profile = useSelector((state: AppState) => state.auth?.profile);

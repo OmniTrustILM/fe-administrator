@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 
@@ -6,7 +6,10 @@ import certificatesReducer, { actions as certificateActions } from 'ducks/certif
 import { testInitialState } from 'ducks/test-reducers';
 
 import type { CertificateDetailResponseModel } from 'types/certificate';
-import { type CertificateRegistrationState, CertificateState } from 'types/openapi';
+import type { UserProfileDetailModel } from 'types/auth';
+import { type CertificateRegistrationState, CertificateState, Resource, type ResourceAction } from 'types/openapi';
+import { resolveAvailability } from 'utils/availability';
+import type { ActionAvailability } from 'utils/useActionAvailability';
 import { overlaySliceReducer, useRecordingStore } from 'utils/test-helpers';
 
 import CertificateDetailsContent from './CertificateDetailsContent';
@@ -14,6 +17,8 @@ import CertificateDetailsContent from './CertificateDetailsContent';
 export type CertificateDetailsContentTestWrapperProps = Readonly<{
     /** State of the certificate's registration authorization; omitted means the certificate has none. */
     registrationState?: CertificateRegistrationState;
+    /** What the allowed-actions endpoint answered for the certificate; omitted means every action. */
+    allowedActions?: ResourceAction[];
 }>;
 
 const testCertificate = (registrationState: CertificateRegistrationState | undefined): CertificateDetailResponseModel =>
@@ -47,8 +52,22 @@ const loadedRegisterSchema = { certificates: { ...testInitialState.certificates,
 
 const rootReducer = overlaySliceReducer('certificates', certificatesReducer, dialogActions);
 
-export function CertificateDetailsContentTestWrapper({ registrationState }: CertificateDetailsContentTestWrapperProps) {
+const profile = { username: 'user' } as UserProfileDetailModel;
+
+export function CertificateDetailsContentTestWrapper({ registrationState, allowedActions }: CertificateDetailsContentTestWrapperProps) {
     const certificate = useMemo(() => testCertificate(registrationState), [registrationState]);
+    const can: ActionAvailability = useCallback(
+        (action) =>
+            allowedActions
+                ? resolveAvailability({
+                      rule: { resource: Resource.Certificates, action },
+                      profile,
+                      objectAnswer: { status: 'loaded', allowedActions },
+                      labels: { resource: 'Certificates', action },
+                  })
+                : { available: true, hidden: false, loading: false },
+        [allowedActions],
+    );
     const [refetches, setRefetches] = useState(0);
 
     const { store, dispatched } = useRecordingStore(loadedRegisterSchema, 'certificates/', rootReducer);
@@ -61,6 +80,7 @@ export function CertificateDetailsContentTestWrapper({ registrationState }: Cert
                     validationResult={undefined}
                     isBusy={false}
                     getFreshCertificateDetail={() => setRefetches((count) => count + 1)}
+                    can={can}
                 />
                 {/* Stand-ins for the epics' outcomes. */}
                 <button
