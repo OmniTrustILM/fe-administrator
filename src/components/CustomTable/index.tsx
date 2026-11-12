@@ -721,7 +721,7 @@ function CustomTable({
                                                 type="button"
                                                 onClick={() => onColumnSortClick(header.id)}
                                                 className={cn(
-                                                    'group flex min-w-0 items-center gap-1 cursor-pointer',
+                                                    'group flex min-w-0 items-center gap-1 cursor-pointer [text-transform:inherit]',
                                                     'focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 rounded-xs',
                                                     header.info ? undefined : 'w-full',
                                                     alignment,
