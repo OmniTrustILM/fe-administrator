@@ -6,6 +6,7 @@ import { useMemo } from 'react';
 import { Link } from 'react-router';
 import type { SecretDto } from 'types/openapi';
 import { isEabSecret } from 'utils/acme-eab';
+import type { Availability } from 'utils/availability';
 
 type Props = Readonly<{
     secretUuids: string[];
@@ -13,6 +14,7 @@ type Props = Readonly<{
     isLoading: boolean;
     listError?: string;
     onGenerateKey: () => void;
+    generateRequires?: Availability;
 }>;
 
 const headers: TableHeader[] = [
@@ -45,7 +47,7 @@ function secretCell(uuid: string, secret: SecretDto | undefined, isLoading: bool
     );
 }
 
-export default function EabSecretsWidget({ secretUuids, secrets, isLoading, listError, onGenerateKey }: Props) {
+export default function EabSecretsWidget({ secretUuids, secrets, isLoading, listError, onGenerateKey, generateRequires }: Props) {
     const required = secretUuids.length > 0;
 
     const rows: TableDataRow[] = useMemo(
@@ -77,6 +79,7 @@ export default function EabSecretsWidget({ secretUuids, secrets, isLoading, list
                     'aria-label': 'Generate key',
                     tooltip: 'Generate a key to store in a secret',
                     disabled: false,
+                    requires: generateRequires,
                     onClick: onGenerateKey,
                 },
             ]}

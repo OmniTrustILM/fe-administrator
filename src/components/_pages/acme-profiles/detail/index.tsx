@@ -34,6 +34,7 @@ export default function AdministratorDetail() {
 
     const { id } = useParams();
     const can = useActionAvailability(Resource.AcmeProfiles, id);
+    const canOnSecrets = useActionAvailability(Resource.Secrets);
 
     const acmeProfile = useSelector(selectors.acmeProfile);
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
@@ -387,6 +388,7 @@ export default function AdministratorDetail() {
                             isLoading={isFetchingSecrets}
                             listError={secretsListError}
                             onGenerateKey={() => setIsKeyDialogOpen(true)}
+                            generateRequires={canOnSecrets(ResourceAction.Create)}
                         />
                     )}
                     <GenerateEabKeyDialog isOpen={isKeyDialogOpen} onClose={() => setIsKeyDialogOpen(false)} />

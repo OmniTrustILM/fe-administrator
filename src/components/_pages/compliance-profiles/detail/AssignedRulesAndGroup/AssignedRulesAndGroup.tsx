@@ -6,6 +6,7 @@ import Label from 'components/Label';
 import { actions, selectors } from 'ducks/compliance-profiles';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { type ComplianceProfileDtoV2, type ComplianceRuleAvailabilityStatus, PlatformEnum, type Resource } from 'types/openapi';
+import type { Availability } from 'utils/availability';
 import CustomTable from 'components/CustomTable';
 import WidgetButtons from 'components/WidgetButtons';
 import { useParams } from 'react-router';
@@ -31,9 +32,10 @@ type Props = Readonly<{
     setSelectedEntityDetails: (entityDetails: TRuleGroupType) => void;
     setIsEntityDetailMenuOpen: (isEntityDetailMenuOpen: boolean) => void;
     onReset?: (resetFn: () => void) => void;
+    requires?: Availability;
 }>;
 
-export default function AssignedRulesAndGroup({ profile, setSelectedEntityDetails, setIsEntityDetailMenuOpen, onReset }: Props) {
+export default function AssignedRulesAndGroup({ profile, setSelectedEntityDetails, setIsEntityDetailMenuOpen, onReset, requires }: Props) {
     const { id } = useParams();
     const dispatch = useDispatch();
 
@@ -108,6 +110,7 @@ export default function AssignedRulesAndGroup({ profile, setSelectedEntityDetail
                                     id: 'remove',
                                     icon: 'minus-square',
                                     disabled: false,
+                                    requires,
                                     tooltip: 'Remove',
                                     onClick: () => {
                                         if (!id) return;
@@ -143,7 +146,7 @@ export default function AssignedRulesAndGroup({ profile, setSelectedEntityDetail
                     ],
                 };
             }),
-        [dispatch, filteredAssignedRulesAndGroupList, id, resourceEnum, setIsEntityDetailMenuOpen, setSelectedEntityDetails],
+        [dispatch, filteredAssignedRulesAndGroupList, id, resourceEnum, setIsEntityDetailMenuOpen, setSelectedEntityDetails, requires],
     );
 
     const getInternalListOfGroupsAndRules = useCallback(

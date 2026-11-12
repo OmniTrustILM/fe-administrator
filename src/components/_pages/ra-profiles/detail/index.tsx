@@ -1069,7 +1069,13 @@ export default function RaProfileDetail() {
                                                         authorityUuid={requestAttributesAuthorityUuid}
                                                         raProfileUuid={raProfile.uuid}
                                                         certificateRequestAttributes={raProfile.certificateRequestAttributes}
+                                                        disabled={!can(ResourceAction.Update).available}
                                                     />
+                                                    {can(ResourceAction.Update).reason && (
+                                                        <p className="mt-4 text-sm text-content-muted">
+                                                            {can(ResourceAction.Update).reason}
+                                                        </p>
+                                                    )}
                                                 </Widget>
                                             )}
                                         </Container>

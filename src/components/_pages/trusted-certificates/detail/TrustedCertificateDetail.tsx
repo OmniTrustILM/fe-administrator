@@ -20,7 +20,8 @@ export const TrustedCertificateDetail = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { id } = useParams();
-    const can = useActionAvailability(Resource.TrustedCertificates, id);
+    // Core reports no per-object actions for this resource, so the profile's grants decide.
+    const can = useActionAvailability(Resource.TrustedCertificates);
 
     const trustedCertificate = useSelector(selectors.trustedCertificate);
     const isFetching = useSelector(selectors.isFetchingDetail);

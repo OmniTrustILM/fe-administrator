@@ -22,7 +22,8 @@ import DetailPageSkeleton from 'components/DetailPageSkeleton';
 const ApprovalProfileDetails = () => {
     const dispatch = useDispatch();
     const { id, version } = useParams();
-    const can = useActionAvailability(Resource.ApprovalProfiles, id);
+    // Core reports no per-object actions for this resource, so the profile's grants decide.
+    const can = useActionAvailability(Resource.ApprovalProfiles);
 
     const profileApprovalDetail = useSelector(profileApprovalSelectors.profileApprovalDetail);
     const isFetchingDetail = useSelector(profileApprovalSelectors.isFetchingDetail);

@@ -449,7 +449,7 @@ export default function ComplianceProfileDetail() {
                         <CustomTable headers={detailHeaders} data={detailData} />
                     </Widget>
                     <Container className="flex flex-col">
-                        <ProfileAssociations profile={profile} />
+                        <ProfileAssociations profile={profile} requires={can(ResourceAction.Update)} />
                         {profile && (
                             <CustomAttributeWidget
                                 resource={Resource.ComplianceProfiles}
@@ -466,12 +466,14 @@ export default function ComplianceProfileDetail() {
                         setSelectedEntityDetails={setSelectedEntityDetails}
                         setIsEntityDetailMenuOpen={setIsEntityDetailMenuOpen}
                         onReset={(resetFn) => setAssignedRulesResetFunction(() => resetFn)}
+                        requires={can(ResourceAction.Update)}
                     />
                     <AvailableRulesAndGroups
                         profile={profile}
                         setSelectedEntityDetails={setSelectedEntityDetails}
                         setIsEntityDetailMenuOpen={setIsEntityDetailMenuOpen}
                         onReset={(resetFn) => setAvailableRulesResetFunction(() => resetFn)}
+                        requires={can(ResourceAction.Update)}
                     />
                 </Container>
                 {profile && (

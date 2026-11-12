@@ -551,6 +551,7 @@ export default function SigningProfileDetail() {
                     <ProgressButton
                         key="actions"
                         type="button"
+                        requires={can(ResourceAction.Update)}
                         title={tspActivationDetails?.available ? 'Deactivate' : 'Activate'}
                         inProgressTitle={tspActivationDetails?.available ? 'Deactivating...' : 'Activating...'}
                         inProgress={isActivatingTsp || isDeactivatingTsp}
@@ -582,7 +583,7 @@ export default function SigningProfileDetail() {
                 ],
             },
         ],
-        [tspActivationDetails?.available, isActivatingTsp, isDeactivatingTsp, detailHeaders, tspActivationData, dispatch],
+        [tspActivationDetails?.available, isActivatingTsp, isDeactivatingTsp, detailHeaders, tspActivationData, dispatch, can],
     );
 
     // ─────────────────────────────────────────────────────────────────────────
