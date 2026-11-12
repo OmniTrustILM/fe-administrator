@@ -24,6 +24,11 @@ vi.mock('react-router', async () => {
     return secretDetailRouterMockModule;
 });
 
+vi.mock('utils/useActionAvailability', async () => {
+    const { actionAvailabilityMockModule } = await import('../../test-utils/mockModules');
+    return actionAvailabilityMockModule();
+});
+
 vi.mock('components/Breadcrumb', () => ({
     default: ({ items }: any) => <div>{items?.[1]?.label}</div>,
 }));

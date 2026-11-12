@@ -6,7 +6,6 @@ import Widget from 'components/Widget';
 
 import WidgetButtons, { type WidgetButtonProps } from 'components/WidgetButtons';
 
-import { selectors as authSelectors } from 'ducks/auth';
 import { actions, selectors } from 'ducks/cryptographic-keys';
 import { selectors as tokenProfileSelectors } from 'ducks/token-profiles';
 
@@ -18,9 +17,9 @@ import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EnumValueDescription } from 'components/EnumDescription';
 import Badge from 'components/Badge';
 import type { CryptographicKeyHistoryModel, CryptographicKeyItemDetailResponseModel } from 'types/cryptographic-keys';
-import { KeyCompromiseReason, KeyRequestType, KeyState, KeyType, KeyUsage, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { KeyCompromiseReason, KeyRequestType, KeyState, KeyType, KeyUsage, PlatformEnum, ResourceAction } from 'types/openapi';
 import { dateFormatter } from 'utils/dateUtil';
-import { hasResourceAction } from 'utils/permissions';
+import type { ActionAvailability } from 'utils/useActionAvailability';
 import KeyStateBadge from '../KeyStateBadge';
 import KeyStatus from '../KeyStatus';
 import KeyUsageSelect, { filterKeyUsagesByType } from 'components/_pages/cryptographic-keys/KeyUsageSelect';
@@ -46,6 +45,8 @@ type Props = Readonly<{
     supportedKeyUsages?: KeyUsage[];
     keyItem: CryptographicKeyItemDetailResponseModel;
     totalKeyItems: number;
+    /** Answers for the key the item belongs to, from the page that requested its allowed actions. */
+    can: ActionAvailability;
 }>;
 
 export default function CryptographicKeyItem({
@@ -55,12 +56,12 @@ export default function CryptographicKeyItem({
     supportedKeyUsages,
     keyItem,
     totalKeyItems,
+    can,
 }: Props) {
     const dispatch = useDispatch();
 
     const isUpdatingKeyItem = useSelector(selectors.isUpdatingKeyItem);
     const isExportingKey = useSelector(selectors.isExportingKey);
-    const profile = useSelector(authSelectors.profile);
 
     const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
 
@@ -223,7 +224,6 @@ export default function CryptographicKeyItem({
     const exportKeyRequestType = EXPORTABLE_ITEM_TYPE_TO_KEY_REQUEST_TYPE[keyItem.type];
 
     const canExportKeyItem =
-        hasResourceAction(profile, Resource.Keys, ResourceAction.ExportKey) &&
         !!exportKeyRequestType &&
         keyItem.exportable &&
         keyItem.state === KeyState.Active &&
@@ -236,6 +236,7 @@ export default function CryptographicKeyItem({
                 id: 'delete',
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => {
                     setConfirmDelete(true);
@@ -245,6 +246,7 @@ export default function CryptographicKeyItem({
                 id: 'enable',
                 icon: 'check',
                 disabled: keyItem.enabled,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Enable',
                 onClick: () => {
                     onEnableClick();
@@ -254,6 +256,7 @@ export default function CryptographicKeyItem({
                 id: 'disable',
                 icon: 'times',
                 disabled: !keyItem.enabled,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Disable',
                 onClick: () => {
                     onDisableClick();
@@ -263,6 +266,7 @@ export default function CryptographicKeyItem({
                 id: 'key',
                 icon: 'key',
                 disabled: !supportedKeyUsages,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Update Key Usage',
                 onClick: () => {
                     setKeyUsageUpdate(true);
@@ -272,6 +276,7 @@ export default function CryptographicKeyItem({
                 id: 'compromise',
                 icon: 'compromise',
                 disabled: ![KeyState.PreActive, KeyState.Active, KeyState.Deactivated].includes(keyItem.state),
+                requires: can(ResourceAction.Update),
                 tooltip: 'Compromise',
                 onClick: () => {
                     setConfirmCompromise(true);
@@ -281,6 +286,7 @@ export default function CryptographicKeyItem({
                 id: 'destroy',
                 icon: 'destroy',
                 disabled: ![KeyState.PreActive, KeyState.Compromised, KeyState.Deactivated].includes(keyItem.state),
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Destroy',
                 onClick: () => {
                     setConfirmDestroy(true);
@@ -291,6 +297,7 @@ export default function CryptographicKeyItem({
                 icon: 'sign',
                 disabled:
                     keyItem.state !== KeyState.Active || !keyItem.enabled || !keyItem.usage?.includes(KeyUsage.Sign) || !tokenInstanceUuid,
+                requires: can(ResourceAction.Sign),
                 tooltip: 'Sign',
                 onClick: () => {
                     setSignData(true);
@@ -304,6 +311,7 @@ export default function CryptographicKeyItem({
                     !keyItem.enabled ||
                     !keyItem.usage?.includes(KeyUsage.Verify) ||
                     !tokenInstanceUuid,
+                requires: can(ResourceAction.Verify),
                 tooltip: 'Verify',
                 onClick: () => {
                     setVerifyData(true);
@@ -316,6 +324,7 @@ export default function CryptographicKeyItem({
                 id: 'export',
                 icon: 'download',
                 disabled: false,
+                requires: can(ResourceAction.ExportKey),
                 tooltip: 'Export',
                 onClick: () => {
                     setExportKey(true);
@@ -335,6 +344,7 @@ export default function CryptographicKeyItem({
         tokenInstanceUuid,
         supportedKeyUsages,
         canExportKeyItem,
+        can,
     ]);
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -356,6 +366,7 @@ export default function CryptographicKeyItem({
                                   value={keyItem.name}
                                   onSave={(newKeyItemName) => onEditName(newKeyItemName)}
                                   busy={isUpdatingKeyItem}
+                                  requires={can(ResourceAction.Update)}
                                   formProps={{
                                       validate: composeValidators(validateRequired(), validateAlphaNumericWithSpecialChars()),
                                   }}
@@ -445,7 +456,7 @@ export default function CryptographicKeyItem({
                       },
                   ]
                 : [],
-        [keyItem, keyTypeEnum, isUpdatingKeyItem, onEditName, keyCompromiseReasonEnum],
+        [keyItem, keyTypeEnum, isUpdatingKeyItem, onEditName, keyCompromiseReasonEnum, can],
     );
 
     const historyHeaders: TableHeader[] = useMemo(

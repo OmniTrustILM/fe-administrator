@@ -15,6 +15,7 @@ import {
     KeyState,
     KeyType,
     KeyUsage,
+    ResourceAction,
     TokenInstanceStatus,
 } from 'types/openapi';
 import type { TokenProfileDetailResponseModel } from 'types/token-profiles';
@@ -305,7 +306,7 @@ test.describe('CryptographicKeyItem key export', () => {
         await expect(page.getByTestId('export-button')).toBeVisible();
     });
 
-    test('hides the Export button without the key export permission', async ({ mount, page }) => {
+    test('disables the Export button without the key export permission and names it', async ({ mount, page }) => {
         const tokenProfile = aProfileExporting({ [KeyRequestType.KeyPair]: [KeyAlgorithm.Rsa] });
         const cryptographicKey = aKeyWithExportableItem();
         await mount(
@@ -313,7 +314,9 @@ test.describe('CryptographicKeyItem key export', () => {
         );
 
         await expect(page.getByTestId('key-button')).toBeEnabled();
-        await expect(page.getByTestId('export-button')).toHaveCount(0);
+        await expect(page.getByTestId('export-button')).toBeDisabled();
+        await page.getByTestId('export-button').locator('..').hover();
+        await expect(page.getByRole('tooltip')).toContainText('permission');
     });
 
     test('hides the Export button for a public key item', async ({ mount, page }) => {
@@ -617,5 +620,40 @@ test.describe('CryptographicKeyDetail removal from the inventory', () => {
         await page.getByRole('button', { name: 'Remove', exact: true }).click();
 
         await expect(page.getByRole('button', { name: 'Remove from inventory' })).toBeDisabled();
+    });
+});
+
+test.describe('CryptographicKeyDetail actions by permission', () => {
+    const tokenProfile = aProfileExporting({ [KeyRequestType.KeyPair]: [KeyAlgorithm.Rsa] });
+
+    test('disables changing actions a read-only user lacks', async ({ mount, page }) => {
+        await mount(
+            <CryptographicKeyDetailWithStore
+                cryptographicKey={aKeyWithExportableItem()}
+                tokenProfile={tokenProfile}
+                allowedActions={[ResourceAction.List, ResourceAction.Detail]}
+            />,
+        );
+
+        for (const testId of ['pencil-button', 'trash-button', 'delete-button', 'disable-button', 'key-button', 'export-button']) {
+            await expect(page.getByTestId(testId)).toBeDisabled();
+        }
+        await expect(page.getByTestId('editable-cell-edit-btn')).toBeDisabled();
+    });
+
+    test('offers the actions the key answer allows, as for a key the user owns', async ({ mount, page }) => {
+        await mount(
+            <CryptographicKeyDetailWithStore
+                cryptographicKey={aKeyWithExportableItem()}
+                tokenProfile={tokenProfile}
+                canExportKeys={false}
+                allowedActions={[ResourceAction.Detail, ResourceAction.Update, ResourceAction.Delete, ResourceAction.Enable]}
+            />,
+        );
+
+        for (const testId of ['pencil-button', 'trash-button', 'delete-button', 'disable-button', 'key-button']) {
+            await expect(page.getByTestId(testId)).toBeEnabled();
+        }
+        await expect(page.getByTestId('export-button')).toBeDisabled();
     });
 });

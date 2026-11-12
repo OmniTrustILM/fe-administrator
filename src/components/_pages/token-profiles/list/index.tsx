@@ -16,12 +16,14 @@ import TokenStatusBadge from 'components/_pages/tokens/TokenStatusBadge';
 import { selectors as enumSelectors } from 'ducks/enums';
 import { EnumColumnDescription } from 'components/EnumDescription';
 import KeyUsageSelect from '../../cryptographic-keys/KeyUsageSelect';
-import { type KeyUsage, PlatformEnum } from 'types/openapi';
+import { type KeyUsage, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import type { TokenProfileResponseModel } from 'types/token-profiles';
 import { LockWidgetNameEnum } from 'types/user-interface';
 
 function TokenProfileList() {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.TokenProfiles);
 
     const checkedRows = useSelector(selectors.checkedRows);
     const tokenProfiles = useSelector(selectors.tokenProfiles);
@@ -116,12 +118,14 @@ function TokenProfileList() {
             {
                 icon: 'plus',
                 disabled: false,
+                requires: can(ResourceAction.Create),
                 tooltip: 'Create',
                 onClick: handleOpenAddModal,
             },
             {
                 icon: 'trash',
                 disabled: checkedRows.length === 0,
+                requires: can(ResourceAction.Delete, { onObjects: true }),
                 tooltip: 'Delete',
                 onClick: () => {
                     setConfirmDelete(true);
@@ -130,6 +134,7 @@ function TokenProfileList() {
             {
                 icon: 'check',
                 disabled: checkedRows.length === 0,
+                requires: can(ResourceAction.Enable, { onObjects: true }),
                 tooltip: 'Enable',
                 onClick: () => {
                     onEnableClick();
@@ -138,6 +143,7 @@ function TokenProfileList() {
             {
                 icon: 'times',
                 disabled: checkedRows.length === 0,
+                requires: can(ResourceAction.Enable, { onObjects: true }),
                 tooltip: 'Disable',
                 onClick: () => {
                     onDisableClick();
@@ -146,13 +152,14 @@ function TokenProfileList() {
             {
                 icon: 'key',
                 disabled: checkedRows.length === 0,
+                requires: can(ResourceAction.Update, { onObjects: true }),
                 tooltip: 'Update Key Usage',
                 onClick: () => {
                     setKeyUsageUpdate(true);
                 },
             },
         ],
-        [checkedRows, handleOpenAddModal, onEnableClick, onDisableClick],
+        [checkedRows, handleOpenAddModal, onEnableClick, onDisableClick, can],
     );
 
     const tokenProfilesTableHeaders: TableHeader[] = useMemo(
