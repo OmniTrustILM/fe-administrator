@@ -1,7 +1,8 @@
 import Button from 'components/Button';
-import { TriangleAlert, X } from 'lucide-react';
+import { TriangleAlert } from 'lucide-react';
 import type { PickerColumn } from 'types/tableColumns';
 import { getColumnHeading } from 'utils/tableColumns';
+import DismissButton from './DismissButton';
 
 type Props = Readonly<{
     /** The stored columns this table cannot render, which may be none even when it fell back. */
@@ -70,17 +71,7 @@ export default function UnresolvedColumnsNotice({
                     Remove from view
                 </Button>
             )}
-            {onDismiss && (
-                <button
-                    type="button"
-                    aria-label="Dismiss"
-                    onClick={onDismiss}
-                    className="ml-auto flex size-8 shrink-0 items-center justify-center rounded-md text-content-muted hover:bg-surface-hover hover:text-content focus-visible:outline-2 focus-visible:outline-offset-2"
-                    data-testid={`${dataTestId}-dismiss`}
-                >
-                    <X size={16} aria-hidden="true" />
-                </button>
-            )}
+            {onDismiss && <DismissButton onClick={onDismiss} dataTestId={`${dataTestId}-dismiss`} />}
         </output>
     );
 }
