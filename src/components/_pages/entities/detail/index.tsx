@@ -15,7 +15,8 @@ import EntityForm from '../form';
 
 import Label from 'components/Label';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { PlatformEnum, Resource } from '../../../../types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from '../../../../types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import { getEditAndDeleteWidgetButtons, createWidgetDetailHeaders } from 'utils/widget';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
@@ -28,6 +29,7 @@ export default function EntityDetail() {
     const dispatch = useDispatch();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Entities, id);
 
     const entity = useSelector(selectors.entity);
 
@@ -76,7 +78,10 @@ export default function EntityDetail() {
         setConfirmDelete(false);
     }, [entity, dispatch]);
 
-    const buttons: WidgetButtonProps[] = useMemo(() => getEditAndDeleteWidgetButtons(onEditClick, setConfirmDelete), [onEditClick]);
+    const buttons: WidgetButtonProps[] = useMemo(
+        () => getEditAndDeleteWidgetButtons(onEditClick, setConfirmDelete, can),
+        [onEditClick, can],
+    );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
 
@@ -141,6 +146,7 @@ export default function EntityDetail() {
                             resource={Resource.Entities}
                             resourceUuid={entity.uuid}
                             attributes={entity.customAttributes}
+                            requires={can(ResourceAction.Update)}
                         />
                     )}
 

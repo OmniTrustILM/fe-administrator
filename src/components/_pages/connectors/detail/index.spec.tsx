@@ -1,5 +1,5 @@
 import type { ConnectorResponseModel, HealthModel } from 'types/connectors';
-import { AuthType, ConnectorStatus, ConnectorVersion, HealthStatus } from 'types/openapi';
+import { AuthType, ConnectorStatus, ConnectorVersion, HealthStatus, ResourceAction } from 'types/openapi';
 import { expect, test, type Page } from '../../../../../playwright/ct-test';
 import ConnectorDetailWithStore from './ConnectorDetailWithStore';
 
@@ -39,4 +39,38 @@ test.describe('ConnectorDetail', () => {
             await expect.poll(() => sidewaysOverflow(page)).toBe(0);
         });
     }
+});
+
+test.describe('ConnectorDetail actions by permission', () => {
+    const actionButtons = ['pencil-button', 'trash-button', 'unplug-button', 'check-button'];
+
+    test('disables changing actions a read-only user lacks', async ({ mount, page }) => {
+        await mount(<ConnectorDetailWithStore connector={connector(ConnectorVersion.V1)} allowedActions={[ResourceAction.Detail]} />);
+
+        for (const testId of actionButtons) {
+            await expect(page.getByTestId(testId)).toBeDisabled();
+        }
+    });
+
+    test('offers the actions granted on this connector alone, without a resource grant', async ({ mount, page }) => {
+        await mount(
+            <ConnectorDetailWithStore
+                connector={connector(ConnectorVersion.V1)}
+                allowedActions={[ResourceAction.Detail, ResourceAction.Update, ResourceAction.Connect]}
+            />,
+        );
+
+        await expect(page.getByTestId('pencil-button')).toBeEnabled();
+        await expect(page.getByTestId('unplug-button')).toBeEnabled();
+        await expect(page.getByTestId('trash-button')).toBeDisabled();
+        await expect(page.getByTestId('check-button')).toBeDisabled();
+    });
+
+    test('offers every action to a fully privileged user as before', async ({ mount, page }) => {
+        await mount(<ConnectorDetailWithStore connector={connector(ConnectorVersion.V1)} />);
+
+        for (const testId of actionButtons) {
+            await expect(page.getByTestId(testId)).toBeEnabled();
+        }
+    });
 });

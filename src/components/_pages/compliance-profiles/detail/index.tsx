@@ -11,7 +11,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { ComplianceRuleAvailabilityStatus, PlatformEnum, Resource } from '../../../../types/openapi';
+import { ComplianceRuleAvailabilityStatus, PlatformEnum, Resource, ResourceAction } from '../../../../types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
@@ -38,6 +39,7 @@ export default function ComplianceProfileDetail() {
     const dispatch = useDispatch();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.ComplianceProfiles, id);
 
     const profile = useSelector(selectors.complianceProfile);
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
@@ -113,6 +115,7 @@ export default function ComplianceProfileDetail() {
             {
                 icon: 'gavel',
                 disabled: false,
+                requires: can(ResourceAction.CheckCompliance),
                 tooltip: 'Check Compliance',
                 onClick: () => {
                     setComplianceCheck(true);
@@ -122,6 +125,7 @@ export default function ComplianceProfileDetail() {
             {
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => {
                     setConfirmDelete(true);
@@ -129,7 +133,7 @@ export default function ComplianceProfileDetail() {
                 id: 'delete-compliance-profile',
             },
         ],
-        [],
+        [can],
     );
 
     const onDeleteConfirmed = useCallback(() => {
@@ -445,12 +449,13 @@ export default function ComplianceProfileDetail() {
                         <CustomTable headers={detailHeaders} data={detailData} />
                     </Widget>
                     <Container className="flex flex-col">
-                        <ProfileAssociations profile={profile} />
+                        <ProfileAssociations profile={profile} requires={can(ResourceAction.Update)} />
                         {profile && (
                             <CustomAttributeWidget
                                 resource={Resource.ComplianceProfiles}
                                 resourceUuid={profile.uuid}
                                 attributes={profile.customAttributes}
+                                requires={can(ResourceAction.Update)}
                             />
                         )}
                     </Container>
@@ -461,12 +466,14 @@ export default function ComplianceProfileDetail() {
                         setSelectedEntityDetails={setSelectedEntityDetails}
                         setIsEntityDetailMenuOpen={setIsEntityDetailMenuOpen}
                         onReset={(resetFn) => setAssignedRulesResetFunction(() => resetFn)}
+                        requires={can(ResourceAction.Update)}
                     />
                     <AvailableRulesAndGroups
                         profile={profile}
                         setSelectedEntityDetails={setSelectedEntityDetails}
                         setIsEntityDetailMenuOpen={setIsEntityDetailMenuOpen}
                         onReset={(resetFn) => setAvailableRulesResetFunction(() => resetFn)}
+                        requires={can(ResourceAction.Update)}
                     />
                 </Container>
                 {profile && (

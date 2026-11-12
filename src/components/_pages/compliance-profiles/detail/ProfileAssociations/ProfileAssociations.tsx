@@ -5,6 +5,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router';
 import { type ComplianceProfileDtoV2, PlatformEnum, type Resource } from 'types/openapi';
+import type { Availability } from 'utils/availability';
 import { LockWidgetNameEnum } from 'types/user-interface';
 
 import { actions, selectors } from 'ducks/compliance-profiles';
@@ -14,9 +15,10 @@ import { EnumColumnDescription } from 'components/EnumDescription';
 
 type Props = Readonly<{
     profile: ComplianceProfileDtoV2 | undefined;
+    requires?: Availability;
 }>;
 
-export default function ProfileAssociations({ profile }: Props) {
+export default function ProfileAssociations({ profile, requires }: Props) {
     const dispatch = useDispatch();
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
     const associationsOfComplianceProfile = useSelector(selectors.associationsOfComplianceProfile);
@@ -86,6 +88,7 @@ export default function ProfileAssociations({ profile }: Props) {
                                       id: 'remove',
                                       icon: 'minus-square',
                                       disabled: false,
+                                      requires,
                                       tooltip: 'Remove',
                                       onClick: () => {
                                           onDissociateRaProfile(associatedProfile.resource, associatedProfile.objectUuid);
@@ -95,7 +98,7 @@ export default function ProfileAssociations({ profile }: Props) {
                           />,
                       ],
                   })),
-        [associationsOfComplianceProfile, profile, resourceEnum, onDissociateRaProfile],
+        [associationsOfComplianceProfile, profile, resourceEnum, onDissociateRaProfile, requires],
     );
 
     const associationButtons: WidgetButtonProps[] = useMemo(
@@ -103,6 +106,7 @@ export default function ProfileAssociations({ profile }: Props) {
             {
                 icon: 'plus',
                 disabled: false,
+                requires,
                 tooltip: 'Associate Profile',
                 onClick: () => {
                     setIsAssociateProfileModalOpen(true);
@@ -110,7 +114,7 @@ export default function ProfileAssociations({ profile }: Props) {
                 dataTestId: 'add-association-button',
             },
         ],
-        [],
+        [requires],
     );
 
     return (

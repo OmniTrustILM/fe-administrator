@@ -19,7 +19,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import RaProfileForm from '../form';
 import RaProfileRequestAttributesWidget from '../RaProfileRequestAttributesWidget';
-import { Resource } from 'types/openapi';
+import { Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { renderProtocolDetail } from './renderProtocolDetail';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 
@@ -53,6 +54,9 @@ export default function RaProfileDetail() {
     const dispatch = useDispatch();
 
     const { id, authorityId } = useParams();
+    const can = useActionAvailability(Resource.RaProfiles, id);
+    const canOnComplianceProfiles = useActionAvailability(Resource.ComplianceProfiles);
+    const canOnApprovalProfiles = useActionAvailability(Resource.ApprovalProfiles);
 
     const raProfile = useSelector(raProfilesSelectors.raProfile);
 
@@ -343,6 +347,7 @@ export default function RaProfileDetail() {
                 id: 'edit',
                 icon: 'pencil',
                 disabled: authorityId === 'unknown',
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: () => {
                     onEditClick();
@@ -352,6 +357,7 @@ export default function RaProfileDetail() {
                 id: 'delete',
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => {
                     setConfirmDelete(true);
@@ -361,6 +367,7 @@ export default function RaProfileDetail() {
                 id: 'enable',
                 icon: 'check',
                 disabled: Boolean(raProfile?.enabled),
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Enable',
                 onClick: () => {
                     onEnableClick();
@@ -370,6 +377,7 @@ export default function RaProfileDetail() {
                 id: 'disable',
                 icon: 'times',
                 disabled: !raProfile?.enabled,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Disable',
                 onClick: () => {
                     onDisableClick();
@@ -379,13 +387,14 @@ export default function RaProfileDetail() {
                 id: 'check-compliance',
                 icon: 'gavel',
                 disabled: !raProfile?.authorityInstanceUuid || false,
+                requires: can(ResourceAction.CheckCompliance),
                 tooltip: 'Check Compliance',
                 onClick: () => {
                     setComplianceCheck(true);
                 },
             },
         ],
-        [raProfile, onEditClick, onDisableClick, onEnableClick, authorityId],
+        [raProfile, onEditClick, onDisableClick, onEnableClick, authorityId, can],
     );
 
     const complianceProfileButtons: WidgetButtonProps[] = useMemo(
@@ -393,6 +402,7 @@ export default function RaProfileDetail() {
             {
                 icon: 'plus',
                 disabled: false,
+                requires: canOnComplianceProfiles(ResourceAction.Update, { onObjects: true }),
                 tooltip: 'Associate Compliance Profile',
                 onClick: () => {
                     setAssociateComplianceProfile(true);
@@ -400,7 +410,7 @@ export default function RaProfileDetail() {
                 id: 'associate-compliance-profile',
             },
         ],
-        [],
+        [canOnComplianceProfiles],
     );
 
     const approvalProfilesButtons: WidgetButtonProps[] = useMemo(
@@ -409,6 +419,7 @@ export default function RaProfileDetail() {
                 id: 'add',
                 icon: 'plus',
                 disabled: false,
+                requires: canOnApprovalProfiles(ResourceAction.Update, { onObjects: true }),
                 tooltip: 'Associate Approval Profile',
                 onClick: () => {
                     setAssociateApprovalProfileDialog(true);
@@ -416,7 +427,7 @@ export default function RaProfileDetail() {
                 },
             },
         ],
-        [getFreshAllApprovalProfiles],
+        [getFreshAllApprovalProfiles, canOnApprovalProfiles],
     );
 
     const certificateValidationButtons: WidgetButtonProps[] = useMemo(
@@ -425,13 +436,14 @@ export default function RaProfileDetail() {
                 id: 'edit',
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit Validation Settings',
                 onClick: () => {
                     setCertificateValidationDialog(true);
                 },
             },
         ],
-        [],
+        [can],
     );
 
     const requestValidationButtons: WidgetButtonProps[] = useMemo(
@@ -440,13 +452,14 @@ export default function RaProfileDetail() {
                 id: 'edit',
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit Request Validation Settings',
                 onClick: () => {
                     setRequestValidationDialog(true);
                 },
             },
         ],
-        [],
+        [can],
     );
 
     const approvalProfilesHeaders: TableHeader[] = useMemo(
@@ -492,6 +505,7 @@ export default function RaProfileDetail() {
                                       id: 'remove',
                                       icon: 'minus-square',
                                       disabled: false,
+                                      requires: canOnApprovalProfiles(ResourceAction.Update, { onObjects: true }),
                                       tooltip: 'Remove',
                                       onClick: () => {
                                           setConfirmDeassociateApprovalProfileDialog({
@@ -506,7 +520,7 @@ export default function RaProfileDetail() {
                       ],
                   }))
                 : [],
-        [associatedApprovalProfiles],
+        [associatedApprovalProfiles, canOnApprovalProfiles],
     );
 
     const complianceProfileHeaders: TableHeader[] = useMemo(
@@ -546,6 +560,7 @@ export default function RaProfileDetail() {
                                       id: 'ra' + profile.uuid,
                                       icon: 'minus-square',
                                       disabled: false,
+                                      requires: canOnComplianceProfiles(ResourceAction.Update, { onObjects: true }),
                                       tooltip: 'Remove',
                                       onClick: () => {
                                           onDissociateComplianceProfile(profile.uuid);
@@ -556,7 +571,7 @@ export default function RaProfileDetail() {
                       ],
                   }))
                 : [],
-        [associatedComplianceProfiles, onDissociateComplianceProfile],
+        [associatedComplianceProfiles, onDissociateComplianceProfile, canOnComplianceProfiles],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -712,6 +727,7 @@ export default function RaProfileDetail() {
                     <ProgressButton
                         key="action"
                         type="button"
+                        requires={can(ResourceAction.Update)}
                         title={acmeDetails?.acmeAvailable ? 'Deactivate' : 'Activate'}
                         inProgressTitle={acmeDetails?.acmeAvailable ? 'Deactivating...' : 'Activating...'}
                         inProgress={isActivatingAcme || isDeactivatingAcme}
@@ -740,6 +756,7 @@ export default function RaProfileDetail() {
                     <ProgressButton
                         key="action"
                         type="button"
+                        requires={can(ResourceAction.Update)}
                         title={scepDetails?.scepAvailable ? 'Deactivate' : 'Activate'}
                         inProgressTitle={scepDetails?.scepAvailable ? 'Deactivating...' : 'Activating...'}
                         inProgress={isActivatingScep || isDeactivatingScep}
@@ -767,6 +784,7 @@ export default function RaProfileDetail() {
                     <ProgressButton
                         key="action"
                         type="button"
+                        requires={can(ResourceAction.Update)}
                         title={cmpDetails?.cmpAvailable ? 'Deactivate' : 'Activate'}
                         inProgressTitle={cmpDetails?.cmpAvailable ? 'Deactivating...' : 'Activating...'}
                         inProgress={isActivatingCmp || isDeactivatingCmp}
@@ -805,6 +823,7 @@ export default function RaProfileDetail() {
             openAcmeActivationDialog,
             openScepActivationDialog,
             openCmpActivationDialog,
+            can,
         ],
     );
 
@@ -1032,6 +1051,7 @@ export default function RaProfileDetail() {
                                                         resource={Resource.RaProfiles}
                                                         resourceUuid={raProfile.uuid}
                                                         attributes={raProfile.customAttributes}
+                                                        requires={can(ResourceAction.Update)}
                                                         className="w-full md:w-1/2"
                                                     />
                                                 )}
@@ -1049,7 +1069,13 @@ export default function RaProfileDetail() {
                                                         authorityUuid={requestAttributesAuthorityUuid}
                                                         raProfileUuid={raProfile.uuid}
                                                         certificateRequestAttributes={raProfile.certificateRequestAttributes}
+                                                        disabled={!can(ResourceAction.Update).available}
                                                     />
+                                                    {can(ResourceAction.Update).reason && (
+                                                        <p className="mt-4 text-sm text-content-muted">
+                                                            {can(ResourceAction.Update).reason}
+                                                        </p>
+                                                    )}
                                                 </Widget>
                                             )}
                                         </Container>

@@ -3,7 +3,16 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import Select from 'components/Select';
 import Button from 'components/Button';
 import Label from 'components/Label';
-import { type ComplianceProfileDtoV2, type ComplianceRuleListDto, FunctionGroupCode, PlatformEnum, type Resource } from 'types/openapi';
+import {
+    type ComplianceProfileDtoV2,
+    type ComplianceRuleListDto,
+    FunctionGroupCode,
+    PlatformEnum,
+    Resource,
+    ResourceAction,
+} from 'types/openapi';
+import type { Availability } from 'utils/availability';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router';
 import { actions, selectors, actions as complianceActions } from 'ducks/compliance-profiles';
@@ -82,10 +91,19 @@ type Props = Readonly<{
     setSelectedEntityDetails: (entityDetails: TRuleGroupType) => void;
     setIsEntityDetailMenuOpen: (isEntityDetailMenuOpen: boolean) => void;
     onReset?: (resetFn: () => void) => void;
+    requires?: Availability;
 }>;
 
-export default function AvailableRulesAndGroups({ profile, setSelectedEntityDetails, setIsEntityDetailMenuOpen, onReset }: Props) {
+export default function AvailableRulesAndGroups({
+    profile,
+    setSelectedEntityDetails,
+    setIsEntityDetailMenuOpen,
+    onReset,
+    requires,
+}: Props) {
     const { id } = useParams();
+    // Internal rules are not owned by one profile, so core checks their changes on compliance profiles as a whole.
+    const mayChangeInternalRules = useActionAvailability(Resource.ComplianceProfiles)(ResourceAction.Update);
     const dispatch = useDispatch();
 
     const isFetchingRules = useSelector(selectors.isFetchingRules);
@@ -281,6 +299,7 @@ export default function AvailableRulesAndGroups({ profile, setSelectedEntityDeta
                                     id: 'add',
                                     icon: 'plus',
                                     disabled: false,
+                                    requires,
                                     tooltip: 'Add',
                                     onClick: () => {
                                         if (ruleOrGroup.entityDetails?.entityType === 'rule') {
@@ -297,6 +316,7 @@ export default function AvailableRulesAndGroups({ profile, setSelectedEntityDeta
                                               id: 'delete',
                                               icon: 'trash',
                                               disabled: false,
+                                              requires: mayChangeInternalRules,
                                               tooltip: 'Delete',
                                               onClick: () => {
                                                   setDeletingInternalRuleId(ruleOrGroup.uuid);
@@ -306,6 +326,7 @@ export default function AvailableRulesAndGroups({ profile, setSelectedEntityDeta
                                               id: 'edit',
                                               icon: 'pencil',
                                               disabled: false,
+                                              requires: mayChangeInternalRules,
                                               tooltip: 'Edit',
                                               onClick: () => {
                                                   setEditingInternalRule(ruleOrGroup);
@@ -327,6 +348,8 @@ export default function AvailableRulesAndGroups({ profile, setSelectedEntityDeta
             setIsEntityDetailMenuOpen,
             onRuleAssign,
             onGroupAssign,
+            requires,
+            mayChangeInternalRules,
         ],
     );
 
@@ -388,6 +411,7 @@ export default function AvailableRulesAndGroups({ profile, setSelectedEntityDeta
                                     data-testid="add-internal-rule-button"
                                     variant="transparent"
                                     title="Create internal rule"
+                                    requires={mayChangeInternalRules}
                                     onClick={() => setIsAddingInternalRule(true)}
                                 >
                                     <Plus size={16} />
