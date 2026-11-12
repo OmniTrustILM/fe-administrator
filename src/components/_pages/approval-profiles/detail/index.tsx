@@ -10,7 +10,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import ApprovalProfileForm from '../form';
 import { ApproverType, type ProfileApprovalStepModel } from 'types/approval-profiles';
-import { PlatformEnum, Resource } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import Breadcrumb from 'components/Breadcrumb';
@@ -21,6 +22,7 @@ import DetailPageSkeleton from 'components/DetailPageSkeleton';
 const ApprovalProfileDetails = () => {
     const dispatch = useDispatch();
     const { id, version } = useParams();
+    const can = useActionAvailability(Resource.ApprovalProfiles, id);
 
     const profileApprovalDetail = useSelector(profileApprovalSelectors.profileApprovalDetail);
     const isFetchingDetail = useSelector(profileApprovalSelectors.isFetchingDetail);
@@ -73,17 +75,19 @@ const ApprovalProfileDetails = () => {
             {
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: () => onEditClick(),
             },
             {
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => setConfirmDelete(true),
             },
         ],
-        [onEditClick],
+        [onEditClick, can],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);

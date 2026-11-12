@@ -26,6 +26,7 @@ import {
     ManagedSigningType,
     PlatformEnum,
     Resource,
+    ResourceAction,
     SigningProtocol,
     SigningRecordPersistenceMode,
     SigningScheme,
@@ -36,6 +37,7 @@ import {
 import { isStaticKeyManagedSigning, isTimestampingWorkflow } from 'utils/type-guards';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders } from 'utils/widget';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 // ─── Label Helpers ────────────────────────────────────────────────────────────
 
@@ -77,6 +79,7 @@ export default function SigningProfileDetail() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { id } = useParams();
+    const can = useActionAvailability(Resource.SigningProfiles, id);
 
     // ── Selectors ──────────────────────────────────────────────────────────────
 
@@ -168,6 +171,7 @@ export default function SigningProfileDetail() {
                 id: 'edit',
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: onEditClick,
             },
@@ -175,6 +179,7 @@ export default function SigningProfileDetail() {
                 id: 'delete',
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => setConfirmDelete(true),
             },
@@ -182,6 +187,7 @@ export default function SigningProfileDetail() {
                 id: 'enable',
                 icon: 'check',
                 disabled: signingProfile?.enabled ?? true,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Enable',
                 onClick: onEnableClick,
             },
@@ -189,11 +195,12 @@ export default function SigningProfileDetail() {
                 id: 'disable',
                 icon: 'times',
                 disabled: !(signingProfile?.enabled ?? false),
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Disable',
                 onClick: onDisableClick,
             },
         ],
-        [signingProfile, onEditClick, onEnableClick, onDisableClick],
+        [signingProfile, onEditClick, onEnableClick, onDisableClick, can],
     );
 
     // ── Table headers ──────────────────────────────────────────────────────────
@@ -622,6 +629,7 @@ export default function SigningProfileDetail() {
                                                 resource={Resource.SigningProfiles}
                                                 resourceUuid={signingProfile.uuid}
                                                 attributes={signingProfile.customAttributes}
+                                                requires={can(ResourceAction.Update)}
                                             />
                                         )}
                                     </Container>

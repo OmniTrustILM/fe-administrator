@@ -15,7 +15,8 @@ import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { PlatformEnum, Resource } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import { createWidgetDetailHeaders, getGroupNames, getOwnerName } from 'utils/widget';
 import { actions as groupsActions, selectors as groupsSelectors } from 'ducks/certificateGroups';
@@ -30,6 +31,7 @@ export default function AdministratorDetail() {
     const dispatch = useDispatch();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.CmpProfiles, id);
 
     const cmpProfile = useSelector(selectors.cmpProfile);
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
@@ -110,6 +112,7 @@ export default function AdministratorDetail() {
             {
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: () => {
                     onEditClick();
@@ -118,6 +121,7 @@ export default function AdministratorDetail() {
             {
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => {
                     setConfirmDelete(true);
@@ -126,6 +130,7 @@ export default function AdministratorDetail() {
             {
                 icon: 'check',
                 disabled: cmpProfile?.enabled || false,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Enable',
                 onClick: () => {
                     onEnableClick();
@@ -134,13 +139,14 @@ export default function AdministratorDetail() {
             {
                 icon: 'times',
                 disabled: !(cmpProfile?.enabled || false),
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Disable',
                 onClick: () => {
                     onDisableClick();
                 },
             },
         ],
-        [cmpProfile, onEditClick, onDisableClick, onEnableClick],
+        [cmpProfile, onEditClick, onDisableClick, onEnableClick, can],
     );
 
     const tableHeader: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -345,6 +351,7 @@ export default function AdministratorDetail() {
                                 resource={Resource.CmpProfiles}
                                 resourceUuid={cmpProfile.uuid}
                                 attributes={cmpProfile.customAttributes}
+                                requires={can(ResourceAction.Update)}
                             />
                         )}
                     </Container>
