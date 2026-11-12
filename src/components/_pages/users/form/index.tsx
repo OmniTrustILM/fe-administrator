@@ -374,11 +374,13 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
 
     const roleOptions = useMemo(
         () =>
-            rolesSelector.map((role) => ({
-                value: role.uuid,
-                label: role.name,
-                description: [role.systemRole ? 'System role' : undefined, role.description].filter(Boolean).join(' · ') || undefined,
-            })),
+            [...rolesSelector]
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((role) => ({
+                    value: role.uuid,
+                    label: role.name,
+                    description: [role.systemRole ? 'System role' : undefined, role.description].filter(Boolean).join(' · ') || undefined,
+                })),
         [rolesSelector],
     );
 

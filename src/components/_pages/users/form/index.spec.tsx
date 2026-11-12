@@ -55,6 +55,13 @@ test.describe('UserForm', () => {
         await expect(page.getByRole('option', { name: /Administrator/ })).toHaveCount(0);
     });
 
+    test('lists roles in name order whatever order the API returns them in', async ({ mount, page }) => {
+        await mount(<UserFormWithStore roles={[ROLES[2], ROLES[0], ROLES[1]]} />);
+
+        await page.getByTestId('select-userRoles-trigger').click();
+        await expect(page.getByRole('option')).toHaveText([/^Administrator/, /^Auditor/, /^Operator/]);
+    });
+
     test('shows selected roles as removable chips', async ({ mount, page }) => {
         await mount(<UserFormWithStore roles={ROLES} />);
 
