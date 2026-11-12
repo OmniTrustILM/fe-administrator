@@ -142,3 +142,24 @@ test.describe('CustomAttributeWidget', () => {
         await expect(component.getByRole('heading', { name: 'Custom Attributes' })).toBeVisible();
     });
 });
+
+test.describe('CustomAttributeWidget without permission to change', () => {
+    const denied = { available: false, hidden: false, loading: false, reason: 'You need the Update permission on Certificates.' };
+    const descriptor = {
+        uuid: 'attr-1',
+        name: 'testAttr',
+        type: AttributeType.Custom,
+        contentType: AttributeContentType.String,
+        properties: { label: 'Test Attribute', readOnly: false, required: false, list: false, multiSelect: false, visible: true },
+    } as any;
+
+    test('shows the values read-only and names the missing permission', async ({ mount }) => {
+        const attributes = [{ ...descriptor, label: 'Test Attribute', content: [{ data: 'initial' }] }] as any;
+        const component = await mount(<CustomAttributeWidgetMountHarness attributes={attributes} requires={denied} />);
+
+        await expect(component.getByText('initial')).toBeVisible();
+        await expect(component.getByTestId('edit-button')).toHaveCount(0);
+        await expect(component.getByText('Add custom attribute')).toHaveCount(0);
+        await expect(component.getByText('You need the Update permission on Certificates.')).toBeVisible();
+    });
+});

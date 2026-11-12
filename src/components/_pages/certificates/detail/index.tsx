@@ -38,7 +38,9 @@ import { actions as raProfilesActions, selectors as raProfilesSelectors } from '
 import Button from 'components/Button';
 import type { AttributeDescriptorModel, AttributeResponseModel } from 'types/attributes';
 import type { CertificateListResponseModel } from 'types/certificate';
-import { PlatformEnum, Resource } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { selectors as authSelectors } from 'ducks/auth';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { downloadFile, getCertificateStatusColor } from 'utils/certificate';
@@ -184,6 +186,9 @@ export default function CertificateDetail() {
     const certificateDownloadContent = useSelector(selectors.certificateDownloadContent);
 
     const users = useSelector(userSelectors.users);
+    const can = useActionAvailability(Resource.Certificates, id);
+    const canOnLocations = useActionAvailability(Resource.Locations);
+    const mayListLocations = useSelector(authSelectors.profile)?.permissions.allowedListings.includes(Resource.Locations) ?? false;
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
     const eventHistory = useSelector(selectors.certificateHistory);
     const certLocations = useSelector(selectors.certificateLocations);
@@ -352,10 +357,10 @@ export default function CertificateDetail() {
     }, [dispatch, id, isDeassociating, isAssociating]);
 
     const getFreshCertificateLocations = useCallback(() => {
-        if (!id || isPushingCertificate || isRemovingCertificate) return;
+        if (!id || !mayListLocations || isPushingCertificate || isRemovingCertificate) return;
 
         dispatch(actions.listCertificateLocations({ uuid: id }));
-    }, [dispatch, isPushingCertificate, isRemovingCertificate, id]);
+    }, [dispatch, isPushingCertificate, isRemovingCertificate, id, mayListLocations]);
 
     const getFreshApprovalList = useCallback(() => {
         if (!id) return;
@@ -479,6 +484,7 @@ export default function CertificateDetail() {
             {
                 icon: 'plus',
                 disabled: isCertificateArchived,
+                requires: canOnLocations(ResourceAction.Update, { onObjects: true }),
                 tooltip: 'Push to location',
                 onClick: () => {
                     dispatch(locationActions.listLocations({}));
@@ -489,13 +495,14 @@ export default function CertificateDetail() {
             {
                 icon: 'trash',
                 disabled: locationsCheckedRows.length === 0,
+                requires: canOnLocations(ResourceAction.Update, { onObjects: true }),
                 tooltip: 'Remove',
                 onClick: () => {
                     setConfirmRemove(true);
                 },
             },
         ],
-        [locationsCheckedRows.length, isCertificateArchived, dispatch],
+        [locationsCheckedRows.length, isCertificateArchived, dispatch, canOnLocations],
     );
 
     const historyHeaders: TableHeader[] = useMemo(
@@ -880,6 +887,7 @@ export default function CertificateDetail() {
                 id: 'add_related_certificate',
                 icon: 'plus',
                 disabled: isCertificateArchived,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Add related certificate',
                 onClick: () => {
                     openAddRelatedCertificateDialog();
@@ -889,13 +897,14 @@ export default function CertificateDetail() {
                 id: 'remove_related_certificate',
                 icon: 'trash',
                 disabled: relatedCertificateCheckedRows.length === 0,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Remove',
                 onClick: () => {
                     setConfirmDeleteRelatedCertificate(true);
                 },
             },
         ];
-    }, [isCertificateArchived, relatedCertificateCheckedRows.length, openAddRelatedCertificateDialog]);
+    }, [isCertificateArchived, relatedCertificateCheckedRows.length, openAddRelatedCertificateDialog, can]);
 
     useEffect(() => {
         if (!selectedCertificate) {
@@ -1212,6 +1221,7 @@ export default function CertificateDetail() {
                                     validationResult={validationResult}
                                     isBusy={isBusy}
                                     getFreshCertificateDetail={getFreshCertificateDetail}
+                                    can={can}
                                 />
                             ),
                         },
@@ -1275,6 +1285,7 @@ export default function CertificateDetail() {
                                         <CustomAttributeWidget
                                             resource={Resource.Certificates}
                                             resourceUuid={certificate.uuid}
+                                            requires={can(ResourceAction.Update)}
                                             attributes={certificate.customAttributes}
                                         />
                                     )}
@@ -1328,6 +1339,7 @@ export default function CertificateDetail() {
                         },
                         {
                             title: 'Locations',
+                            hidden: !mayListLocations,
                             content: (
                                 <Widget
                                     title="Certificate Locations"

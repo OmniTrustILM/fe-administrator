@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { CertificateRegistrationState } from 'types/openapi';
+import { CertificateRegistrationState, ResourceAction } from 'types/openapi';
 import { expect, test } from '../../../../../playwright/ct-test';
 import { CertificateDetailsContentTestWrapper } from './CertificateDetailsContentTestWrapper';
 
@@ -123,5 +123,47 @@ test.describe('CertificateDetailsContent — renew and rekey dialogs', () => {
         await expect(page.getByTestId('rekeyDialogError')).toBeVisible();
 
         await dismissExpectingRefetches(page, 'progress-button', 1);
+    });
+});
+
+test.describe('CertificateDetailsContent — operations by permission', () => {
+    const readOnly = [ResourceAction.List, ResourceAction.Detail];
+    const owned = [
+        ResourceAction.Detail,
+        ResourceAction.Update,
+        ResourceAction.Delete,
+        ResourceAction.Renew,
+        ResourceAction.Revoke,
+        ResourceAction.Archive,
+    ];
+
+    test('disables operations a read-only user lacks and names the missing permission', async ({ mount, page }) => {
+        await mount(<CertificateDetailsContentTestWrapper allowedActions={readOnly} />);
+
+        for (const icon of ['trash', 'retweet', 'rekey', 'minus-square', 'archive']) {
+            await expect(page.getByTestId(`${icon}-button`)).toBeDisabled();
+        }
+        await expect(page.getByRole('button', { name: 'Update Owner' })).toBeDisabled();
+
+        await page.getByTestId('minus-square-button').locator('..').hover();
+        await expect(page.getByRole('tooltip')).toHaveText('You need the revoke permission on Certificates.');
+    });
+
+    test('offers the operations the certificate answer allows, as for a certificate the user owns', async ({ mount, page }) => {
+        await mount(<CertificateDetailsContentTestWrapper allowedActions={owned} />);
+
+        for (const icon of ['trash', 'retweet', 'rekey', 'minus-square', 'archive']) {
+            await expect(page.getByTestId(`${icon}-button`)).toBeEnabled();
+        }
+        await expect(page.getByRole('button', { name: 'Update Owner' })).toBeEnabled();
+    });
+
+    test('offers every operation to a fully privileged user as before', async ({ mount, page }) => {
+        await mount(<CertificateDetailsContentTestWrapper />);
+
+        for (const icon of ['trash', 'retweet', 'rekey', 'minus-square', 'archive']) {
+            await expect(page.getByTestId(`${icon}-button`)).toBeEnabled();
+        }
+        await expect(page.getByRole('button', { name: 'Update Owner' })).toBeEnabled();
     });
 });

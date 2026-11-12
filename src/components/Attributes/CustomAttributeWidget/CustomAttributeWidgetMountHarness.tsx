@@ -4,6 +4,7 @@ import { createMockStore } from 'utils/test-helpers';
 import CustomAttributeWidget from './index';
 import type { AttributeResponseModel, CustomAttributeModel } from 'types/attributes';
 import { Resource, AttributeType, AttributeContentType } from 'types/openapi';
+import type { Availability } from 'utils/availability';
 
 function minimalDescriptor(overrides: Partial<CustomAttributeModel> = {}): CustomAttributeModel {
     return {
@@ -30,6 +31,7 @@ type HarnessProps = {
     attributes?: AttributeResponseModel[];
     className?: string;
     availableAttributes?: CustomAttributeModel[];
+    requires?: Availability;
 };
 
 /**
@@ -42,6 +44,7 @@ export default function CustomAttributeWidgetMountHarness({
     attributes,
     className,
     availableAttributes = [minimalDescriptor()],
+    requires,
 }: Readonly<HarnessProps>) {
     const store = createMockStore({
         customAttributes: {
@@ -55,7 +58,13 @@ export default function CustomAttributeWidgetMountHarness({
     return (
         <Provider store={store}>
             <MemoryRouter>
-                <CustomAttributeWidget resource={resource} resourceUuid={resourceUuid} attributes={attributes} className={className} />
+                <CustomAttributeWidget
+                    resource={resource}
+                    resourceUuid={resourceUuid}
+                    attributes={attributes}
+                    className={className}
+                    requires={requires}
+                />
             </MemoryRouter>
         </Provider>
     );
