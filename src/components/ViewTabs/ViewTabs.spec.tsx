@@ -2101,6 +2101,22 @@ test.describe('ViewTabs switch notice', () => {
         await expect(notice(page)).toHaveCSS('position', 'static');
     });
 
+    test('keeps unsaved edits and reports nothing when the active tab is clicked again', async ({ mount, page }) => {
+        const editedFilter = { ...stateFilter, value: 'revoked' };
+        await mount(strip({ driftFilter: editedFilter }));
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await page.getByTestId('drift-filter').click();
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await settle(page);
+
+        expect((await appliedSlice(page)).filters).toEqual([editedFilter]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
+        await expect(notice(page)).toBeEmpty();
+    });
+
     test('says nothing on the view the strip opens on, which no switch replaced anything for', async ({ mount, page }) => {
         await mount(strip({ views: [expiryWatch({ defaultView: true })] }));
 

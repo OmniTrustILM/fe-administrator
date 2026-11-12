@@ -382,11 +382,12 @@ export default function ViewTabs({
 
     const select = useCallback(
         (id: string) => {
+            if (id === activeId) return;
             setDrillDownFilters(undefined);
             setActiveId(id);
             switchTo(views.find((view) => view.uuid === id));
         },
-        [switchTo, views],
+        [switchTo, views, activeId],
     );
 
     const liveListing = listingSignature({ filters, sort });
