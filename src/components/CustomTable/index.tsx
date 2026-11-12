@@ -15,8 +15,9 @@ import Checkbox from 'components/Checkbox';
 import SimpleBar from 'components/SimpleBar';
 import cn from 'classnames';
 import { useLocation } from 'react-router';
-import { ArrowDown, ArrowDownUp, ArrowUp, Search, TableProperties } from 'lucide-react';
+import { ArrowDown, ArrowDownUp, ArrowUp, Search } from 'lucide-react';
 import TableSkeleton, { TableSkeletonRows } from './TableSkeleton';
+import EmptyState from './EmptyState';
 
 export type { SortDirection, TableDataRow, TableHeader } from './types';
 
@@ -64,6 +65,8 @@ type Props = {
     disableSearchControls?: boolean;
     isLoading?: boolean;
     emptyStateDescription?: string;
+    /** Present while server-side filters are active; the empty state then offers to clear them. */
+    onClearFilters?: () => void;
     /**
      * A control rendered in a trailing header cell of its own, after the last data column. Every row
      * gains a matching empty cell, so it is a column the table owns rather than one of the caller's:
@@ -146,6 +149,7 @@ function CustomTable({
     disableSearchControls = false,
     isLoading = false,
     emptyStateDescription = 'There are no records to display here yet',
+    onClearFilters,
     trailingHeaderAction,
     renderHeaderAction,
     renderHeaderLead,
@@ -947,21 +951,11 @@ function CustomTable({
                                 </div>
                             </SimpleBar>
                             {!isLoading && body.length === 0 && (
-                                <div className="flex flex-col items-center justify-center gap-3 py-8">
-                                    <div className="flex items-center justify-center w-14 h-14 rounded-full bg-surface-sunken">
-                                        <TableProperties size={28} strokeWidth={1.5} className="text-content-subtle" />
-                                    </div>
-                                    <div className="flex flex-col items-center gap-1">
-                                        <span className="text-sm font-medium text-content-muted">
-                                            {data.length > 0 ? 'No matching items' : 'No items to show'}
-                                        </span>
-                                        <span className="text-xs text-content-subtle">
-                                            {data.length > 0
-                                                ? 'Try adjusting your search or filters to see results'
-                                                : emptyStateDescription}
-                                        </span>
-                                    </div>
-                                </div>
+                                <EmptyState
+                                    isSearchMiss={data.length > 0}
+                                    emptyStateDescription={emptyStateDescription}
+                                    onClearFilters={onClearFilters}
+                                />
                             )}
                         </div>
                     )}
