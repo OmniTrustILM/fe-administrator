@@ -13,9 +13,12 @@ import { selectors as pagingSelectors } from 'ducks/paging';
 import { actions, selectors } from 'ducks/time-quality-configurations';
 import type { SearchRequestModel } from 'types/certificate';
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 export const TimeQualityConfigurationsList = () => {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.TimeQualityConfigurations);
     const navigate = useNavigate();
 
     const checkedRows = useSelector(pagingSelectors.checkedRows(EntityType.TIME_QUALITY_CONFIGURATION));
@@ -89,6 +92,7 @@ export const TimeQualityConfigurationsList = () => {
             <PagedList
                 entity={EntityType.TIME_QUALITY_CONFIGURATION}
                 onListCallback={onListCallback}
+                deleteRequires={can(ResourceAction.Delete, { onObjects: true })}
                 onDeleteCallback={(uuids) => dispatch(actions.bulkDeleteTimeQualityConfigurations({ uuids }))}
                 headers={tableHeader}
                 data={tableData}
@@ -108,10 +112,11 @@ export const TimeQualityConfigurationsList = () => {
                             icon: 'plus' as const,
                             disabled: false,
                             tooltip: 'Create Time Quality Configuration',
+                            requires: can(ResourceAction.Create),
                             onClick: () => navigate('./add'),
                         },
                     ],
-                    [navigate],
+                    [navigate, can],
                 )}
                 addHidden
                 hasCheckboxes

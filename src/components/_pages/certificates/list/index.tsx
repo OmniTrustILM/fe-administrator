@@ -20,9 +20,10 @@ import { actions as userAction, selectors as userSelectors } from 'ducks/users';
 import type { CertificateListResponseModel, SearchRequestModel } from 'types/certificate';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { dateFormatter } from 'utils/dateUtil';
-import { type CertificateState, PlatformEnum, Resource } from '../../../../types/openapi';
+import { type CertificateState, PlatformEnum, Resource, ResourceAction } from '../../../../types/openapi';
 import { getCertificateStatusColor } from 'utils/certificate';
 import { buildColumnHeaders } from 'utils/tableColumns';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import CertificateGroupDialog from '../CertificateGroupDialog';
 import CertificateImportDialog from '../CertificateImportDialog';
 import CertificateOwnerDialog from '../CertificateOwnerDialog';
@@ -51,6 +52,7 @@ export default function CertificateList({
     isLinkDisabled = false,
 }: Props) {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.Certificates);
     const navigate = useNavigate();
 
     const certificates = useSelector(selectors.certificates);
@@ -150,6 +152,7 @@ export default function CertificateList({
                           icon: 'plus',
                           disabled: false,
                           tooltip: 'Create Certificate',
+                          requires: can(ResourceAction.Create),
                           onClick: (event) => {
                               event.preventDefault();
                               void navigate(`/${Resource.Certificates.toLowerCase()}/add`);
@@ -160,6 +163,7 @@ export default function CertificateList({
                           icon: 'upload',
                           disabled: false,
                           tooltip: 'Import certificates and keys',
+                          requires: can(ResourceAction.Create),
                           onClick: () => {
                               setUpload(true);
                           },
@@ -168,6 +172,7 @@ export default function CertificateList({
                           icon: 'group',
                           disabled: checkedRows.length === 0,
                           tooltip: 'Override Groups',
+                          requires: can(ResourceAction.Update),
                           onClick: () => {
                               setUpdateGroup(true);
                           },
@@ -176,6 +181,7 @@ export default function CertificateList({
                           icon: 'user-check',
                           disabled: checkedRows.length === 0,
                           tooltip: 'Override Owner',
+                          requires: can(ResourceAction.Update),
                           onClick: () => {
                               getUserList();
                               setUpdateOwner(true);
@@ -185,6 +191,7 @@ export default function CertificateList({
                           icon: 'shield-check',
                           disabled: checkedRows.length === 0,
                           tooltip: 'Override RA Profile',
+                          requires: can(ResourceAction.Update),
                           onClick: () => {
                               setUpdateRaProfile(true);
                           },
@@ -200,16 +207,18 @@ export default function CertificateList({
                           icon: 'archive',
                           disabled: checkedRows.length === 0,
                           tooltip: 'Archive',
+                          requires: can(ResourceAction.Archive),
                           onClick: onArchiveClick,
                       },
                       {
                           icon: 'unarchive',
                           disabled: checkedRows.length === 0,
                           tooltip: 'Unarchive',
+                          requires: can(ResourceAction.Archive),
                           onClick: onUnarchiveClick,
                       },
                   ],
-        [checkedRows.length, downloadDropDown, selectCertsOnly, getUserList, onArchiveClick, onUnarchiveClick, navigate],
+        [checkedRows.length, downloadDropDown, selectCertsOnly, getUserList, onArchiveClick, onUnarchiveClick, navigate, can],
     );
 
     const registry = useMemo(
@@ -288,6 +297,7 @@ export default function CertificateList({
                 onListCallback={onListCallback}
                 refreshToken={listRefreshToken}
                 backgroundRefreshToken={listBackgroundRefreshToken}
+                deleteRequires={can(ResourceAction.Delete)}
                 onDeleteCallback={(uuids, filters) => dispatch(actions.bulkDelete({ uuids, filters }))}
                 getAvailableFiltersApi={useCallback(
                     (apiClients: ApiClients) => apiClients.certificates.getCertificateSearchableFields(),

@@ -1,9 +1,10 @@
 import { useSelector } from 'react-redux';
-import { CertificateState } from 'types/openapi';
+import { CertificateState, Resource, ResourceAction } from 'types/openapi';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import { selectors as certificatesSelectors } from 'ducks/certificates';
 import Button from 'components/Button';
 import { iconRegistry } from 'utils/icons';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import type { PendingAction } from './types';
 
 type Props = Readonly<{
@@ -16,6 +17,7 @@ export default function PendingActionButtons({ certificate, compact = false, onA
     const finalizing = useSelector(certificatesSelectors.finalizingIssueCertificateUuids);
     const confirming = useSelector(certificatesSelectors.confirmingRevokeCertificateUuids);
     const canceling = useSelector(certificatesSelectors.cancelingPendingCertificateUuids);
+    const can = useActionAvailability(Resource.Certificates);
 
     const isFinalizingThis = finalizing.includes(certificate.uuid);
     const isConfirmingThis = confirming.includes(certificate.uuid);
@@ -45,6 +47,7 @@ export default function PendingActionButtons({ certificate, compact = false, onA
                         if (!isFinalizingThis) onAction({ kind: 'finalize', certificate: actionCertificate });
                     }}
                     disabled={isFinalizingThis}
+                    requires={can(ResourceAction.Issue)}
                 >
                     <Upload size={16} />
                     <span className="sr-only">Finalize issue (upload certificate)</span>
@@ -61,6 +64,7 @@ export default function PendingActionButtons({ certificate, compact = false, onA
                         if (!isConfirmingThis) onAction({ kind: 'confirmRevoke', certificate: actionCertificate });
                     }}
                     disabled={isConfirmingThis}
+                    requires={can(ResourceAction.Revoke)}
                 >
                     <CheckCircle size={16} />
                     <span className="sr-only">Confirm revocation</span>
@@ -76,6 +80,7 @@ export default function PendingActionButtons({ certificate, compact = false, onA
                     if (!isCancelingThis) onAction({ kind: 'cancel', certificate: actionCertificate });
                 }}
                 disabled={isCancelingThis}
+                requires={can(certificate.state === CertificateState.PendingIssue ? ResourceAction.Issue : ResourceAction.Revoke)}
             >
                 <XCircle size={16} />
                 <span className="sr-only">Cancel pending operation</span>

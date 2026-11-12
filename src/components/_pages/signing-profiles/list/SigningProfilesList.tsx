@@ -14,9 +14,10 @@ import type { ApiClients } from '../../../../api';
 import { actions, selectors } from 'ducks/signing-profiles';
 import { selectors as pagingSelectors } from 'ducks/paging';
 import { EntityType } from 'ducks/filters';
-import { SigningProtocol, SigningWorkflowType } from 'types/openapi';
+import { Resource, ResourceAction, SigningProtocol, SigningWorkflowType } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import type { SearchRequestModel } from 'types/certificate';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 const workflowTypeLabels: Record<SigningWorkflowType, string> = {
     [SigningWorkflowType.Timestamping]: 'Timestamping',
@@ -33,6 +34,7 @@ const protocolLabels: Record<SigningProtocol, string> = {
 
 export default function SigningProfilesList() {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.SigningProfiles);
 
     const checkedRows = useSelector(pagingSelectors.checkedRows(EntityType.SIGNING_PROFILE));
     const signingProfiles = useSelector(selectors.signingProfiles);
@@ -169,6 +171,8 @@ export default function SigningProfilesList() {
                     (apiClients: ApiClients) => apiClients.signingProfiles.listSigningProfileSearchableFields(),
                     [],
                 )}
+                createRequires={can(ResourceAction.Create)}
+                deleteRequires={can(ResourceAction.Delete, { onObjects: true })}
                 onDeleteCallback={(uuids) => {
                     dispatch(actions.bulkDeleteSigningProfiles({ uuids }));
                 }}
@@ -177,12 +181,14 @@ export default function SigningProfilesList() {
                         icon: 'check',
                         disabled: checkedRows.length === 0,
                         tooltip: 'Enable',
+                        requires: can(ResourceAction.Enable, { onObjects: true }),
                         onClick: onEnableClick,
                     },
                     {
                         icon: 'times',
                         disabled: checkedRows.length === 0,
                         tooltip: 'Disable',
+                        requires: can(ResourceAction.Enable, { onObjects: true }),
                         onClick: onDisableClick,
                     },
                 ]}

@@ -10,14 +10,16 @@ import { Link } from 'react-router';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import type { SearchRequestModel } from 'types/certificate';
 import { selectors as enumSelectors } from 'ducks/enums';
-import { PlatformEnum } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
 import { EnumColumnDescription } from 'components/EnumDescription';
 import Dialog from 'components/Dialog';
 import CustomOIDForm from 'components/_pages/custom-oid/form';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 export default function CustomOIDList() {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.Oids);
 
     const oids = useSelector(selectors.oids);
 
@@ -127,10 +129,11 @@ export default function CustomOIDList() {
                 icon: 'plus',
                 disabled: false,
                 tooltip: 'Create Custom OID',
+                requires: can(ResourceAction.Create),
                 onClick: handleOpenAddModal,
             },
         ],
-        [handleOpenAddModal],
+        [handleOpenAddModal, can],
     );
 
     return (
@@ -138,6 +141,7 @@ export default function CustomOIDList() {
             <PagedList
                 entity={EntityType.OID}
                 onListCallback={onListCallback}
+                deleteRequires={can(ResourceAction.Delete)}
                 onDeleteCallback={onDeleteCallback}
                 getAvailableFiltersApi={useCallback((apiClients: ApiClients) => apiClients.oids.getCustomOidEntrySearchableFields(), [])}
                 headers={oidsRowHeaders}

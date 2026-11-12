@@ -16,10 +16,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import Select from 'components/Select';
 import type { SearchRequestModel } from 'types/certificate';
 import type { CryptographicKeyResponseModel } from 'types/cryptographic-keys';
-import { KeyCompromiseReason, type KeyUsage, PlatformEnum, Resource } from 'types/openapi';
+import { KeyCompromiseReason, type KeyUsage, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { dateFormatter } from 'utils/dateUtil';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import KeyUsageSelect from '../KeyUsageSelect';
 import { buildKeyCellRegistry, KEY_COLUMNS } from '../keyTableHelpers';
 import { EnumColumnDescription } from 'components/EnumDescription';
@@ -46,6 +47,7 @@ function removabilityOfCheckedKeys(items: CryptographicKeyResponseModel[], check
 
 function CryptographicKeyList() {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.Keys);
 
     const checkedRows = useSelector(pagingSelectors.checkedRows(EntityType.KEY));
     const cryptographicKeys = useSelector(selectors.cryptographicKeys);
@@ -140,6 +142,7 @@ function CryptographicKeyList() {
         {
             icon: 'plus',
             tooltip: 'Create Key',
+            requires: can(ResourceAction.Create),
             disabled: false,
             onClick: () => {
                 setIsAddDialogWide(false);
@@ -150,6 +153,7 @@ function CryptographicKeyList() {
             icon: 'check',
             disabled: checkedRows.length === 0,
             tooltip: 'Enable',
+            requires: can(ResourceAction.Enable),
             onClick: () => {
                 onEnableClick();
             },
@@ -158,6 +162,7 @@ function CryptographicKeyList() {
             icon: 'times',
             disabled: checkedRows.length === 0,
             tooltip: 'Disable',
+            requires: can(ResourceAction.Enable),
             onClick: () => {
                 onDisableClick();
             },
@@ -166,6 +171,7 @@ function CryptographicKeyList() {
             icon: 'key',
             disabled: checkedRows.length === 0,
             tooltip: 'Update Key Usage',
+            requires: can(ResourceAction.Update),
             onClick: () => {
                 setKeyUsageUpdate(true);
             },
@@ -174,6 +180,7 @@ function CryptographicKeyList() {
             icon: 'compromise',
             disabled: checkedRows.length === 0,
             tooltip: 'Compromise',
+            requires: can(ResourceAction.Update),
             onClick: () => {
                 setConfirmCompromise(true);
             },
@@ -182,6 +189,7 @@ function CryptographicKeyList() {
             icon: 'destroy',
             disabled: checkedRows.length === 0,
             tooltip: 'Destroy',
+            requires: can(ResourceAction.Delete),
             onClick: () => {
                 setConfirmDestroy(true);
             },
@@ -190,6 +198,7 @@ function CryptographicKeyList() {
             icon: 'package-minus',
             disabled: isBusy || removableKeyUuids.length === 0,
             tooltip: 'Remove from inventory',
+            requires: can(ResourceAction.Delete),
             disabledTooltip: removableKeyUuids.length === 0 ? 'Select at least one key that can be removed from the inventory' : undefined,
             'aria-label': 'Remove from inventory',
             onClick: () => {
@@ -272,6 +281,7 @@ function CryptographicKeyList() {
             <PagedList
                 entity={EntityType.KEY}
                 onListCallback={onListCallback}
+                deleteRequires={can(ResourceAction.Delete)}
                 onDeleteCallback={(uuids) => dispatch(actions.bulkDeleteCryptographicKeyItems({ uuids }))}
                 getAvailableFiltersApi={useCallback(
                     (apiClients: ApiClients) => apiClients.cryptographicKeys.getCryptographicKeySearchableFields(),
