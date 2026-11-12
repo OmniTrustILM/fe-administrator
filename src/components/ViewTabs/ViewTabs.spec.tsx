@@ -911,6 +911,29 @@ test.describe('ViewTabs', () => {
         expect(Math.abs((belowAfter?.y ?? 0) - (below?.y ?? 0))).toBeLessThanOrEqual(1);
     });
 
+    test('reserves no save offer for a return whose only difference is a filter on secret content', async ({ mount, page }) => {
+        await mount(
+            strip({
+                fields: secretCatalogue,
+                views: [expiryWatch()],
+                isRefreshing: true,
+                refreshedViews: [expiryWatch()],
+                returnTo: { viewId: 'view-1', filters: [stateFilter, secretFilter] },
+            }),
+        );
+
+        await expect(page.getByTestId('view-tabs-placeholder')).toBeAttached();
+        await expect(page.getByTestId('view-tabs-placeholder-summary-save')).toHaveCount(0);
+        const below = await page.getByTestId('applied-slice').boundingBox();
+
+        await page.getByTestId('simulate-list-success').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-summary-save')).toHaveCount(0);
+        const belowAfter = await page.getByTestId('applied-slice').boundingBox();
+        expect(Math.abs((belowAfter?.y ?? 0) - (below?.y ?? 0))).toBeLessThanOrEqual(1);
+    });
+
     test('holds no place for a strip whose catalogue could not be read, since it will not arrive', async ({ mount, page }) => {
         await mount(strip({ withheldCatalogue: true, isCatalogueFailed: true }));
 

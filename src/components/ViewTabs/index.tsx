@@ -126,6 +126,49 @@ function toOpening(handedIn: HandedInFilters | undefined, views: readonly ListVi
     return { position, isDrillDown, returnsToView };
 }
 
+type ViewStripOpeningPlaceholderProps = Readonly<{
+    resource: Resource;
+    handedIn?: HandedInFilters;
+    catalogue: SearchFieldDataByGroupDto[];
+    columns: ColumnDefinition[];
+    filters: SearchFilterModel[];
+    sort?: ColumnSort;
+    dataTestId: string;
+}>;
+
+/** Holds the place of a strip that has not opened yet, including while the page around it still shows its skeleton. */
+export function ViewStripOpeningPlaceholder({
+    resource,
+    handedIn,
+    catalogue,
+    columns,
+    filters,
+    sort,
+    dataTestId,
+}: ViewStripOpeningPlaceholderProps) {
+    const views = useSelector(listViewSelectors.views(resource));
+    // Handed-in filters open drifted on Standard, which holds none, or on the returned-to view when they differ
+    // from what it stores. That view is read from the list the last visit left, the fresh read still being out.
+    const opening = toOpening(handedIn, views);
+    const returnedTo = opening.returnsToView ? views.find((view) => view.uuid === opening.position?.viewId) : undefined;
+    // Sieved as the open strip sieves both sides, or a filter it will not count reserves a save offer that never shows.
+    const held = returnedTo?.filters ?? [];
+    const storable = toStorableFilters(filters, catalogue, held);
+    const opensDirty = returnedTo
+        ? areFiltersDifferent(toStorableFilters(held.map(toTableFilter), catalogue, held), storable)
+        : handedIn !== undefined && storable.length > 0;
+    return (
+        <ViewStripPlaceholder
+            columns={columns}
+            sort={sort}
+            isDirty={opensDirty}
+            isDrillDown={opening.isDrillDown}
+            isStandard={!opening.returnsToView}
+            dataTestId={dataTestId}
+        />
+    );
+}
+
 const filtersKey = (filters: readonly SearchFilterModel[]) => filters.map(getFilterKey).join('\n');
 
 /** `live` with each of `dropped` put back at the index it held in `original`, unless `live` already has it. */
@@ -841,20 +884,14 @@ export default function ViewTabs({
             );
         }
 
-        // Handed-in filters open drifted on Standard, which holds none, or on the returned-to view when they differ
-        // from what it stores. That view is read from the list the last visit left, the fresh read still being out.
-        const opening = toOpening(handedIn, views);
-        const returnedTo = opening.returnsToView ? views.find((view) => view.uuid === opening.position?.viewId) : undefined;
-        const opensDirty = returnedTo
-            ? areFiltersDifferent((returnedTo.filters ?? []).map(toTableFilter), filters)
-            : handedIn !== undefined && filters.length > 0;
         return (
-            <ViewStripPlaceholder
+            <ViewStripOpeningPlaceholder
+                resource={resource}
+                handedIn={handedIn}
+                catalogue={catalogue}
                 columns={columns}
+                filters={filters}
                 sort={sort}
-                isDirty={opensDirty}
-                isDrillDown={opening.isDrillDown}
-                isStandard={!opening.returnsToView}
                 dataTestId={`${dataTestId}-placeholder`}
             />
         );

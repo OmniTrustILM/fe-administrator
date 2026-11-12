@@ -423,6 +423,28 @@ test.describe('PagedList · configurable columns', () => {
         expect(Math.abs((after?.y ?? 0) - (before?.y ?? 0))).toBeLessThanOrEqual(1);
     });
 
+    test('reserves the strip in the skeleton, so the page does not drop when the first page lands', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                views={[{ ...expiryWatch, defaultView: false }]}
+                withFirstPageControl
+            />,
+        );
+
+        await expect(page.getByTestId('paged-list-skeleton')).toBeVisible();
+        const reserved = await page.getByTestId('paged-list-skeleton-view-strip').boundingBox();
+
+        await page.getByTestId('land-first-page').click();
+
+        await expect(page.getByTestId('view-tabs')).toBeVisible();
+        const strip = await page.getByTestId('view-tabs').boundingBox();
+        expect(Math.abs((strip?.y ?? 0) - (reserved?.y ?? -1))).toBeLessThanOrEqual(1);
+        expect(Math.abs((strip?.height ?? 0) - (reserved?.height ?? 0))).toBeLessThanOrEqual(1);
+    });
+
     test('makes the Standard tab sortable from the catalogue, though the shipped set cannot declare it', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={shippedColumns} catalogue={catalogue} />);
 

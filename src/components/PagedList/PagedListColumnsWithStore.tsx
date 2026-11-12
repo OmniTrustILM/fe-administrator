@@ -60,6 +60,8 @@ type Props = Readonly<{
     withViewsControl?: boolean;
     /** Renders a control that blanks the rows and puts a list request in flight, as a listing duck does. */
     withListInFlightControl?: boolean;
+    /** Holds the first page in flight until a control lands it, so the host shows its skeleton meanwhile. */
+    withFirstPageControl?: boolean;
     /** Renders a control that sets these filters, as a user typing into the filter widget does. */
     typedFilters?: SearchFilterModel[];
     /** Renders a second such control, for a user typing a different set of filters afterwards. */
@@ -85,6 +87,23 @@ function ListInFlightControl({ onBlank }: Readonly<{ onBlank: () => void }>) {
             }}
         >
             Start fetch
+        </button>
+    );
+}
+
+function FirstPageControl({ onLand }: Readonly<{ onLand: () => void }>) {
+    const dispatch = useDispatch();
+
+    return (
+        <button
+            type="button"
+            data-testid="land-first-page"
+            onClick={() => {
+                onLand();
+                dispatch(pagingActions.listSuccess({ entity: EntityType.CERTIFICATE, totalItems: 1 }));
+            }}
+        >
+            Land first page
         </button>
     );
 }
@@ -232,6 +251,7 @@ export default function PagedListColumnsWithStore({
     withCatalogueFailureControl = false,
     withViewsControl = false,
     withListInFlightControl = false,
+    withFirstPageControl = false,
     typedFilters,
     retypedFilters,
 }: Props) {
@@ -262,14 +282,20 @@ export default function PagedListColumnsWithStore({
                 pagings: [
                     {
                         entity: EntityType.CERTIFICATE,
-                        paging: { totalItems: rows.length, checkedRows: [], isFetchingList: false, pageNumber: 1, pageSize: 10 },
+                        paging: {
+                            totalItems: rows.length,
+                            checkedRows: [],
+                            isFetchingList: withFirstPageControl,
+                            pageNumber: 1,
+                            pageSize: 10,
+                        },
                     },
                 ],
             },
         }),
     );
 
-    const [answeredRows, setAnsweredRows] = useState(rows);
+    const [answeredRows, setAnsweredRows] = useState(withFirstPageControl ? [] : rows);
     const [requests, setRequests] = useState<SearchRequestModel[]>([]);
     const [refreshToken, setRefreshToken] = useState(0);
     const [isMounted, setIsMounted] = useState(true);
@@ -321,6 +347,8 @@ export default function PagedListColumnsWithStore({
                         Toggle list
                     </button>
                 )}
+
+                {withFirstPageControl && <FirstPageControl onLand={() => setAnsweredRows(rows)} />}
 
                 {withCatalogueControl && <CatalogueControl catalogue={refreshedCatalogue ?? catalogue} />}
 
