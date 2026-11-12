@@ -32,7 +32,8 @@ import { actions as userActions, selectors as userSelectors } from 'ducks/users'
 import { actions as vaultProfileActions, selectors as vaultProfileSelectors } from 'ducks/vault-profiles';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { ComplianceStatus, PlatformEnum, Resource, SecretState, type SyncVaultProfileDto } from 'types/openapi';
+import { ComplianceStatus, PlatformEnum, Resource, ResourceAction, SecretState, type SyncVaultProfileDto } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import type { AttributeResponseModel } from 'types/attributes';
 
 import { dateFormatter } from 'utils/dateUtil';
@@ -46,6 +47,8 @@ function SecretDetail() {
     const dispatch = useDispatch();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Secrets, id);
+    const canOnComplianceProfiles = useActionAvailability(Resource.ComplianceProfiles);
 
     const secret = useSelector(secretsSelectors.secret);
     const versions = useSelector(secretsSelectors.versions);
@@ -188,6 +191,7 @@ function SecretDetail() {
             {
                 icon: 'eye',
                 disabled: !secret?.enabled,
+                requires: can(ResourceAction.GetSecretContent),
                 tooltip: 'Show Content',
                 onClick: () => {
                     setIsShowContentOpen(true);
@@ -197,24 +201,28 @@ function SecretDetail() {
             {
                 icon: 'check',
                 disabled: !secret || secret.enabled,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Enable',
                 onClick: () => setConfirmEnable(true),
             },
             {
                 icon: 'times',
                 disabled: !secret?.enabled,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Disable',
                 onClick: () => setConfirmDisable(true),
             },
             {
                 icon: 'gavel',
                 disabled: !secret,
+                requires: canOnComplianceProfiles(ResourceAction.CheckCompliance),
                 tooltip: 'Check Compliance',
                 onClick: () => setComplianceCheck(true),
             },
             {
                 icon: 'pencil',
                 disabled: !secret || secret.state === SecretState.PendingApproval,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: () => {
                     setIsEditSecretOpen(true);
@@ -223,11 +231,12 @@ function SecretDetail() {
             {
                 icon: 'trash',
                 disabled: !secret,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => setConfirmDelete(true),
             },
         ],
-        [secret],
+        [secret, can, canOnComplianceProfiles],
     );
 
     const syncVaultProfilesButtons: WidgetButtonProps[] = useMemo(
@@ -235,11 +244,12 @@ function SecretDetail() {
             {
                 icon: 'plus',
                 disabled: !secret,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Add Sync Vault Profile',
                 onClick: () => setIsAddSyncVaultProfileOpen(true),
             },
         ],
-        [secret],
+        [secret, can],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -339,6 +349,7 @@ function SecretDetail() {
                                     }),
                                 );
                             }}
+                            requires={can(ResourceAction.Update)}
                             title="Remove Sync Vault Profile"
                             aria-label="Remove Sync Vault Profile"
                         >
@@ -362,7 +373,7 @@ function SecretDetail() {
                 ],
             };
         });
-    }, [secret, vaultProfiles, dispatch]);
+    }, [secret, vaultProfiles, dispatch, can]);
 
     const userOptions = useMemo(
         () =>
@@ -513,6 +524,7 @@ function SecretDetail() {
                                 setOwnerUuid(secret?.owner?.uuid ?? '');
                                 setIsUpdateOwnerOpen(true);
                             }}
+                            requires={can(ResourceAction.Update)}
                             title="Update Owner"
                             aria-label="Update Owner"
                         >
@@ -546,6 +558,7 @@ function SecretDetail() {
                                 );
                                 setIsUpdateGroupsOpen(true);
                             }}
+                            requires={can(ResourceAction.Update)}
                             title="Update Groups"
                             aria-label="Update Groups"
                         >
@@ -567,6 +580,7 @@ function SecretDetail() {
                                 setSelectedVaultProfileUuid(secret?.sourceVaultProfile?.uuid ?? '');
                                 setIsUpdateVaultProfileOpen(true);
                             }}
+                            requires={can(ResourceAction.Update)}
                             title="Update Source Vault Profile"
                             aria-label="Update Source Vault Profile"
                         >
@@ -576,7 +590,7 @@ function SecretDetail() {
                 ],
             },
         ];
-    }, [secret, vaultProfiles]);
+    }, [secret, vaultProfiles, can]);
 
     if (isFetchingDetail) {
         return <DetailPageSkeleton layout="tabs" tabCount={5} />;
@@ -648,6 +662,7 @@ function SecretDetail() {
                                                 resource={Resource.Secrets}
                                                 resourceUuid={secret.uuid}
                                                 attributes={secret.customAttributes}
+                                                requires={can(ResourceAction.Update)}
                                                 noBorder
                                             />
                                         )}

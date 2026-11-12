@@ -10,6 +10,10 @@ import TokenProfileList from './index';
 setupReactActEnvironment();
 
 vi.mock('react-redux', async () => await import('../../test-utils/reactReduxMockModule'));
+vi.mock('utils/useActionAvailability', async () => {
+    const { actionAvailabilityMockModule } = await import('../../test-utils/mockModules');
+    return actionAvailabilityMockModule();
+});
 vi.mock('react-router', async () => {
     const { listRouterMockModule } = await import('../../test-utils/reactRouterMockModules');
     return listRouterMockModule;

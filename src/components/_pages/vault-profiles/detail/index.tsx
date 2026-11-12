@@ -21,7 +21,8 @@ import { actions as vaultProfileActions, selectors as vaultProfileSelectors } fr
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { PlatformEnum, Resource } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import VaultProfileEditForm from '../edit-form';
 import AssociateApprovalProfileDialogBody from '../AssociateApprovalProfileDialogBody';
@@ -31,6 +32,9 @@ function VaultProfileDetail() {
     const dispatch = useDispatch();
 
     const { vaultUuid, id: vaultProfileUuid } = useParams<{ vaultUuid: string; id: string }>();
+    const can = useActionAvailability(Resource.VaultProfiles, vaultProfileUuid);
+    const canOnComplianceProfiles = useActionAvailability(Resource.ComplianceProfiles);
+    const canOnApprovalProfiles = useActionAvailability(Resource.ApprovalProfiles);
 
     const profile = useSelector(vaultProfileSelectors.vaultProfile);
     const isFetchingDetail = useSelector(vaultProfileSelectors.isFetchingDetail);
@@ -174,6 +178,7 @@ function VaultProfileDetail() {
                 id: 'enable',
                 icon: 'check',
                 disabled: !profile || profile.enabled,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Enable',
                 onClick: onApprove,
             },
@@ -181,6 +186,7 @@ function VaultProfileDetail() {
                 id: 'disable',
                 icon: 'times',
                 disabled: !profile?.enabled,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Disable',
                 onClick: onDisapprove,
             },
@@ -188,6 +194,7 @@ function VaultProfileDetail() {
                 id: 'check-compliance',
                 icon: 'gavel',
                 disabled: !profile,
+                requires: canOnComplianceProfiles(ResourceAction.CheckCompliance),
                 tooltip: 'Check Compliance',
                 onClick: () => setComplianceCheck(true),
             },
@@ -195,6 +202,7 @@ function VaultProfileDetail() {
                 id: 'edit',
                 icon: 'pencil',
                 disabled: !profile,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: () => setIsEditOpen(true),
             },
@@ -202,11 +210,12 @@ function VaultProfileDetail() {
                 id: 'delete',
                 icon: 'trash',
                 disabled: !profile,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => setConfirmDelete(true),
             },
         ],
-        [profile, onApprove, onDisapprove],
+        [profile, onApprove, onDisapprove, can, canOnComplianceProfiles],
     );
 
     const complianceProfileButtons: WidgetButtonProps[] = useMemo(
@@ -214,12 +223,13 @@ function VaultProfileDetail() {
             {
                 icon: 'plus',
                 disabled: !profile,
+                requires: canOnComplianceProfiles(ResourceAction.Update, { onObjects: true }),
                 tooltip: 'Associate Compliance Profile',
                 onClick: () => setAssociateComplianceProfile(true),
                 id: 'associate-compliance-profile',
             },
         ],
-        [profile],
+        [profile, canOnComplianceProfiles],
     );
 
     const approvalProfileButtons: WidgetButtonProps[] = useMemo(
@@ -227,12 +237,13 @@ function VaultProfileDetail() {
             {
                 icon: 'plus',
                 disabled: !profile,
+                requires: canOnApprovalProfiles(ResourceAction.Update, { onObjects: true }),
                 tooltip: 'Associate Approval Profile',
                 onClick: () => setAssociateApprovalProfile(true),
                 id: 'associate-approval-profile',
             },
         ],
-        [profile],
+        [profile, canOnApprovalProfiles],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -272,6 +283,7 @@ function VaultProfileDetail() {
                                       id: 'remove',
                                       icon: 'minus-square',
                                       disabled: false,
+                                      requires: canOnComplianceProfiles(ResourceAction.Update, { onObjects: true }),
                                       tooltip: 'Remove',
                                       onClick: () => onDissociateComplianceProfile(complianceProfile.uuid),
                                   },
@@ -280,7 +292,7 @@ function VaultProfileDetail() {
                       ],
                   }))
                 : [],
-        [associatedComplianceProfiles, onDissociateComplianceProfile],
+        [associatedComplianceProfiles, onDissociateComplianceProfile, canOnComplianceProfiles],
     );
 
     const approvalProfileHeaders: TableHeader[] = useMemo(
@@ -323,6 +335,7 @@ function VaultProfileDetail() {
                                       id: 'remove',
                                       icon: 'minus-square',
                                       disabled: false,
+                                      requires: canOnApprovalProfiles(ResourceAction.Update, { onObjects: true }),
                                       tooltip: 'Remove',
                                       onClick: () => onDissociateApprovalProfile(approvalProfile.uuid),
                                   },
@@ -331,7 +344,7 @@ function VaultProfileDetail() {
                       ],
                   }))
                 : [],
-        [associatedApprovalProfiles, onDissociateApprovalProfile],
+        [associatedApprovalProfiles, onDissociateApprovalProfile, canOnApprovalProfiles],
     );
 
     const detailData: TableDataRow[] = useMemo(
@@ -441,6 +454,7 @@ function VaultProfileDetail() {
                                 resource={Resource.VaultProfiles}
                                 resourceUuid={profile.uuid}
                                 attributes={profile.customAttributes}
+                                requires={can(ResourceAction.Update)}
                             />
                         </Container>
                     )}

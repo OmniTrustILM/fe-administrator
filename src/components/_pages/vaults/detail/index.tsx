@@ -16,7 +16,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { PlatformEnum, Resource } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import CustomAttributeWidget from 'components/Attributes/CustomAttributeWidget';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import VaultEditForm from '../edit-form';
@@ -25,6 +26,7 @@ function VaultDetail() {
     const dispatch = useDispatch();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Vaults, id);
 
     const vault = useSelector(vaultSelectors.vault);
     const isFetchingDetail = useSelector(vaultSelectors.isFetchingDetail);
@@ -58,17 +60,19 @@ function VaultDetail() {
             {
                 icon: 'pencil',
                 disabled: !vault,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: () => setIsEditOpen(true),
             },
             {
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => setConfirmDelete(true),
             },
         ],
-        [vault],
+        [vault, can],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -142,6 +146,7 @@ function VaultDetail() {
                                 resource={Resource.Vaults}
                                 resourceUuid={vault.uuid}
                                 attributes={vault.customAttributes}
+                                requires={can(ResourceAction.Update)}
                             />
                         </Container>
                     )}
