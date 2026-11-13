@@ -122,6 +122,14 @@ function sentKeys(dispatched: readonly UnknownAction[]) {
     return dispatched.filter(tokenKeyActions.onboardTokenKeys.match).map((action) => action.payload.keys);
 }
 
+async function onboardSignerAndArchiverFromTwoPages(browser: Page) {
+    await chooseProfile(browser);
+    await browser.getByRole('checkbox', { name: 'Select signer' }).click();
+    await browser.getByTestId('pagination-next').click();
+    await browser.getByRole('checkbox', { name: 'Select archiver' }).click();
+    await browser.getByRole('button', { name: 'Onboard', exact: true }).click();
+}
+
 /** A text field stays read-only until it is focused, so it is clicked before it is filled. */
 async function enterText(field: Locator, value: string) {
     await field.click();
@@ -640,12 +648,7 @@ test.describe('OnboardFromToken', () => {
                 onAction={(action) => dispatched.push(action)}
             />,
         );
-        await chooseProfile(browser);
-
-        await browser.getByRole('checkbox', { name: 'Select signer' }).click();
-        await browser.getByTestId('pagination-next').click();
-        await browser.getByRole('checkbox', { name: 'Select archiver' }).click();
-        await browser.getByRole('button', { name: 'Onboard', exact: true }).click();
+        await onboardSignerAndArchiverFromTwoPages(browser);
 
         const expected = [[{ keyPairMeta: keyPairMeta('onboardable') }, { keyPairMeta: keyPairMeta('archiving') }]];
         await expect.poll(() => sentKeys(dispatched)).toEqual(expected);
@@ -662,12 +665,7 @@ test.describe('OnboardFromToken', () => {
                 onAction={(action) => dispatched.push(action)}
             />,
         );
-        await chooseProfile(browser);
-
-        await browser.getByRole('checkbox', { name: 'Select signer' }).click();
-        await browser.getByTestId('pagination-next').click();
-        await browser.getByRole('checkbox', { name: 'Select archiver' }).click();
-        await browser.getByRole('button', { name: 'Onboard', exact: true }).click();
+        await onboardSignerAndArchiverFromTwoPages(browser);
 
         await expect
             .poll(() => dispatched.filter(tokenKeyActions.onboardTokenKeys.match).map((action) => action.payload.captions))
