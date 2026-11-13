@@ -6,11 +6,14 @@ import {
     FilterFieldSource,
     KeyAlgorithm,
     SecretState,
+    Resource,
     SecretType,
 } from 'types/openapi';
 import { describe, expect, test } from 'vitest';
 import {
     EST_TRUSTED_CA_FILTERS,
+    attributesLackDescriptors,
+    customAttributesLackDescriptors,
     type EstProfileFormValues,
     buildEstProfileCreateRequest,
     buildEstProfileEditRequest,
@@ -359,5 +362,30 @@ describe('canExportKeyPair', () => {
         expect(canExportKeyPair(transfer({ secret: [KeyAlgorithm.Aes] }))).toBe(false);
         expect(canExportKeyPair(transfer())).toBe(false);
         expect(canExportKeyPair({})).toBe(false);
+    });
+});
+
+describe('attributesLackDescriptors', () => {
+    test('is true only when saved attributes have no descriptors', () => {
+        expect(attributesLackDescriptors([{ name: 'a' }], [])).toBe(true);
+        expect(attributesLackDescriptors([{ name: 'a' }], undefined)).toBe(true);
+        expect(attributesLackDescriptors([{ name: 'a' }], [{}])).toBe(false);
+        expect(attributesLackDescriptors([], [])).toBe(false);
+        expect(attributesLackDescriptors(undefined, undefined)).toBe(false);
+    });
+});
+
+describe('customAttributesLackDescriptors', () => {
+    const profile = { customAttributes: [{ name: 'a' }], certificateAssociations: { customAttributes: [{ name: 'b' }] } } as any;
+
+    test('checks the profile and certificate resources separately', () => {
+        expect(customAttributesLackDescriptors(profile, { [Resource.EstProfiles]: [{}], [Resource.Certificates]: [{}] })).toBe(false);
+        expect(customAttributesLackDescriptors(profile, { [Resource.EstProfiles]: [{}], [Resource.Certificates]: [] })).toBe(true);
+        expect(customAttributesLackDescriptors(profile, { [Resource.EstProfiles]: [] })).toBe(true);
+    });
+
+    test('is false without a profile or saved attributes', () => {
+        expect(customAttributesLackDescriptors(undefined, {})).toBe(false);
+        expect(customAttributesLackDescriptors({ customAttributes: [] } as any, {})).toBe(false);
     });
 });

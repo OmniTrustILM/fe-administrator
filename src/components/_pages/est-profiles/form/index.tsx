@@ -27,6 +27,7 @@ import { actions as tokenProfileActions, selectors as tokenProfileSelectors } fr
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
+import type { Dispatch } from '@reduxjs/toolkit';
 import type { AttributeDescriptorModel, CustomAttributeModel } from 'types/attributes';
 import type { EstProfileDetailModel, EstProfileEditRequestModel, EstProfileRequestModel } from 'types/est-profiles';
 import { EstAuthenticationPolicy, KeyRequestType, PlatformEnum, Resource } from 'types/openapi';
@@ -35,7 +36,9 @@ import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import {
     buildEstProfileCreateRequest,
     buildEstProfileEditRequest,
+    attributesLackDescriptors,
     canExportKeyPair,
+    customAttributesLackDescriptors,
     EST_TRUSTED_CA_FILTERS,
     hasCustomResponseTiming,
     type EstProfileFormValues,
@@ -72,6 +75,14 @@ const CUSTOM_ATTRIBUTES = 'customEstProfile';
 const ASSOCIATED_ATTRIBUTES = 'certificateAssociatedAttributes';
 const CA_SEARCH_PAGE_SIZE = 1000;
 const CUSTOM_ATTRIBUTE_RESOURCES = [Resource.EstProfiles, Resource.Certificates];
+
+function requestCustomAttributes(dispatch: Dispatch) {
+    dispatch(
+        customAttributesActions.loadMultipleResourceCustomAttributes(
+            CUSTOM_ATTRIBUTE_RESOURCES.map((resource) => ({ resource, customAttributes: [] })),
+        ),
+    );
+}
 
 function formDefaults(
     profile: EstProfileDetailModel | undefined,
@@ -124,22 +135,11 @@ export default function EstProfileForm({ estProfileId, onCancel, onSuccess }: Es
     // The multi-resource load sets no fetching flag; it stores every resource it was asked for, failed ones as empty.
     const customAttributesLoaded = CUSTOM_ATTRIBUTE_RESOURCES.every((resource) => resource in customAttributes);
     // A failed lookup is stored as empty, so stored attributes without any descriptor mean the load failed.
-    const customAttributesUsable =
-        !editMode ||
-        ((!estProfile?.customAttributes?.length || !!customAttributes[Resource.EstProfiles]?.length) &&
-            (!estProfile?.certificateAssociations?.customAttributes?.length || !!customAttributes[Resource.Certificates]?.length));
+    const customAttributesUsable = !editMode || !customAttributesLackDescriptors(estProfile, customAttributes);
     // Set once the loads below are dispatched, so the fetching flags read here are never the ones from before them.
     const [requested, setRequested] = useState(false);
 
-    const loadCustomAttributes = useCallback(
-        () =>
-            dispatch(
-                customAttributesActions.loadMultipleResourceCustomAttributes(
-                    CUSTOM_ATTRIBUTE_RESOURCES.map((resource) => ({ resource, customAttributes: [] })),
-                ),
-            ),
-        [dispatch],
-    );
+    const loadCustomAttributes = useCallback(() => requestCustomAttributes(dispatch), [dispatch]);
 
     useEffect(() => {
         loadCustomAttributes();
@@ -381,9 +381,16 @@ function EstProfileFormBody({ profile, defaults, customAttributes, onCancel, onS
     // Attribute editors render only once their descriptors arrive; key descriptors wait for the token profile list.
     const isLoadingAttributes = isFetchingTokenProfiles || isFetchingIssuanceAttributes || isFetchingKeyAttributes;
     // Bound key attributes without any descriptor mean the descriptor load failed; saving would drop them.
-    const keyDescriptorsMissing =
-        !!keyRecoveryOn && !!keyAttributes?.length && !isFetchingKeyAttributes && !(keyDescriptors && keyDescriptors.length > 0);
-    const hasErrors = Object.keys(errors).length > 0 || tokenProfileCannotExport || keyDescriptorsMissing;
+    const keyDescriptorsMissing = !!keyRecoveryOn && !isFetchingKeyAttributes && attributesLackDescriptors(keyAttributes, keyDescriptors);
+    // Same for issue attributes, and for custom attributes whose lookup failed after the form was opened.
+    const issueDescriptorsMissing = !isFetchingIssuanceAttributes && attributesLackDescriptors(issueAttributes, issuanceDescriptors);
+    const customDescriptorsMissing = editMode && customAttributesLackDescriptors(profile, customAttributes);
+    const hasErrors =
+        Object.keys(errors).length > 0 ||
+        tokenProfileCannotExport ||
+        keyDescriptorsMissing ||
+        issueDescriptorsMissing ||
+        customDescriptorsMissing;
 
     return (
         <FormProvider {...methods}>
@@ -637,6 +644,19 @@ function EstProfileFormBody({ profile, defaults, customAttributes, onCancel, onS
 
                         <Widget title="RA Profile Configuration" busy={isFetchingRaProfiles || isFetchingIssuanceAttributes}>
                             <div className="space-y-4">
+                                {issueDescriptorsMissing && (
+                                    <Callout severity="danger" dataTestId="issue-descriptors-load-error">
+                                        The saved issue attributes could not be loaded. Reselect the RA Profile to retry.
+                                    </Callout>
+                                )}
+                                {customDescriptorsMissing && (
+                                    <Callout severity="danger" dataTestId="custom-attributes-load-error">
+                                        Custom attributes could not be loaded, so saving would remove them.
+                                        <Button variant="outline" onClick={() => requestCustomAttributes(dispatch)} type="button">
+                                            Retry
+                                        </Button>
+                                    </Callout>
+                                )}
                                 <Controller
                                     name="raProfileUuid"
                                     control={control}

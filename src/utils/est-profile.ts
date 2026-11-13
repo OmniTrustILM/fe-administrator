@@ -8,6 +8,7 @@ import {
     CertificateSubjectType,
     type ProtocolCertificateAssociationsRequestDto,
     type RequestAttribute,
+    Resource,
     type SearchFilterRequestDto,
     type SecretDto,
     SecretState,
@@ -250,4 +251,19 @@ export const EST_TRUSTED_CA_FILTERS: readonly SearchFilterRequestDto[] = [
 // Core requires the token profile to export a key pair; key recovery keeps generated key pairs.
 export function canExportKeyPair(tokenProfile: Pick<TokenProfileDetailDto, 'keyTransfer'>): boolean {
     return (tokenProfile.keyTransfer?.exportableKeyTypes?.keyPair?.length ?? 0) > 0;
+}
+
+// Saved attributes can only be edited while their descriptors are loaded; an empty list after a failed lookup would replace them with nothing.
+export function attributesLackDescriptors(bound: readonly unknown[] | undefined, descriptors: readonly unknown[] | undefined): boolean {
+    return (bound?.length ?? 0) > 0 && (descriptors?.length ?? 0) === 0;
+}
+
+export function customAttributesLackDescriptors(
+    profile: Pick<EstProfileDetailDto, 'customAttributes' | 'certificateAssociations'> | undefined,
+    descriptors: Record<string, readonly unknown[] | undefined>,
+): boolean {
+    return (
+        attributesLackDescriptors(profile?.customAttributes, descriptors[Resource.EstProfiles]) ||
+        attributesLackDescriptors(profile?.certificateAssociations?.customAttributes, descriptors[Resource.Certificates])
+    );
 }
