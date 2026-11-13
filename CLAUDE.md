@@ -74,6 +74,35 @@ Vite is configured with path aliases — always use these instead of relative pa
 - **Unit tests (Vitest):** For utilities (`src/utils/**/*.spec.ts`) and Redux slices/epics (`src/ducks/**/*.spec.ts`). Environment: happy-dom.
 - **Component tests (Playwright CT):** For React components (`src/**/*.spec.tsx`). Multi-browser (Chromium, Firefox, WebKit). Test server runs on port 3100.
 
+**Writing component tests:**
+
+- A Redux store built in the Node test body does not reach the browser, so its preloaded state never
+  applies. Preload through a `*WithStore.tsx` component that creates the store once with
+  `useState(() => createMockStore(preloadedState))` and mount that wrapper; a store built on every
+  render drops whatever state the test has dispatched into it. CT runs no epics, so state that a fetch would normally fill
+  never changes on its own. Most reducers in `ducks/test-reducers.ts` are stubs that handle only the
+  actions a component test dispatches. To run a slice's real reducer, build one with
+  `overlaySliceReducer` from `utils/test-helpers.tsx` and pass it to `useRecordingStore` inside the
+  wrapper, which also records the dispatched actions. It rebuilds the store whenever an argument
+  changes identity, so build the reducer at module scope and pass a constant or memoised preload. It
+  merges that preload only at the top level, so each preloaded slice spreads `testInitialState.<slice>`.
+- Import a component from its own module, not through a barrel's named re-export. CT registers
+  components by identifier, and a name reachable both ways fails the whole run with
+  `Identifier 'X' has already been declared`.
+- `npm run typecheck` excludes `*.spec.*` files, so a type error in a spec passes it. Check edited
+  specs with `npx tsc --noEmit -p tsconfig.json --ignoreDeprecations 6.0` and filter the output to
+  the files you changed: the specs carry existing errors, so a clean run is not the bar.
+- Assert the property the requirement names, not a correlate of it: a contrast requirement asserts
+  the computed ratio against its threshold, not that two colours differ. After writing a regression
+  test, revert only the fix and confirm the test fails.
+- Sonar rule S2699 does not count `expect.poll` as an assertion, and it only sees assertions written
+  directly in the test body. When a test waits with `expect.poll`, follow it with a plain `expect` on
+  the settled value.
+- New tests use neither a forced click nor a fixed wait; Sonar flags both. To prove an
+  `aria-disabled` control does nothing, click it with `dispatchEvent`. For a natively `disabled`
+  element assert `toBeDisabled()` instead: a dispatched click never reaches its handler,
+  so that test could not fail. Advance a fake clock rather than waiting.
+
 ### Styling
 
 Tailwind CSS 4 with Preline UI components. The main CSS entry is `src/tailwindcss.css`.
@@ -238,6 +267,39 @@ duplicates, so a count axis carries no `tickFormatter`.
 ### Code Style
 
 Biome enforces linting and formatting: 4-space indent, 140-char line width, single quotes, trailing commas everywhere, semicolons required. Suppress rules only with a justified `biome-ignore` comment.
+
+- Delete unused code, imports and variables outright. Never rename them with a `_` prefix to silence
+  `noUnusedVariables`, and never apply Biome's `--unsafe` fix for that rule, which does exactly that.
+  Parameters a signature requires, such as a reducer's `_action`, stay.
+- Removing `any` or narrowing a type does not make a runtime guard redundant. Keep `?.`, `??` and
+  null checks on values that come from the store, the API or the router: types are erased at runtime,
+  and selectors are called with `undefined` state in tests.
+- When an object or array prop feeds an effect that fetches or dispatches, never depend on its
+  identity. A caller passing it as a literal gives it a new identity every render, which refires the
+  effect and loops until React aborts with error #185. Depend on primitive fields or a serialised key
+  instead, as `PagedList` keys its fetch on a JSON snapshot of the request, and memoise such config
+  at the call site.
+- Comments explain why, never what. Add one only for something the code cannot say itself: a
+  non-obvious algorithm, a workaround, or an invariant a reader would otherwise break. No issue
+  references, `TODO`s, changelog narration or commented-out code.
+
+### SonarCloud
+
+SonarCloud analyses every pull request (see [Tests and Sonar](#tests-and-sonar)). A change must not
+add new issues to the analysis.
+
+- Fix the code rather than marking an issue. Where the flagged construct is deliberate, keep it and
+  suppress on the flagged line with `// NOSONAR(<rule>): <reason>`, as `components/ProgressBar` does.
+- Do not apply a rule's suggested rewrite without checking it is equivalent here. Known traps:
+  - S7772 (`node:buffer`): `buffer` is the npm browser polyfill; `node:buffer` breaks the Vite build.
+  - S7741 (compare with `undefined` instead of `typeof`): `window`, `document` and other environment
+    globals must keep `typeof`, because a direct reference throws where the global is not defined.
+  - S6819 (ARIA role where a native element exists): an element already inside a real `<button>`
+    cannot become a `<button>` without nesting interactive content. Biome's `useSemanticElements`
+    flags `role="button"` too, so those sites also carry a `biome-ignore` for it.
+- The Sonar rules that shape tests are listed under [Testing Strategy](#testing-strategy).
+- Trust the SonarCloud results over a local SonarQube scan: the local quality profile omits rules
+  SonarCloud enforces.
 
 ## Git & Pull Requests
 
