@@ -256,6 +256,54 @@ test.describe('FilterWidget', () => {
         await expect(page.locator('.grid-cols-2')).toBeVisible();
     });
 
+    test('renders each value of a multi-value filter as its own chip and removes one at a time', async ({ mount, page }) => {
+        const updates: unknown[][] = [];
+        await mount(
+            <FilterWidgetTestWrapper
+                onFilterUpdate={(filters) => updates.push(filters)}
+                initialCurrentFilters={[
+                    {
+                        fieldSource: FilterFieldSource.Meta,
+                        fieldIdentifier: 'owners',
+                        condition: FilterConditionOperator.Equals,
+                        value: [{ name: 'Alice' }, { name: 'Bob' }] as any,
+                    },
+                ]}
+            />,
+        );
+        const chips = page.getByTestId('filter-value-chip');
+        await expect(chips).toHaveText(['Alice', 'Bob']);
+        await expect(page.getByText(/OR/)).toHaveCount(0);
+
+        await page.getByRole('button', { name: 'Remove Alice from Owners', exact: true }).click();
+
+        await expect(chips).toHaveText(['Bob']);
+        await expect.poll(() => updates.length).toBe(1);
+        expect(JSON.stringify(updates[0])).not.toContain('Alice');
+        expect(JSON.stringify(updates[0])).toContain('Bob');
+
+        await page.getByRole('button', { name: 'Remove Bob from Owners', exact: true }).click();
+        await expect(page.getByText("'Owners'")).toHaveCount(0);
+    });
+
+    test('offers no per-value removal when badge removal is disabled', async ({ mount, page }) => {
+        await mount(
+            <FilterWidgetTestWrapper
+                disableBadgeRemove
+                initialCurrentFilters={[
+                    {
+                        fieldSource: FilterFieldSource.Meta,
+                        fieldIdentifier: 'owners',
+                        condition: FilterConditionOperator.Equals,
+                        value: [{ name: 'Alice' }, { name: 'Bob' }] as any,
+                    },
+                ]}
+            />,
+        );
+        await expect(page.getByTestId('filter-value-chip')).toHaveText(['Alice', 'Bob']);
+        await expect(page.getByRole('button', { name: /^Remove (Alice|Bob) from Owners$/ })).toHaveCount(0);
+    });
+
     test('preloaded date/datetime/list values render in badges', async ({ mount, page }) => {
         await mount(
             <FilterWidgetTestWrapper

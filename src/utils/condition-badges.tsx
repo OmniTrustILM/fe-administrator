@@ -1,5 +1,6 @@
 import { getEnumLabel } from 'ducks/enums';
 import Badge from 'components/Badge';
+import FilterValueChips from 'components/FilterValueChips';
 import type { SearchFieldListModel, SearchFieldModel } from 'types/certificate';
 import type { EnumItemDto } from 'types/enums';
 import { AttributeContentType, type ConditionItemDto, type FilterConditionOperator, FilterFieldType } from 'types/openapi';
@@ -89,6 +90,12 @@ export const renderConditionItems = (
 
         const label = field ? field.fieldLabel : condition.fieldIdentifier;
         const value = getConditionValue(condition, field, platformEnums);
+        const valueContent =
+            Array.isArray(condition.value) && field?.type !== FilterFieldType.Boolean ? (
+                <FilterValueChips values={condition.value.map((v) => formatSingleValue(v, field, platformEnums, condition.operator))} />
+            ) : (
+                value
+            );
 
         const title = `${getEnumLabel(searchGroupEnum, condition.fieldSource)} ${label} ${getEnumLabel(
             filterConditionOperatorEnum,
@@ -100,7 +107,7 @@ export const renderConditionItems = (
                 <Badge key={condition.fieldIdentifier} title={title} className={className} style={style}>
                     {getEnumLabel(searchGroupEnum, condition.fieldSource)}&nbsp;'{label}'&nbsp;
                     {getEnumLabel(filterConditionOperatorEnum, condition.operator)}&nbsp;
-                    {value}
+                    {valueContent}
                 </Badge>
             );
         }
@@ -110,7 +117,7 @@ export const renderConditionItems = (
                 <span title={title} className={className}>
                     {getEnumLabel(searchGroupEnum, condition.fieldSource)}&nbsp;'{label}'&nbsp;
                     {getEnumLabel(filterConditionOperatorEnum, condition.operator)}&nbsp;
-                    {value}
+                    {valueContent}
                 </span>
             </div>
         );
