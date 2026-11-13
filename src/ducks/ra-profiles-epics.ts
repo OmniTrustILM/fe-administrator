@@ -179,10 +179,10 @@ const updateRaProfileCertificateValidation: AppEpic = (action$, state$, deps) =>
 
                     catchError((err) =>
                         of(
-                            (slice.actions.updateRaProfileCertificateValidationFailure({
+                            slice.actions.updateRaProfileCertificateValidationFailure({
                                 error: extractError(err, 'Failed to update profile validation settings'),
                             }),
-                            alertActions.error(extractError(err, 'Failed to update profile validation settings'))),
+                            alertActions.error(extractError(err, 'Failed to update profile validation settings')),
                         ),
                     ),
                 ),
