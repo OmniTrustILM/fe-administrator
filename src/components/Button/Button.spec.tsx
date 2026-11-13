@@ -129,6 +129,56 @@ test.describe('Button', () => {
         await expect(page.getByRole('tooltip')).toHaveText('A retry is already in flight');
     });
 
+    test('should disable a button its requirement denies and show the missing permission', async ({ mount, page }) => {
+        const component = await mount(
+            <Button requires={{ available: false, hidden: false, loading: false, reason: 'You need the Update permission on Secrets.' }}>
+                Edit
+            </Button>,
+        );
+
+        await expect(component.getByRole('button', { name: 'Edit' })).toBeDisabled();
+        await component.locator('span.inline-flex').hover();
+        await expect(page.getByRole('tooltip')).toHaveText('You need the Update permission on Secrets.');
+    });
+
+    test('should render nothing for a button its requirement hides', async ({ mount }) => {
+        const component = await mount(
+            <Button requires={{ available: false, hidden: true, loading: false, reason: 'Denied' }}>Edit</Button>,
+        );
+
+        await expect(component).toBeEmpty();
+    });
+
+    test('should keep a button disabled without a reason while its requirement loads', async ({ mount }) => {
+        const component = await mount(<Button requires={{ available: false, hidden: false, loading: true }}>Edit</Button>);
+
+        await expect(component).toHaveRole('button');
+        await expect(component).toBeDisabled();
+    });
+
+    test('should not show its own disabled reason when only a loading requirement disables it', async ({ mount }) => {
+        const component = await mount(
+            <Button disabledTooltip="A retry is already in flight" requires={{ available: false, hidden: false, loading: true }}>
+                Retry
+            </Button>,
+        );
+
+        await expect(component).toHaveRole('button');
+        await expect(component).toBeDisabled();
+    });
+
+    test('should keep its own disabled reason when the requirement is met', async ({ mount, page }) => {
+        const component = await mount(
+            <Button disabled disabledTooltip="Already running" requires={{ available: true, hidden: false, loading: false }}>
+                Run
+            </Button>,
+        );
+
+        await expect(component.getByRole('button', { name: 'Run' })).toBeDisabled();
+        await component.locator('span.inline-flex').hover();
+        await expect(page.getByRole('tooltip')).toHaveText('Already running');
+    });
+
     test('should support custom className', async ({ mount }) => {
         const component = await mount(<Button className="custom-class">Custom</Button>);
 

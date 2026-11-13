@@ -27,6 +27,7 @@ const workflowTypeLabels: Record<SigningWorkflowType, string> = {
 const protocolLabels: Record<SigningProtocol, string> = {
     [SigningProtocol.Tsp]: 'TSP',
     [SigningProtocol.CscApi]: 'CSC API',
+    [SigningProtocol.IlmNative]: 'ILM Native',
     [SigningProtocol.InternalTsa]: 'Internal TSA',
 };
 
