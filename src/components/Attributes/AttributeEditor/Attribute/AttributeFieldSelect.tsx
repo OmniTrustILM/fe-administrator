@@ -163,7 +163,10 @@ export function AttributeFieldSelect({
                                     multiSelect={descriptor.properties.multiSelect}
                                     readOnly={descriptor.properties.readOnly}
                                     fieldValue={field.value}
-                                    onFieldChange={field.onChange}
+                                    onFieldChange={(value) => {
+                                        field.onChange(value);
+                                        field.onBlur();
+                                    }}
                                     parseValue={(v) => parseListValueByContentType(descriptor.contentType, v) ?? v}
                                 />
                             </>

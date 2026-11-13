@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import * as ReactHookForm from 'react-hook-form';
 import { AttributeFieldSelect } from './AttributeFieldSelect';
 import type { DataAttributeModel } from 'types/attributes';
@@ -14,7 +14,6 @@ export type AttributeFieldSelectTestWrapperProps = {
     defaultValues?: Record<string, unknown>;
     mode?: ReactHookForm.Mode;
     validateOnMount?: boolean;
-    withSubmit?: boolean;
     withNextField?: boolean;
 };
 
@@ -28,7 +27,6 @@ export function AttributeFieldSelectTestWrapper({
     defaultValues = {},
     mode,
     validateOnMount = false,
-    withSubmit = false,
     withNextField = false,
 }: Readonly<AttributeFieldSelectTestWrapperProps>) {
     const methods = ReactHookForm.useForm({
@@ -38,6 +36,7 @@ export function AttributeFieldSelectTestWrapper({
             ...defaultValues,
         },
     });
+    const [submitted, setSubmitted] = useState(false);
 
     useEffect(() => {
         if (validateOnMount) void methods.trigger(name);
@@ -74,17 +73,15 @@ export function AttributeFieldSelectTestWrapper({
 
     return (
         <ReactHookForm.FormProvider {...methods}>
-            {withSubmit ? (
-                <form onSubmit={methods.handleSubmit(() => {})}>
-                    {field}
-                    <button type="submit">Submit</button>
-                </form>
-            ) : (
-                <>
-                    {field}
-                    {withNextField && <input aria-label="Next field" />}
-                </>
-            )}
+            <form onSubmit={methods.handleSubmit(() => setSubmitted(true))}>
+                {field}
+                {withNextField && <input aria-label="Next field" />}
+                <button type="submit" data-testid="submit-form">
+                    Submit
+                </button>
+                <span data-testid="submit-count">{methods.formState.submitCount}</span>
+                {submitted && <span data-testid="submit-success">submitted</span>}
+            </form>
         </ReactHookForm.FormProvider>
     );
 }

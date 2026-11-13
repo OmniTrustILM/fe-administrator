@@ -1,7 +1,8 @@
+import type { Page } from '@playwright/test';
 import { test, expect } from '../../../../../playwright/ct-test';
 import { AttributeFieldSelectTestWrapper } from './AttributeFieldSelectTestWrapper';
 import type { DataAttributeModel } from 'types/attributes';
-import { AttributeContentType, AttributeType } from 'types/openapi';
+import { AttributeConstraintType, AttributeContentType, AttributeType } from 'types/openapi';
 
 const defaultProperties = {
     label: 'Test Select',
@@ -344,6 +345,75 @@ test.describe('AttributeFieldSelect', () => {
         await expect(page.getByRole('option', { name: 'extra' })).toBeVisible();
     });
 
+    test.describe('extensible list with a range constraint', () => {
+        const rangeMessage = 'Between 1 and 100';
+        const rangeDescriptor = () =>
+            minimalDescriptor({
+                contentType: AttributeContentType.Integer,
+                properties: { ...defaultProperties, list: true, extensibleList: true, label: 'Parallel executions' },
+                constraints: [{ type: AttributeConstraintType.Range, data: { from: 1, to: 100 }, errorMessage: rangeMessage }],
+            } as any);
+
+        const addCustomValue = async (page: Page, value: string) => {
+            await page.getByRole('button', { name: 'Add custom value' }).click();
+            await page.getByTestId('testSelect-add-custom-panel').locator('input[type="number"]').fill(value);
+            await page.getByTestId('testSelect-add-custom-value').click();
+        };
+
+        test('shows the constraint message as soon as an out-of-range custom value is added', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldSelectTestWrapper
+                    name="testSelect"
+                    descriptor={rangeDescriptor()}
+                    options={[{ label: '1', value: 1 }]}
+                    mode="onChange"
+                />,
+            );
+
+            await addCustomValue(page, '101');
+            await expect(page.getByText(rangeMessage)).toBeVisible();
+
+            await addCustomValue(page, '100');
+            await expect(page.getByText(rangeMessage)).toHaveCount(0);
+        });
+
+        test('blocks the submit with the constraint message and submits once the value is in range', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldSelectTestWrapper name="testSelect" descriptor={rangeDescriptor()} options={[{ label: '1', value: 1 }]} />,
+            );
+
+            await addCustomValue(page, '101');
+            await page.getByTestId('submit-form').click();
+            await expect(page.getByTestId('submit-count')).toHaveText('1');
+            await expect(page.getByText(rangeMessage)).toBeVisible();
+            await expect(page.getByTestId('submit-success')).toHaveCount(0);
+
+            await addCustomValue(page, '100');
+            await expect(page.getByText(rangeMessage)).toHaveCount(0);
+            await page.getByTestId('submit-form').click();
+            await expect(page.getByTestId('submit-success')).toBeVisible();
+        });
+
+        test('reveals the constraint message of an untouched out-of-range value once the form is submitted', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldSelectTestWrapper
+                    name="testSelect"
+                    descriptor={rangeDescriptor()}
+                    options={[{ label: '1', value: 1 }]}
+                    defaultValues={{ testSelect: 101 }}
+                    validateOnMount
+                />,
+            );
+            await expect(page.getByText(rangeMessage)).toHaveCount(0);
+
+            await page.getByTestId('submit-form').click();
+
+            await expect(page.getByTestId('submit-count')).toHaveText('1');
+            await expect(page.getByText(rangeMessage)).toBeVisible();
+            await expect(page.getByTestId('submit-success')).toHaveCount(0);
+        });
+    });
+
     test('extensible list multi-select adds extra options for current values not in options', async ({ mount, page }) => {
         const descriptor = minimalDescriptor({
             properties: { ...defaultProperties, multiSelect: true, extensibleList: true, label: 'Extensible Multi' },
@@ -452,9 +522,7 @@ test.describe('AttributeFieldSelect', () => {
         });
 
         test('shows Required Field after a submit without the list being touched', async ({ mount, page }) => {
-            await mount(
-                <AttributeFieldSelectTestWrapper name="testSelect" descriptor={requiredList()} options={requiredOptions} withSubmit />,
-            );
+            await mount(<AttributeFieldSelectTestWrapper name="testSelect" descriptor={requiredList()} options={requiredOptions} />);
 
             await expect(page.getByText('Required Field')).toHaveCount(0);
             await page.getByRole('button', { name: 'Submit' }).click();
@@ -469,7 +537,6 @@ test.describe('AttributeFieldSelect', () => {
                     name="testSelect"
                     descriptor={requiredList({ visible: false })}
                     options={requiredOptions}
-                    withSubmit
                 />,
             );
             await page.getByRole('button', { name: 'Submit' }).click();
