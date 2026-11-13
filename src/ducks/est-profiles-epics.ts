@@ -233,14 +233,13 @@ const bulkForceDeleteEstProfiles: AppEpic = (action$, state$, deps) => {
                 mergeMap((errors) => {
                     const failures = errors ?? [];
                     if (failures.length > 0) {
+                        const failureSummary = failures.map((failure) => failure.name + ': ' + failure.message).join('; ');
                         const failedUuids = new Set(failures.map((failure) => failure.uuid));
                         return of(
                             slice.actions.bulkForceDeleteEstProfilesSuccess({
                                 uuids: action.payload.uuids.filter((uuid) => !failedUuids.has(uuid)),
                             }),
-                            alertActions.error(
-                                `Failed to delete EST Profiles: ${failures.map((failure) => `${failure.name}: ${failure.message}`).join('; ')}`,
-                            ),
+                            alertActions.error(`Failed to delete EST Profiles: ${failureSummary}`),
                         );
                     }
                     return iif(

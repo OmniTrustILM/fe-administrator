@@ -70,6 +70,24 @@ describe('EstProfileDetail response timing', () => {
         useSelectorMock.mockImplementation((selector: any) => selector(state));
     });
 
+    afterEach(() => {
+        act(() => root.unmount());
+        container.remove();
+        vi.clearAllMocks();
+    });
+
+    it('shows the issue wait, Retry-After and key generation wait in seconds', async () => {
+        await act(async () => {
+            root.render(<EstProfileDetail />);
+        });
+
+        const widget = container.querySelector('[data-testid="widget-Response Timing"]');
+        expect(widget).not.toBeNull();
+        expect(widget?.querySelector('[data-testid="row-issueWaitTimeout"]')?.textContent).toBe('Issue Wait0 s');
+        expect(widget?.querySelector('[data-testid="row-retryAfter"]')?.textContent).toBe('Retry-After7 s');
+        expect(widget?.querySelector('[data-testid="row-serverKeyGenerationTimeout"]')?.textContent).toBe('Key Generation Wait45 s');
+    });
+
     it('clears the failed delete error before force deleting', async () => {
         const dispatch = vi.fn();
         useDispatchMock.mockReturnValue(dispatch);
@@ -93,23 +111,5 @@ describe('EstProfileDetail response timing', () => {
             'estProfiles/clearDeleteErrorMessages',
             'estProfiles/bulkForceDeleteEstProfiles',
         ]);
-    });
-
-    afterEach(() => {
-        act(() => root.unmount());
-        container.remove();
-        vi.clearAllMocks();
-    });
-
-    it('shows the issue wait, Retry-After and key generation wait in seconds', async () => {
-        await act(async () => {
-            root.render(<EstProfileDetail />);
-        });
-
-        const widget = container.querySelector('[data-testid="widget-Response Timing"]');
-        expect(widget).not.toBeNull();
-        expect(widget?.querySelector('[data-testid="row-issueWaitTimeout"]')?.textContent).toBe('Issue Wait0 s');
-        expect(widget?.querySelector('[data-testid="row-retryAfter"]')?.textContent).toBe('Retry-After7 s');
-        expect(widget?.querySelector('[data-testid="row-serverKeyGenerationTimeout"]')?.textContent).toBe('Key Generation Wait45 s');
     });
 });
