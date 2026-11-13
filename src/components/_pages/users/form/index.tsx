@@ -1,7 +1,6 @@
 import CertificateUploadDialog from 'components/_pages/certificates/CertificateUploadDialog';
 
 import CertificateAttributes from 'components/CertificateAttributes';
-import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
 import ProgressButton from 'components/ProgressButton';
 import Label from 'components/Label';
@@ -21,8 +20,8 @@ import Select from 'components/Select';
 import Button from 'components/Button';
 import Container from 'components/Container';
 import Switch from 'components/Switch';
+import Toggletip from 'components/Toggletip';
 
-import Badge from 'components/Badge';
 import type { UserDetailModel } from 'types/auth';
 import type { AttributeRequestModel } from 'types/attributes';
 import type { CertificateDetailResponseModel, CertificateListResponseModel } from 'types/certificate';
@@ -375,50 +374,21 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
         }
     }, [editMode, user, id, reset, isFetchingUserDetail]);
 
-    const rolesTableHeader: TableHeader[] = useMemo(
-        () => [
-            {
-                id: 'roleName',
-                content: 'Name',
-                sortable: true,
-                sort: 'asc',
-                width: 'auto',
-            },
-            {
-                id: 'roleDescription',
-                content: 'Role description',
-                sortable: true,
-                sort: 'asc',
-                width: 'auto',
-            },
-            {
-                id: 'systemRole',
-                content: 'System role',
-                sortable: true,
-                sort: 'asc',
-                width: 'auto',
-            },
-        ],
-        [],
+    const roleOptions = useMemo(
+        () =>
+            [...rolesSelector]
+                .sort((a, b) => a.name.localeCompare(b.name))
+                .map((role) => ({
+                    value: role.uuid,
+                    label: role.name,
+                    description: [role.systemRole ? 'System role' : undefined, role.description].filter(Boolean).join(' · ') || undefined,
+                })),
+        [rolesSelector],
     );
 
-    const rolesTableData: TableDataRow[] = useMemo(
-        () =>
-            rolesSelector.map((role) => ({
-                id: role.uuid,
-
-                columns: [
-                    role.name,
-
-                    role.description || '',
-
-                    <Badge key="systemRole" color={role.systemRole ? 'danger' : 'success'}>
-                        {role.systemRole ? 'Yes' : 'No'}
-                    </Badge>,
-                ],
-            })),
-
-        [rolesSelector],
+    const selectedRoleOptions = useMemo(
+        () => roleOptions.filter((option) => userRoles.includes(option.value)).map(({ value, label }) => ({ value, label })),
+        [roleOptions, userRoles],
     );
 
     const hasRolesChanged: boolean = useMemo(() => {
@@ -438,7 +408,19 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
                     <Controller
                         name="enabled"
                         control={control}
-                        render={({ field }) => <Switch id="enabled" checked={field.value} onChange={field.onChange} label="Enabled" />}
+                        render={({ field }) => (
+                            <div className="flex items-center gap-x-1.5">
+                                <Label htmlFor="enabled" className="text-sm !mb-0">
+                                    Enabled
+                                </Label>
+                                <Toggletip
+                                    ariaLabel="About the Enabled switch"
+                                    content="A disabled user cannot sign in. The account and its assigned roles are kept."
+                                    dataTestId="user-enabled-help"
+                                />
+                                <Switch id="enabled" className="ml-1.5" checked={field.value} onChange={field.onChange} />
+                            </div>
+                        )}
                     />
                 </div>
             ),
@@ -692,16 +674,16 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
                             {renderCustomAttributesEditor()}
 
                             <div className="mt-4">
-                                <Label>Assigned User Roles</Label>
-                                <CustomTable
-                                    headers={rolesTableHeader}
-                                    data={rolesTableData}
-                                    checkedRows={userRoles}
-                                    hasCheckboxes={true}
-                                    hasAllCheckBox={false}
-                                    onCheckedRowsChanged={(roles) => {
-                                        setUserRoles(roles as string[]);
-                                    }}
+                                <Select
+                                    id="userRoles"
+                                    label="Assigned User Roles"
+                                    placeholder="Select roles"
+                                    isMulti
+                                    isSearchable
+                                    showOptionDescriptionInDropdown
+                                    options={roleOptions}
+                                    value={selectedRoleOptions}
+                                    onChange={(roles) => setUserRoles(roles?.map((role) => String(role.value)) ?? [])}
                                 />
                             </div>
 
