@@ -279,7 +279,7 @@ function EstProfileFormBody({ profile, defaults, customAttributes, onCancel, onS
     const tokenProfileDetail = useSelector(loadedTokenProfileSelector);
     const tokenProfileCannotExport = keyRecoveryOn && !!tokenProfileDetail && !canExportKeyPair(tokenProfileDetail);
 
-    useEffect(() => {
+    const loadKeyDescriptors = useCallback(() => {
         dispatch(cryptographicKeysActions.clearKeyAttributeDescriptors());
         if (!keyRecoveryOn || !tokenProfile) return;
         const target = { tokenInstanceUuid: tokenProfile.tokenInstanceUuid, uuid: tokenProfile.uuid };
@@ -292,6 +292,10 @@ function EstProfileFormBody({ profile, defaults, customAttributes, onCancel, onS
             }),
         );
     }, [dispatch, keyRecoveryOn, tokenProfile]);
+
+    useEffect(() => {
+        loadKeyDescriptors();
+    }, [loadKeyDescriptors]);
 
     const clearAttributeValues = useCallback(
         (id: string) => {
@@ -618,8 +622,15 @@ function EstProfileFormBody({ profile, defaults, customAttributes, onCancel, onS
                                         />
                                         {keyDescriptorsMissing && (
                                             <Callout severity="danger" dataTestId="key-descriptors-load-error">
-                                                The saved key attributes could not be loaded, for example because the token profile is
-                                                disabled. Select an enabled token profile to continue.
+                                                The saved key attributes could not be loaded, so saving would remove them.
+                                                {tokenProfile
+                                                    ? ' Retry the lookup.'
+                                                    : ' The token profile is not available; select an enabled token profile to continue.'}
+                                                {tokenProfile && (
+                                                    <Button variant="outline" onClick={loadKeyDescriptors} type="button">
+                                                        Retry
+                                                    </Button>
+                                                )}
                                             </Callout>
                                         )}
                                         {tokenProfile && (
