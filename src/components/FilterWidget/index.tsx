@@ -38,6 +38,7 @@ import Button from 'components/Button';
 import Badge from 'components/Badge';
 import { validateDuration, validatePostgresPosixRegex } from 'utils/validators';
 import Label from 'components/Label';
+import type { Availability } from 'utils/availability';
 
 type ScalarFilterValue = string | number | null | undefined;
 
@@ -118,6 +119,7 @@ type Props = {
     getAvailableFiltersApi: (apiClients: ApiClients) => Observable<Array<SearchFieldListModel>>;
     onFilterUpdate?: (currentFilters: SearchFilterModel[]) => void;
     disableBadgeRemove?: boolean;
+    requires?: Availability;
     busyBadges?: boolean;
     extraFilterComponent?: React.ReactNode;
     filterGridCols?: 2 | 4;
@@ -169,6 +171,7 @@ export default function FilterWidget({
     entity,
     getAvailableFiltersApi,
     disableBadgeRemove,
+    requires,
     busyBadges,
     extraFilterComponent,
     filterGridCols = 4,
@@ -791,6 +794,7 @@ export default function FilterWidget({
                             !isValidValue ||
                             (!noValue[filterCondition.value] && (filterValue == null || filterValue === ''))
                         }
+                        requires={requires}
                         onClick={onUpdateFilterClick}
                         className="py-3 min-w-[62px]"
                     >

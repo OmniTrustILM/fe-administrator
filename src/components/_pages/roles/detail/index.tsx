@@ -15,7 +15,8 @@ import { useParams, useNavigate } from 'react-router';
 
 import Badge from 'components/Badge';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { Resource } from '../../../../types/openapi';
+import { Resource, ResourceAction } from '../../../../types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import BooleanBadge from 'components/BooleanBadge/BooleanBadge';
 import { createWidgetDetailHeaders } from 'utils/widget';
@@ -28,6 +29,7 @@ export default function UserDetail() {
 
     const navigate = useNavigate();
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Roles);
 
     const role = useSelector(selectors.role);
     const permissions = useSelector(selectors.permissions);
@@ -102,6 +104,7 @@ export default function UserDetail() {
         () => [
             {
                 icon: 'pencil',
+                requires: can(ResourceAction.Update),
                 disabled: role?.systemRole || false,
                 tooltip: 'Edit',
                 onClick: () => {
@@ -110,6 +113,7 @@ export default function UserDetail() {
             },
             {
                 icon: 'trash',
+                requires: can(ResourceAction.Delete),
                 disabled: role?.systemRole || false,
                 tooltip: 'Delete',
                 onClick: () => {
@@ -118,6 +122,7 @@ export default function UserDetail() {
             },
             {
                 icon: 'user-cog',
+                requires: can(ResourceAction.Update),
                 disabled: role?.systemRole || false,
                 tooltip: 'Edit role users',
                 onClick: () => {
@@ -126,6 +131,7 @@ export default function UserDetail() {
             },
             {
                 icon: 'lock',
+                requires: can(ResourceAction.Update),
                 disabled: role?.systemRole || false,
                 tooltip: 'Edit role permissions',
                 onClick: () => {
@@ -133,7 +139,7 @@ export default function UserDetail() {
                 },
             },
         ],
-        [role?.systemRole, onEditClick, onEditRoleUsersClick, onEditRolePermissionsClick],
+        [role?.systemRole, onEditClick, onEditRoleUsersClick, onEditRolePermissionsClick, can],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -311,6 +317,7 @@ export default function UserDetail() {
                             resource={Resource.Roles}
                             resourceUuid={memoizedRole.uuid}
                             attributes={memoizedRole.customAttributes}
+                            requires={can(ResourceAction.Update)}
                         />
                     )}
 

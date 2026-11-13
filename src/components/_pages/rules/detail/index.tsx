@@ -15,7 +15,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import Button from 'components/Button';
 import Container from 'components/Container';
-import { PlatformEnum, Resource } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { EnumColumnDescription, EnumValueDescription } from 'components/EnumDescription';
 import { Trash2 } from 'lucide-react';
 
@@ -25,6 +26,7 @@ interface SelectChangeValue {
 }
 const RuleDetails = () => {
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Rules);
     const dispatch = useDispatch();
     const ruleDetails = useSelector(rulesSelectors.ruleDetails);
     const isUpdatingRule = useSelector(rulesSelectors.isUpdatingRule);
@@ -126,7 +128,7 @@ const RuleDetails = () => {
         [dispatch, id, ruleDetails?.conditions, ruleDetails?.description],
     );
 
-    const buttons = useMemo(() => getEditAndDeleteWidgetButtons(() => setIsEditOpen(true), setConfirmDelete), []);
+    const buttons = useMemo(() => getEditAndDeleteWidgetButtons(() => setIsEditOpen(true), setConfirmDelete, can), [can]);
     const ruleTableHeaders = propertyValueActionsHeaders;
 
     const ruleDetailsData: TableDataRow[] = useMemo(
@@ -209,6 +211,7 @@ const RuleDetails = () => {
                                       ? 'Cannot delete this condition as there are no other conditions in the rule'
                                       : 'Delete Condition'
                               }
+                              requires={can(ResourceAction.Update)}
                               onClick={() => {
                                   onDeleteCondition(condition.uuid);
                               }}
@@ -222,7 +225,7 @@ const RuleDetails = () => {
             : [];
 
         return conditionsData;
-    }, [ruleDetails, isUpdatingRule, onDeleteCondition, isFetchingRuleDetails, conditionTypeEnum]);
+    }, [ruleDetails, isUpdatingRule, onDeleteCondition, isFetchingRuleDetails, conditionTypeEnum, can]);
 
     const renderRuleConditions = useMemo(() => {
         return ruleDetails?.conditions.length ? (
@@ -275,6 +278,7 @@ const RuleDetails = () => {
                                 isBusy: isUpdatingRule,
                                 newItemsList: conditionsOptions,
                                 onAddClick: onUpdateConditionsConfirmed,
+                                requires: can(ResourceAction.Update),
                             }}
                         />
                     </Widget>

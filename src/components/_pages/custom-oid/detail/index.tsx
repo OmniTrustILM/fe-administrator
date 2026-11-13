@@ -10,6 +10,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { PlatformEnum, Resource } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EnumValueDescription } from 'components/EnumDescription';
 import { getEditAndDeleteWidgetButtons, createWidgetDetailHeaders, createTableDataRow } from 'utils/widget';
@@ -22,6 +23,7 @@ export default function CustomOIDDetail() {
     const dispatch = useDispatch();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Oids);
 
     const oid = useSelector(selectors.oid);
 
@@ -76,8 +78,8 @@ export default function CustomOIDDetail() {
     }, [oid, dispatch]);
 
     const buttons: WidgetButtonProps[] = useMemo(
-        () => getEditAndDeleteWidgetButtons(handleOpenEditDialog, setConfirmDelete),
-        [handleOpenEditDialog],
+        () => getEditAndDeleteWidgetButtons(handleOpenEditDialog, setConfirmDelete, can),
+        [handleOpenEditDialog, can],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);

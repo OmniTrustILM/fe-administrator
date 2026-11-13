@@ -13,7 +13,8 @@ import { useParams } from 'react-router';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EnumValueDescription } from 'components/EnumDescription';
 import Badge from 'components/Badge';
-import { PlatformEnum, Resource } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { getEditAndDeleteWidgetButtons, createWidgetDetailHeaders } from 'utils/widget';
 import Container from 'components/Container';
@@ -24,6 +25,7 @@ export default function GlobalMetadataDetail() {
     const dispatch = useDispatch();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Attributes, id);
 
     const globalMetadata = useSelector(selectors.globalMetadata);
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
@@ -63,7 +65,14 @@ export default function GlobalMetadataDetail() {
         setConfirmDelete(false);
     }, [globalMetadata, dispatch]);
 
-    const buttons: WidgetButtonProps[] = useMemo(() => getEditAndDeleteWidgetButtons(onEditClick, setConfirmDelete), [onEditClick]);
+    const buttons: WidgetButtonProps[] = useMemo(
+        // Deleting global metadata demotes it to connector metadata, which core authorizes as an update.
+        () =>
+            getEditAndDeleteWidgetButtons(onEditClick, setConfirmDelete, can).map((button) =>
+                button.icon === 'trash' ? { ...button, requires: can(ResourceAction.Update) } : button,
+            ),
+        [onEditClick, can],
+    );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
 

@@ -15,7 +15,8 @@ import NotificationProfileForm from '../form';
 
 import Badge from 'components/Badge';
 import { EnumValueDescription } from 'components/EnumDescription';
-import { PlatformEnum, RecipientType, Resource } from 'types/openapi';
+import { PlatformEnum, RecipientType, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { getInputStringFromIso8601String } from 'utils/duration';
 import Dialog from 'components/Dialog';
@@ -26,6 +27,7 @@ import DetailPageSkeleton from 'components/DetailPageSkeleton';
 
 export default function NotificationProfileDetail() {
     const { id, version } = useParams();
+    const can = useActionAvailability(Resource.NotificationProfiles);
 
     const dispatch = useDispatch();
 
@@ -86,6 +88,7 @@ export default function NotificationProfileDetail() {
         () => [
             {
                 icon: 'pencil',
+                requires: can(ResourceAction.Update),
                 disabled: false,
                 tooltip: 'Edit',
                 onClick: () => {
@@ -94,6 +97,7 @@ export default function NotificationProfileDetail() {
             },
             {
                 icon: 'trash',
+                requires: can(ResourceAction.Delete),
                 disabled: false,
                 tooltip: 'Delete',
                 onClick: () => {
@@ -101,7 +105,7 @@ export default function NotificationProfileDetail() {
                 },
             },
         ],
-        [onEditNotificationProfile, onDeleteNotificationProfile],
+        [onEditNotificationProfile, onDeleteNotificationProfile, can],
     );
 
     const headers: TableHeader[] = useMemo(
