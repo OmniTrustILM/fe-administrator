@@ -1187,14 +1187,24 @@ function complianceProfilesTestReducer(
 // (used by the certificate form's optional owner field) can find this state.
 export type UsersTestState = {
     users: any[];
+    isCreating?: boolean;
 };
 
 const usersTestInitialState: UsersTestState = {
     users: [],
 };
 
-function usersTestReducer(state: UsersTestState | undefined, _action: UnknownAction): UsersTestState {
-    return state ?? usersTestInitialState;
+function usersTestReducer(state: UsersTestState | undefined, action: UnknownAction): UsersTestState {
+    const current = state ?? usersTestInitialState;
+    // The user form tests stand in for the create epic, so the in-flight flag follows the create and its failure.
+    switch (action.type) {
+        case 'users/create':
+            return { ...current, isCreating: true };
+        case 'users/createFailure':
+            return { ...current, isCreating: false };
+        default:
+            return current;
+    }
 }
 
 export type RolesTestState = {
