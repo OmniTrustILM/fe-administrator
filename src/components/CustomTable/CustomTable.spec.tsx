@@ -369,6 +369,42 @@ test.describe('CustomTable', () => {
         await expect(component.getByText('No users are assigned to this group')).toBeVisible();
     });
 
+    test('offers no Clear all when the empty list has no active filters', async ({ mount }) => {
+        const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={[]} emptyStateDescription="Nothing here" />));
+        await expect(component.getByText('No items to show')).toBeVisible();
+        await expect(component.getByText('Nothing here')).toBeVisible();
+        await expect(component.getByRole('button', { name: 'Clear all' })).toHaveCount(0);
+    });
+
+    test('states that no items match the filters and clears them with Clear all', async ({ mount }) => {
+        let cleared = 0;
+        const component = await mount(
+            withProviders(
+                <CustomTable
+                    headers={mockHeaders}
+                    data={[]}
+                    emptyStateDescription="Nothing here"
+                    onClearFilters={() => {
+                        cleared += 1;
+                    }}
+                />,
+            ),
+        );
+        await expect(component.getByText('No items match the filters')).toBeVisible();
+        await expect(component.getByText('No items to show')).toHaveCount(0);
+        await expect(component.getByText('Nothing here')).toHaveCount(0);
+
+        await component.getByRole('button', { name: 'Clear all' }).click();
+        await expect.poll(() => cleared).toBe(1);
+        expect(cleared).toBe(1);
+    });
+
+    test('renders the empty state title in the primary content colour', async ({ mount }) => {
+        const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={[]} />));
+        await expect(component.getByText('No items to show')).toHaveClass(/text-content(\s|$)/);
+        await expect(component.getByText('No items to show')).toHaveClass(/text-base/);
+    });
+
     test('should show No matching items when search filters all rows out', async ({ mount }) => {
         const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={mockData} canSearch={true} />));
         await component.getByPlaceholder('Search').fill('xyznonexistent');
@@ -1452,6 +1488,19 @@ test.describe('CustomTable', () => {
             await expect(emailCell.getByRole('button')).toHaveCount(0);
             await expect(emailCell.locator('[data-testid="sort-indicator"]')).toHaveCount(0);
             expect(await emailCell.getAttribute('aria-sort')).toBeNull();
+        });
+
+        test('a sortable and a non-sortable heading in the same row share the same capitalisation', async ({ mount }) => {
+            const component = await mount(withProviders(<CustomTable headers={mockHeaders} data={mockData} />));
+
+            const textTransform = (id: string) =>
+                component
+                    .locator(`th[data-id="${id}"] [id]`)
+                    .first()
+                    .evaluate((el) => getComputedStyle(el).textTransform);
+
+            expect(await textTransform('name')).toBe('uppercase');
+            expect(await textTransform('email')).toBe('uppercase');
         });
 
         test('shows an indicator only on the sorted column, with the idle affordance kept for hover', async ({ mount }) => {

@@ -197,6 +197,55 @@ test.describe('AddColumnMenu', () => {
         });
     }
 
+    test('offers a shipped column the catalogue does not publish back once removed, leaving the other columns as they are', async ({
+        mount,
+        page,
+    }) => {
+        const associations: ColumnDefinition = {
+            fieldSource: FilterFieldSource.Property,
+            fieldIdentifier: 'CK_ASSOCIATIONS',
+            catalogueLabel: 'Associations',
+            label: 'Linked',
+            align: 'center',
+            displayOnly: true,
+        };
+        await mount(
+            <AddColumnMenuHarness fields={fields} columns={[commonName, associations]} standardColumns={[commonName, associations]} />,
+        );
+        await page.getByTestId('add-column-menu-trigger').click();
+        await page.getByTestId('add-column-menu-field-custom:costCentre|STRING').check();
+        await page.getByTestId('add-column-menu-field-meta:discoverySource|STRING').check();
+        const before = JSON.parse((await page.getByTestId('applied-definitions').textContent()) ?? '[]') as ColumnDefinition[];
+
+        await page.getByTestId('add-column-menu-field-property:CK_ASSOCIATIONS').uncheck();
+        const propertySource = page.getByTestId('add-column-menu-source-property');
+        await expect(propertySource.getByTestId('add-column-menu-field-property:CK_ASSOCIATIONS')).not.toBeChecked();
+        await expect(propertySource).toContainText('Linked');
+        await page.getByTestId('add-column-menu-field-property:CK_ASSOCIATIONS').check();
+
+        await expect(page.getByTestId('add-column-menu-shown').getByTestId('add-column-menu-field-property:CK_ASSOCIATIONS')).toBeChecked();
+        const after = JSON.parse((await page.getByTestId('applied-definitions').textContent()) ?? '[]') as ColumnDefinition[];
+        expect(after[0]).toEqual(associations);
+        expect(after.slice(1)).toEqual(before.filter((entry) => entry.fieldIdentifier !== 'CK_ASSOCIATIONS'));
+    });
+
+    test('offers no shipped column back while the catalogue is still loading', async ({ mount, page }) => {
+        const associations = column(FilterFieldSource.Property, 'CK_ASSOCIATIONS', 'Associations');
+        await mount(
+            <AddColumnMenuHarness
+                fields={[]}
+                isCatalogueLoaded={false}
+                columns={[commonName]}
+                standardColumns={[commonName, associations]}
+            />,
+        );
+
+        await page.getByTestId('add-column-menu-trigger').click();
+
+        await expect(page.getByTestId('add-column-menu-source-property')).toContainText('Loading…');
+        await expect(page.getByTestId('add-column-menu-field-property:CK_ASSOCIATIONS')).toHaveCount(0);
+    });
+
     test('offers no reset where the host has nothing to go back to', async ({ mount, page }) => {
         await mount(<AddColumnMenuHarness fields={fields} columns={[commonName, expiresAt]} />);
 

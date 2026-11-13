@@ -95,6 +95,7 @@ type Props<TRow extends object> = {
     extraFilterComponent?: React.ReactNode;
     /** Shown inside the widget, above the table. */
     notice?: React.ReactNode;
+    emptyStateDescription?: string;
     /**
      * Bumped by the page to make the host re-run its own request. A request the page assembled would
      * omit the applied columns and ordering, blanking every attribute column and ignoring the sort.
@@ -158,6 +159,7 @@ function PagedList<TRow extends object>({
     columnForDetail,
     extraFilterComponent,
     notice,
+    emptyStateDescription,
     refreshToken,
     backgroundRefreshToken,
 }: Readonly<Props<TRow>>) {
@@ -336,6 +338,7 @@ function PagedList<TRow extends object>({
                     fields={catalogueFields}
                     isCatalogueLoaded={hasLoadedCatalogue}
                     columns={appliedColumns}
+                    shippedColumns={sortableStandardColumns}
                     // Both withheld until the strip is up: applying the opening view replaces the column
                     // set wholesale, so a change made before that would be wiped without a trace.
                     onToggle={isStripReady ? onToggleColumn : undefined}
@@ -343,7 +346,17 @@ function PagedList<TRow extends object>({
                     isStorable={isStorable}
                 />
             ) : undefined,
-        [isColumnDriven, catalogueFields, hasLoadedCatalogue, appliedColumns, onToggleColumn, onResetColumns, isStripReady, isStorable],
+        [
+            isColumnDriven,
+            catalogueFields,
+            hasLoadedCatalogue,
+            appliedColumns,
+            sortableStandardColumns,
+            onToggleColumn,
+            onResetColumns,
+            isStripReady,
+            isStorable,
+        ],
     );
 
     const currentFiltersSnapshot = useMemo(() => JSON.stringify(currentFilters ?? []), [currentFilters]);
@@ -711,6 +724,10 @@ function PagedList<TRow extends object>({
         }
     }, [dispatch, entity, location.pathname, defaultSort]);
 
+    const onClearFilters = useCallback(() => {
+        dispatch(filterActions.setCurrentFilters({ entity, currentFilters: [] }));
+    }, [dispatch, entity]);
+
     const paginationData = useMemo(
         () => ({
             page: effectivePageNumber,
@@ -803,6 +820,8 @@ function PagedList<TRow extends object>({
                     disableSelectionControls={isBusy || isFetchingList}
                     disableSearchControls={isBusy || isFetchingList}
                     trailingHeaderAction={addColumnMenu}
+                    emptyStateDescription={emptyStateDescription}
+                    onClearFilters={currentFilters.length > 0 ? onClearFilters : undefined}
                 />
             </Widget>
             {onDeleteCallback && (

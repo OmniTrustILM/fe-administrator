@@ -4,11 +4,11 @@ import Button from 'components/Button';
 import Container from 'components/Container';
 import { actions, selectors } from 'ducks/settings';
 
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { getFieldErrorMessage } from 'utils/validators-helper';
-import { composeValidators, validateMaximum, validateMinimum, validatePositiveInteger } from 'utils/validators';
 import { useDispatch, useSelector } from 'react-redux';
+import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import type { SettingsPlatformModel } from 'types/settings';
 import {
     buildCbomHealthPath,
@@ -18,7 +18,9 @@ import {
     validateHealthUrl,
     validateUrl,
 } from './UtilsSettingsForm.validation';
-import { CBOM_SYNC_TUNABLES, type CbomSyncTunableName, describeTunable, integerText, parseOptionalInteger } from './UtilsSettings.tunables';
+import TunableField from '../TunableField';
+import { integerText, parseOptionalInteger } from '../tunables';
+import { CBOM_SYNC_TUNABLES, type CbomSyncTunableName } from './UtilsSettings.tunables';
 
 class DebouncingHealthValidation {
     clearTimeout = () => {};
@@ -54,6 +56,7 @@ const UtilsSettingsForm = ({ onCancel, onSuccess }: UtilsSettingsFormProps = {})
     const platformSettings = useSelector(selectors.platformSettings);
     const isFetchingPlatform = useSelector(selectors.isFetchingPlatform);
     const isUpdatingPlatform = useSelector(selectors.isUpdatingPlatform);
+    const updateSucceeded = useSelector(selectors.updatePlatformSettingsSucceeded);
 
     const isBusy = useMemo(() => isFetchingPlatform || isUpdatingPlatform, [isFetchingPlatform, isUpdatingPlatform]);
 
@@ -180,16 +183,7 @@ const UtilsSettingsForm = ({ onCancel, onSuccess }: UtilsSettingsFormProps = {})
         [dispatch],
     );
 
-    const wasUpdating = useRef(isUpdatingPlatform);
-
-    useEffect(() => {
-        if (wasUpdating.current && !isUpdatingPlatform) {
-            if (onSuccess) {
-                onSuccess();
-            }
-        }
-        wasUpdating.current = isUpdatingPlatform;
-    }, [isUpdatingPlatform, onSuccess]);
+    useRunOnSuccessfulFinish(isUpdatingPlatform, updateSucceeded, onSuccess);
 
     return (
         <FormProvider {...methods}>
@@ -258,37 +252,7 @@ const UtilsSettingsForm = ({ onCancel, onSuccess }: UtilsSettingsFormProps = {})
                 />
 
                 {CBOM_SYNC_TUNABLES.map((tunable) => (
-                    <Controller
-                        key={tunable.name}
-                        name={tunable.name}
-                        control={control}
-                        rules={{
-                            validate: composeValidators(
-                                validatePositiveInteger(),
-                                validateMinimum(tunable.min),
-                                validateMaximum(tunable.max),
-                            ),
-                        }}
-                        render={({ field, fieldState }) => (
-                            <div>
-                                <TextInput
-                                    {...field}
-                                    id={tunable.name}
-                                    type="text"
-                                    inputMode="numeric"
-                                    label={`${tunable.label} (${tunable.unit})`}
-                                    placeholder={String(tunable.defaultValue)}
-                                    invalid={fieldState.error && fieldState.isTouched}
-                                    error={getFieldErrorMessage(fieldState)}
-                                    ariaDescribedBy={`${tunable.name}-help`}
-                                />
-                                <p id={`${tunable.name}-help`} className="text-sm text-content-subtle mt-2">
-                                    {tunable.help} Clear to return to the platform default ({describeTunable(tunable, tunable.defaultValue)}
-                                    ).
-                                </p>
-                            </div>
-                        )}
-                    />
+                    <TunableField key={tunable.name} control={control} tunable={tunable} />
                 ))}
 
                 <Container className="flex-row justify-end modal-footer" gap={4}>

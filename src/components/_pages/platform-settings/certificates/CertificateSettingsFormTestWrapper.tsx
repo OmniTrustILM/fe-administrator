@@ -1,9 +1,11 @@
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 
+import { actions } from 'ducks/settings';
 import type { testReducers } from 'ducks/test-reducers';
 import { useRecordingStore } from 'utils/test-helpers';
 
+import { PlatformSettingsUpdateOutcomes, platformSettingsUpdateReducer } from '../PlatformSettingsUpdateTestHarness';
 import CertificateSettings from './CertificateSettings';
 import CertificateSettingsForm from './CertificateSettingsForm';
 
@@ -28,7 +30,7 @@ export function CertificateSettingsFormTestWrapper({
     preloadedState,
     withReadOnlyView = false,
 }: CertificateSettingsFormTestWrapperProps) {
-    const { store, dispatched } = useRecordingStore(preloadedState, 'settings/updatePlatformSettings');
+    const { store, dispatched } = useRecordingStore(preloadedState, actions.updatePlatformSettings, platformSettingsUpdateReducer);
 
     return (
         <Provider store={store}>
@@ -39,6 +41,7 @@ export function CertificateSettingsFormTestWrapper({
             )}
             <CertificateSettingsForm onCancel={onCancel} onSuccess={onSuccess} />
             <output data-testid="update-platform-settings">{JSON.stringify(dispatched.map(({ payload }) => payload))}</output>
+            <PlatformSettingsUpdateOutcomes />
         </Provider>
     );
 }

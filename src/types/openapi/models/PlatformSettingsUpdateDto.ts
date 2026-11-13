@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { CertificateSettingsUpdateDto, UtilsSettingsDto } from './';
+import type { CertificateSettingsUpdateDto, SigningSettingsDto, UtilsSettingsDto } from './';
 
 /**
  * @export
@@ -30,4 +30,10 @@ export interface PlatformSettingsUpdateDto {
      * @memberof PlatformSettingsUpdateDto
      */
     certificates?: CertificateSettingsUpdateDto;
+    /**
+     * Signing settings shared by every Signing Profile; stored as sent when present, so a value left out returns to the platform default
+     * @type {SigningSettingsDto}
+     * @memberof PlatformSettingsUpdateDto
+     */
+    signing?: SigningSettingsDto;
 }

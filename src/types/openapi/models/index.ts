@@ -589,6 +589,7 @@ export * from './SigningRecordStatisticsPeriod';
 export * from './SigningScheme';
 export * from './SigningSchemeInterface';
 export * from './SigningSchemeRequestInterface';
+export * from './SigningSettingsDto';
 export * from './SigningWorkflowType';
 export * from './SimplifiedComplianceProfileDto';
 export * from './SimplifiedRaProfileDto';
