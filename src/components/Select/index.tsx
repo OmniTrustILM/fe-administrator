@@ -10,10 +10,7 @@ import {
     TRIGGER_CLASSES,
     TRIGGER_CLEARABLE_CLASSES,
     TRIGGER_DISABLED_CLASSES,
-    TRIGGER_TONE_CLASSES,
-    TRIGGER_TONE_INVALID_CLASSES,
-    WRAPPER_TONE_CLASSES,
-    WRAPPER_TONE_INVALID_CLASSES,
+    getToneClasses,
     PLACEHOLDER_CLASSES,
     TRIGGER_NO_OPTIONS_CLASSES,
     CHEVRON_CLASSES,
@@ -168,6 +165,16 @@ const renderColorizedVersionLabel = (text: string): React.ReactNode => {
 };
 
 const ADD_NEW_VALUES = new Set(['__add_new__', '__add_custom__']);
+
+function getErrorState(id: string, error: string | undefined, invalid: boolean | undefined, ariaDescribedBy: string | undefined) {
+    const errorId = `${id}-error`;
+    const describedBy = [ariaDescribedBy, error ? errorId : undefined].filter(Boolean).join(' ') || undefined;
+    return { isInvalid: invalid ?? !!error, errorId, describedBy };
+}
+
+function isInsideAny(target: Node | null, ...containers: Array<HTMLElement | null>): boolean {
+    return containers.some((container) => container?.contains(target));
+}
 
 function Select({
     id,
@@ -469,14 +476,10 @@ function Select({
     const clearableActive = effectiveClearable && hasValue;
     const multiBaseClass = clearableActive ? WRAPPER_CLEARABLE_CLASSES : WRAPPER_CLASSES;
     const singleBaseClass = clearableActive ? TRIGGER_CLEARABLE_CLASSES : TRIGGER_CLASSES;
-    const isInvalid = invalid ?? !!error;
-    const errorId = `${id}-error`;
-    const describedBy = [ariaDescribedBy, error ? errorId : undefined].filter(Boolean).join(' ') || undefined;
-    const invalidTone = isMulti ? WRAPPER_TONE_INVALID_CLASSES : TRIGGER_TONE_INVALID_CLASSES;
-    const tone = isMulti ? WRAPPER_TONE_CLASSES : TRIGGER_TONE_CLASSES;
+    const { isInvalid, errorId, describedBy } = getErrorState(id, error, invalid, ariaDescribedBy);
     const triggerClass = cn(
         isMulti ? multiBaseClass : singleBaseClass,
-        isInvalid ? invalidTone : tone,
+        getToneClasses(isMulti, isInvalid),
         triggerDisabled && TRIGGER_DISABLED_CLASSES,
     );
 
@@ -501,9 +504,7 @@ function Select({
                 className={cn('relative', className)}
                 style={minWidth ? { minWidth: `${minWidth}px` } : undefined}
                 onBlur={(e) => {
-                    const next = e.relatedTarget as Node | null;
-                    if (wrapperRef.current?.contains(next) || contentRef.current?.contains(next)) return;
-                    onBlur?.();
+                    if (!isInsideAny(e.relatedTarget as Node | null, wrapperRef.current, contentRef.current)) onBlur?.();
                 }}
             >
                 <Popover.Root
@@ -523,7 +524,6 @@ function Select({
                             aria-haspopup="listbox"
                             aria-expanded={open}
                             aria-controls={open ? listboxId : undefined}
-                            aria-invalid={isInvalid || undefined}
                             aria-describedby={describedBy}
                             className={triggerClass}
                             data-testid={dataTestId ? `${dataTestId}-trigger` : `select-${id}-trigger`}

@@ -40,7 +40,7 @@ export function AttributeFieldSelectTestWrapper({
     });
 
     useEffect(() => {
-        if (validateOnMount) methods.trigger(name);
+        if (validateOnMount) void methods.trigger(name);
     }, [validateOnMount, methods, name]);
 
     const onSelectChangeMulti = (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => {

@@ -36,7 +36,7 @@ export function AttributeFieldFileTestWrapper({
         },
     });
     useEffect(() => {
-        if (validateOnMount) methods.trigger(`${name}.content`);
+        if (validateOnMount) void methods.trigger(`${name}.content`);
     }, [validateOnMount, methods, name]);
 
     const field = (

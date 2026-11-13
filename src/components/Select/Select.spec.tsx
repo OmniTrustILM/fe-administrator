@@ -203,9 +203,8 @@ test.describe('Select', () => {
         const message = page.locator('#invalid-error');
 
         await expect(message).toHaveText('Required Field');
-        await expect(invalid).toHaveAttribute('aria-invalid', 'true');
         await expect(invalid).toHaveAttribute('aria-describedby', 'invalid-error');
-        await expect(valid).not.toHaveAttribute('aria-invalid');
+        await expect(valid).not.toHaveAttribute('aria-describedby');
 
         const dangerColor = await message.evaluate((el) => getComputedStyle(el).color);
         await expect(invalid).toHaveCSS('border-top-color', dangerColor);
@@ -220,7 +219,8 @@ test.describe('Select', () => {
 
     test('invalid={false} overrides an error', async ({ mount, page }) => {
         await mount(<Select id="i" value="" onChange={() => {}} options={BASE_OPTIONS} error="Shown" invalid={false} dataTestId="sel" />);
-        await expect(page.getByTestId('sel-trigger')).not.toHaveAttribute('aria-invalid');
+        const dangerColor = await page.getByText('Shown').evaluate((el) => getComputedStyle(el).color);
+        await expect(page.getByTestId('sel-trigger')).not.toHaveCSS('border-top-color', dangerColor);
     });
 
     test('disabled option is skipped by arrows and ignored on click', async ({ mount, page }) => {

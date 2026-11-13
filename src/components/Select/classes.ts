@@ -14,10 +14,15 @@ export const TRIGGER_DISABLED_CLASSES = 'pointer-events-none opacity-50';
 
 // Border and ring colours live apart from the base classes: stacking two colour utilities on one element lets
 // the stylesheet order, not the class order, decide which one shows.
-export const TRIGGER_TONE_CLASSES = 'border-outline focus:ring-brand';
-export const TRIGGER_TONE_INVALID_CLASSES = 'border-danger focus:ring-danger';
-export const WRAPPER_TONE_CLASSES = 'border-outline focus-within:ring-brand focus-within:border-brand';
-export const WRAPPER_TONE_INVALID_CLASSES = 'border-danger focus-within:ring-danger';
+const TRIGGER_TONE_CLASSES = 'border-outline focus:ring-brand';
+const TRIGGER_TONE_INVALID_CLASSES = 'border-danger focus:ring-danger';
+const WRAPPER_TONE_CLASSES = 'border-outline focus-within:ring-brand focus-within:border-brand';
+const WRAPPER_TONE_INVALID_CLASSES = 'border-danger focus-within:ring-danger';
+
+export function getToneClasses(isMulti: boolean, isInvalid: boolean): string {
+    if (isMulti) return isInvalid ? WRAPPER_TONE_INVALID_CLASSES : WRAPPER_TONE_CLASSES;
+    return isInvalid ? TRIGGER_TONE_INVALID_CLASSES : TRIGGER_TONE_CLASSES;
+}
 
 export const PLACEHOLDER_CLASSES = 'text-content-hint';
 

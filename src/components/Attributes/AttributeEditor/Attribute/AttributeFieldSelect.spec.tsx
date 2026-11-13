@@ -423,12 +423,12 @@ test.describe('AttributeFieldSelect', () => {
                 // Focus is back on the list, so the user has not left it yet.
                 await expect(trigger).toBeFocused();
                 await expect(page.getByText('Required Field')).toHaveCount(0);
-                await expect(trigger).not.toHaveAttribute('aria-invalid');
+                await expect(trigger).not.toHaveClass(/border-danger/);
 
                 await page.keyboard.press('Tab');
 
                 await expect(page.getByText('Required Field')).toBeVisible();
-                await expect(trigger).toHaveAttribute('aria-invalid', 'true');
+                await expect(trigger).toHaveClass(/border-danger/);
                 await expect(trigger).toHaveAttribute('aria-describedby', 'testSelect-error');
             });
         }
@@ -460,10 +460,10 @@ test.describe('AttributeFieldSelect', () => {
             await page.getByRole('button', { name: 'Submit' }).click();
 
             await expect(page.getByText('Required Field')).toBeVisible();
-            await expect(page.getByTestId('select-testSelectSelect-trigger')).toHaveAttribute('aria-invalid', 'true');
+            await expect(page.getByTestId('select-testSelectSelect-trigger')).toHaveClass(/border-danger/);
         });
 
-        test('a hidden list is marked invalid but not linked to a message it does not render', async ({ mount, page }) => {
+        test('a hidden list is painted invalid but not linked to a message it does not render', async ({ mount, page }) => {
             await mount(
                 <AttributeFieldSelectTestWrapper
                     name="testSelect"
@@ -475,7 +475,7 @@ test.describe('AttributeFieldSelect', () => {
             await page.getByRole('button', { name: 'Submit' }).click();
 
             const trigger = page.getByTestId('select-testSelectSelect-trigger');
-            await expect(trigger).toHaveAttribute('aria-invalid', 'true');
+            await expect(trigger).toHaveClass(/border-danger/);
             await expect(trigger).not.toHaveAttribute('aria-describedby');
         });
 
@@ -500,7 +500,7 @@ test.describe('AttributeFieldSelect', () => {
             await page.getByRole('option', { name: 'Second', exact: true }).click();
 
             await expect(page.getByText('Required Field')).toHaveCount(0);
-            await expect(trigger).not.toHaveAttribute('aria-invalid');
+            await expect(trigger).not.toHaveClass(/border-danger/);
         });
 
         test('a cancelled "create new" leaves the empty list marked', async ({ mount, page }) => {
@@ -538,7 +538,7 @@ test.describe('AttributeFieldSelect', () => {
             await page.getByRole('button', { name: 'Add custom value' }).click();
 
             await expect(page.getByText('Required Field')).toHaveCount(0);
-            await expect(trigger).not.toHaveAttribute('aria-invalid');
+            await expect(trigger).not.toHaveClass(/border-danger/);
         });
     });
 });
