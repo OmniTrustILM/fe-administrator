@@ -605,16 +605,17 @@ function EstProfileFormBody({ profile, defaults, customAttributes, onCancel, onS
                                                 />
                                             )}
                                         />
+                                        {keyDescriptorsMissing && (
+                                            <Callout severity="danger" dataTestId="key-descriptors-load-error">
+                                                The saved key attributes could not be loaded, for example because the token profile is
+                                                disabled. Select an enabled token profile to continue.
+                                            </Callout>
+                                        )}
                                         {tokenProfile && (
                                             <>
                                                 <p className="text-sm text-content-subtle" data-testid="key-recovery-naming-hint">
                                                     Leave per-key name, alias or label fields empty; the connector names each key.
                                                 </p>
-                                                {keyDescriptorsMissing && (
-                                                    <Callout severity="danger" dataTestId="key-descriptors-load-error">
-                                                        The key attributes could not be loaded. Reselect the token profile to retry.
-                                                    </Callout>
-                                                )}
                                                 {keyDescriptors && keyDescriptors.length > 0 && (
                                                     <AttributeEditor
                                                         key={tokenProfile.uuid}
