@@ -7,15 +7,18 @@ import { useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router';
 import type { Resource } from 'types/openapi';
+import type { Availability } from 'utils/availability';
 import { conditionGroupToFilter, filterToConditionItems } from 'utils/rules';
 type FormType = 'conditionItems' | 'executionItems';
 
 interface ConditionGroupFormFilterProps {
     resource: Resource;
     formType: FormType;
+    requires?: Availability;
 }
 
-const ConditionAndSetFieldExecutionItemsViewer = ({ resource, formType }: ConditionGroupFormFilterProps) => {
+const ConditionAndSetFieldExecutionItemsViewer = ({ resource, formType, requires }: ConditionGroupFormFilterProps) => {
+    const denied = !!requires && !requires.available;
     const { id } = useParams();
     const editMode = useMemo(() => !!id, [id]);
 
@@ -70,7 +73,7 @@ const ConditionAndSetFieldExecutionItemsViewer = ({ resource, formType }: Condit
 
     const renderFilterWidgetForConditionItems = useMemo(() => {
         if (formType !== 'conditionItems' || !id || !conditionDetails) return null;
-        const disableBadgeRemove = conditionDetails.items.length === 1 || isFetchingConditionDetails || isUpdatingCondition;
+        const disableBadgeRemove = denied || conditionDetails.items.length === 1 || isFetchingConditionDetails || isUpdatingCondition;
         const isBusy = isFetchingConditionDetails || isUpdatingCondition;
         return (
             <div>
@@ -84,6 +87,7 @@ const ConditionAndSetFieldExecutionItemsViewer = ({ resource, formType }: Condit
                         })
                     }
                     disableBadgeRemove={disableBadgeRemove}
+                    requires={requires}
                     onFilterUpdate={(currentFilters) => {
                         const currentCondition = filterToConditionItems(currentFilters);
                         dispatch(
@@ -99,11 +103,11 @@ const ConditionAndSetFieldExecutionItemsViewer = ({ resource, formType }: Condit
                 />
             </div>
         );
-    }, [resource, dispatch, formType, id, conditionDetails, isFetchingConditionDetails, isUpdatingCondition]);
+    }, [resource, dispatch, formType, id, conditionDetails, isFetchingConditionDetails, isUpdatingCondition, requires, denied]);
 
     const renderFilterWidgetForExecutionItems = useMemo(() => {
         if (formType !== 'executionItems' || !id || !executionDetails) return null;
-        const disableBadgeRemove = executionDetails.items.length === 1 || isFetchingExecutionDetails || isUpdatingExecution;
+        const disableBadgeRemove = denied || executionDetails.items.length === 1 || isFetchingExecutionDetails || isUpdatingExecution;
 
         const isBusy = isFetchingExecutionDetails || isUpdatingExecution;
         return (
@@ -115,6 +119,7 @@ const ConditionAndSetFieldExecutionItemsViewer = ({ resource, formType }: Condit
                         title="Execution Items"
                         busyBadges={isBusy}
                         disableBadgeRemove={disableBadgeRemove}
+                        requires={requires}
                         getAvailableFiltersApi={(apiClients: ApiClients) =>
                             apiClients.resources.listResourceRuleFilterFields({
                                 resource,
@@ -140,7 +145,7 @@ const ConditionAndSetFieldExecutionItemsViewer = ({ resource, formType }: Condit
                 }
             </div>
         );
-    }, [resource, dispatch, formType, id, executionDetails, isFetchingExecutionDetails, isUpdatingExecution]);
+    }, [resource, dispatch, formType, id, executionDetails, isFetchingExecutionDetails, isUpdatingExecution, requires, denied]);
 
     const renderWidgetConditionViewer = useMemo(() => {
         switch (formType) {

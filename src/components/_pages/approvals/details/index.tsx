@@ -19,8 +19,7 @@ import Button from 'components/Button';
 import TextArea from 'components/TextArea';
 import { ApproverType, type ProfileApprovalStepModel } from 'types/approval-profiles';
 import type { DetailApprovalStepModel } from 'types/approvals';
-import { ApprovalDetailDtoStatusEnum, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
-import { useActionAvailability } from 'utils/useActionAvailability';
+import { ApprovalDetailDtoStatusEnum, PlatformEnum, Resource } from 'types/openapi';
 import { dateFormatter } from 'utils/dateUtil';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import { ArrowRightCircle } from 'lucide-react';
@@ -29,7 +28,6 @@ export default function ApprovalDetails() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { id } = useParams();
-    const can = useActionAvailability(Resource.Approvals);
 
     const approvalDetails = useSelector(approvalSelectors.approvalDetails);
     const isFetchingDetail = useSelector(approvalSelectors.isFetchingDetail);
@@ -80,7 +78,6 @@ export default function ApprovalDetails() {
         () => [
             {
                 icon: 'check',
-                requires: can(ResourceAction.Approve),
                 disabled: approvalDetails?.status !== ApprovalDetailDtoStatusEnum.Pending,
                 tooltip: 'Approve',
                 onClick: () => {
@@ -89,7 +86,6 @@ export default function ApprovalDetails() {
             },
             {
                 icon: 'times',
-                requires: can(ResourceAction.Approve),
                 disabled: approvalDetails?.status !== ApprovalDetailDtoStatusEnum.Pending,
                 tooltip: 'Reject',
                 onClick: () => {
@@ -97,7 +93,7 @@ export default function ApprovalDetails() {
                 },
             },
         ],
-        [approvalDetails, can],
+        [approvalDetails],
     );
     const getApprovalType = (approvalStep: DetailApprovalStepModel) => {
         if (approvalStep.userUuid) {

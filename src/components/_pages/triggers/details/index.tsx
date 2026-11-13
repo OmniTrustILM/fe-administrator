@@ -6,6 +6,7 @@ import { EnumValueDescription } from 'components/EnumDescription';
 import FlowChart from 'components/FlowChart';
 import TabLayout from 'components/Layout/TabLayout';
 import Switch from 'components/Switch';
+import Tooltip from 'components/Tooltip';
 import Widget from 'components/Widget';
 import { propertyValueActionsHeaders } from 'utils/automationDetailUtils';
 import { getEditAndDeleteWidgetButtons } from 'utils/widget';
@@ -18,6 +19,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import Button from 'components/Button';
 import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import type { Availability } from 'utils/availability';
 import { useActionAvailability } from 'utils/useActionAvailability';
 import { DeviceType, useDeviceType } from 'utils/common-hooks';
 import Breadcrumb from 'components/Breadcrumb';
@@ -27,6 +29,20 @@ interface SelectChangeValue {
     value: string;
     label: string;
 }
+function IgnoreTriggerSwitch({
+    checked,
+    requires,
+    onChange,
+}: Readonly<{ checked: boolean; requires: Availability; onChange: (checked: boolean) => void }>) {
+    const toggle = <Switch id="ignoreTrigger" checked={checked} disabled={!requires.available} onChange={onChange} />;
+    if (requires.available || !requires.reason) return toggle;
+    return (
+        <Tooltip content={requires.reason}>
+            <span className="inline-flex">{toggle}</span>
+        </Tooltip>
+    );
+}
+
 const TriggerDetails = () => {
     const { id } = useParams();
     const can = useActionAvailability(Resource.Triggers);
@@ -256,10 +272,10 @@ const TriggerDetails = () => {
                           id: 'ignoreTrigger',
                           columns: [
                               'Ignore Trigger',
-                              <Switch
+                              <IgnoreTriggerSwitch
                                   key="ignoreTrigger"
-                                  id="ignoreTrigger"
                                   checked={triggerDetails.ignoreTrigger}
+                                  requires={can(ResourceAction.Update)}
                                   onChange={(checked) => {
                                       if (checked) {
                                           setConfirmIgnoreTrigger(true);
@@ -296,7 +312,7 @@ const TriggerDetails = () => {
                       },
                   ]
                 : [],
-        [triggerTypeEnum, triggerDetails, resourceTypeEnum, eventNameEnum, dispatch, isFetchingTriggerDetail],
+        [triggerTypeEnum, triggerDetails, resourceTypeEnum, eventNameEnum, dispatch, isFetchingTriggerDetail, can],
     );
 
     const actionsDataHeader = useMemo(
