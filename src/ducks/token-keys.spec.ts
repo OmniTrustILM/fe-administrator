@@ -17,7 +17,7 @@ import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import reducer, { actions, initialState, selectors } from './token-keys';
 import tokenKeyEpics from './token-keys-epics';
-import { describeOnboarding } from './transform/token-keys';
+import { summarizeOnboarding } from './transform/token-keys';
 
 function epicNamed(epics: unknown[], name: string) {
     const epic = (epics as { name: string }[]).find((candidate) => candidate.name === name);
@@ -45,13 +45,33 @@ const page: TokenKeyListResponseDto = {
 const onboarded: TokenKeyOnboardingResultDto = {
     keyPairMeta: keyPairMeta('handle-1'),
     onboarded: true,
+    intoExistingKey: false,
     keyUuid: 'key-1',
     keyName: 'signer',
 };
 const skipped: TokenKeyOnboardingResultDto = {
     keyPairMeta: keyPairMeta('handle-2'),
     onboarded: false,
+    intoExistingKey: false,
     reason: 'Key signer already holds this key pair.',
+};
+const secondOnboarded: TokenKeyOnboardingResultDto = {
+    keyPairMeta: keyPairMeta('handle-3'),
+    onboarded: true,
+    intoExistingKey: false,
+    keyUuid: 'key-3',
+    keyName: 'archiver',
+};
+const skippedWithoutReason: TokenKeyOnboardingResultDto = {
+    keyPairMeta: keyPairMeta('handle-4'),
+    onboarded: false,
+    intoExistingKey: false,
+};
+const skippedForName: TokenKeyOnboardingResultDto = {
+    keyPairMeta: keyPairMeta('handle-5'),
+    onboarded: false,
+    intoExistingKey: false,
+    reason: 'A key named backup already exists.',
 };
 
 const request = { tokenInstanceUuid: 'token', tokenProfileUuid: 'profile' };
@@ -221,7 +241,23 @@ describe('token key epics', () => {
         ]);
     });
 
-    test('onboardTokenKeys reports onboarded keys as a success', async () => {
+    test('onboardTokenKeys reports an onboarding of every key as a success', async () => {
+        // given
+        const onboardTokenKeys = vi.fn(() => of({ results: [onboarded] }));
+        const action = actions.onboardTokenKeys({ ...request, keys: [{ keyPairMeta: keyPairMeta('handle-1') }] });
+
+        // when
+        const emitted = await firstValueFrom(
+            epicNamed(tokenKeyEpics, 'onboardTokenKeys')(of(action), of({}), {
+                apiClients: { cryptographicKeys: { onboardTokenKeys } },
+            }).pipe(toArray()),
+        );
+
+        // then
+        expect(emitted).toEqual([actions.onboardTokenKeysSuccess({ results: [onboarded] }), alertActions.success('Onboarded 1 key pair.')]);
+    });
+
+    test('onboardTokenKeys reports a batch with a refused key as an error', async () => {
         // given
         const onboardTokenKeys = vi.fn(() => of({ results: [onboarded, skipped] }));
         const action = actions.onboardTokenKeys({
@@ -243,11 +279,11 @@ describe('token key epics', () => {
         });
         expect(emitted).toEqual([
             actions.onboardTokenKeysSuccess({ results: [onboarded, skipped] }),
-            alertActions.success('Onboarded 1 of 2 key pairs.'),
+            alertActions.error('Onboarded 1 of 2 key pairs and failed to onboard 1.\nKey signer already holds this key pair.'),
         ]);
     });
 
-    test('onboardTokenKeys reports zero onboarded keys as information', async () => {
+    test('onboardTokenKeys reports a refused key as an error with its reason', async () => {
         // given
         const onboardTokenKeys = vi.fn(() => of({ results: [skipped] }));
         const action = actions.onboardTokenKeys({ ...request, keys: [{ keyPairMeta: keyPairMeta('handle-2') }] });
@@ -260,7 +296,10 @@ describe('token key epics', () => {
         );
 
         // then
-        expect(emitted).toEqual([actions.onboardTokenKeysSuccess({ results: [skipped] }), alertActions.info('Onboarded 0 of 1 key pair.')]);
+        expect(emitted).toEqual([
+            actions.onboardTokenKeysSuccess({ results: [skipped] }),
+            alertActions.error('Failed to onboard the key pair. Key signer already holds this key pair.'),
+        ]);
     });
 
     test('onboardTokenKeys reports a refused onboarding', async () => {
@@ -304,12 +343,47 @@ describe('token key epics', () => {
     });
 });
 
-describe('describeOnboarding', () => {
-    test('counts what was onboarded', () => {
-        expect(describeOnboarding([onboarded, skipped])).toBe('Onboarded 1 of 2 key pairs.');
-    });
-
-    test('names a single key pair in the singular', () => {
-        expect(describeOnboarding([onboarded])).toBe('Onboarded 1 of 1 key pair.');
+describe('summarizeOnboarding', () => {
+    test.each([
+        { batch: 'its one key onboarded', results: [onboarded], expected: { allOnboarded: true, message: 'Onboarded 1 key pair.' } },
+        {
+            batch: 'every key onboarded',
+            results: [onboarded, secondOnboarded],
+            expected: { allOnboarded: true, message: 'Onboarded 2 key pairs.' },
+        },
+        {
+            batch: 'its one key refused',
+            results: [skipped],
+            expected: { allOnboarded: false, message: 'Failed to onboard the key pair. Key signer already holds this key pair.' },
+        },
+        {
+            batch: 'its one key refused without a reason',
+            results: [skippedWithoutReason],
+            expected: { allOnboarded: false, message: 'Failed to onboard the key pair.' },
+        },
+        {
+            batch: 'every key refused',
+            results: [skipped, skippedForName],
+            expected: {
+                allOnboarded: false,
+                message: 'Failed to onboard 2 key pairs.\nKey signer already holds this key pair.\nA key named backup already exists.',
+            },
+        },
+        {
+            batch: 'every key refused, one without a reason',
+            results: [skipped, skippedWithoutReason],
+            expected: { allOnboarded: false, message: 'Failed to onboard 2 key pairs.\nKey signer already holds this key pair.' },
+        },
+        {
+            batch: 'some keys refused',
+            results: [onboarded, skipped, skippedForName],
+            expected: {
+                allOnboarded: false,
+                message:
+                    'Onboarded 1 of 3 key pairs and failed to onboard 2.\nKey signer already holds this key pair.\nA key named backup already exists.',
+            },
+        },
+    ])('summarizes a batch with $batch', ({ results, expected }) => {
+        expect(summarizeOnboarding(results)).toEqual(expected);
     });
 });

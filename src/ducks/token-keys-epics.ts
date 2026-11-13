@@ -6,7 +6,7 @@ import { extractError } from 'utils/net';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { slice } from './token-keys';
-import { describeOnboarding } from './transform/token-keys';
+import { summarizeOnboarding } from './transform/token-keys';
 
 const listTokenKeys: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
@@ -25,9 +25,10 @@ const listTokenKeys: AppEpic = (action$, state$, deps) => {
     );
 };
 
+/** A refused key raises an error, the only alert that stays on screen until dismissed. */
 function onboardingAlert(results: TokenKeyOnboardingResultDto[]) {
-    const outcome = describeOnboarding(results);
-    return results.some((result) => result.onboarded) ? alertActions.success(outcome) : alertActions.info(outcome);
+    const { allOnboarded, message } = summarizeOnboarding(results);
+    return allOnboarded ? alertActions.success(message) : alertActions.error(message);
 }
 
 const onboardTokenKeys: AppEpic = (action$, state$, deps) => {

@@ -33,7 +33,7 @@ type Props = Readonly<{
 }>;
 
 /**
- * A selection keeps its pair as last listed, so a pair picked on another page still names its onboarding result.
+ * A selection keeps its pair as last listed, whose status decides whether a name is sent, even for a pair picked on another page.
  * The name is set once the user types one.
  */
 type Selection = Readonly<{ keyPairMeta: MetadataAttribute[]; listed: TokenKeyDto; name?: string }>;
@@ -147,12 +147,6 @@ function withRelisted(selections: SelectionsByHandle, keys: readonly TokenKeyDto
  */
 function nameToSend({ listed, name }: Selection): string | undefined {
     return listed.status === TokenKeyStatus.OnboardableIntoKey ? undefined : name;
-}
-
-function describeResult(result: TokenKeyOnboardingResultDto): string {
-    if (!result.onboarded) return result.reason ?? '';
-    if (!result.intoExistingKey) return `onboarded as ${result.keyName}`;
-    return result.keyName ? `private key added to key ${result.keyName}` : 'private key added to an existing key';
 }
 
 /** Onboards the key pairs a token already holds, picked from the listing of a profile whose connector lists keys. */
@@ -275,8 +269,6 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
     const [pageNumber, setPageNumber] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [selections, setSelections] = useState<SelectionsByHandle>({});
-    // The results name their pairs from what was sent, since the onboarded pairs leave the selection.
-    const [sentSelections, setSentSelections] = useState<SelectionsByHandle>({});
     const tokenInstanceUuid = profile.tokenInstanceUuid;
     const tokenProfileUuid = profile.uuid;
 
@@ -332,7 +324,6 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
                 keyPairMeta: selection.keyPairMeta,
                 name: nameToSend(selection),
             }));
-            setSentSelections(selections);
             dispatch(tokenKeysActions.onboardTokenKeys({ tokenInstanceUuid, tokenProfileUuid, keys, customAttributes }));
         },
         [dispatch, selections, keyCustomAttributeDescriptors, tokenInstanceUuid, tokenProfileUuid],
@@ -426,21 +417,6 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
                         <AttributeEditor id={KEY_CUSTOM_ATTRIBUTES_ID} attributeDescriptors={keyCustomAttributeDescriptors} />
                     )}
                 </WizardSection>
-            )}
-            {results && results.length > 0 && (
-                <ul className="space-y-1 text-sm" aria-label="Onboarding results">
-                    {results.map((result, index) => {
-                        const handle = handleOf(result.keyPairMeta);
-                        const sent = sentSelections[handle];
-                        const caption = sent && captionOf(sent.listed);
-                        const outcome = describeResult(result);
-                        return (
-                            <li key={`${index}-${handle}`} className={result.onboarded ? 'text-content' : 'text-warning'}>
-                                {caption ? `${caption}: ${outcome}` : outcome}
-                            </li>
-                        );
-                    })}
-                </ul>
             )}
             <div className="flex justify-end gap-2">
                 <Button variant="outline" type="button" disabled={isOnboarding} onClick={onCancel}>
