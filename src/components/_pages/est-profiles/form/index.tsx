@@ -256,7 +256,7 @@ function EstProfileFormBody({ profile, defaults, customAttributes, onCancel, onS
         [raProfiles, values.raProfileUuid, profile],
     );
 
-    useEffect(() => {
+    const loadIssuanceDescriptors = useCallback(() => {
         // Cleared first, so a failed lookup leaves no descriptors from another RA Profile or form.
         dispatch(raProfileActions.clearIssuanceAttributesDescriptors());
         if (raProfile?.authorityInstanceUuid) {
@@ -265,6 +265,10 @@ function EstProfileFormBody({ profile, defaults, customAttributes, onCancel, onS
             );
         }
     }, [dispatch, raProfile?.authorityInstanceUuid, raProfile?.uuid]);
+
+    useEffect(() => {
+        loadIssuanceDescriptors();
+    }, [loadIssuanceDescriptors]);
 
     const keyRecoveryOn = values.serverKeyGeneration && values.keyRecovery;
     const tokenProfile = useMemo(
@@ -646,7 +650,10 @@ function EstProfileFormBody({ profile, defaults, customAttributes, onCancel, onS
                             <div className="space-y-4">
                                 {issueDescriptorsMissing && (
                                     <Callout severity="danger" dataTestId="issue-descriptors-load-error">
-                                        The saved issue attributes could not be loaded. Reselect the RA Profile to retry.
+                                        The saved issue attributes could not be loaded, so saving would remove them.
+                                        <Button variant="outline" onClick={loadIssuanceDescriptors} type="button">
+                                            Retry
+                                        </Button>
                                     </Callout>
                                 )}
                                 {customDescriptorsMissing && (
