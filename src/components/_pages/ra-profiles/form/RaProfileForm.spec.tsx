@@ -217,6 +217,48 @@ test.describe('RaProfileForm (create mode) request-attributes chain', () => {
     });
 });
 
+// A required single-select custom attribute: the shape whose value used to be lost when a failed save
+// remounted the custom attribute editor.
+const requiredListCustomAttribute = {
+    uuid: 'stage-uuid',
+    name: 'stage',
+    version: 3,
+    type: 'custom',
+    contentType: 'string',
+    content: [{ data: 's1' }, { data: 's2' }, { data: 's3' }],
+    properties: { label: 'Stage', visible: true, required: true, readOnly: false, list: true, multiSelect: false },
+};
+
+const STAGE_TRIGGER = 'select-__attributes__customRaProfile__.stageSelect-trigger';
+
+test.describe('RaProfileForm (create mode) custom attributes after a failed create', () => {
+    test('keeps a selected required list value, so the form can be resubmitted as is', async ({ mount, page }) => {
+        await mount(<RaProfileFormCreateWithStore />);
+        await dispatchToStore(page, {
+            type: 'customAttributes/listResourceCustomAttributesSuccess',
+            payload: [requiredListCustomAttribute] as unknown as Record<string, unknown>,
+        });
+
+        await fillName(page, 'ProfileWithStage');
+        await page.getByRole('tab', { name: 'Custom Attributes' }).click();
+        await page.getByTestId(STAGE_TRIGGER).click();
+        await page.getByRole('option', { name: 's2', exact: true }).click();
+        await expect(page.getByTestId('progress-button')).toBeEnabled();
+
+        await page.getByTestId('progress-button').click();
+        await expect(page.getByTestId('progress-button')).toBeDisabled();
+        await dispatchToStore(page, { type: 'raprofiles/createRaProfileFailure', payload: { error: 'boom' } });
+
+        // The select can keep showing a value the form has already dropped, so the enabled button and the retried payload are the checks.
+        await expect(page.getByTestId('progress-button')).toBeEnabled();
+
+        await page.getByTestId('progress-button').click();
+        const creates = (await capturedActions(page)).filter((a) => a.type === 'raprofiles/createRaProfile');
+        expect(creates).toHaveLength(2);
+        expect(JSON.stringify(creates[1].payload)).toContain('"s2"');
+    });
+});
+
 const UPDATE_PROFILE_ACTION = 'raprofiles/updateRaProfile';
 
 const editModeState = {
@@ -305,5 +347,69 @@ test.describe('RaProfileForm (edit mode) save chain', () => {
 
         await expect(page.getByTestId('progress-button')).toBeEnabled();
         expect((await capturedActions(page)).some((a) => a.type === UPDATE_PROFILE_ACTION)).toBe(false);
+    });
+
+    test('opening Edit over a cached profile takes the description from the fresh detail response', async ({ mount, page }) => {
+        const cached = { ...editModeState.raprofiles.raProfile, description: 'Cached description' };
+        await mount(
+            <RaProfileFormCreateWithStore
+                raProfileId="profile-1"
+                preloadedState={{ ...editModeState, raprofiles: { ...editModeState.raprofiles, raProfile: cached } }}
+                withDetailFetch
+            />,
+        );
+
+        await dispatchToStore(page, {
+            type: 'raprofiles/getRaProfileDetailSuccess',
+            payload: { raProfile: { ...cached, description: 'Fresh description' } },
+        });
+
+        await expect(page.locator('#description')).toHaveValue('Fresh description');
+    });
+
+    test('a failed profile save after a saved request-attribute set keeps the attribute values for the retry', async ({ mount, page }) => {
+        await mount(
+            <RaProfileFormCreateWithStore
+                raProfileId="profile-1"
+                preloadedState={{
+                    ...editModeState,
+                    raprofiles: {
+                        ...editModeState.raprofiles,
+                        raProfile: {
+                            ...editModeState.raprofiles.raProfile,
+                            customAttributes: [{ uuid: 'stage-uuid', name: 'stage', contentType: 'string', content: [{ data: 's1' }] }],
+                        },
+                    },
+                }}
+            />,
+        );
+        await dispatchToStore(page, {
+            type: 'customAttributes/listResourceCustomAttributesSuccess',
+            payload: [requiredListCustomAttribute] as unknown as Record<string, unknown>,
+        });
+
+        await page.getByRole('tab', { name: 'Custom Attributes' }).click();
+        await expect(page.getByTestId(STAGE_TRIGGER)).toHaveText('s1');
+        await page.getByTestId(STAGE_TRIGGER).click();
+        await page.getByRole('option', { name: 's2', exact: true }).click();
+
+        await changeMergeModeAndSave(page);
+        await dispatchToStore(page, {
+            type: 'raprofiles/raProfileRequestAttributesUpdated',
+            payload: { uuid: 'profile-1', certificateRequestAttributes: { requestAttributes: [], mergeMode: 'staticOnly' } },
+        });
+        await dispatchToStore(page, { type: 'raProfileRequestAttributes/updateRaProfileRequestAttributesSuccess', payload: {} });
+        await expect.poll(async () => (await capturedActions(page)).some((a) => a.type === UPDATE_PROFILE_ACTION)).toBe(true);
+
+        await dispatchToStore(page, { type: 'raprofiles/updateRaProfileFailure', payload: { error: 'boom' } });
+
+        await page.getByRole('tab', { name: 'Custom Attributes' }).click();
+        await expect(page.getByTestId(STAGE_TRIGGER)).toHaveText('s2');
+        await expect(page.getByTestId('progress-button')).toBeEnabled();
+        await page.getByTestId('progress-button').click();
+
+        const updates = (await capturedActions(page)).filter((a) => a.type === UPDATE_PROFILE_ACTION);
+        expect(updates).toHaveLength(2);
+        expect(JSON.stringify(updates[1].payload)).toContain('"s2"');
     });
 });

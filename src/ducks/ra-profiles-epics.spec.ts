@@ -44,6 +44,20 @@ async function runUpdateRequestAttributesEpic(
     return { emitted, calls };
 }
 
+async function runUpdateEpic(action: UnknownAction, editRaProfile: (args: any) => any) {
+    const deps = { apiClients: { raProfiles: { editRaProfile: (args: any) => editRaProfile(args) } } };
+    const output$ = selectEpic('updateRaProfile')(of(action), of({}) as any, deps as any);
+    return firstValueFrom(output$.pipe(take(4), toArray()));
+}
+
+async function runUpdateValidationEpic(action: UnknownAction, updateRaProfileValidationConfiguration: (args: any) => any) {
+    const deps = {
+        apiClients: { raProfiles: { updateRaProfileValidationConfiguration: (args: any) => updateRaProfileValidationConfiguration(args) } },
+    };
+    const output$ = selectEpic('updateRaProfileCertificateValidation')(of(action), of({}) as any, deps as any);
+    return firstValueFrom(output$.pipe(take(4), toArray()));
+}
+
 describe('ra-profiles epics', () => {
     const updateAction = raProfilesActions.updateRaProfileRequestAttributes({
         profileUuid: 'ra-1',
@@ -101,5 +115,30 @@ describe('ra-profiles epics', () => {
         const types = emitted.map((a) => a.type);
         expect(types).toContain(raProfilesActions.createRaProfileSuccess.type);
         expect(types.some((t) => t.startsWith('appRedirect/'))).toBe(false);
+    });
+
+    test('updateRaProfile emits Failure and an error alert on API error, so the form can retry', async () => {
+        const action = raProfilesActions.updateRaProfile({
+            profileUuid: 'ra-1',
+            authorityInstanceUuid: 'auth-1',
+            raProfileEditRequest: { attributes: [] } as any,
+        });
+        const emitted = await runUpdateEpic(action, () => throwError(() => ({ status: 500, response: { message: 'boom' } })));
+
+        expect(emitted.map((a) => a.type)).toEqual([raProfilesActions.updateRaProfileFailure.type, alertActions.error.type]);
+    });
+
+    test('updateRaProfileCertificateValidation emits Failure and an error alert on API error, so the form can retry', async () => {
+        const action = raProfilesActions.updateRaProfileCertificateValidation({
+            profileUuid: 'ra-1',
+            authorityInstanceUuid: 'auth-1',
+            validation: { usePlatformSettings: true } as any,
+        });
+        const emitted = await runUpdateValidationEpic(action, () => throwError(() => ({ status: 500, response: { message: 'boom' } })));
+
+        expect(emitted.map((a) => a.type)).toEqual([
+            raProfilesActions.updateRaProfileCertificateValidationFailure.type,
+            alertActions.error.type,
+        ]);
     });
 });
