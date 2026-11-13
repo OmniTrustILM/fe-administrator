@@ -257,12 +257,12 @@ function EstProfileFormBody({ profile, defaults, customAttributes, onCancel, onS
     );
 
     useEffect(() => {
+        // Cleared first, so a failed lookup leaves no descriptors from another RA Profile or form.
+        dispatch(raProfileActions.clearIssuanceAttributesDescriptors());
         if (raProfile?.authorityInstanceUuid) {
             dispatch(
                 raProfileActions.listIssuanceAttributeDescriptors({ authorityUuid: raProfile.authorityInstanceUuid, uuid: raProfile.uuid }),
             );
-        } else {
-            dispatch(raProfileActions.clearIssuanceAttributesDescriptors());
         }
     }, [dispatch, raProfile?.authorityInstanceUuid, raProfile?.uuid]);
 
