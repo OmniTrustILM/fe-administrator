@@ -97,6 +97,8 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
             isFetchingResourceCustomAttributes,
         ],
     );
+    // The custom attribute editor resets its fields when it mounts, so it hides only while its own inputs load.
+    const customAttributesLoading = isFetchingAuthorityDetail || isFetchingResourceCustomAttributes;
 
     useEffect(() => {
         dispatch(authorityActions.resetState());
@@ -408,7 +410,7 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
     const inProgressTitle = useMemo(() => (editMode ? 'Saving...' : 'Creating...'), [editMode]);
 
     const renderCustomAttributeEditor = useMemo(() => {
-        if (isBusy) return <></>;
+        if (customAttributesLoading) return <></>;
         return (
             <AttributeEditor
                 id="customAuthority"
@@ -416,7 +418,7 @@ export default function AuthorityForm({ authorityId, onCancel, onSuccess }: Read
                 attributes={authority?.customAttributes}
             />
         );
-    }, [resourceCustomAttributes, authority, isBusy]);
+    }, [resourceCustomAttributes, authority, customAttributesLoading]);
 
     useRunOnSuccessfulFinish(isCreating, createAuthoritySucceeded, onSuccess);
     useRunOnSuccessfulFinish(isUpdating, updateAuthoritySucceeded, onSuccess);

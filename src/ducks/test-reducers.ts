@@ -1021,6 +1021,14 @@ function raProfilesTestReducer(state: RaProfilesTestState | undefined, action: U
             return { ...current, isCreating: false, createRaProfileSucceeded: false, createdRaProfileUuid: null };
         case 'raprofiles/updateRaProfile':
             return { ...current, isUpdating: true };
+        case 'raprofiles/updateRaProfileFailure':
+            return { ...current, isUpdating: false };
+        case 'raprofiles/raProfileRequestAttributesUpdated': {
+            // Like the real slice, a saved request-attribute set is patched into the loaded profile, giving it a new identity.
+            const patch = (action as { payload?: { uuid?: string; certificateRequestAttributes?: unknown } }).payload;
+            if (current.raProfile?.uuid !== patch?.uuid) return current;
+            return { ...current, raProfile: { ...current.raProfile, certificateRequestAttributes: patch?.certificateRequestAttributes } };
+        }
         default:
             return current;
     }

@@ -553,7 +553,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
     }, [raProfileIssuanceAttrDescs, cmpProfile?.issueCertificateAttributes, issueGroupAttributesCallbackAttributes]);
 
     const renderCertificateAssociatedAttributesEditor = useAttributeEditor({
-        isBusy,
+        isLoading: isFetchingDetail,
         id: 'certificateAssociatedAttributes',
         resourceKey: Resource.Certificates,
         attributes: cmpProfile?.certificateAssociations?.customAttributes,

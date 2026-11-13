@@ -113,6 +113,8 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
             isUpdatingContent,
         ],
     );
+    // The custom attribute editor resets its fields when it mounts, so it hides only while its own inputs load.
+    const customAttributesLoading = isFetchingUserDetail || isFetchingResourceCustomAttributes;
 
     const optionsForInput = useMemo(
         () => [
@@ -444,7 +446,7 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
     );
 
     const renderCustomAttributesEditor = useCallback(() => {
-        if (isBusy) return <></>;
+        if (customAttributesLoading) return <></>;
         return (
             <TabLayout
                 noBorder
@@ -462,7 +464,7 @@ function UserForm({ userId, onCancel, onSuccess }: UserFormProps) {
                 ]}
             />
         );
-    }, [resourceCustomAttributes, user, isBusy]);
+    }, [resourceCustomAttributes, user, customAttributesLoading]);
 
     return (
         <>

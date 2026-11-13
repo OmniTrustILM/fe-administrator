@@ -336,7 +336,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
     );
 
     const renderCustomAttributeEditor = useAttributeEditor({
-        isBusy,
+        isLoading: isFetchingDetail,
         id: 'customAcmeProfile',
         resourceKey: Resource.AcmeProfiles,
         attributes: acmeProfile?.customAttributes,
@@ -345,7 +345,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
     });
 
     const renderCertificateAssociatedAttributesEditor = useAttributeEditor({
-        isBusy,
+        isLoading: isFetchingDetail,
         id: 'certificateAssociatedAttributes',
         resourceKey: Resource.Certificates,
         attributes: acmeProfile?.certificateAssociations?.customAttributes,
