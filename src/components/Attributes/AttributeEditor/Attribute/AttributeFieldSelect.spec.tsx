@@ -393,6 +393,24 @@ test.describe('AttributeFieldSelect', () => {
             await page.getByTestId('submit-form').click();
             await expect(page.getByTestId('submit-success')).toBeVisible();
         });
+
+        test('reveals the constraint message of an untouched out-of-range value once the form is submitted', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldSelectTestWrapper
+                    name="testSelect"
+                    descriptor={rangeDescriptor()}
+                    options={[{ label: '1', value: 1 }]}
+                    defaultValues={{ testSelect: 101 }}
+                />,
+            );
+            await expect(page.getByText(rangeMessage)).toHaveCount(0);
+
+            await page.getByTestId('submit-form').click();
+
+            await expect(page.getByTestId('submit-count')).toHaveText('1');
+            await expect(page.getByText(rangeMessage)).toBeVisible();
+            await expect(page.getByTestId('submit-success')).toHaveCount(0);
+        });
     });
 
     test('extensible list multi-select adds extra options for current values not in options', async ({ mount, page }) => {
