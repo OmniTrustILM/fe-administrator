@@ -463,6 +463,22 @@ test.describe('AttributeFieldSelect', () => {
             await expect(page.getByTestId('select-testSelectSelect-trigger')).toHaveAttribute('aria-invalid', 'true');
         });
 
+        test('a hidden list is marked invalid but not linked to a message it does not render', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldSelectTestWrapper
+                    name="testSelect"
+                    descriptor={requiredList({ visible: false })}
+                    options={requiredOptions}
+                    withSubmit
+                />,
+            );
+            await page.getByRole('button', { name: 'Submit' }).click();
+
+            const trigger = page.getByTestId('select-testSelectSelect-trigger');
+            await expect(trigger).toHaveAttribute('aria-invalid', 'true');
+            await expect(trigger).not.toHaveAttribute('aria-describedby');
+        });
+
         test('choosing a value clears the message', async ({ mount, page }) => {
             await mount(
                 <AttributeFieldSelectTestWrapper

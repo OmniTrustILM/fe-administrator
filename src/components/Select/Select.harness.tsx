@@ -127,7 +127,15 @@ export function ToneHarness() {
     return (
         <div>
             <Select id="valid" value="" onChange={() => {}} options={BASE_OPTIONS} dataTestId="valid" />
-            <Select id="invalid" value="" onChange={() => {}} options={BASE_OPTIONS} error="Required Field" dataTestId="invalid" />
+            <Select
+                id="invalid"
+                value=""
+                onChange={() => {}}
+                options={BASE_OPTIONS}
+                error="Required Field"
+                dataTestId="invalid"
+                isSearchable
+            />
         </div>
     );
 }

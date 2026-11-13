@@ -570,6 +570,8 @@ function Select({
                                             aria-controls={listboxId}
                                             aria-expanded={open}
                                             aria-activedescendant={activeDescendantId}
+                                            aria-invalid={isInvalid || undefined}
+                                            aria-describedby={describedBy}
                                             onChange={(e) => {
                                                 const next = e.target.value;
                                                 setSearchTerm(next);

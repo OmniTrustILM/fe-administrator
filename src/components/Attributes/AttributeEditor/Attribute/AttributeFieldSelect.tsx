@@ -70,6 +70,7 @@ export function AttributeFieldSelect({
                 // While a custom value is being added the field is still being filled in, so its error waits.
                 const errorVisible = isAttributeErrorVisible(fieldState, submitCount) && !showAddCustom;
                 const errorId = `${name}-error`;
+                const describedBy = errorVisible && descriptor.properties.visible ? errorId : undefined;
 
                 const baseOptions = options;
                 let currentValues: unknown[];
@@ -119,7 +120,7 @@ export function AttributeFieldSelect({
                                         isSearchable
                                         invalid={errorVisible}
                                         onBlur={field.onBlur}
-                                        ariaDescribedBy={errorVisible ? errorId : undefined}
+                                        ariaDescribedBy={describedBy}
                                     />
                                 ) : (
                                     <Select
@@ -135,7 +136,7 @@ export function AttributeFieldSelect({
                                         isSearchable
                                         invalid={errorVisible}
                                         onBlur={field.onBlur}
-                                        ariaDescribedBy={errorVisible ? errorId : undefined}
+                                        ariaDescribedBy={describedBy}
                                     />
                                 )}
                             </div>

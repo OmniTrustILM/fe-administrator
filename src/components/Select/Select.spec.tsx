@@ -210,6 +210,12 @@ test.describe('Select', () => {
         const dangerColor = await message.evaluate((el) => getComputedStyle(el).color);
         await expect(invalid).toHaveCSS('border-top-color', dangerColor);
         await expect(valid).not.toHaveCSS('border-top-color', dangerColor);
+
+        await invalid.click();
+        const search = page.getByTestId('invalid-search');
+        await expect(search).toBeFocused();
+        await expect(search).toHaveAttribute('aria-invalid', 'true');
+        await expect(search).toHaveAttribute('aria-describedby', 'invalid-error');
     });
 
     test('invalid={false} overrides an error', async ({ mount, page }) => {
