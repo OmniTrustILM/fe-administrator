@@ -370,6 +370,12 @@ test.describe('certificateTableHelpers', () => {
             expect((cell as LinkCell).props.to).toBe('../cmpprofiles/detail/profile-1');
         });
 
+        test('links an EST-issued certificate to its EST Profile detail page', () => {
+            const cell = valueCellOf({ protocol: CertificateProtocol.Est, protocolProfileUuid: 'profile-1' }, 'protocolProfileUuid');
+
+            expect((cell as LinkCell).props.to).toBe('../estprofiles/detail/profile-1');
+        });
+
         test('renders the profile UUID as plain text when it is missing', () => {
             // Legacy CMP-issued certificates can have no recorded profile — a Link here would point at
             // ../cmpprofiles/detail/undefined and render an empty, invisible label.

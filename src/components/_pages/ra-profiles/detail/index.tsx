@@ -39,6 +39,7 @@ import {
 import EventsTable from 'components/_pages/notifications/events-settings/EventsTable';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import Breadcrumb from 'components/Breadcrumb';
+import CopyUrlCell from 'components/CopyUrlCell';
 import Container from 'components/Container';
 import CommentPanel from 'components/CommentPanel';
 import Switch from 'components/Switch';
@@ -61,6 +62,7 @@ export default function RaProfileDetail() {
     const acmeDetails = useSelector(raProfilesSelectors.acmeDetails);
     const scepDetails = useSelector(raProfilesSelectors.scepDetails);
     const cmpDetails = useSelector(raProfilesSelectors.cmpDetails);
+    const estDetails = useSelector(raProfilesSelectors.estDetails);
     const associatedComplianceProfiles = useSelector(complianceProfileSelectors.associatedComplianceProfiles);
     const associatedApprovalProfiles = useSelector(raProfilesSelectors.associatedApprovalProfiles);
     const isDissociatingApprovalProfile = useSelector(raProfilesSelectors.isDissociatingApprovalProfile);
@@ -69,6 +71,7 @@ export default function RaProfileDetail() {
     const isFetchingAcmeDetails = useSelector(raProfilesSelectors.isFetchingAcmeDetails);
     const isFetchingScepDetails = useSelector(raProfilesSelectors.isFetchingScepDetails);
     const isFetchingCmpDetails = useSelector(raProfilesSelectors.isFetchingCmpDetails);
+    const isFetchingEstDetails = useSelector(raProfilesSelectors.isFetchingEstDetails);
 
     const isDeleting = useSelector(raProfilesSelectors.isDeleting);
     const isEnabling = useSelector(raProfilesSelectors.isEnabling);
@@ -81,6 +84,8 @@ export default function RaProfileDetail() {
     const isDeactivatingCmp = useSelector(raProfilesSelectors.isDeactivatingCmp);
     const isActivatingScep = useSelector(raProfilesSelectors.isActivatingScep);
     const isDeactivatingScep = useSelector(raProfilesSelectors.isDeactivatingScep);
+    const isActivatingEst = useSelector(raProfilesSelectors.isActivatingEst);
+    const isDeactivatingEst = useSelector(raProfilesSelectors.isDeactivatingEst);
     const isFetchingAssociatedComplianceProfiles = useSelector(complianceProfileSelectors.isFetchingAssociatedComplianceProfiles);
 
     const platformSettings = useSelector(settingsSelectors.platformSettings);
@@ -90,10 +95,12 @@ export default function RaProfileDetail() {
     const [activateAcmeDialog, setActivateAcmeDialog] = useState(false);
     const [activateScepDialog, setActivateScepDialog] = useState(false);
     const [activateCmpDialog, setActivateCmpDialog] = useState(false);
+    const [activateEstDialog, setActivateEstDialog] = useState(false);
 
     const [confirmDeactivateAcme, setConfirmDeactivateAcme] = useState<boolean>(false);
     const [confirmDeactivateScep, setConfirmDeactivateScep] = useState<boolean>(false);
     const [confirmDeactivateCmp, setConfirmDeactivateCmp] = useState<boolean>(false);
+    const [confirmDeactivateEst, setConfirmDeactivateEst] = useState<boolean>(false);
 
     const [complianceCheck, setComplianceCheck] = useState<boolean>(false);
 
@@ -135,7 +142,10 @@ export default function RaProfileDetail() {
             isActivatingScep ||
             isDeactivatingScep ||
             isFetchingScepDetails ||
-            isFetchingCmpDetails,
+            isFetchingCmpDetails ||
+            isActivatingEst ||
+            isDeactivatingEst ||
+            isFetchingEstDetails,
         [
             isActivatingAcme,
             isDeactivatingAcme,
@@ -144,6 +154,9 @@ export default function RaProfileDetail() {
             isDeactivatingScep,
             isFetchingScepDetails,
             isFetchingCmpDetails,
+            isActivatingEst,
+            isDeactivatingEst,
+            isFetchingEstDetails,
         ],
     );
 
@@ -170,6 +183,7 @@ export default function RaProfileDetail() {
         dispatch(raProfilesActions.getAcmeDetails({ authorityUuid: authorityId, uuid: id }));
         dispatch(raProfilesActions.getScepDetails({ authorityUuid: authorityId, uuid: id }));
         dispatch(raProfilesActions.getCmpDetails({ authorityUuid: authorityId, uuid: id }));
+        dispatch(raProfilesActions.getEstDetails({ authorityUuid: authorityId, uuid: id }));
     }, [id, dispatch, authorityId]);
 
     const getFreshAssociatedApprovalProfiles = useCallback(() => {
@@ -294,6 +308,16 @@ export default function RaProfileDetail() {
         dispatch(raProfilesActions.deactivateScep({ authorityUuid: raProfile.authorityInstanceUuid ?? 'unknown', uuid: raProfile.uuid }));
         setConfirmDeactivateScep(false);
     }, [dispatch, raProfile]);
+
+    const onDeactivateEstConfirmed = useCallback(() => {
+        if (!raProfile) return;
+        dispatch(raProfilesActions.deactivateEst({ authorityUuid: raProfile.authorityInstanceUuid ?? 'unknown', uuid: raProfile.uuid }));
+        setConfirmDeactivateEst(false);
+    }, [dispatch, raProfile]);
+
+    const openEstActivationDialog = useCallback(() => {
+        setActivateEstDialog(true);
+    }, []);
 
     const onDissociateApprovalProfile = useCallback(
         (approvalProfileUuid: string) => {
@@ -676,6 +700,36 @@ export default function RaProfileDetail() {
         [scepDetails],
     );
 
+    const estProfileData: TableDataRow[] = useMemo(
+        () =>
+            estDetails
+                ? [
+                      {
+                          id: 'uuid',
+                          columns: ['UUID', estDetails.uuid || ''],
+                      },
+                      {
+                          id: 'name',
+                          columns: ['Name', estDetails.name || ''],
+                      },
+                      {
+                          id: 'label',
+                          columns: ['Label', estDetails.label || ''],
+                      },
+                      {
+                          id: 'URL',
+                          columns: [
+                              'EST URL',
+                              <CopyUrlCell key="estUrl" label="EST URL">
+                                  {estDetails.estUrl}
+                              </CopyUrlCell>,
+                          ],
+                      },
+                  ]
+                : [],
+        [estDetails],
+    );
+
     const availableProtocolsHeaders: TableHeader[] = useMemo(
         () => [
             {
@@ -787,24 +841,56 @@ export default function RaProfileDetail() {
                     ),
                 ],
             },
+            {
+                id: 'est',
+                columns: [
+                    'EST',
+                    <StatusBadge key="status" enabled={estDetails ? estDetails.estAvailable : false} />,
+                    <ProgressButton
+                        key="action"
+                        type="button"
+                        title={estDetails?.estAvailable ? 'Deactivate' : 'Activate'}
+                        inProgressTitle={estDetails?.estAvailable ? 'Deactivating...' : 'Activating...'}
+                        inProgress={isActivatingEst || isDeactivatingEst}
+                        onClick={() => (estDetails?.estAvailable ? setConfirmDeactivateEst(true) : openEstActivationDialog())}
+                    />,
+                ],
+                detailColumns: [
+                    <></>,
+                    <></>,
+                    <></>,
+                    renderProtocolDetail(
+                        estDetails?.estAvailable,
+                        'EST is not active',
+                        protocolProfileHeaders,
+                        estProfileData,
+                        estDetails?.issueCertificateAttributes,
+                    ),
+                ],
+            },
         ],
         [
             acmeDetails,
             scepDetails,
             cmpDetails,
+            estDetails,
             isActivatingAcme,
             isDeactivatingAcme,
             isActivatingCmp,
             isDeactivatingCmp,
             isActivatingScep,
             isDeactivatingScep,
+            isActivatingEst,
+            isDeactivatingEst,
             protocolProfileHeaders,
             acmeProfileData,
             scepProfileData,
             cmpProfileData,
+            estProfileData,
             openAcmeActivationDialog,
             openScepActivationDialog,
             openCmpActivationDialog,
+            openEstActivationDialog,
         ],
     );
 
@@ -1169,6 +1255,17 @@ export default function RaProfileDetail() {
             />
 
             <Dialog
+                isOpen={confirmDeactivateEst}
+                caption="Deactivate EST"
+                body="You are about to deactivate EST protocol for the RA profile. Is this what you want to do?"
+                toggle={() => setConfirmDeactivateEst(false)}
+                buttons={[
+                    { color: 'secondary', variant: 'outline', onClick: () => setConfirmDeactivateEst(false), body: 'Cancel' },
+                    { color: 'danger', onClick: onDeactivateEstConfirmed, body: 'Yes, deactivate' },
+                ]}
+            />
+
+            <Dialog
                 isOpen={activateAcmeDialog}
                 caption="Activate ACME protocol"
                 body={ProtocolActivationDialogBody({
@@ -1209,6 +1306,21 @@ export default function RaProfileDetail() {
                     authorityInstanceUuid: raProfile?.authorityInstanceUuid,
                 })}
                 toggle={() => setActivateScepDialog(false)}
+                buttons={[]}
+                size="xl"
+            />
+
+            <Dialog
+                isOpen={activateEstDialog}
+                caption="Activate EST protocol"
+                body={ProtocolActivationDialogBody({
+                    protocol: Protocol.EST,
+                    visible: activateEstDialog,
+                    onClose: () => setActivateEstDialog(false),
+                    raProfileUuid: raProfile?.uuid,
+                    authorityInstanceUuid: raProfile?.authorityInstanceUuid,
+                })}
+                toggle={() => setActivateEstDialog(false)}
                 buttons={[]}
                 size="xl"
             />

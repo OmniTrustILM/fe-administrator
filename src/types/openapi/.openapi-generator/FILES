@@ -27,6 +27,7 @@ apis/CryptographicOperationsControllerApi.ts
 apis/CustomAttributesApi.ts
 apis/CustomOIDManagementApi.ts
 apis/DiscoveryManagementApi.ts
+apis/ESTProfileManagementApi.ts
 apis/EntityManagementApi.ts
 apis/EnumsApi.ts
 apis/ExternalNotificationManagementApi.ts
@@ -84,6 +85,7 @@ models/ActionRequestDto.ts
 models/ActivateAcmeForRaProfileRequestDto.ts
 models/ActivateCmpForRaProfileRequestDto.ts
 models/ActivateScepForRaProfileRequestDto.ts
+models/ActivateEstForRaProfileRequestDto.ts
 models/ActorRecord.ts
 models/ActorType.ts
 models/ActuatorHealthDto.ts
@@ -378,6 +380,11 @@ models/EventHistoryDto.ts
 models/EventHistoryRequestDto.ts
 models/EventSettingsDto.ts
 models/EventStatus.ts
+models/EstAuthenticationPolicy.ts
+models/EstProfileDetailDto.ts
+models/EstProfileDto.ts
+models/EstProfileEditRequestDto.ts
+models/EstProfileRequestDto.ts
 models/EventsSettingsDto.ts
 models/ExecutionDto.ts
 models/ExecutionItemDto.ts
@@ -581,6 +588,7 @@ models/ResourceAction.ts
 models/ResourceActionsDto.ts
 models/ResourceCertificateContentData.ts
 models/ResourceDto.ts
+models/RaProfileEstDetailResponseDto.ts
 models/ResourceEvent.ts
 models/ResourceEventDto.ts
 models/ResourceLoggingSettingsDto.ts

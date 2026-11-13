@@ -20,4 +20,5 @@ export enum CertificateProtocol {
     Acme = 'acme',
     Scep = 'scep',
     Cmp = 'cmp',
+    Est = 'est',
 }
