@@ -72,6 +72,32 @@ describe('resolveAvailability', () => {
         });
     });
 
+    it.each([ResourceAction.Create, ResourceAction.List, ResourceAction.Register])(
+        'lets the profile decide %s, which the object answer never reports',
+        (action) => {
+            const profile = profileWith([{ resource: Resource.Secrets, actions: [action] }]);
+            const objectRule = { ...rule, action };
+
+            expect(
+                resolveAvailability({
+                    rule: objectRule,
+                    profile,
+                    objectAnswer: { status: 'loaded', allowedActions: [ResourceAction.Detail] },
+                    labels,
+                }),
+            ).toEqual(available);
+            expect(resolveAvailability({ rule: objectRule, profile, objectAnswer: { status: 'loading' }, labels })).toEqual(available);
+            expect(
+                resolveAvailability({
+                    rule: objectRule,
+                    profile: withoutGrants,
+                    objectAnswer: { status: 'loaded', allowedActions: [action] },
+                    labels,
+                }),
+            ).toEqual(denied);
+        },
+    );
+
     it('reports loading while the profile is not loaded', () => {
         expect(resolveAvailability({ rule, profile: undefined, labels })).toEqual({ available: false, hidden: false, loading: true });
     });

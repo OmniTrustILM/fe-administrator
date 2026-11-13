@@ -1,5 +1,5 @@
 import type { UserProfileDetailModel } from 'types/auth';
-import type { Resource, ResourceAction } from 'types/openapi';
+import { type Resource, ResourceAction } from 'types/openapi';
 import { hasResourceAction } from 'utils/permissions';
 
 export type ActionRule = {
@@ -35,10 +35,14 @@ export const missingPermissionReason = ({ resource, action }: AvailabilityLabels
 const LOADING: Availability = { available: false, hidden: false, loading: true };
 const AVAILABLE: Availability = { available: true, hidden: false, loading: false };
 
+/** Actions that do not act on an existing object, which the object answer never reports. */
+const NOT_ON_AN_OBJECT: ReadonlySet<ResourceAction> = new Set([ResourceAction.Create, ResourceAction.List, ResourceAction.Register]);
+
 /**
  * Decides whether one action is offered. An object answer, when there is one, decides on its own, because it already
- * counts ownership, group access and grants on the object, none of which the profile reports. Without one, or when the
- * request for it failed, the resource-level grants in the profile decide.
+ * counts ownership, group access and grants on the object, none of which the profile reports. Without one, when the
+ * request for it failed, or for an action that does not act on an existing object, the resource-level grants in the
+ * profile decide.
  */
 export function resolveAvailability({
     rule,
@@ -51,11 +55,12 @@ export function resolveAvailability({
     objectAnswer?: ObjectAllowedActionsAnswer;
     labels: AvailabilityLabels;
 }): Availability {
-    if (!profile || objectAnswer?.status === 'loading') return LOADING;
+    const answer = NOT_ON_AN_OBJECT.has(rule.action) ? undefined : objectAnswer;
+    if (!profile || answer?.status === 'loading') return LOADING;
 
     const allowed =
-        objectAnswer?.status === 'loaded'
-            ? !!objectAnswer.allowedActions?.includes(rule.action)
+        answer?.status === 'loaded'
+            ? !!answer.allowedActions?.includes(rule.action)
             : hasResourceAction(profile, rule.resource, rule.action);
 
     if (allowed) return AVAILABLE;
