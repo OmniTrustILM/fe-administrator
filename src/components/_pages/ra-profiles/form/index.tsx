@@ -197,9 +197,14 @@ export default function RaProfileForm({
 
     // Reset form values once per loaded raProfile in edit mode. The profile changes identity mid-save too
     // (a saved request-attribute set is patched into it), and a reset then would wipe the attribute values.
+    // A detail fetch clears the marker, so a cached profile is replaced by the fresh one.
     const resetForProfileRef = useRef<string | undefined>(undefined);
     useEffect(() => {
-        if (editMode && id && raProfile?.uuid === id && !isFetchingDetail) {
+        if (isFetchingDetail) {
+            resetForProfileRef.current = undefined;
+            return;
+        }
+        if (editMode && id && raProfile?.uuid === id) {
             if (resetForProfileRef.current === raProfile.uuid) return;
             resetForProfileRef.current = raProfile.uuid;
             const newDefaultValues: FormValues = {

@@ -349,6 +349,24 @@ test.describe('RaProfileForm (edit mode) save chain', () => {
         expect((await capturedActions(page)).some((a) => a.type === UPDATE_PROFILE_ACTION)).toBe(false);
     });
 
+    test('opening Edit over a cached profile takes the description from the fresh detail response', async ({ mount, page }) => {
+        const cached = { ...editModeState.raprofiles.raProfile, description: 'Cached description' };
+        await mount(
+            <RaProfileFormCreateWithStore
+                raProfileId="profile-1"
+                preloadedState={{ ...editModeState, raprofiles: { ...editModeState.raprofiles, raProfile: cached } }}
+                withDetailFetch
+            />,
+        );
+
+        await dispatchToStore(page, {
+            type: 'raprofiles/getRaProfileDetailSuccess',
+            payload: { raProfile: { ...cached, description: 'Fresh description' } },
+        });
+
+        await expect(page.locator('#description')).toHaveValue('Fresh description');
+    });
+
     test('a failed profile save after a saved request-attribute set keeps the attribute values for the retry', async ({ mount, page }) => {
         await mount(
             <RaProfileFormCreateWithStore

@@ -991,6 +991,7 @@ export type RaProfilesTestState = {
     createdRaProfileUuid: string | null;
     raProfiles: any[];
     raProfile?: any;
+    isFetchingDetail?: boolean;
 };
 
 const raProfilesTestInitialState: RaProfilesTestState = {
