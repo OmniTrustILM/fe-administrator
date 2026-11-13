@@ -401,6 +401,7 @@ test.describe('AttributeFieldSelect', () => {
                     descriptor={rangeDescriptor()}
                     options={[{ label: '1', value: 1 }]}
                     defaultValues={{ testSelect: 101 }}
+                    validateOnMount
                 />,
             );
             await expect(page.getByText(rangeMessage)).toHaveCount(0);
