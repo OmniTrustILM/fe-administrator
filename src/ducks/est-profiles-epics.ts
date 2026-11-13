@@ -5,6 +5,7 @@ import { extractError } from 'utils/net';
 import { actions as userInterfaceActions } from './user-interface';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { slice } from './est-profiles';
 import {
@@ -229,8 +230,20 @@ const bulkForceDeleteEstProfiles: AppEpic = (action$, state$, deps) => {
         filter(slice.actions.bulkForceDeleteEstProfiles.match),
         switchMap((action) =>
             deps.apiClients.estProfiles.forceDeleteEstProfiles({ requestBody: action.payload.uuids }).pipe(
-                mergeMap(() =>
-                    iif(
+                mergeMap((errors) => {
+                    const failures = errors ?? [];
+                    if (failures.length > 0) {
+                        const failedUuids = new Set(failures.map((failure) => failure.uuid));
+                        return of(
+                            slice.actions.bulkForceDeleteEstProfilesSuccess({
+                                uuids: action.payload.uuids.filter((uuid) => !failedUuids.has(uuid)),
+                            }),
+                            alertActions.error(
+                                `Failed to delete EST Profiles: ${failures.map((failure) => `${failure.name}: ${failure.message}`).join('; ')}`,
+                            ),
+                        );
+                    }
+                    return iif(
                         () => !!action.payload.redirect,
                         of(
                             slice.actions.bulkForceDeleteEstProfilesSuccess({
@@ -240,8 +253,8 @@ const bulkForceDeleteEstProfiles: AppEpic = (action$, state$, deps) => {
                             appRedirectActions.redirect({ url: action.payload.redirect! }),
                         ),
                         of(slice.actions.bulkForceDeleteEstProfilesSuccess({ uuids: action.payload.uuids })),
-                    ),
-                ),
+                    );
+                }),
 
                 catchError((error) =>
                     of(

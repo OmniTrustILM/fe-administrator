@@ -3,6 +3,7 @@ import { firstValueFrom, of, throwError } from 'rxjs';
 import { take, toArray } from 'rxjs/operators';
 import { describe, expect, test, vi } from 'vitest';
 
+import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { actions } from './est-profiles';
 import epics from './est-profiles-epics';
@@ -224,6 +225,17 @@ describe('est-profiles epics', () => {
             1,
         );
         expect(emitted).toEqual([actions.bulkForceDeleteEstProfilesSuccess({ uuids: ['est-1'] })]);
+    });
+
+    test('bulkForceDeleteEstProfiles keeps failed profiles and does not redirect', async () => {
+        const emitted = await run(
+            'bulkForceDeleteEstProfiles',
+            actions.bulkForceDeleteEstProfiles({ uuids: ['est-1', 'est-2'], redirect: '../../estprofiles' }),
+            { forceDeleteEstProfiles: () => of([{ uuid: 'est-2', name: 'Two', message: 'in use' }]) },
+            2,
+        );
+        expect(emitted[0]).toEqual(actions.bulkForceDeleteEstProfilesSuccess({ uuids: ['est-1'] }));
+        expect(emitted[1].type).toBe(alertActions.error.type);
     });
 
     test('bulkForceDeleteEstProfiles emits failure and an error redirect', async () => {

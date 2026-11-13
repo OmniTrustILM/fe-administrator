@@ -90,6 +90,7 @@ export default function EstProfileDetail() {
 
     const onForceDelete = useCallback(() => {
         if (!estProfile) return;
+        dispatch(actions.clearDeleteErrorMessages());
         dispatch(actions.bulkForceDeleteEstProfiles({ uuids: [estProfile.uuid], redirect: '../estprofiles' }));
     }, [estProfile, dispatch]);
 

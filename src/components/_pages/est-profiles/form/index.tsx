@@ -47,7 +47,7 @@ import {
 } from 'utils/est-profile';
 import { validateAlphaNumericWithoutAccents, validateLength, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
-import useAttributeEditor, { buildGroups } from 'utils/widget';
+import useAttributeEditor from 'utils/widget';
 import AdvancedOptions from './AdvancedOptions';
 import BasicAuthSecretsField from './BasicAuthSecretsField';
 import TrustedCaCertificatesField from './TrustedCaCertificatesField';
@@ -81,7 +81,10 @@ function formDefaults(
     return {
         ...estProfileFormValues(profile),
         owner: profile?.certificateAssociations?.ownerUuid ?? '',
-        groups: buildGroups(groupOptions, profile?.certificateAssociations?.groupUuids),
+        // A bound group missing from the options (failed or partial lookup) stays selected so saving does not unbind it.
+        groups: (profile?.certificateAssociations?.groupUuids ?? []).map(
+            (uuid) => groupOptions.find((group) => group.value === uuid) ?? { value: uuid, label: uuid },
+        ),
         deletedAttributes: [],
         ...transformAttributes(
             mapProfileAttribute(
@@ -120,29 +123,55 @@ export default function EstProfileForm({ estProfileId, onCancel, onSuccess }: Es
     const customAttributes = useSelector(customAttributesSelector);
     // The multi-resource load sets no fetching flag; it stores every resource it was asked for, failed ones as empty.
     const customAttributesLoaded = CUSTOM_ATTRIBUTE_RESOURCES.every((resource) => resource in customAttributes);
+    // A failed lookup is stored as empty, so stored attributes without any descriptor mean the load failed.
+    const customAttributesUsable =
+        !editMode ||
+        ((!estProfile?.customAttributes?.length || !!customAttributes[Resource.EstProfiles]?.length) &&
+            (!estProfile?.certificateAssociations?.customAttributes?.length || !!customAttributes[Resource.Certificates]?.length));
     // Set once the loads below are dispatched, so the fetching flags read here are never the ones from before them.
     const [requested, setRequested] = useState(false);
 
-    useEffect(() => {
-        dispatch(
-            customAttributesActions.loadMultipleResourceCustomAttributes(
-                CUSTOM_ATTRIBUTE_RESOURCES.map((resource) => ({ resource, customAttributes: [] })),
+    const loadCustomAttributes = useCallback(
+        () =>
+            dispatch(
+                customAttributesActions.loadMultipleResourceCustomAttributes(
+                    CUSTOM_ATTRIBUTE_RESOURCES.map((resource) => ({ resource, customAttributes: [] })),
+                ),
             ),
-        );
+        [dispatch],
+    );
+
+    useEffect(() => {
+        loadCustomAttributes();
         dispatch(groupsActions.listGroups());
         if (estProfileId) dispatch(estProfileActions.getEstProfile({ uuid: estProfileId }));
         setRequested(true);
-    }, [dispatch, estProfileId]);
+    }, [dispatch, estProfileId, loadCustomAttributes]);
 
-    const loaded =
+    const fetched =
         requested && !isFetchingGroups && customAttributesLoaded && (!editMode || (!isFetchingDetail && estProfile?.uuid === estProfileId));
+    const loaded = fetched && customAttributesUsable;
     // Kept once set: the form body reloads groups itself, and unmounting it then would restart its own loads forever.
     const [ready, setReady] = useState(false);
     useEffect(() => {
         if (loaded) setReady(true);
     }, [loaded]);
 
-    if (!ready) return <Widget noBorder busy />;
+    if (!ready) {
+        if (fetched && !customAttributesUsable) {
+            return (
+                <Widget noBorder>
+                    <Callout severity="danger" dataTestId="custom-attributes-load-error">
+                        Custom attributes could not be loaded, so the profile cannot be edited without losing them.
+                    </Callout>
+                    <Button variant="outline" onClick={loadCustomAttributes} type="button">
+                        Retry
+                    </Button>
+                </Widget>
+            );
+        }
+        return <Widget noBorder busy />;
+    }
 
     return (
         <EstProfileFormBody
@@ -297,7 +326,7 @@ function EstProfileFormBody({ profile, defaults, customAttributes, onCancel, onS
                 customAttributes: collectFormAttributes(CUSTOM_ATTRIBUTES, customAttributes[Resource.EstProfiles], submitted),
                 certificateAssociations: {
                     ownerUuid: submitted.owner || undefined,
-                    groupUuids: submitted.groups.map((group) => group.value),
+                    groupUuids: (submitted.groups ?? []).map((group) => group.value),
                     customAttributes: collectFormAttributes(ASSOCIATED_ATTRIBUTES, customAttributes[Resource.Certificates], submitted),
                 },
             } as EstProfileRequestExtras;
@@ -351,7 +380,10 @@ function EstProfileFormBody({ profile, defaults, customAttributes, onCancel, onS
     const isSaving = isSubmitting || isCreating || isUpdating;
     // Attribute editors render only once their descriptors arrive; key descriptors wait for the token profile list.
     const isLoadingAttributes = isFetchingTokenProfiles || isFetchingIssuanceAttributes || isFetchingKeyAttributes;
-    const hasErrors = Object.keys(errors).length > 0 || tokenProfileCannotExport;
+    // Bound key attributes without any descriptor mean the descriptor load failed; saving would drop them.
+    const keyDescriptorsMissing =
+        !!keyRecoveryOn && !!keyAttributes?.length && !isFetchingKeyAttributes && !(keyDescriptors && keyDescriptors.length > 0);
+    const hasErrors = Object.keys(errors).length > 0 || tokenProfileCannotExport || keyDescriptorsMissing;
 
     return (
         <FormProvider {...methods}>
@@ -578,6 +610,11 @@ function EstProfileFormBody({ profile, defaults, customAttributes, onCancel, onS
                                                 <p className="text-sm text-content-subtle" data-testid="key-recovery-naming-hint">
                                                     Leave per-key name, alias or label fields empty; the connector names each key.
                                                 </p>
+                                                {keyDescriptorsMissing && (
+                                                    <Callout severity="danger" dataTestId="key-descriptors-load-error">
+                                                        The key attributes could not be loaded. Reselect the token profile to retry.
+                                                    </Callout>
+                                                )}
                                                 {keyDescriptors && keyDescriptors.length > 0 && (
                                                     <AttributeEditor
                                                         key={tokenProfile.uuid}

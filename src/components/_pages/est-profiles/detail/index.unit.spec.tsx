@@ -16,7 +16,16 @@ vi.mock('components/CustomTable', async () => {
     return customTableMockModule();
 });
 vi.mock('components/Widget', () => ({ default: ({ title, children }: any) => <div data-testid={`widget-${title}`}>{children}</div> }));
-vi.mock('components/Dialog', () => ({ default: () => null }));
+vi.mock('components/Dialog', () => ({
+    default: ({ isOpen, caption, buttons }: any) =>
+        isOpen ? (
+            <div data-testid={`dialog-${caption}`}>
+                {buttons.map((button: any) => (
+                    <button key={button.body} data-testid={`dialog-button-${button.body}`} onClick={button.onClick} />
+                ))}
+            </div>
+        ) : null,
+}));
 vi.mock('components/Breadcrumb', () => ({ default: () => <div data-testid="breadcrumb" /> }));
 vi.mock('components/Container', () => ({ default: ({ children }: any) => <div>{children}</div> }));
 vi.mock('components/DetailPageSkeleton', () => ({ default: () => <div data-testid="skeleton" /> }));
@@ -59,6 +68,31 @@ describe('EstProfileDetail response timing', () => {
             enums: { platformEnums: {} },
         };
         useSelectorMock.mockImplementation((selector: any) => selector(state));
+    });
+
+    it('clears the failed delete error before force deleting', async () => {
+        const dispatch = vi.fn();
+        useDispatchMock.mockReturnValue(dispatch);
+        const state = {
+            estProfiles: { ...initialState, estProfile: profile, deleteErrorMessage: 'has dependents' },
+            users: { users: [] },
+            certificateGroups: { certificateGroups: [] },
+            enums: { platformEnums: {} },
+        };
+        useSelectorMock.mockImplementation((selector: any) => selector(state));
+        await act(async () => {
+            root.render(<EstProfileDetail />);
+        });
+        dispatch.mockClear();
+
+        await act(async () => {
+            container.querySelector<HTMLButtonElement>('[data-testid="dialog-button-Force"]')?.click();
+        });
+
+        expect(dispatch.mock.calls.map(([action]) => action.type)).toEqual([
+            'estProfiles/clearDeleteErrorMessages',
+            'estProfiles/bulkForceDeleteEstProfiles',
+        ]);
     });
 
     afterEach(() => {
