@@ -1,6 +1,6 @@
 import { test, expect } from '../../../playwright/ct-test';
 import Select from './index';
-import { MultiHarness, SearchableHarness, SearchableMultiHarness, SingleHarness } from './Select.harness';
+import { BlurHarness, MultiHarness, SearchableHarness, SearchableMultiHarness, SingleHarness, ToneHarness } from './Select.harness';
 
 const BASE_OPTIONS = [
     { value: '1', label: 'Option 1' },
@@ -148,6 +148,73 @@ test.describe('Select', () => {
         await expect(page.getByRole('listbox')).toBeVisible();
         await page.keyboard.press('Escape');
         await expect(page.getByRole('listbox')).toHaveCount(0);
+    });
+
+    for (const isSearchable of [false, true]) {
+        test(`onBlur waits while focus moves into the dropdown and back, then fires on leaving (searchable: ${isSearchable})`, async ({
+            mount,
+            page,
+        }) => {
+            await mount(<BlurHarness isSearchable={isSearchable} />);
+            await page.getByTestId('sel-trigger').click();
+            await expect(page.getByRole('listbox')).toBeVisible();
+            await page.keyboard.press('Escape');
+            await expect(page.getByRole('listbox')).toHaveCount(0);
+            await expect(page.getByTestId('sel-trigger')).toBeFocused();
+            await expect(page.getByTestId('blur-count')).toHaveText('0');
+
+            await page.keyboard.press('Tab');
+            await expect(page.getByRole('textbox', { name: 'Next field' })).toBeFocused();
+            await expect(page.getByTestId('blur-count')).toHaveText('1');
+        });
+    }
+
+    test('onBlur fires once when an option is chosen and the field is then left', async ({ mount, page }) => {
+        await mount(<BlurHarness />);
+        await page.getByTestId('sel-trigger').click();
+        await page.getByRole('option', { name: 'Option 2' }).click();
+        await expect(page.getByTestId('blur-count')).toHaveText('0');
+        await page.getByRole('textbox', { name: 'Next field' }).click();
+        await expect(page.getByTestId('blur-count')).toHaveText('1');
+    });
+
+    test('onBlur fires when focus leaves the closed trigger', async ({ mount, page }) => {
+        await mount(<BlurHarness />);
+        await page.getByTestId('sel-trigger').focus();
+        await page.keyboard.press('Tab');
+        await expect(page.getByRole('textbox', { name: 'Next field' })).toBeFocused();
+        await expect(page.getByTestId('blur-count')).toHaveText('1');
+    });
+
+    test('removing a chip keeps focus on the control, so leaving it afterwards fires onBlur', async ({ mount, page }) => {
+        await mount(<BlurHarness isMulti />);
+        await page.getByRole('button', { name: 'Remove Option 1', exact: true }).click();
+        await expect(page.getByTestId('sel-trigger')).toBeFocused();
+        await expect(page.getByTestId('blur-count')).toHaveText('0');
+        // Tab would stop on the clear button first, which is still inside the control.
+        await page.getByRole('textbox', { name: 'Next field' }).click();
+        await expect(page.getByTestId('blur-count')).toHaveText('1');
+    });
+
+    test('an error paints the trigger border in the danger colour and links the message', async ({ mount, page }) => {
+        await mount(<ToneHarness />);
+        const invalid = page.getByTestId('invalid-trigger');
+        const valid = page.getByTestId('valid-trigger');
+        const message = page.locator('#invalid-error');
+
+        await expect(message).toHaveText('Required Field');
+        await expect(invalid).toHaveAttribute('aria-invalid', 'true');
+        await expect(invalid).toHaveAttribute('aria-describedby', 'invalid-error');
+        await expect(valid).not.toHaveAttribute('aria-invalid');
+
+        const dangerColor = await message.evaluate((el) => getComputedStyle(el).color);
+        await expect(invalid).toHaveCSS('border-top-color', dangerColor);
+        await expect(valid).not.toHaveCSS('border-top-color', dangerColor);
+    });
+
+    test('invalid={false} overrides an error', async ({ mount, page }) => {
+        await mount(<Select id="i" value="" onChange={() => {}} options={BASE_OPTIONS} error="Shown" invalid={false} dataTestId="sel" />);
+        await expect(page.getByTestId('sel-trigger')).not.toHaveAttribute('aria-invalid');
     });
 
     test('disabled option is skipped by arrows and ignored on click', async ({ mount, page }) => {

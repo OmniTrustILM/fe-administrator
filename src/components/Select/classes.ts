@@ -1,16 +1,23 @@
 const WRAPPER_BASE =
-    'relative ps-2 min-h-11 flex items-center flex-wrap w-full bg-surface-raised border border-outline rounded-lg text-start text-sm hover:bg-surface-hover focus-within:ring-2 focus-within:ring-brand focus-within:border-brand text-content';
+    'relative ps-2 min-h-11 flex items-center flex-wrap w-full bg-surface-raised border rounded-lg text-start text-sm hover:bg-surface-hover focus-within:ring-2 text-content';
 
 export const WRAPPER_CLASSES = `${WRAPPER_BASE} pe-9`;
 export const WRAPPER_CLEARABLE_CLASSES = `${WRAPPER_BASE} pe-14`;
 
 export const TRIGGER_CLASSES =
-    'text-content relative py-3 ps-4 pe-9 flex gap-x-2 w-full cursor-pointer bg-surface-raised border border-outline rounded-lg text-start text-sm focus:outline-hidden focus:ring-2 dark:focus:ring-1 focus:ring-brand dark:focus:outline-hidden overflow-hidden [&>span]:truncate [&>span]:block [&>span]:min-w-0';
+    'text-content relative py-3 ps-4 pe-9 flex gap-x-2 w-full cursor-pointer bg-surface-raised border rounded-lg text-start text-sm focus:outline-hidden focus:ring-2 dark:focus:ring-1 dark:focus:outline-hidden overflow-hidden [&>span]:truncate [&>span]:block [&>span]:min-w-0';
 
 export const TRIGGER_CLEARABLE_CLASSES =
-    'text-content relative py-3 ps-4 pe-14 flex gap-x-2 w-full cursor-pointer bg-surface-raised border border-outline rounded-lg text-start text-sm focus:outline-hidden focus:ring-2 dark:focus:ring-1 focus:ring-brand dark:focus:outline-hidden overflow-hidden [&>span]:truncate [&>span]:block [&>span]:min-w-0';
+    'text-content relative py-3 ps-4 pe-14 flex gap-x-2 w-full cursor-pointer bg-surface-raised border rounded-lg text-start text-sm focus:outline-hidden focus:ring-2 dark:focus:ring-1 dark:focus:outline-hidden overflow-hidden [&>span]:truncate [&>span]:block [&>span]:min-w-0';
 
 export const TRIGGER_DISABLED_CLASSES = 'pointer-events-none opacity-50';
+
+// Border and ring colours live apart from the base classes: stacking two colour utilities on one element lets
+// the stylesheet order, not the class order, decide which one shows.
+export const TRIGGER_TONE_CLASSES = 'border-outline focus:ring-brand';
+export const TRIGGER_TONE_INVALID_CLASSES = 'border-danger focus:ring-danger';
+export const WRAPPER_TONE_CLASSES = 'border-outline focus-within:ring-brand focus-within:border-brand';
+export const WRAPPER_TONE_INVALID_CLASSES = 'border-danger focus-within:ring-danger';
 
 export const PLACEHOLDER_CLASSES = 'text-content-hint';
 

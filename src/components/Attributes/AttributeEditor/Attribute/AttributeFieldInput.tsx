@@ -22,6 +22,7 @@ import {
     getFormTypeFromAttributeContentType,
     buildAttributeValidators,
     getRegexpConstraint,
+    isAttributeErrorVisible,
     type FieldValidator,
 } from './attributeHelpers';
 
@@ -62,9 +63,9 @@ function StandardInputControl({
 }: Readonly<StandardInputControlProps>): React.ReactNode {
     const transformed = transformInputValueForDescriptor(field.value, descriptor);
     const textValue = transformed ? String(transformed) : '';
-    const validationVisible = fieldState.isTouched || submitCount > 0;
+    const errorVisible = isAttributeErrorVisible(fieldState, submitCount);
     const inputClassName = cn(inputBaseClassName, {
-        'border-danger focus:border-danger focus:ring-danger': validationVisible && fieldState.invalid,
+        'border-danger focus:border-danger focus:ring-danger': errorVisible,
         '!bg-surface': descriptor.properties.readOnly,
     });
 
@@ -104,7 +105,7 @@ function StandardInputControl({
         const normalizedValue = field.value?.includes('T') ? field.value : field.value?.replace(' ', 'T');
         const dateValue = field.value ? normalizedValue : undefined;
         let errorMessage: string | undefined;
-        if (!validationVisible || !fieldState.invalid) {
+        if (!errorVisible) {
             errorMessage = undefined;
         } else if (typeof fieldState.error === 'string') {
             errorMessage = fieldState.error;
@@ -119,7 +120,7 @@ function StandardInputControl({
                     onChange={(value) => field.onChange(value)}
                     onBlur={field.onBlur}
                     disabled={descriptor.properties.readOnly || busy}
-                    invalid={validationVisible && !!fieldState.invalid}
+                    invalid={errorVisible}
                     error={errorMessage}
                     required={descriptor.properties.required}
                     timePicker
@@ -142,7 +143,7 @@ function StandardInputControl({
                 value={textValue}
                 onChange={(value) => field.onChange(value)}
                 onBlur={field.onBlur}
-                invalid={validationVisible && !!fieldState.invalid}
+                invalid={errorVisible}
             />
             {deleteButton}
         </>
@@ -240,7 +241,7 @@ export function AttributeFieldInput({ name, descriptor, busy, deleteButton }: Re
             control={control}
             rules={{ validate }}
             render={({ field, fieldState }) => {
-                const fieldErrorVisible = fieldState.invalid && (fieldState.isTouched || submitCount > 0);
+                const fieldErrorVisible = isAttributeErrorVisible(fieldState, submitCount);
                 // Well-formedness feedback while typing: the touched/submit-gated area below only
                 // reports after the field is left, and a malformed JER value (duplicate keys, trailing
                 // content) would otherwise stay invisible until the backend rejects it.
