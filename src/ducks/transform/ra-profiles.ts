@@ -7,6 +7,8 @@ import type {
     RaProfileActivateAcmeRequestModel,
     RaProfileActivateCmpRequestDto,
     RaProfileActivateCmpRequestModel,
+    RaProfileActivateEstRequestDto,
+    RaProfileActivateEstRequestModel,
     RaProfileActivateScepRequestDto,
     RaProfileActivateScepRequestModel,
     RaProfileAddRequestDto,
@@ -17,6 +19,8 @@ import type {
     RaProfileCmpDetailResponseModel,
     RaProfileEditRequestDto,
     RaProfileEditRequestModel,
+    RaProfileEstDetailResponseDto,
+    RaProfileEstDetailResponseModel,
     RaProfileResponseDto,
     RaProfileResponseModel,
     RaProfileScepDetailResponseDto,
@@ -114,6 +118,24 @@ export function transformRaProfileScepDetailResponseDtoToModel(
     return {
         ...raScepResponse,
         issueCertificateAttributes: raScepResponse.issueCertificateAttributes?.map(transformAttributeResponseDtoToModel),
+    };
+}
+
+export function transformRaProfileActivateEstRequestModelToDto(
+    raEstRequest: RaProfileActivateEstRequestModel,
+): RaProfileActivateEstRequestDto {
+    return {
+        ...raEstRequest,
+        issueCertificateAttributes: raEstRequest.issueCertificateAttributes.map(transformAttributeRequestModelToDto),
+    };
+}
+
+export function transformRaProfileEstDetailResponseDtoToModel(
+    raEstResponse: RaProfileEstDetailResponseDto,
+): RaProfileEstDetailResponseModel {
+    return {
+        ...raEstResponse,
+        issueCertificateAttributes: raEstResponse.issueCertificateAttributes?.map(transformAttributeResponseDtoToModel),
     };
 }
 

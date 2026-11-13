@@ -554,6 +554,55 @@ describe('raProfiles slice', () => {
         expect(next.isFetchingScepDetails).toBe(false);
     });
 
+    test('activateEst / success / failure', () => {
+        let next = reducer(
+            initialState,
+            actions.activateEst({
+                authorityUuid: 'a-1',
+                uuid: 'ra-1',
+                estProfileUuid: 'est-1',
+                raProfileActivateEstRequest: {} as any,
+            }),
+        );
+        expect(next.isActivatingEst).toBe(true);
+
+        const estDetails = { estUrl: 'https://est.example.com' } as any;
+        next = reducer(next, actions.activateEstSuccess({ raProfileEstDetailResponse: estDetails }));
+        expect(next.isActivatingEst).toBe(false);
+        expect(next.estDetails).toEqual(estDetails);
+
+        next = reducer({ ...next, isActivatingEst: true }, actions.activateEstFailure({ error: 'err' }));
+        expect(next.isActivatingEst).toBe(false);
+    });
+
+    test('deactivateEst / success clears estDetails / failure', () => {
+        let next = reducer(
+            { ...initialState, estDetails: { estUrl: 'url' } as any },
+            actions.deactivateEst({ authorityUuid: 'a-1', uuid: 'ra-1' }),
+        );
+        expect(next.isDeactivatingEst).toBe(true);
+
+        next = reducer(next, actions.deactivateEstSuccess({ uuid: 'ra-1' }));
+        expect(next.isDeactivatingEst).toBe(false);
+        expect(next.estDetails).toBeUndefined();
+
+        next = reducer({ ...next, isDeactivatingEst: true }, actions.deactivateEstFailure({ error: 'err' }));
+        expect(next.isDeactivatingEst).toBe(false);
+    });
+
+    test('getEstDetails / success / failure', () => {
+        let next = reducer(initialState, actions.getEstDetails({ authorityUuid: 'a-1', uuid: 'ra-1' }));
+        expect(next.isFetchingEstDetails).toBe(true);
+
+        const estDetails = { estUrl: 'https://est.example.com' } as any;
+        next = reducer(next, actions.getEstDetailsSuccess({ raEstLink: estDetails }));
+        expect(next.isFetchingEstDetails).toBe(false);
+        expect(next.estDetails).toEqual(estDetails);
+
+        next = reducer({ ...next, isFetchingEstDetails: true }, actions.getEstDetailsFailure({ error: 'err' }));
+        expect(next.isFetchingEstDetails).toBe(false);
+    });
+
     test('associateRaProfile / success / failure', () => {
         const payload = { uuid: 'ra-1', complianceProfileUuid: 'cp-1', complianceProfileName: 'CP1' };
 
@@ -692,6 +741,10 @@ describe('raProfiles selectors', () => {
             isDeactivatingAcme: true,
             isActivatingCmp: true,
             isDeactivatingCmp: true,
+            isActivatingEst: true,
+            isDeactivatingEst: true,
+            isFetchingEstDetails: true,
+            estDetails: { uuid: 'ra-1' } as any,
             isActivatingScep: true,
             isDeactivatingScep: true,
         };
@@ -719,6 +772,10 @@ describe('raProfiles selectors', () => {
         expect(selectors.isDeactivatingAcme(state)).toBe(true);
         expect(selectors.isActivatingCmp(state)).toBe(true);
         expect(selectors.isDeactivatingCmp(state)).toBe(true);
+        expect(selectors.isActivatingEst(state)).toBe(true);
+        expect(selectors.isDeactivatingEst(state)).toBe(true);
+        expect(selectors.isFetchingEstDetails(state)).toBe(true);
+        expect(selectors.estDetails(state)).toEqual({ uuid: 'ra-1' });
         expect(selectors.isActivatingScep(state)).toBe(true);
         expect(selectors.isDeactivatingScep(state)).toBe(true);
     });

@@ -27,6 +27,7 @@ import {
     CustomAttributesApi,
     CustomOIDManagementApi,
     DiscoveryManagementApi,
+    ESTProfileManagementApi,
     EntityManagementApi,
     EnumsApi,
     ExternalNotificationManagementApi,
@@ -118,6 +119,7 @@ export interface ApiClients {
     acmeProfiles: ACMEProfileManagementApi;
     scepProfiles: SCEPProfileManagementApi;
     cmpProfiles: CMPProfileManagementApi;
+    estProfiles: ESTProfileManagementApi;
     certificateGroups: GroupManagementApi;
     clientOperations: ClientOperationsV2Api;
     discoveries: DiscoveryManagementApi;
@@ -189,6 +191,7 @@ const factories: Partial<{ [K in ApiClientKey]: () => ApiClients[K] }> = {
     acmeProfiles: () => new ACMEProfileManagementApi(configuration),
     scepProfiles: () => new SCEPProfileManagementApi(configuration),
     cmpProfiles: () => new CMPProfileManagementApi(configuration),
+    estProfiles: () => new ESTProfileManagementApi(configuration),
     certificateGroups: () => new GroupManagementApi(configuration),
     clientOperations: () => new ClientOperationsV2Api(configuration),
     discoveries: () => new DiscoveryManagementApi(configuration),

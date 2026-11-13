@@ -70,6 +70,8 @@ export enum Operation {
     ScepCertificatePoll = 'scepCertificatePoll',
     ScepTransactionCheck = 'scepTransactionCheck',
     CmpConfirm = 'cmpConfirm',
+    EstCsrAttributes = 'estCsrAttributes',
+    EstServerKeyGeneration = 'estServerKeyGeneration',
     Upload = 'upload',
     Sync = 'sync',
     Retry = 'retry',

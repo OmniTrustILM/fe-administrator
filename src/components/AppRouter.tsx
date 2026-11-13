@@ -36,6 +36,9 @@ const AcmeAccountsList = lazyWithRetry(() => import('./_pages/acme-accounts/list
 const AcmeProfileDetail = lazyWithRetry(() => import('./_pages/acme-profiles/detail'));
 const AcmeProfilesList = lazyWithRetry(() => import('./_pages/acme-profiles/list'));
 
+const EstProfileDetail = lazyWithRetry(() => import('./_pages/est-profiles/detail'));
+const EstProfilesList = lazyWithRetry(() => import('./_pages/est-profiles/list'));
+
 const AuthorityDetail = lazyWithRetry(() => import('./_pages/authorities/detail'));
 const AuthoritiesList = lazyWithRetry(() => import('./_pages/authorities/list'));
 const AuthorityForm = lazyWithRetry(() => import('./_pages/authorities/form'));
@@ -300,6 +303,13 @@ export default function AppRouter() {
                         element={<Navigate to={`/${Resource.ScepProfiles.toLowerCase()}`} />}
                     />
                     <Route path={`/${Resource.ScepProfiles.toLowerCase()}/detail/:id`} element={<ScepProfileDetail />} />
+
+                    <Route path={`/${Resource.EstProfiles.toLowerCase()}`} element={<EstProfilesList />} />
+                    <Route
+                        path={`/${Resource.EstProfiles.toLowerCase()}/list`}
+                        element={<Navigate to={`/${Resource.EstProfiles.toLowerCase()}`} />}
+                    />
+                    <Route path={`/${Resource.EstProfiles.toLowerCase()}/detail/:id`} element={<EstProfileDetail />} />
 
                     <Route path={`/${Resource.CmpProfiles.toLowerCase()}`} element={<CmpProfilesList />} />
                     <Route
