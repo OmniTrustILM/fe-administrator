@@ -6,7 +6,7 @@ import { extractError } from 'utils/net';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { slice } from './token-keys';
-import { summarizeOnboarding } from './transform/token-keys';
+import { type CaptionsByHandle, summarizeOnboarding } from './transform/token-keys';
 
 const listTokenKeys: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
@@ -26,8 +26,8 @@ const listTokenKeys: AppEpic = (action$, state$, deps) => {
 };
 
 /** A refused key raises an error, the only alert that stays on screen until dismissed. */
-function onboardingAlert(results: TokenKeyOnboardingResultDto[]) {
-    const { allOnboarded, message } = summarizeOnboarding(results);
+function onboardingAlert(results: TokenKeyOnboardingResultDto[], captions: CaptionsByHandle) {
+    const { allOnboarded, message } = summarizeOnboarding(results, captions);
     return allOnboarded ? alertActions.success(message) : alertActions.error(message);
 }
 
@@ -43,7 +43,10 @@ const onboardTokenKeys: AppEpic = (action$, state$, deps) => {
                 }),
             ).pipe(
                 switchMap((response) =>
-                    of(slice.actions.onboardTokenKeysSuccess({ results: response.results }), onboardingAlert(response.results)),
+                    of(
+                        slice.actions.onboardTokenKeysSuccess({ results: response.results }),
+                        onboardingAlert(response.results, action.payload.captions),
+                    ),
                 ),
                 catchError((error) =>
                     of(

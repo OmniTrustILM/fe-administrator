@@ -13,6 +13,7 @@ import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
 import { actions as tokenKeysActions, selectors as tokenKeysSelectors } from 'ducks/token-keys';
 import { actions as tokenProfilesActions, selectors as tokenProfilesSelectors } from 'ducks/token-profiles';
 import { transformAttributeRequestModelToDto } from 'ducks/transform/attributes';
+import { handleOf } from 'ducks/transform/token-keys';
 import { type ReactNode, useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react';
 import { type FieldValues, FormProvider, useForm, useFormContext } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
@@ -33,7 +34,7 @@ type Props = Readonly<{
 }>;
 
 /**
- * A selection keeps its pair as last listed, whose status decides whether a name is sent, even for a pair picked on another page.
+ * A selection keeps its pair as last listed, so a pair picked on another page still names its onboarding result.
  * The name is set once the user types one.
  */
 type Selection = Readonly<{ keyPairMeta: MetadataAttribute[]; listed: TokenKeyDto; name?: string }>;
@@ -65,12 +66,6 @@ const headers: TableHeader[] = [
     { id: 'status', content: 'Status' },
     { id: 'name', content: 'Onboard as' },
 ];
-
-/** The FE's own key for a pair across listings and in its onboarding result: each metadata name with its data, in name order. */
-function handleOf(keyPairMeta: readonly MetadataAttribute[]): string {
-    const dataByName = keyPairMeta.map((attribute) => [attribute.name, (attribute.content ?? []).map((item) => item.data)] as const);
-    return JSON.stringify([...dataByName].sort(([name], [other]) => (name < other ? -1 : 1)));
-}
 
 /** The prefixes keep a handle-less row's id apart from every handle's. */
 function rowId(handle: string | undefined, index: number): string {
@@ -324,7 +319,8 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
                 keyPairMeta: selection.keyPairMeta,
                 name: nameToSend(selection),
             }));
-            dispatch(tokenKeysActions.onboardTokenKeys({ tokenInstanceUuid, tokenProfileUuid, keys, customAttributes }));
+            const captions = Object.fromEntries(Object.entries(selections).map(([handle, { listed }]) => [handle, captionOf(listed)]));
+            dispatch(tokenKeysActions.onboardTokenKeys({ tokenInstanceUuid, tokenProfileUuid, keys, captions, customAttributes }));
         },
         [dispatch, selections, keyCustomAttributeDescriptors, tokenInstanceUuid, tokenProfileUuid],
     );
