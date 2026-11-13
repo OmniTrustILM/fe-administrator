@@ -8,7 +8,12 @@ import { AddCustomValuePanel } from 'components/Input/DynamicContent/AddCustomVa
 import { Plus } from 'lucide-react';
 import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
 import type { AttributeSelectOption } from 'utils/attributes/attributes';
-import { getSelectValueFromField, buildAttributeValidators, parseListValueByContentType } from './attributeHelpers';
+import {
+    getSelectValueFromField,
+    buildAttributeValidators,
+    parseListValueByContentType,
+    isAttributeErrorVisible,
+} from './attributeHelpers';
 
 type AttributeFieldSelectProps = {
     name: string;
@@ -38,12 +43,14 @@ export function AttributeFieldSelect({
     const fieldValueRef = useRef<unknown>(undefined);
 
     const handleSingleSelectChange = useCallback(
-        (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => {
+        (fieldOnChange: (v: unknown) => void, fieldOnBlur: () => void) => (newValue: unknown) => {
             if (newValue === '__add_new__') {
                 onSelectChangeSingle(fieldOnChange)(newValue);
                 if (!fieldValueRef.current) {
                     fieldOnChange(undefined);
                 }
+                // The remount below drops focus without a blur, so a cancelled "create new" would leave the field untouched.
+                fieldOnBlur();
                 setSingleSelectKey((k) => k + 1);
             } else {
                 onSelectChangeSingle(fieldOnChange)(newValue);
@@ -60,8 +67,10 @@ export function AttributeFieldSelect({
             render={({ field, fieldState }) => {
                 fieldValueRef.current = field.value;
                 const selectValue = getSelectValueFromField(field.value, descriptor.properties.multiSelect);
-                const fieldErrorVisible = fieldState.invalid && (fieldState.isTouched || submitCount > 0);
-                const invalidClass = fieldErrorVisible ? 'border-danger' : '';
+                // While a custom value is being added the field is still being filled in, so its error waits.
+                const errorVisible = isAttributeErrorVisible(fieldState, submitCount) && !showAddCustom;
+                const errorId = `${name}-error`;
+                const describedBy = errorVisible && descriptor.properties.visible ? errorId : undefined;
 
                 const baseOptions = options;
                 let currentValues: unknown[];
@@ -109,21 +118,25 @@ export function AttributeFieldSelect({
                                         isMulti={true}
                                         isClearable={!descriptor.properties.required}
                                         isSearchable
-                                        className={invalidClass}
+                                        invalid={errorVisible}
+                                        onBlur={field.onBlur}
+                                        ariaDescribedBy={describedBy}
                                     />
                                 ) : (
                                     <Select
                                         key={singleSelectKey}
                                         id={`${name}Select`}
                                         value={selectValue}
-                                        onChange={handleSingleSelectChange(field.onChange)}
+                                        onChange={handleSingleSelectChange(field.onChange, field.onBlur)}
                                         options={selectOptions}
                                         placeholder={`Select ${descriptor.properties.label}`}
                                         isDisabled={descriptor.properties.readOnly || busy || showAddCustom}
                                         isMulti={false}
                                         isClearable={!descriptor.properties.required}
                                         isSearchable
-                                        className={invalidClass}
+                                        invalid={errorVisible}
+                                        onBlur={field.onBlur}
+                                        ariaDescribedBy={describedBy}
                                     />
                                 )}
                             </div>
@@ -161,8 +174,8 @@ export function AttributeFieldSelect({
                         {descriptor.properties.visible && (
                             <>
                                 {descriptor.description && <p className="text-xs text-content-muted mt-1">{descriptor.description}</p>}
-                                {fieldErrorVisible && (
-                                    <div className="mt-1 text-sm text-danger">
+                                {errorVisible && (
+                                    <div id={errorId} className="mt-1 text-sm text-danger">
                                         {typeof fieldState.error === 'string' ? fieldState.error : fieldState.error?.message}
                                     </div>
                                 )}

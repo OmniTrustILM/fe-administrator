@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import * as ReactHookForm from 'react-hook-form';
 import { AttributeFieldSelect } from './AttributeFieldSelect';
 import type { DataAttributeModel } from 'types/attributes';
@@ -12,7 +12,9 @@ export type AttributeFieldSelectTestWrapperProps = {
     deleteButton?: React.ReactNode;
     addNewAttributeValue?: { label: string; value: string; disabled?: boolean };
     defaultValues?: Record<string, unknown>;
-    mode?: ReactHookForm.UseFormProps['mode'];
+    mode?: ReactHookForm.Mode;
+    validateOnMount?: boolean;
+    withNextField?: boolean;
 };
 
 export function AttributeFieldSelectTestWrapper({
@@ -24,15 +26,21 @@ export function AttributeFieldSelectTestWrapper({
     addNewAttributeValue,
     defaultValues = {},
     mode,
+    validateOnMount = false,
+    withNextField = false,
 }: Readonly<AttributeFieldSelectTestWrapperProps>) {
     const methods = ReactHookForm.useForm({
+        mode,
         defaultValues: {
             [name]: undefined,
             ...defaultValues,
         },
-        mode,
     });
     const [submitted, setSubmitted] = useState(false);
+
+    useEffect(() => {
+        if (validateOnMount) void methods.trigger(name);
+    }, [validateOnMount, methods, name]);
 
     const onSelectChangeMulti = (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => {
         const selected: unknown[] = Array.isArray(newValue) ? newValue : [];
@@ -50,19 +58,24 @@ export function AttributeFieldSelectTestWrapper({
         fieldOnChange(newValue);
     };
 
+    const field = (
+        <AttributeFieldSelect
+            name={name}
+            descriptor={descriptor}
+            options={options}
+            busy={busy}
+            deleteButton={deleteButton}
+            addNewAttributeValue={addNewAttributeValue}
+            onSelectChangeMulti={onSelectChangeMulti}
+            onSelectChangeSingle={onSelectChangeSingle}
+        />
+    );
+
     return (
         <ReactHookForm.FormProvider {...methods}>
             <form onSubmit={methods.handleSubmit(() => setSubmitted(true))}>
-                <AttributeFieldSelect
-                    name={name}
-                    descriptor={descriptor}
-                    options={options}
-                    busy={busy}
-                    deleteButton={deleteButton}
-                    addNewAttributeValue={addNewAttributeValue}
-                    onSelectChangeMulti={onSelectChangeMulti}
-                    onSelectChangeSingle={onSelectChangeSingle}
-                />
+                {field}
+                {withNextField && <input aria-label="Next field" />}
                 <button type="submit" data-testid="submit-form">
                     Submit
                 </button>

@@ -55,6 +55,8 @@ export default function GroupForm({ groupId, onCancel, onSuccess }: GroupFormPro
         () => isFetchingDetail || isCreating || isUpdating || isFetchingResourceCustomAttributes,
         [isCreating, isFetchingDetail, isUpdating, isFetchingResourceCustomAttributes],
     );
+    // The custom attribute editor resets its fields when it mounts, so it hides only while its own inputs load.
+    const customAttributesLoading = isFetchingDetail || isFetchingResourceCustomAttributes;
 
     const onSubmit = useCallback(
         (values: FormValues) => {
@@ -130,7 +132,7 @@ export default function GroupForm({ groupId, onCancel, onSuccess }: GroupFormPro
     } = methods;
 
     const renderCustomAttributesEditor = useMemo(() => {
-        if (isBusy) return <></>;
+        if (customAttributesLoading) return <></>;
         return (
             <TabLayout
                 noBorder
@@ -148,7 +150,7 @@ export default function GroupForm({ groupId, onCancel, onSuccess }: GroupFormPro
                 ]}
             />
         );
-    }, [resourceCustomAttributes, group, isBusy]);
+    }, [resourceCustomAttributes, group, customAttributesLoading]);
 
     // Reset form values when group is loaded in edit mode
     useEffect(() => {

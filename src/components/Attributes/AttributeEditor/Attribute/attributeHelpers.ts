@@ -51,6 +51,11 @@ export function transformInputValueForDescriptor(
     return value as PrimitiveAttributeValue;
 }
 
+/** A field's error shows once the user has left it or tried to submit, so an untouched form does not open in red. */
+export function isAttributeErrorVisible(fieldState: { invalid: boolean; isTouched: boolean }, submitCount: number): boolean {
+    return fieldState.invalid && (fieldState.isTouched || submitCount > 0);
+}
+
 export function getSelectValueFromField(fieldValue: unknown, multiSelect: boolean): SelectFieldOption[] | AttributeSelectOptionValue {
     if (multiSelect) {
         if (!fieldValue) return [];

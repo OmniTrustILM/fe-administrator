@@ -91,6 +91,8 @@ export default function LocationForm({ locationId, entityId: propEntityId, onCan
             isFetchingResourceCustomAttributes,
         ],
     );
+    // The custom attribute editor resets its fields when it mounts, so it hides only while its own inputs load.
+    const customAttributesLoading = isFetchingLocationDetail || isFetchingResourceCustomAttributes;
 
     useEffect(() => {
         dispatch(customAttributesActions.listResourceCustomAttributes(Resource.Locations));
@@ -239,11 +241,11 @@ export default function LocationForm({ locationId, entityId: propEntityId, onCan
     );
 
     const renderCustomAttributesEditor = useMemo(() => {
-        if (isBusy) return <></>;
+        if (customAttributesLoading) return <></>;
         return (
             <AttributeEditor id="customLocation" attributeDescriptors={resourceCustomAttributes} attributes={location?.customAttributes} />
         );
-    }, [isBusy, location, resourceCustomAttributes]);
+    }, [customAttributesLoading, location, resourceCustomAttributes]);
 
     useRunOnSuccessfulFinish(isCreating, createLocationSucceeded, onSuccess);
     useRunOnSuccessfulFinish(isUpdating, updateLocationSucceeded, onSuccess);
