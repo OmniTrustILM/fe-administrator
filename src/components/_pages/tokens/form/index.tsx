@@ -145,6 +145,8 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
             isFetchingResourceCustomAttributes,
         ],
     );
+    // The custom attribute editor resets its fields when it mounts, so it hides only while its own inputs load.
+    const customAttributesLoading = isFetchingTokenDetail || isFetchingResourceCustomAttributes;
 
     useEffect(() => {
         dispatch(connectorActions.clearCallbackData());
@@ -353,9 +355,9 @@ export default function TokenForm({ tokenId, onCancel, onSuccess }: TokenFormPro
     const inProgressTitle = useMemo(() => (editMode ? 'Saving...' : 'Creating...'), [editMode]);
 
     const renderCustomAttributeEditor = useMemo(() => {
-        if (isBusy || !isFormHydrated) return <></>;
+        if (customAttributesLoading || !isFormHydrated) return <></>;
         return <AttributeEditor id="customToken" attributeDescriptors={resourceCustomAttributes} attributes={token?.customAttributes} />;
-    }, [isBusy, isFormHydrated, resourceCustomAttributes, token?.customAttributes]);
+    }, [customAttributesLoading, isFormHydrated, resourceCustomAttributes, token?.customAttributes]);
 
     useRunOnSuccessfulFinish(isCreating, createTokenSucceeded, onSuccess);
     useRunOnSuccessfulFinish(isUpdating, updateTokenSucceeded, onSuccess);

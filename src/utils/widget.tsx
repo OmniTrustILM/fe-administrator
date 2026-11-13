@@ -76,14 +76,15 @@ export function buildUserOption(user: { uuid: string; firstName?: string; lastNa
 }
 
 function useAttributeEditor({
-    isBusy,
+    isLoading,
     id,
     resourceKey,
     attributes,
     multipleResourceCustomAttributes,
     withRemoveAction = false,
 }: {
-    isBusy: boolean;
+    /** Hides the editor while its object loads. Keep save flags out: the editor resets its fields when it mounts. */
+    isLoading: boolean;
     id: string;
     resourceKey: Resource;
     attributes: AttributeResponseModel[] | undefined;
@@ -91,7 +92,7 @@ function useAttributeEditor({
     withRemoveAction?: boolean;
 }) {
     return useMemo(() => {
-        if (isBusy) return <></>;
+        if (isLoading) return <></>;
         return (
             <AttributeEditor
                 id={id}
@@ -100,7 +101,7 @@ function useAttributeEditor({
                 withRemoveAction={withRemoveAction}
             />
         );
-    }, [isBusy, id, resourceKey, attributes, multipleResourceCustomAttributes, withRemoveAction]);
+    }, [isLoading, id, resourceKey, attributes, multipleResourceCustomAttributes, withRemoveAction]);
 }
 
 export default useAttributeEditor;

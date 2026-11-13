@@ -1,10 +1,10 @@
 import type React from 'react';
-import { Controller, useFormContext } from 'react-hook-form';
+import { Controller, useFormContext, useFormState } from 'react-hook-form';
 import Label from 'components/Label';
 import TextInput from 'components/TextInput';
 import cn from 'classnames';
 import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
-import { buildAttributeValidators } from './attributeHelpers';
+import { buildAttributeValidators, isAttributeErrorVisible } from './attributeHelpers';
 
 type AttributeFieldFileProps = {
     name: string;
@@ -24,6 +24,8 @@ export function AttributeFieldFile({
     onFileChanged,
 }: Readonly<AttributeFieldFileProps>): React.ReactNode {
     const { control } = useFormContext();
+    const { submitCount } = useFormState({ control });
+    const errorId = `${name}-content-error`;
 
     return (
         <>
@@ -49,30 +51,34 @@ export function AttributeFieldFile({
                             name={`${name}.content`}
                             control={control}
                             rules={{ validate: buildAttributeValidators(descriptor) }}
-                            render={({ field, fieldState }) => (
-                                <>
-                                    <input
-                                        {...field}
-                                        id={`${name}-content`}
-                                        type={descriptor.properties.visible ? 'text' : 'hidden'}
-                                        placeholder={`Select or drag & drop ${descriptor.properties.label} File`}
-                                        readOnly
-                                        className={cn(
-                                            'text-content py-2.5 sm:py-3 px-4 block w-full border-outline rounded-lg text-sm focus:border-brand focus:ring-brand disabled:opacity-50 disabled:pointer-events-none bg-surface-raised placeholder-content-subtle',
-                                            {
-                                                'border-danger focus:border-danger focus:ring-danger':
-                                                    fieldState.isTouched && fieldState.invalid,
-                                            },
-                                        )}
-                                    />
+                            render={({ field, fieldState }) => {
+                                const errorVisible = isAttributeErrorVisible(fieldState, submitCount);
+                                return (
+                                    <>
+                                        <input
+                                            {...field}
+                                            id={`${name}-content`}
+                                            type={descriptor.properties.visible ? 'text' : 'hidden'}
+                                            placeholder={`Select or drag & drop ${descriptor.properties.label} File`}
+                                            readOnly
+                                            aria-invalid={errorVisible || undefined}
+                                            aria-describedby={errorVisible ? errorId : undefined}
+                                            className={cn(
+                                                'text-content py-2.5 sm:py-3 px-4 block w-full rounded-lg text-sm disabled:opacity-50 disabled:pointer-events-none bg-surface-raised placeholder-content-subtle',
+                                                errorVisible
+                                                    ? 'border-danger focus:border-danger focus:ring-danger'
+                                                    : 'border-outline focus:border-brand focus:ring-brand',
+                                            )}
+                                        />
 
-                                    {fieldState.isTouched && fieldState.invalid && (
-                                        <div className="mt-1 text-sm text-danger">
-                                            {typeof fieldState.error === 'string' ? fieldState.error : fieldState.error?.message}
-                                        </div>
-                                    )}
-                                </>
-                            )}
+                                        {errorVisible && (
+                                            <div id={errorId} className="mt-1 text-sm text-danger">
+                                                {typeof fieldState.error === 'string' ? fieldState.error : fieldState.error?.message}
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            }}
                         />
 
                         {descriptor.description && <p className="text-xs text-content-muted mt-1">{descriptor.description}</p>}

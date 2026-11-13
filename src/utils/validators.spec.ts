@@ -11,6 +11,7 @@ import {
     validateLength,
     validateMaximum,
     validateMinimum,
+    validateRange,
     validateDuration,
     composeValidators,
     validateRoutelessUrl,
@@ -292,6 +293,82 @@ describe('validators', () => {
             expect(validateMaximum(10)('abc')).toBeUndefined();
             expect(composeValidators(validatePositiveInteger(), validateMaximum(10))('abc')).toBe('Value must be a positive integer');
             expect(composeValidators(validatePositiveInteger(), validateMaximum(10))('11')).toBe('Value must not exceed 10');
+        });
+    });
+
+    describe('validateRange', () => {
+        const message = 'Out of range';
+
+        test('should treat both bounds as inclusive', () => {
+            const validate = validateRange(1, 100, message);
+            expect(validate('1')).toBeUndefined();
+            expect(validate('50')).toBeUndefined();
+            expect(validate('100')).toBeUndefined();
+            expect(validate(100)).toBeUndefined();
+        });
+
+        test('should reject values just outside either bound with the constraint message', () => {
+            const validate = validateRange(1, 100, message);
+            expect(validate('0')).toBe(message);
+            expect(validate('101')).toBe(message);
+            expect(validate('999')).toBe(message);
+            expect(validate('1000')).toBe(message);
+            expect(validate('-5')).toBe(message);
+        });
+
+        test('should compare numerically for a range not starting at 1', () => {
+            const validate = validateRange(5, 20, message);
+            expect(validate('5')).toBeUndefined();
+            expect(validate('12')).toBeUndefined();
+            expect(validate('20')).toBeUndefined();
+            expect(validate('4')).toBe(message);
+            expect(validate('21')).toBe(message);
+        });
+
+        test('should apply a bound of 0', () => {
+            const validate = validateRange(0, 10, message);
+            expect(validate('0')).toBeUndefined();
+            expect(validate('-1')).toBe(message);
+            expect(validateRange(-10, 0, message)('1')).toBe(message);
+        });
+
+        test('should accept decimals inside a float range', () => {
+            const validate = validateRange(0.5, 1.5, message);
+            expect(validate('0.5')).toBeUndefined();
+            expect(validate('1.25')).toBeUndefined();
+            expect(validate('1.5')).toBeUndefined();
+            expect(validate('0.49')).toBe(message);
+            expect(validate('1.51')).toBe(message);
+        });
+
+        test('should check a single bound when the other is absent', () => {
+            expect(validateRange(10, undefined, message)('10')).toBeUndefined();
+            expect(validateRange(10, undefined, message)('9')).toBe(message);
+            expect(validateRange(undefined, 10, message)('10')).toBeUndefined();
+            expect(validateRange(undefined, 10, message)('11')).toBe(message);
+        });
+
+        test('should fall back to a generated message when the constraint has none', () => {
+            expect(validateRange(1, 100)('101')).toBe('Value must be between 1 and 100');
+            expect(validateRange(1)('0')).toBe('Value must be at least 1');
+            expect(validateRange(undefined, 100)('101')).toBe('Value must not exceed 100');
+        });
+
+        test('should accept empty values and leave non-numbers to the pattern validator', () => {
+            const validate = validateRange(1, 100, message);
+            expect(validate('')).toBeUndefined();
+            expect(validate('   ')).toBeUndefined();
+            expect(validate(undefined)).toBeUndefined();
+            expect(validate(null)).toBeUndefined();
+            expect(validate('abc')).toBeUndefined();
+            expect(composeValidators(validateInteger(), validate)('1.5')).toBe('Value must be an integer');
+        });
+
+        test('should check every item of a multi-value field', () => {
+            const validate = validateRange(1, 100, message);
+            expect(validate([{ data: 1 }, { data: 100 }])).toBeUndefined();
+            expect(validate([{ data: 1 }, { data: 101 }])).toBe(message);
+            expect(validate([{ label: '101', value: { data: 101 } }])).toBe(message);
         });
     });
 
