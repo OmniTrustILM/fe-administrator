@@ -240,6 +240,16 @@ test.describe('attributeHelpers', () => {
             expect(fn({ data: 101 })).toBeUndefined();
         });
 
+        test('a list attribute with fixed options drops only the range constraint and keeps the others', () => {
+            const d = withRange({ from: 1, to: 100 }, { list: true });
+            const fn = buildAttributeValidators({
+                ...d,
+                constraints: [...d.constraints, { type: AttributeConstraintType.RegExp, data: '^\\d$', errorMessage: 'One digit' }],
+            });
+            expect(fn('5')).toBeUndefined();
+            expect(fn('101')).toBe('One digit');
+        });
+
         test('Range constraint still applies to the custom values of an extensible list', () => {
             const fn = buildAttributeValidators(withRange({ from: 1, to: 100 }, { list: true, extensibleList: true }));
             expect(fn(101)).toBe('Out of range');
