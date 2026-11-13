@@ -9,13 +9,12 @@ import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 
 import { actions, selectors } from 'ducks/settings';
-import { selectors as authSelectors } from 'ducks/auth';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { Resource, ResourceAction } from 'types/openapi';
-import { hasResourceAction } from 'utils/permissions';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import Dialog from 'components/Dialog';
 import PlatformSettingsForm from '../form';
 
@@ -23,7 +22,7 @@ export default function PlatformSettingsDetail() {
     const dispatch = useDispatch();
 
     const platformSettings = useSelector(selectors.platformSettings);
-    const profile = useSelector(authSelectors.profile);
+    const can = useActionAvailability(Resource.Settings);
     const isFetchingPlatform = useSelector(selectors.isFetchingPlatform);
     const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
 
@@ -57,17 +56,18 @@ export default function PlatformSettingsDetail() {
             {
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: () => {
                     onEditClick();
                 },
             },
         ],
-        [onEditClick],
+        [onEditClick, can],
     );
 
     // Core remains the enforcement point; this only decides whether to offer the tab.
-    const canUpdateBranding = hasResourceAction(profile, Resource.Settings, ResourceAction.UpdateBranding);
+    const canUpdateBranding = can(ResourceAction.UpdateBranding).available;
 
     // Declared once so the skeleton below cannot advertise a different number of tabs than the layout renders.
     const tabs = [

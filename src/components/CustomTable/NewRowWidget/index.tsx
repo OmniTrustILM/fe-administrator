@@ -2,6 +2,8 @@ import { useEffect, useState } from 'react';
 import Select from 'components/Select';
 import Button from 'components/Button';
 import { Plus } from 'lucide-react';
+import type { Availability } from 'utils/availability';
+
 interface SelectChangeValue {
     value: string;
     label: string;
@@ -13,9 +15,11 @@ export interface NewRowWidgetProps {
     onAddClick: (newValues: SelectChangeValue[]) => void;
     immediateAdd?: boolean;
     selectHint?: string;
+    requires?: Availability;
 }
 
-const NewRowWidget = ({ newItemsList, isBusy, onAddClick, immediateAdd, selectHint }: NewRowWidgetProps) => {
+const NewRowWidget = ({ newItemsList, isBusy, onAddClick, immediateAdd, selectHint, requires }: NewRowWidgetProps) => {
+    const denied = !!requires && !requires.available;
     const [selectedItems, setSelectedItems] = useState<SelectChangeValue[]>([]);
 
     useEffect(() => {
@@ -35,14 +39,16 @@ const NewRowWidget = ({ newItemsList, isBusy, onAddClick, immediateAdd, selectHi
                     isMulti
                     value={selectedItems}
                     options={newItemsList}
-                    placeholder={selectHint || 'Select items to add'}
+                    placeholder={(denied && requires.reason) || selectHint || 'Select items to add'}
                     id="newRowWidgetSelect"
+                    isDisabled={denied}
                 />
             </div>
             {selectedItems?.length && !immediateAdd ? (
                 <div className="flex">
                     <Button
                         disabled={isBusy}
+                        requires={requires}
                         variant="transparent"
                         color="secondary"
                         title="Add"

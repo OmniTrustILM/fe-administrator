@@ -9,7 +9,8 @@ import { actions as resourceActions, selectors as resourceSelectors } from 'duck
 import { actions as settingsActions, selectors as settingsSelectors } from 'ducks/settings';
 import { actions as rulesActions, selectors as rulesSelectors } from 'ducks/rules';
 import { useDispatch, useSelector } from 'react-redux';
-import { PlatformEnum, Resource, type ResourceEvent } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction, type ResourceEvent } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import type { LockWidgetNameEnum } from 'types/user-interface';
 import Dialog from 'components/Dialog';
 import { useForm, Controller, FormProvider, useWatch } from 'react-hook-form';
@@ -43,6 +44,7 @@ type FormValues = {
     triggerUuids?: string[];
 };
 const EventsTable = ({ mode, resource, resourceUuid, widgetLocks }: Props) => {
+    const can = useActionAvailability(mode === 'association' ? Resource.Triggers : Resource.Settings);
     const dispatch = useDispatch();
 
     const allResourceEvents = useSelector(resourceSelectors.allResourceEvents);
@@ -249,6 +251,7 @@ const EventsTable = ({ mode, resource, resourceUuid, widgetLocks }: Props) => {
                             title="Edit"
                             key="edit"
                             onClick={() => onEdit(event as ResourceEvent)}
+                            requires={can(ResourceAction.Update)}
                             className="!p-1"
                         >
                             <Edit size={16} />
@@ -256,7 +259,7 @@ const EventsTable = ({ mode, resource, resourceUuid, widgetLocks }: Props) => {
                     ],
                 };
             });
-    }, [mode, eventTriggerAssociation, eventsSettings, getResourceEventModel, resourceEventEnum, resourceEnum, onEdit]);
+    }, [mode, eventTriggerAssociation, eventsSettings, getResourceEventModel, resourceEventEnum, resourceEnum, onEdit, can]);
 
     const eventOptions = useMemo(() => {
         const source = mode === 'association' ? resourceEvents : allResourceEvents;
@@ -277,10 +280,11 @@ const EventsTable = ({ mode, resource, resourceUuid, widgetLocks }: Props) => {
                 icon: 'plus',
                 disabled: !eventOptions.length,
                 tooltip: textContent.addTooltip,
+                requires: can(ResourceAction.Update),
                 onClick: () => setIsTriggersDialogOpen(true),
             },
         ],
-        [eventOptions.length, textContent.addTooltip],
+        [eventOptions.length, textContent.addTooltip, can],
     );
 
     const defaultValues: FormValues = useMemo(() => {

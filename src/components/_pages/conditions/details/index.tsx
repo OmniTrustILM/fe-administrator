@@ -14,10 +14,12 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router';
 import Container from 'components/Container';
 import { PlatformEnum, Resource } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { EnumValueDescription } from 'components/EnumDescription';
 
 const ConditionDetails = () => {
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Rules);
     const dispatch = useDispatch();
     const resourceTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
     const conditionTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ConditionType));
@@ -63,7 +65,7 @@ const ConditionDetails = () => {
         [dispatch, id, conditionDetails],
     );
 
-    const buttons = useMemo(() => getEditAndDeleteWidgetButtons(() => setIsEditOpen(true), setConfirmDelete), []);
+    const buttons = useMemo(() => getEditAndDeleteWidgetButtons(() => setIsEditOpen(true), setConfirmDelete, can), [can]);
     const tableHeader = propertyValueActionsHeaders;
 
     const conditionGroupsDetailData: TableDataRow[] = useMemo(

@@ -13,7 +13,8 @@ import { actions as rulesActions, selectors as rulesSelectors } from 'ducks/rule
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
-import { PlatformEnum, Resource } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import Button from 'components/Button';
 import Container from 'components/Container';
 import { Trash2 } from 'lucide-react';
@@ -25,6 +26,7 @@ interface SelectChangeValue {
 }
 const RuleDetails = () => {
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Actions);
     const dispatch = useDispatch();
     const actionDetails = useSelector(rulesSelectors.actionDetails);
     const isUpdatingAction = useSelector(rulesSelectors.isUpdatingAction);
@@ -128,7 +130,7 @@ const RuleDetails = () => {
         [dispatch, id, actionDetails?.executions, actionDetails?.description],
     );
 
-    const buttons = useMemo(() => getEditAndDeleteWidgetButtons(() => setIsEditOpen(true), setConfirmDelete), []);
+    const buttons = useMemo(() => getEditAndDeleteWidgetButtons(() => setIsEditOpen(true), setConfirmDelete, can), [can]);
     const tableHeader = propertyValueActionsHeaders;
 
     const conditionGroupsDetailData: TableDataRow[] = useMemo(
@@ -204,6 +206,7 @@ const RuleDetails = () => {
                                       ? 'Cannot delete this execution as there are no other executions in the action'
                                       : 'Delete Condition Group'
                               }
+                              requires={can(ResourceAction.Update)}
                               onClick={() => {
                                   onDeleteExecution(conditionGroup.uuid);
                               }}
@@ -217,7 +220,7 @@ const RuleDetails = () => {
             : [];
 
         return conditionGroupData;
-    }, [actionDetails, isUpdatingAction, onDeleteExecution, isFetchingActionDetails, executionTypeEnum]);
+    }, [actionDetails, isUpdatingAction, onDeleteExecution, isFetchingActionDetails, executionTypeEnum, can]);
 
     const renderActionExecutions = useMemo(() => {
         return actionDetails?.executions.length ? (
@@ -281,6 +284,7 @@ const RuleDetails = () => {
                                     isBusy: isUpdatingAction,
                                     newItemsList: executionsOptions,
                                     onAddClick: onUpdateExecutionsConfirmed,
+                                    requires: can(ResourceAction.Update),
                                 }}
                             />
                         </Widget>

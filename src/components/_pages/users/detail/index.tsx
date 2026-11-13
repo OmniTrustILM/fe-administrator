@@ -18,7 +18,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import Badge from 'components/Badge';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { Resource } from '../../../../types/openapi';
+import { Resource, ResourceAction } from '../../../../types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import Breadcrumb from 'components/Breadcrumb';
@@ -28,6 +29,7 @@ export default function UserDetail() {
     const dispatch = useDispatch();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Users);
 
     const user = useSelector(selectors.user);
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
@@ -124,6 +126,7 @@ export default function UserDetail() {
         () => [
             {
                 icon: 'pencil',
+                requires: can(ResourceAction.Update),
                 disabled: isBusy || user?.systemUser || false,
                 tooltip: 'Edit',
                 onClick: () => {
@@ -132,6 +135,7 @@ export default function UserDetail() {
             },
             {
                 icon: 'trash',
+                requires: can(ResourceAction.Delete),
                 disabled: user?.systemUser || isCurrentUser || false,
                 tooltip: isCurrentUser ? 'You cannot delete your own account' : 'Delete',
                 onClick: () => {
@@ -140,6 +144,7 @@ export default function UserDetail() {
             },
             {
                 icon: 'check',
+                requires: can(ResourceAction.Enable),
                 disabled: user?.enabled || user?.systemUser || isCurrentUser || false,
                 tooltip: isCurrentUser ? 'You cannot enable your own account' : 'Enable',
                 onClick: () => {
@@ -148,6 +153,7 @@ export default function UserDetail() {
             },
             {
                 icon: 'times',
+                requires: can(ResourceAction.Enable),
                 disabled: !(user?.enabled || false) || user?.systemUser || isCurrentUser || false,
                 tooltip: isCurrentUser ? 'You cannot disable your own account' : 'Disable',
                 onClick: () => {
@@ -155,7 +161,7 @@ export default function UserDetail() {
                 },
             },
         ],
-        [user, onEditClick, onDisableClick, onEnableClick, isBusy, setConfirmDelete, isCurrentUser],
+        [user, onEditClick, onDisableClick, onEnableClick, isBusy, setConfirmDelete, isCurrentUser, can],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -253,7 +259,12 @@ export default function UserDetail() {
                     </Widget>
 
                     {user && (
-                        <CustomAttributeWidget resource={Resource.Users} resourceUuid={user.uuid} attributes={user.customAttributes} />
+                        <CustomAttributeWidget
+                            resource={Resource.Users}
+                            resourceUuid={user.uuid}
+                            attributes={user.customAttributes}
+                            requires={can(ResourceAction.Update)}
+                        />
                     )}
                 </Container>
             </Widget>

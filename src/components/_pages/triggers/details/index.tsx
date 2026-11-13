@@ -17,7 +17,8 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import Button from 'components/Button';
-import { PlatformEnum, Resource } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { DeviceType, useDeviceType } from 'utils/common-hooks';
 import Breadcrumb from 'components/Breadcrumb';
 import { Trash2 } from 'lucide-react';
@@ -28,6 +29,7 @@ interface SelectChangeValue {
 }
 const TriggerDetails = () => {
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Triggers);
     const dispatch = useDispatch();
     const triggerDetails = useSelector(rulesSelectors.triggerDetails);
     const isUpdatingTrigger = useSelector(rulesSelectors.isUpdatingTrigger);
@@ -235,7 +237,7 @@ const TriggerDetails = () => {
         [dispatch, id, triggerDetails],
     );
 
-    const buttons = useMemo(() => getEditAndDeleteWidgetButtons(() => setIsEditOpen(true), setConfirmDelete), []);
+    const buttons = useMemo(() => getEditAndDeleteWidgetButtons(() => setIsEditOpen(true), setConfirmDelete, can), [can]);
     const triggerDetailHeader = propertyValueActionsHeaders;
 
     const triggerDetailsData: TableDataRow[] = useMemo(
@@ -336,6 +338,7 @@ const TriggerDetails = () => {
                                       ? 'Cannot delete this action as there are no other actions in the trigger'
                                       : 'Delete Action'
                               }
+                              requires={can(ResourceAction.Update)}
                               onClick={() => {
                                   onDeleteAction(action.uuid);
                               }}
@@ -349,7 +352,7 @@ const TriggerDetails = () => {
             : [];
 
         return actionsData;
-    }, [triggerDetails, onDeleteAction, isUpdatingTrigger, isFetchingTriggerDetail]);
+    }, [triggerDetails, onDeleteAction, isUpdatingTrigger, isFetchingTriggerDetail, can]);
 
     const rulesHeader: TableHeader[] = useMemo(
         () => [
@@ -385,6 +388,7 @@ const TriggerDetails = () => {
                                   variant="transparent"
                                   color="danger"
                                   title="Delete Rule"
+                                  requires={can(ResourceAction.Update)}
                                   onClick={() => {
                                       onDeleteRule(rule.uuid);
                                   }}
@@ -396,7 +400,7 @@ const TriggerDetails = () => {
                       };
                   })
                 : [],
-        [triggerDetails, isUpdatingTrigger, onDeleteRule],
+        [triggerDetails, isUpdatingTrigger, onDeleteRule, can],
     );
 
     if (isFetchingTriggerDetail) {
@@ -447,6 +451,7 @@ const TriggerDetails = () => {
                                                     isBusy: isUpdatingTrigger,
                                                     newItemsList: actionsOptions,
                                                     onAddClick: onUpdateActionsConfirmed,
+                                                    requires: can(ResourceAction.Update),
                                                 }}
                                             />
                                         </Widget>
@@ -462,6 +467,7 @@ const TriggerDetails = () => {
                                                     isBusy: isUpdatingTrigger,
                                                     newItemsList: rulesOptions,
                                                     onAddClick: onUpdateRulesConfirmed,
+                                                    requires: can(ResourceAction.Update),
                                                 }}
                                             />
                                         </Widget>

@@ -21,6 +21,8 @@ import Switch from 'components/Switch';
 import { Key } from 'lucide-react';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { renderOAuth2StateBadges } from 'utils/oauth2Providers';
+import { Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 type FormValues = {
     disableLocalhostUser: boolean;
@@ -28,6 +30,7 @@ type FormValues = {
 
 const AuthenticationSettings = () => {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.Settings);
 
     const authenticationSettings = useSelector(authSettingsSelectors.authenticationSettings);
     const isFetchingSettings = useSelector(authSettingsSelectors.isFetchingSettings);
@@ -103,13 +106,14 @@ const AuthenticationSettings = () => {
             {
                 icon: 'plus',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Create',
                 onClick: () => {
                     handleOpenOAuth2FormDialog();
                 },
             },
         ],
-        [handleOpenOAuth2FormDialog],
+        [handleOpenOAuth2FormDialog, can],
     );
 
     const providerHeaders: TableHeader[] = useMemo(
@@ -248,6 +252,7 @@ const AuthenticationSettings = () => {
                                             disabled={isSubmitting || isBusy || !hasValuesChanged}
                                             inProgress={isUpdatingSettings}
                                             type="submit"
+                                            requires={can(ResourceAction.Update)}
                                         />
                                     </div>
                                 </form>

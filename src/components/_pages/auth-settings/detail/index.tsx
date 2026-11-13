@@ -13,6 +13,8 @@ import { useParams } from 'react-router';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { renderOAuth2StateBadges } from 'utils/oauth2Providers';
+import { Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
@@ -20,6 +22,7 @@ import JwkSetLoadFailureWarning from 'components/_pages/auth-settings/JwkSetLoad
 
 export default function OAuth2ProviderDetail() {
     const { providerName } = useParams();
+    const can = useActionAvailability(Resource.Settings);
 
     const dispatch = useDispatch();
 
@@ -78,19 +81,21 @@ export default function OAuth2ProviderDetail() {
             {
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: handleOpenEditDialog,
             },
             {
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Delete',
                 onClick: () => {
                     onDeleteClick();
                 },
             },
         ],
-        [handleOpenEditDialog, onDeleteClick],
+        [handleOpenEditDialog, onDeleteClick, can],
     );
 
     const headers: TableHeader[] = useMemo(
