@@ -3,7 +3,7 @@ import Dropdown, { type DropdownItem } from 'components/Dropdown';
 import SimpleBar from 'components/SimpleBar';
 import type { HandedInFilters, ViewPosition } from 'ducks/filters';
 import { actions as listViewActions, PENDING_VIEW_UUID, selectors as listViewSelectors } from 'ducks/listViews';
-import { ChevronDown, Plus } from 'lucide-react';
+import { ChevronDown } from 'lucide-react';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import type { SearchFilterModel } from 'types/certificate';
@@ -12,6 +12,7 @@ import type { Resource, SearchFieldDataByGroupDto } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
 import { toCatalogueFields } from 'utils/columnPicker';
 import {
+    areFiltersDifferent,
     STANDARD_VIEW_ID,
     STANDARD_VIEW_NAME,
     duplicateName,
@@ -39,9 +40,11 @@ import {
 import { type ColumnSort, getColumnKey } from 'utils/tableColumns';
 import HeldFiltersNotice from './HeldFiltersNotice';
 import NameViewDialog from './NameViewDialog';
+import NewViewButton from './NewViewButton';
 import OverflowViewsMenu from './OverflowViewsMenu';
 import ReturnedColumnsNotice from './ReturnedColumnsNotice';
 import UnresolvedColumnsNotice from './UnresolvedColumnsNotice';
+import ViewStripPlaceholder from './ViewStripPlaceholder';
 import ViewSummaryBar from './ViewSummaryBar';
 import ViewTab from './ViewTab';
 
@@ -60,6 +63,8 @@ export type ViewTabsProps = Readonly<{
      * listing cannot display is a settled read either way, and the strip must not hide behind it.
      */
     isCatalogueLoaded?: boolean;
+    /** Whether the catalogue read failed, which leaves the strip out rather than holding a place it will not fill. */
+    isCatalogueFailed?: boolean;
     /** The platform default column set for this page, which is what the Standard tab shows. */
     standardColumns: ColumnDefinition[];
     /**
@@ -111,6 +116,59 @@ export function isViewStripReady(hasLoadedViews: boolean, isCatalogueLoaded: boo
     return hasLoadedViews && isCatalogueLoaded;
 }
 
+/** Where handed-in filters open the strip, decided before the opening view is applied. */
+function toOpening(handedIn: HandedInFilters | undefined, views: readonly ListViewModel[]) {
+    const position = handedIn?.source === 'return' ? handedIn.position : undefined;
+    const isDrillDown = handedIn?.source === 'drill-down' || position?.isDrillDown === true;
+    // Handed-in filters only ever land on Standard or on the view they were left on. Put on any other
+    // view, they would read as that view's unsaved changes and Save to view would write them into it.
+    const returnsToView = !isDrillDown && position !== undefined && views.some((view) => view.uuid === position.viewId);
+    return { position, isDrillDown, returnsToView };
+}
+
+type ViewStripOpeningPlaceholderProps = Readonly<{
+    resource: Resource;
+    handedIn?: HandedInFilters;
+    catalogue: SearchFieldDataByGroupDto[];
+    columns: ColumnDefinition[];
+    filters: SearchFilterModel[];
+    sort?: ColumnSort;
+    dataTestId: string;
+}>;
+
+/** Holds the place of a strip that has not opened yet, including while the page around it still shows its skeleton. */
+export function ViewStripOpeningPlaceholder({
+    resource,
+    handedIn,
+    catalogue,
+    columns,
+    filters,
+    sort,
+    dataTestId,
+}: ViewStripOpeningPlaceholderProps) {
+    const views = useSelector(listViewSelectors.views(resource));
+    // Handed-in filters open drifted on Standard, which holds none, or on the returned-to view when they differ
+    // from what it stores. That view is read from the list the last visit left, the fresh read still being out.
+    const opening = toOpening(handedIn, views);
+    const returnedTo = opening.returnsToView ? views.find((view) => view.uuid === opening.position?.viewId) : undefined;
+    // Sieved as the open strip sieves both sides, or a filter it will not count reserves a save offer that never shows.
+    const held = returnedTo?.filters ?? [];
+    const storable = toStorableFilters(filters, catalogue, held);
+    const opensDirty = returnedTo
+        ? areFiltersDifferent(toStorableFilters(held.map(toTableFilter), catalogue, held), storable)
+        : handedIn !== undefined && storable.length > 0;
+    return (
+        <ViewStripPlaceholder
+            columns={columns}
+            sort={sort}
+            isDirty={opensDirty}
+            isDrillDown={opening.isDrillDown}
+            isStandard={!opening.returnsToView}
+            dataTestId={dataTestId}
+        />
+    );
+}
+
 const filtersKey = (filters: readonly SearchFilterModel[]) => filters.map(getFilterKey).join('\n');
 
 /** `live` with each of `dropped` put back at the index it held in `original`, unless `live` already has it. */
@@ -154,6 +212,7 @@ export default function ViewTabs({
     resource,
     catalogue,
     isCatalogueLoaded,
+    isCatalogueFailed = false,
     standardColumns,
     standardSort,
     renderableProperties,
@@ -208,8 +267,8 @@ export default function ViewTabs({
     const schema = useMemo<ViewSchema>(() => ({ catalogue, standardColumns }), [catalogue, standardColumns]);
 
     /**
-     * The strip is held back until the view list has settled and the catalogue has arrived, and shows
-     * nothing at all until then.
+     * The strip is held back until the view list has settled and the catalogue has arrived, and only
+     * holds its place until then.
      *
      * Both halves are load-order bugs waiting to happen otherwise. Without the list, an empty read is
      * indistinguishable from one still in flight, so the first optimistic create would be mistaken for
@@ -452,14 +511,10 @@ export default function ViewTabs({
         if (hasOpened.current === resource || !isReady) return;
         hasOpened.current = resource;
 
-        const position = handedIn?.source === 'return' ? handedIn.position : undefined;
-        const isDrillDown = handedIn?.source === 'drill-down' || position?.isDrillDown === true;
-        // Handed-in filters only ever land on Standard or on the view they were left on. Put on any other
-        // view, they would read as that view's unsaved changes and Save to view would write them into it.
-        const returnsToView = !isDrillDown && position !== undefined && views.some((view) => view.uuid === position.viewId);
+        const { position, isDrillDown, returnsToView } = toOpening(handedIn, views);
         let initial: string;
         if (!handedIn) initial = resolveInitialViewId(views);
-        else if (returnsToView) initial = position.viewId;
+        else if (returnsToView && position) initial = position.viewId;
         else initial = STANDARD_VIEW_ID;
         const opening =
             initial === STANDARD_VIEW_ID
@@ -812,7 +867,35 @@ export default function ViewTabs({
         [visible, activeId, selectByKeyboard],
     );
 
-    if (!isReady) return null;
+    if (!isReady && isCatalogueFailed) return null;
+
+    if (!isReady) {
+        // Once open, a re-read only withholds the strip, so the placeholder keeps the bar it was showing.
+        if (hasOpened.current === resource) {
+            return (
+                <ViewStripPlaceholder
+                    columns={columns}
+                    sort={sort}
+                    isDirty={isDirty}
+                    isDrillDown={isDrillDown}
+                    isStandard={activeView === undefined}
+                    dataTestId={`${dataTestId}-placeholder`}
+                />
+            );
+        }
+
+        return (
+            <ViewStripOpeningPlaceholder
+                resource={resource}
+                handedIn={handedIn}
+                catalogue={catalogue}
+                columns={columns}
+                filters={filters}
+                sort={sort}
+                dataTestId={`${dataTestId}-placeholder`}
+            />
+        );
+    }
 
     return (
         <div className="flex flex-col gap-y-1" data-testid={dataTestId}>
@@ -863,17 +946,7 @@ export default function ViewTabs({
                         />
                     )}
 
-                    <button
-                        type="button"
-                        onClick={() => setDialog('new')}
-                        disabled={isMutating}
-                        aria-label="New view"
-                        title="New view"
-                        data-testid={`${dataTestId}-new`}
-                        className="inline-flex items-center rounded-lg p-3 text-content-subtle hover:bg-surface-hover hover:text-content focus:outline-hidden disabled:opacity-50"
-                    >
-                        <Plus className="size-4" />
-                    </button>
+                    <NewViewButton onClick={() => setDialog('new')} disabled={isMutating} dataTestId={`${dataTestId}-new`} />
                 </div>
             </SimpleBar>
 

@@ -350,6 +350,7 @@ test.describe('PagedList · configurable columns', () => {
 
         await expect(page.getByTestId('list-requests')).toBeVisible();
         await expect(page.getByTestId('view-tabs')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-placeholder')).toHaveCount(0);
         await expect.poll(() => headings(page)).toEqual(['property:COMMON_NAME', 'property:NOT_AFTER']);
     });
 
@@ -372,6 +373,76 @@ test.describe('PagedList · configurable columns', () => {
         await page.getByTestId('land-catalogue').click();
 
         await expect(page.getByTestId('view-tabs')).toBeVisible();
+    });
+
+    test('holds the strip its place while a catalogue that failed before is read again', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                refreshedCatalogue={catalogue}
+                views={[{ ...expiryWatch, defaultView: false }]}
+                failedCatalogue
+                isRefetchingCatalogue
+                withCatalogueControl
+            />,
+        );
+
+        await expect(page.getByText('acme.example')).toBeVisible();
+        await expect(page.getByTestId('view-tabs-placeholder')).toBeAttached();
+        const before = await page.locator('table').first().boundingBox();
+
+        await page.getByTestId('land-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs')).toBeVisible();
+        const after = await page.locator('table').first().boundingBox();
+        expect(Math.abs((after?.y ?? 0) - (before?.y ?? 0))).toBeLessThanOrEqual(1);
+    });
+
+    test('keeps the table where it first painted when the strip lands', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                refreshedCatalogue={catalogue}
+                views={[{ ...expiryWatch, defaultView: false }]}
+                isRefetchingCatalogue
+                withCatalogueControl
+            />,
+        );
+
+        await expect(page.getByText('acme.example')).toBeVisible();
+        const before = await page.locator('table').first().boundingBox();
+
+        await page.getByTestId('land-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs')).toBeVisible();
+        const after = await page.locator('table').first().boundingBox();
+        expect(Math.abs((after?.y ?? 0) - (before?.y ?? 0))).toBeLessThanOrEqual(1);
+    });
+
+    test('reserves the strip in the skeleton, so the page does not drop when the first page lands', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                views={[{ ...expiryWatch, defaultView: false }]}
+                withFirstPageControl
+            />,
+        );
+
+        await expect(page.getByTestId('paged-list-skeleton')).toBeVisible();
+        const reserved = await page.getByTestId('paged-list-skeleton-view-strip').boundingBox();
+
+        await page.getByTestId('land-first-page').click();
+
+        await expect(page.getByTestId('view-tabs')).toBeVisible();
+        const strip = await page.getByTestId('view-tabs').boundingBox();
+        expect(Math.abs((strip?.y ?? 0) - (reserved?.y ?? -1))).toBeLessThanOrEqual(1);
+        expect(Math.abs((strip?.height ?? 0) - (reserved?.height ?? 0))).toBeLessThanOrEqual(1);
     });
 
     test('makes the Standard tab sortable from the catalogue, though the shipped set cannot declare it', async ({ mount, page }) => {

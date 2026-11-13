@@ -139,11 +139,13 @@ type MountOptions = {
     withheldCatalogue?: boolean;
     dropsUnshownSort?: boolean;
     isCatalogueLoaded?: boolean;
+    isCatalogueFailed?: boolean;
     renderableProperties?: string[];
     driftColumn?: ColumnDefinition;
     driftSort?: { fieldSource: FilterFieldSource; fieldIdentifier: string; direction: 'asc' | 'desc' };
     driftFilter?: SearchFilterModel;
     returnTo?: { viewId: string; filters: SearchFilterModel[] };
+    drillDownFilters?: SearchFilterModel[];
 };
 
 const strip = ({
@@ -157,11 +159,13 @@ const strip = ({
     withheldCatalogue,
     dropsUnshownSort,
     isCatalogueLoaded,
+    isCatalogueFailed,
     renderableProperties,
     driftColumn,
     driftSort,
     driftFilter,
     returnTo,
+    drillDownFilters,
 }: MountOptions = {}) => (
     <ViewTabsWithStore
         resource={Resource.Certificates}
@@ -175,11 +179,13 @@ const strip = ({
         withheldCatalogue={withheldCatalogue}
         dropsUnshownSort={dropsUnshownSort}
         isCatalogueLoaded={isCatalogueLoaded}
+        isCatalogueFailed={isCatalogueFailed}
         renderableProperties={renderableProperties}
         driftColumn={driftColumn}
         driftSort={driftSort}
         driftFilter={driftFilter}
         returnTo={returnTo}
+        drillDownFilters={drillDownFilters}
     />
 );
 
@@ -841,12 +847,129 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-summary-sort').getByLabel('descending')).toBeVisible();
     });
 
-    test('renders nothing until the view list has settled', async ({ mount, page }) => {
+    test('renders no strip, only its placeholder, until the view list has settled', async ({ mount, page }) => {
         // An empty read is otherwise indistinguishable from one still in flight, and the strip would
         // then read the first optimistic create as the initial result and throw the user off it.
         await mount(strip({ hasLoaded: false }));
 
         await expect(page.getByTestId('view-tabs')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-placeholder')).toBeAttached();
+    });
+
+    test('reserves the height of the strip and its summary while it waits, so nothing below moves when it lands', async ({
+        mount,
+        page,
+    }) => {
+        await mount(strip({ views: [expiryWatch({ defaultView: true })], withheldCatalogue: true }));
+
+        const placeholder = page.getByTestId('view-tabs-placeholder');
+        await expect(placeholder).toBeAttached();
+        await expect(placeholder).toHaveAttribute('aria-hidden', 'true');
+        await expect(placeholder).toBeHidden();
+        await expect(page.getByText('Expiry watch')).toHaveCount(0);
+        const reserved = await placeholder.boundingBox();
+        const below = await page.getByTestId('applied-slice').boundingBox();
+
+        await page.getByTestId('release-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await expect(placeholder).toHaveCount(0);
+        const rendered = await page.getByTestId('view-tabs').boundingBox();
+        const belowAfter = await page.getByTestId('applied-slice').boundingBox();
+
+        expect(reserved?.height).toBeGreaterThan(0);
+        expect(Math.abs((rendered?.height ?? 0) - (reserved?.height ?? 0))).toBeLessThanOrEqual(1);
+        expect(Math.abs((belowAfter?.y ?? 0) - (below?.y ?? 0))).toBeLessThanOrEqual(1);
+    });
+
+    test('reserves the save offer a drill-down opens with, so nothing below moves when the strip lands', async ({ mount, page }) => {
+        await mount(strip({ views: [expiryWatch({ defaultView: true })], withheldCatalogue: true, drillDownFilters: [stateFilter] }));
+
+        await expect(page.getByTestId('view-tabs-placeholder')).toBeAttached();
+        const below = await page.getByTestId('applied-slice').boundingBox();
+
+        await page.getByTestId('release-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs-tab-standard')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-summary-save')).toBeVisible();
+        const belowAfter = await page.getByTestId('applied-slice').boundingBox();
+        expect(Math.abs((belowAfter?.y ?? 0) - (below?.y ?? 0))).toBeLessThanOrEqual(1);
+    });
+
+    test('reserves the save offer a return to a view opens with when its filters differ from the stored ones', async ({ mount, page }) => {
+        const otherFilter: SearchFilterModel = { ...stateFilter, value: 'revoked' };
+        await mount(strip({ withheldCatalogue: true, returnTo: { viewId: 'view-1', filters: [otherFilter] } }));
+
+        await expect(page.getByTestId('view-tabs-placeholder')).toBeAttached();
+        const below = await page.getByTestId('applied-slice').boundingBox();
+
+        await page.getByTestId('release-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-summary-save')).toBeVisible();
+        const belowAfter = await page.getByTestId('applied-slice').boundingBox();
+        expect(Math.abs((belowAfter?.y ?? 0) - (below?.y ?? 0))).toBeLessThanOrEqual(1);
+    });
+
+    test('reserves no save offer for a return whose only difference is a filter on secret content', async ({ mount, page }) => {
+        await mount(
+            strip({
+                fields: secretCatalogue,
+                views: [expiryWatch()],
+                isRefreshing: true,
+                refreshedViews: [expiryWatch()],
+                returnTo: { viewId: 'view-1', filters: [stateFilter, secretFilter] },
+            }),
+        );
+
+        await expect(page.getByTestId('view-tabs-placeholder')).toBeAttached();
+        await expect(page.getByTestId('view-tabs-placeholder-summary-save')).toHaveCount(0);
+        const below = await page.getByTestId('applied-slice').boundingBox();
+
+        await page.getByTestId('simulate-list-success').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-summary-save')).toHaveCount(0);
+        const belowAfter = await page.getByTestId('applied-slice').boundingBox();
+        expect(Math.abs((belowAfter?.y ?? 0) - (below?.y ?? 0))).toBeLessThanOrEqual(1);
+    });
+
+    test('holds no place for a strip whose catalogue could not be read, since it will not arrive', async ({ mount, page }) => {
+        await mount(strip({ withheldCatalogue: true, isCatalogueFailed: true }));
+
+        await expect(page.getByTestId('applied-slice')).toBeVisible();
+        await expect(page.getByTestId('view-tabs-placeholder')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs')).toHaveCount(0);
+    });
+
+    test('keeps the save offer it was showing while a set-aside list is read again', async ({ mount, page }) => {
+        await mount(strip({ views: [expiryWatch({ defaultView: true })], driftFilter: { ...stateFilter, value: 'revoked' } }));
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await page.getByTestId('drift-filter').click();
+        await expect(page.getByTestId('view-tabs-summary-save')).toHaveText('Save to view');
+        const below = await page.getByTestId('applied-slice').boundingBox();
+
+        await page.getByTestId('simulate-list-set-aside').click();
+
+        await expect(page.getByTestId('view-tabs')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-placeholder-summary-save')).toHaveText('Save to view');
+        const belowAfter = await page.getByTestId('applied-slice').boundingBox();
+        expect(Math.abs((belowAfter?.y ?? 0) - (below?.y ?? 0))).toBeLessThanOrEqual(1);
+    });
+
+    test('keeps the placeholder out of reach of the keyboard and of assistive technology', async ({ mount, page }) => {
+        await mount(strip({ hasLoaded: false }));
+
+        const placeholder = page.getByTestId('view-tabs-placeholder');
+        await expect(placeholder).toBeAttached();
+        await expect(placeholder).toHaveAttribute('inert');
+        await expect(page.getByRole('tab')).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'New view' })).toHaveCount(0);
+
+        await page.keyboard.press('Tab');
+        const isFocusInside = await placeholder.evaluate((node) => node.contains(document.activeElement));
+        expect(isFocusInside).toBe(false);
     });
 
     test('waits for the catalogue before offering any tab', async ({ mount, page }) => {

@@ -20,7 +20,7 @@ import CustomTable, { type SortDirection, type TableDataRow, type TableHeader } 
 import { buildTableRows, type CellRegistry } from 'components/CustomTable/columns';
 import Dialog from 'components/Dialog';
 import FilterWidget from 'components/FilterWidget';
-import ViewTabs, { isViewStripReady } from 'components/ViewTabs';
+import ViewTabs, { isViewStripReady, ViewStripOpeningPlaceholder } from 'components/ViewTabs';
 import Widget from 'components/Widget';
 import type { ReactNode, RefObject } from 'react';
 import { selectors as listViewSelectors } from 'ducks/listViews';
@@ -756,6 +756,21 @@ function PagedList<TRow extends object>({
                 columnsCount={columnHeaders.length + (isColumnDriven ? 1 : 0)}
                 hasCheckboxes={hasCheckboxes}
                 hasExtraFilter={Boolean(extraFilterComponent)}
+                viewStrip={
+                    columnsResource &&
+                    standardColumns &&
+                    !hasCatalogueFailed && (
+                        <ViewStripOpeningPlaceholder
+                            resource={columnsResource}
+                            handedIn={handedIn}
+                            catalogue={catalogue}
+                            columns={appliedColumns}
+                            filters={currentFilters}
+                            sort={appliedSort}
+                            dataTestId="paged-list-skeleton-view-strip"
+                        />
+                    )
+                }
             />
         );
     }
@@ -768,6 +783,7 @@ function PagedList<TRow extends object>({
                     resource={columnsResource}
                     catalogue={catalogue}
                     isCatalogueLoaded={hasCatalogueForViews}
+                    isCatalogueFailed={hasCatalogueFailed && !isFetchingCatalogue}
                     standardColumns={sortableStandardColumns}
                     standardSort={defaultSort}
                     renderableProperties={renderableProperties}

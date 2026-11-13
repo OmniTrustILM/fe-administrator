@@ -487,6 +487,11 @@ function filterSignature(filters: readonly SearchFilterModel[]): string {
     return JSON.stringify(filters.map(getFilterKey));
 }
 
+/** Whether two filter lists differ in the way {@link isSliceDirty} counts as drift. */
+export function areFiltersDifferent(stored: readonly SearchFilterModel[], current: readonly SearchFilterModel[]): boolean {
+    return filterSignature(stored) !== filterSignature(current);
+}
+
 function sortSignature(sort: ColumnSort | undefined): string {
     return sort ? `${getSortKey(sort)}:${sort.direction}` : '';
 }
@@ -508,7 +513,7 @@ export function isSliceDirty(stored: ViewSlice, current: ViewSlice, against: 'st
 
     return (
         columnSignature(storable(stored.columns)) !== columnSignature(storable(current.columns)) ||
-        filterSignature(stored.filters) !== filterSignature(current.filters) ||
+        areFiltersDifferent(stored.filters, current.filters) ||
         sortSignature(stored.sort) !== sortSignature(current.sort)
     );
 }
