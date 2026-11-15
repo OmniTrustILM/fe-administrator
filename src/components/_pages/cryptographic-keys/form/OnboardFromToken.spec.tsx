@@ -33,7 +33,7 @@ const page: TokenKeyListResponseDto = {
     items: [
         {
             keyPairMeta: keyPairMeta('onboardable'),
-            label: 'signer',
+            storageName: 'signer',
             keyAlgorithm: KeyAlgorithm.Rsa,
             length: 2048,
             status: TokenKeyStatus.Onboardable,
@@ -41,7 +41,7 @@ const page: TokenKeyListResponseDto = {
         },
         {
             keyPairMeta: keyPairMeta('into'),
-            label: 'certified',
+            storageName: 'certified',
             keyAlgorithm: KeyAlgorithm.Ecdsa,
             length: 256,
             status: TokenKeyStatus.OnboardableIntoKey,
@@ -50,16 +50,16 @@ const page: TokenKeyListResponseDto = {
         },
         {
             keyPairMeta: keyPairMeta('held'),
-            label: 'held',
+            storageName: 'held',
             keyAlgorithm: KeyAlgorithm.Ecdsa,
             length: 256,
             status: TokenKeyStatus.InInventory,
             inventoryKeyName: 'existing key',
-            reason: 'Key existing key holds the same public key under a token instance, without its private key.',
+            reason: "Key 'existing key' holds the same public key under a token instance, without its private key.",
         },
         {
             keyPairMeta: keyPairMeta('orphan'),
-            label: 'orphan',
+            storageName: 'orphan',
             keyAlgorithm: KeyAlgorithm.Rsa,
             length: 2048,
             status: TokenKeyStatus.NoPublicKey,
@@ -67,13 +67,13 @@ const page: TokenKeyListResponseDto = {
         },
         {
             keyPairMeta: keyPairMeta('importing'),
-            label: 'importing',
+            storageName: 'importing',
             keyAlgorithm: KeyAlgorithm.Rsa,
             length: 2048,
             status: TokenKeyStatus.ImportInProgress,
         },
         {
-            label: 'unidentified',
+            storageName: 'unidentified',
             keyAlgorithm: KeyAlgorithm.Rsa,
             length: 2048,
             status: TokenKeyStatus.NoUsableId,
@@ -170,7 +170,7 @@ test.describe('OnboardFromToken', () => {
         await held.getByText(TokenKeyStatus.InInventory, { exact: true }).hover();
 
         await expect(browser.getByRole('tooltip')).toHaveText(
-            'Key existing key holds the same public key under a token instance, without its private key.',
+            "Key 'existing key' holds the same public key under a token instance, without its private key.",
         );
     });
 
@@ -187,13 +187,21 @@ test.describe('OnboardFromToken', () => {
         ).toBeVisible();
     });
 
-    test('shows an empty length for a key pair listed without one', async ({ mount, page: browser }) => {
+    test('heads the columns with the storage name and the size', async ({ mount, page: browser }) => {
+        await mount(<OnboardFromTokenWithStore profiles={[profile]} page={page} />);
+
+        await chooseProfile(browser);
+
+        await expect(browser.getByRole('columnheader')).toHaveText(['', 'Storage name', 'Algorithm', 'Size', 'Status', 'Onboard as']);
+    });
+
+    test('shows an empty size for a key pair listed without one', async ({ mount, page: browser }) => {
         const unsized: TokenKeyListResponseDto = {
             ...page,
             items: [
                 {
                     keyPairMeta: keyPairMeta('pqc'),
-                    label: 'pqc signer',
+                    storageName: 'pqc signer',
                     keyAlgorithm: KeyAlgorithm.MlDsa,
                     status: TokenKeyStatus.Onboardable,
                     suggestedName: 'pqc signer',
@@ -211,7 +219,7 @@ test.describe('OnboardFromToken', () => {
     test('shows an empty algorithm for a key listed without one', async ({ mount, page: browser }) => {
         const unread: TokenKeyListResponseDto = {
             ...page,
-            items: [{ label: 'unreadable signer', status: TokenKeyStatus.Unreadable }],
+            items: [{ storageName: 'unreadable signer', status: TokenKeyStatus.Unreadable }],
             totalItems: 1,
         };
         await mount(<OnboardFromTokenWithStore profiles={[profile]} page={unread} />);
@@ -225,8 +233,8 @@ test.describe('OnboardFromToken', () => {
         const unusable: TokenKeyListResponseDto = {
             ...page,
             items: [
-                { label: 'exotic', keyAlgorithm: KeyAlgorithm.Rsa, status: TokenKeyStatus.UnsupportedKeyType },
-                { label: 'damaged', status: TokenKeyStatus.Unreadable },
+                { storageName: 'exotic', keyAlgorithm: KeyAlgorithm.Rsa, status: TokenKeyStatus.UnsupportedKeyType },
+                { storageName: 'damaged', status: TokenKeyStatus.Unreadable },
             ],
             totalItems: 2,
         };
@@ -241,7 +249,7 @@ test.describe('OnboardFromToken', () => {
     test('shows a key the key storage no longer holds in gray', async ({ mount, page: browser }) => {
         const vanished: TokenKeyListResponseDto = {
             ...page,
-            items: [{ label: 'vanished', status: TokenKeyStatus.Gone }],
+            items: [{ storageName: 'vanished', status: TokenKeyStatus.Gone }],
             totalItems: 1,
         };
         await mount(<OnboardFromTokenWithStore profiles={[profile]} page={vanished} />);
@@ -452,7 +460,7 @@ test.describe('OnboardFromToken', () => {
                         keyPairMeta: keyPairMeta('onboardable'),
                         onboarded: false,
                         intoExistingKey: false,
-                        reason: 'Another key is named signer.',
+                        reason: "A key 'signer' already exists.",
                     },
                 ]}
             />,
@@ -462,18 +470,21 @@ test.describe('OnboardFromToken', () => {
         await browser.getByRole('checkbox', { name: 'Select signer' }).click();
         await browser.getByRole('button', { name: 'Onboard', exact: true }).click();
 
-        await expect(browser.getByRole('list', { name: 'Onboarding results' })).toContainText('signer: Another key is named signer.');
+        await expect(browser.getByRole('list', { name: 'Onboarding results' })).toContainText("signer: A key 'signer' already exists.");
         await expect(browser.getByRole('checkbox', { name: 'Select signer' })).toBeChecked();
         await expect(browser.getByRole('button', { name: 'Done' })).toHaveCount(0);
     });
 
-    test('names a key pair with a blank label by its fingerprint, in its row and in its result', async ({ mount, page: browser }) => {
-        const unlabelled: TokenKeyListResponseDto = {
+    test('names a key pair with a blank storage name by its fingerprint, in its row and in its result', async ({
+        mount,
+        page: browser,
+    }) => {
+        const nameless: TokenKeyListResponseDto = {
             ...page,
             items: [
                 {
-                    keyPairMeta: keyPairMeta('unlabelled'),
-                    label: '',
+                    keyPairMeta: keyPairMeta('nameless'),
+                    storageName: '',
                     fingerprint: '5f2b9c',
                     keyAlgorithm: KeyAlgorithm.Rsa,
                     length: 2048,
@@ -486,13 +497,13 @@ test.describe('OnboardFromToken', () => {
         await mount(
             <OnboardFromTokenWithStore
                 profiles={[profile]}
-                page={unlabelled}
+                page={nameless}
                 onboardingResults={[
                     {
-                        keyPairMeta: keyPairMeta('unlabelled'),
+                        keyPairMeta: keyPairMeta('nameless'),
                         onboarded: false,
                         intoExistingKey: false,
-                        reason: 'Another key is named key (5f2b9c).',
+                        reason: "A key 'key (5f2b9c)' already exists.",
                     },
                 ]}
             />,
@@ -504,7 +515,9 @@ test.describe('OnboardFromToken', () => {
         await row.getByRole('checkbox').click();
         await browser.getByRole('button', { name: 'Onboard', exact: true }).click();
 
-        await expect(browser.getByRole('list', { name: 'Onboarding results' })).toContainText('5f2b9c: Another key is named key (5f2b9c).');
+        await expect(browser.getByRole('list', { name: 'Onboarding results' })).toContainText(
+            "5f2b9c: A key 'key (5f2b9c)' already exists.",
+        );
     });
 
     test('drops a selected key pair from the selection once a later listing finds it in the inventory', async ({
@@ -513,7 +526,7 @@ test.describe('OnboardFromToken', () => {
     }) => {
         const dispatched: UnknownAction[] = [];
         const onboardedMeanwhile = page.items.map((key) =>
-            key.label === 'signer' ? { ...key, status: TokenKeyStatus.InInventory, inventoryKeyName: 'signer' } : key,
+            key.storageName === 'signer' ? { ...key, status: TokenKeyStatus.InInventory, inventoryKeyName: 'signer' } : key,
         );
         await mount(
             <OnboardFromTokenWithStore
@@ -626,12 +639,12 @@ test.describe('OnboardFromToken', () => {
         await expect(browser.getByRole('checkbox', { name: 'Select signer' })).toBeVisible();
     });
 
-    test('names each key pair in the results by its label, whichever page it was picked on', async ({ mount, page: browser }) => {
+    test('names each key pair in the results by its storage name, whichever page it was picked on', async ({ mount, page: browser }) => {
         const secondPage: TokenKeyListResponseDto = {
             items: [
                 {
                     keyPairMeta: keyPairMeta('archiving'),
-                    label: 'archiver',
+                    storageName: 'archiver',
                     keyAlgorithm: KeyAlgorithm.Rsa,
                     length: 2048,
                     status: TokenKeyStatus.Onboardable,
@@ -660,7 +673,7 @@ test.describe('OnboardFromToken', () => {
                         keyPairMeta: keyPairMeta('archiving'),
                         onboarded: false,
                         intoExistingKey: false,
-                        reason: 'Another key is named archiver.',
+                        reason: "A key 'archiver' already exists.",
                     },
                 ]}
             />,
@@ -674,7 +687,7 @@ test.describe('OnboardFromToken', () => {
 
         const results = browser.getByRole('list', { name: 'Onboarding results' });
         await expect(results).toContainText('signer: onboarded as Payments signer');
-        await expect(results).toContainText('archiver: Another key is named archiver.');
+        await expect(results).toContainText("archiver: A key 'archiver' already exists.");
     });
 
     test('leaves the names of key pairs picked on different pages to Core, although each page suggests the same', async ({
@@ -686,7 +699,7 @@ test.describe('OnboardFromToken', () => {
             items: [
                 {
                     keyPairMeta: keyPairMeta('archiving'),
-                    label: 'archiver',
+                    storageName: 'archiver',
                     keyAlgorithm: KeyAlgorithm.Rsa,
                     length: 2048,
                     status: TokenKeyStatus.Onboardable,
@@ -739,7 +752,7 @@ test.describe('OnboardFromToken', () => {
     test('asks a name for a selected key pair whose public key no key holds any more', async ({ mount, page: browser }) => {
         const dispatched: UnknownAction[] = [];
         const released = page.items.map((key) =>
-            key.label === 'certified'
+            key.storageName === 'certified'
                 ? {
                       ...key,
                       status: TokenKeyStatus.Onboardable,
@@ -776,7 +789,7 @@ test.describe('OnboardFromToken', () => {
     test('shows the key a selected key pair joins once a key came to hold its public key', async ({ mount, page: browser }) => {
         const dispatched: UnknownAction[] = [];
         const claimed = page.items.map((key) =>
-            key.label === 'signer'
+            key.storageName === 'signer'
                 ? { ...key, status: TokenKeyStatus.OnboardableIntoKey, inventoryKeyUuid: 'uploaded', inventoryKeyName: 'uploaded key' }
                 : key,
         );

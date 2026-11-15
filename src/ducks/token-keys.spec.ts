@@ -29,7 +29,7 @@ const page: TokenKeyListResponseDto = {
     items: [
         {
             keyPairMeta: keyPairMeta('handle-1'),
-            label: 'signer',
+            storageName: 'signer',
             keyAlgorithm: KeyAlgorithm.Rsa,
             length: 2048,
             status: TokenKeyStatus.Onboardable,
@@ -51,7 +51,7 @@ const onboarded: TokenKeyOnboardingResultDto = {
 const skipped: TokenKeyOnboardingResultDto = {
     keyPairMeta: keyPairMeta('handle-2'),
     onboarded: false,
-    reason: 'Key signer already holds this key pair.',
+    reason: "Key 'signer' already holds this key pair.",
 };
 
 const request = { tokenInstanceUuid: 'token', tokenProfileUuid: 'profile' };
