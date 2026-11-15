@@ -4,6 +4,7 @@ import Spinner from 'components/Spinner';
 import { actions as alertActions } from 'ducks/alerts';
 import { actions as acmeProfilesActions, selectors as acmeProfilesSelectors } from 'ducks/acme-profiles';
 import { actions as cmpProfilesActions, selectors as cmpProfilesSelectors } from 'ducks/cmp-profiles';
+import { actions as estProfilesActions, selectors as estProfilesSelectors } from 'ducks/est-profiles';
 import { actions as raProfilesActions, selectors as raProfilesSelectors } from 'ducks/ra-profiles';
 import { actions as scepProfilesActions, selectors as scepProfilesSelectors } from 'ducks/scep-profiles';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -26,6 +27,7 @@ export enum Protocol {
     ACME = 'ACME',
     SCEP = 'SCEP',
     CMP = 'CMP',
+    EST = 'EST',
 }
 
 type Props = Readonly<{
@@ -42,15 +44,17 @@ export default function ProtocolActivationDialogBody({ protocol, raProfileUuid, 
     const acmeProfiles = useSelector(acmeProfilesSelectors.acmeProfiles);
     const scepProfiles = useSelector(scepProfilesSelectors.scepProfiles);
     const cmpProfiles = useSelector(cmpProfilesSelectors.cmpProfiles);
+    const estProfiles = useSelector(estProfilesSelectors.estProfiles);
 
     const profiles = useMemo(() => {
         const profileMap = {
             [Protocol.ACME]: acmeProfiles,
             [Protocol.CMP]: cmpProfiles,
             [Protocol.SCEP]: scepProfiles,
+            [Protocol.EST]: estProfiles,
         };
         return profileMap[protocol] ?? [];
-    }, [protocol, acmeProfiles, cmpProfiles, scepProfiles]);
+    }, [protocol, acmeProfiles, cmpProfiles, scepProfiles, estProfiles]);
 
     const issuanceAttributes = useSelector(raProfilesSelectors.issuanceAttributes);
     const revocationAttributes = useSelector(raProfilesSelectors.revocationAttributes);
@@ -62,6 +66,7 @@ export default function ProtocolActivationDialogBody({ protocol, raProfileUuid, 
         [Protocol.ACME]: acmeProfilesSelectors.isFetchingList,
         [Protocol.CMP]: cmpProfilesSelectors.isFetchingList,
         [Protocol.SCEP]: scepProfilesSelectors.isFetchingList,
+        [Protocol.EST]: estProfilesSelectors.isFetchingList,
     };
     const isFetchingProfiles = useSelector(fetchingSelectorMap[protocol] ?? (() => false));
     const isFetchingIssuanceAttributes = useSelector(raProfilesSelectors.isFetchingIssuanceAttributes);
@@ -80,6 +85,7 @@ export default function ProtocolActivationDialogBody({ protocol, raProfileUuid, 
                 [Protocol.ACME]: acmeProfilesActions.listAcmeProfiles,
                 [Protocol.CMP]: cmpProfilesActions.listCmpProfiles,
                 [Protocol.SCEP]: scepProfilesActions.listScepProfiles,
+                [Protocol.EST]: estProfilesActions.listEstProfiles,
             };
 
             const profileAction = profileListActions[protocol];
@@ -174,6 +180,14 @@ export default function ProtocolActivationDialogBody({ protocol, raProfileUuid, 
                     uuid: raProfileUuid,
                     scepProfileUuid: values.profiles,
                     raProfileActivateScepRequest: {
+                        issueCertificateAttributes: issuanceAttribs,
+                    },
+                }),
+                [Protocol.EST]: raProfilesActions.activateEst({
+                    authorityUuid: authorityInstanceUuid || '',
+                    uuid: raProfileUuid,
+                    estProfileUuid: values.profiles,
+                    raProfileActivateEstRequest: {
                         issueCertificateAttributes: issuanceAttribs,
                     },
                 }),
