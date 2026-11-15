@@ -54,14 +54,14 @@ test.describe('AdvancedOptions', () => {
 
         await fillField(page, 'retryAfter', '0');
 
-        await expect(page.getByText('Enter a whole number of seconds, 1 or more.')).toBeVisible();
+        await expect(page.getByText('Enter a whole number of seconds from 1 to 86400.')).toBeVisible();
     });
 
     test('a validation error expands a collapsed section', async ({ mount, page }) => {
         await mount(<AdvancedOptionsHarness initial={{ retryAfter: '0' }} initiallyExpanded={false} />);
 
         await expect(page.getByTestId('advanced-options-toggle')).toHaveAttribute('aria-expanded', 'true');
-        await expect(page.getByText('Enter a whole number of seconds, 1 or more.')).toBeVisible();
+        await expect(page.getByText('Enter a whole number of seconds from 1 to 86400.')).toBeVisible();
     });
 
     test('Restore defaults resets custom values', async ({ mount, page }) => {

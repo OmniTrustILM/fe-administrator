@@ -115,11 +115,14 @@ describe('validateEstProfile', () => {
     test('response timing values must be whole seconds at or above their minimum', () => {
         const errors = (overrides: Partial<EstProfileFormValues>) => validateEstProfile(values(overrides), { creating: false });
         expect(errors({ issueWaitTimeout: '0', retryAfter: '1', serverKeyGenerationTimeout: '1' })).toEqual({});
-        expect(errors({ issueWaitTimeout: ' 600 ' })).toEqual({});
-        expect(errors({ issueWaitTimeout: '' }).issueWaitTimeout).toBe('Enter a whole number of seconds, 0 or more.');
+        expect(errors({ issueWaitTimeout: ' 300 ', retryAfter: '86400', serverKeyGenerationTimeout: '300' })).toEqual({});
+        expect(errors({ issueWaitTimeout: '' }).issueWaitTimeout).toBe('Enter a whole number of seconds from 0 to 300.');
         expect(errors({ issueWaitTimeout: '-1' }).issueWaitTimeout).toBeDefined();
-        expect(errors({ retryAfter: '0' }).retryAfter).toBe('Enter a whole number of seconds, 1 or more.');
+        expect(errors({ retryAfter: '0' }).retryAfter).toBe('Enter a whole number of seconds from 1 to 86400.');
         expect(errors({ retryAfter: '1.5' }).retryAfter).toBeDefined();
+        expect(errors({ issueWaitTimeout: '301' }).issueWaitTimeout).toBe('Enter a whole number of seconds from 0 to 300.');
+        expect(errors({ retryAfter: '86401' }).retryAfter).toBeDefined();
+        expect(errors({ serverKeyGenerationTimeout: '301' }).serverKeyGenerationTimeout).toBeDefined();
         expect(errors({ serverKeyGenerationTimeout: 'abc' }).serverKeyGenerationTimeout).toBeDefined();
     });
 });

@@ -102,7 +102,7 @@ type ResponseTimingValues = Pick<EstProfileFormValues, ResponseTimingField>;
 
 export const RESPONSE_TIMING_FIELDS: readonly ResponseTimingField[] = ['issueWaitTimeout', 'retryAfter', 'serverKeyGenerationTimeout'];
 
-// Core's defaults and minimums, in seconds.
+// Core's defaults, minimums and maximums, in seconds.
 export const RESPONSE_TIMING_DEFAULTS: Readonly<Record<ResponseTimingField, number>> = {
     issueWaitTimeout: 10,
     retryAfter: 30,
@@ -112,6 +112,11 @@ const RESPONSE_TIMING_MINIMUMS: Readonly<Record<ResponseTimingField, number>> = 
     issueWaitTimeout: 0,
     retryAfter: 1,
     serverKeyGenerationTimeout: 1,
+};
+const RESPONSE_TIMING_MAXIMUMS: Readonly<Record<ResponseTimingField, number>> = {
+    issueWaitTimeout: 300,
+    retryAfter: 86400,
+    serverKeyGenerationTimeout: 300,
 };
 
 export function defaultResponseTimingValues(): ResponseTimingValues {
@@ -139,8 +144,9 @@ function validateResponseTiming(values: ResponseTimingValues, errors: EstProfile
     for (const field of RESPONSE_TIMING_FIELDS) {
         const seconds = parseSeconds(values[field]);
         const minimum = RESPONSE_TIMING_MINIMUMS[field];
-        if (seconds === undefined || seconds < minimum) {
-            errors[field] = `Enter a whole number of seconds, ${minimum} or more.`;
+        const maximum = RESPONSE_TIMING_MAXIMUMS[field];
+        if (seconds === undefined || seconds < minimum || seconds > maximum) {
+            errors[field] = `Enter a whole number of seconds from ${minimum} to ${maximum}.`;
         }
     }
 }

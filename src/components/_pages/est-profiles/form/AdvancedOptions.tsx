@@ -101,13 +101,13 @@ export default function AdvancedOptions({ errors, serverKeyGeneration, initially
                     <TimingInput
                         name="issueWaitTimeout"
                         label="Issue wait"
-                        help="How long enroll and reenroll wait for the certificate before answering 202; 0 answers at once."
+                        help="How long enroll and reenroll wait for the certificate before answering 202; 0 answers at once. At most 300."
                         error={errors.issueWaitTimeout}
                     />
                     <TimingInput
                         name="retryAfter"
                         label="Retry-After"
-                        help="Seconds a client is told to wait after a 202; raise it for CAs that issue slowly."
+                        help="Seconds a client is told to wait after a 202; raise it for CAs that issue slowly. At most 86400 (one day)."
                         error={errors.retryAfter}
                     />
                     {/* An invalid value stays visible, as it would otherwise block the form unseen. */}
@@ -115,7 +115,7 @@ export default function AdvancedOptions({ errors, serverKeyGeneration, initially
                         <TimingInput
                             name="serverKeyGenerationTimeout"
                             label="Key generation wait"
-                            help="How long server key generation waits for the certificate."
+                            help="How long server key generation waits for the certificate. At most 300."
                             error={errors.serverKeyGenerationTimeout}
                         />
                     )}
