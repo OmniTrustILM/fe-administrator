@@ -991,6 +991,7 @@ export type RaProfilesTestState = {
     createdRaProfileUuid: string | null;
     raProfiles: any[];
     raProfile?: any;
+    isFetchingDetail?: boolean;
 };
 
 const raProfilesTestInitialState: RaProfilesTestState = {
@@ -1021,6 +1022,14 @@ function raProfilesTestReducer(state: RaProfilesTestState | undefined, action: U
             return { ...current, isCreating: false, createRaProfileSucceeded: false, createdRaProfileUuid: null };
         case 'raprofiles/updateRaProfile':
             return { ...current, isUpdating: true };
+        case 'raprofiles/updateRaProfileFailure':
+            return { ...current, isUpdating: false };
+        case 'raprofiles/raProfileRequestAttributesUpdated': {
+            // Like the real slice, a saved request-attribute set is patched into the loaded profile, giving it a new identity.
+            const patch = (action as { payload?: { uuid?: string; certificateRequestAttributes?: unknown } }).payload;
+            if (current.raProfile?.uuid !== patch?.uuid) return current;
+            return { ...current, raProfile: { ...current.raProfile, certificateRequestAttributes: patch?.certificateRequestAttributes } };
+        }
         default:
             return current;
     }
@@ -1179,14 +1188,24 @@ function complianceProfilesTestReducer(
 // (used by the certificate form's optional owner field) can find this state.
 export type UsersTestState = {
     users: any[];
+    isCreating?: boolean;
 };
 
 const usersTestInitialState: UsersTestState = {
     users: [],
 };
 
-function usersTestReducer(state: UsersTestState | undefined, _action: UnknownAction): UsersTestState {
-    return state ?? usersTestInitialState;
+function usersTestReducer(state: UsersTestState | undefined, action: UnknownAction): UsersTestState {
+    const current = state ?? usersTestInitialState;
+    // The user form tests stand in for the create epic, so the in-flight flag follows the create and its failure.
+    switch (action.type) {
+        case 'users/create':
+            return { ...current, isCreating: true };
+        case 'users/createFailure':
+            return { ...current, isCreating: false };
+        default:
+            return current;
+    }
 }
 
 export type RolesTestState = {

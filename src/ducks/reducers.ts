@@ -3,6 +3,7 @@ import { combineReducers } from 'redux';
 import { slice as acmeAccountsSlice } from './acme-accounts';
 import { slice as acmeProfilesSlice } from './acme-profiles';
 import { slice as cmpProfilesSlice } from './cmp-profiles';
+import { slice as estProfilesSlice } from './est-profiles';
 import { slice as scepProfilesSlice } from './scep-profiles';
 
 import { alertsSlice } from './alert-slice';
@@ -104,6 +105,7 @@ export const reducers = combineReducers({
     [acmeProfilesSlice.name]: acmeProfilesSlice.reducer,
     [scepProfilesSlice.name]: scepProfilesSlice.reducer,
     [cmpProfilesSlice.name]: cmpProfilesSlice.reducer,
+    [estProfilesSlice.name]: estProfilesSlice.reducer,
     [initialComplianceProfilesSlice.name]: initialComplianceProfilesSlice.reducer,
     [initialCredentialsSlice.name]: initialCredentialsSlice.reducer,
     [initialEntitiesSlice.name]: initialEntitiesSlice.reducer,

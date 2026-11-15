@@ -338,7 +338,7 @@ export default function ScepProfileForm({ scepProfileId, onCancel, onSuccess }: 
     );
 
     const renderCertificateAssociatedAttributesEditor = useAttributeEditor({
-        isBusy,
+        isLoading: isFetchingDetail,
         id: 'certificateAssociatedAttributes',
         resourceKey: Resource.Certificates,
         attributes: scepProfileSelector?.certificateAssociations?.customAttributes,

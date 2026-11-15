@@ -26,6 +26,7 @@ export * from './CryptographicOperationsControllerApi';
 export * from './CustomAttributesApi';
 export * from './CustomOIDManagementApi';
 export * from './DiscoveryManagementApi';
+export * from './ESTProfileManagementApi';
 export * from './EntityManagementApi';
 export * from './EnumsApi';
 export * from './ExternalNotificationManagementApi';

@@ -1,7 +1,7 @@
 import { test, expect } from '../../../../../playwright/ct-test';
 import { AttributeFieldFileTestWrapper } from './AttributeFieldFileTestWrapper';
 import type { DataAttributeModel } from 'types/attributes';
-import { AttributeContentType } from 'types/openapi';
+import { AttributeContentType, AttributeType } from 'types/openapi';
 
 const defaultProperties = {
     label: 'Test File',
@@ -196,5 +196,58 @@ test.describe('AttributeFieldFile', () => {
         });
 
         expect(changed).toBe(true);
+    });
+
+    test.describe('required file validation feedback', () => {
+        const requiredDescriptor = minimalFileDescriptor({
+            type: AttributeType.Data,
+            properties: { ...defaultProperties, required: true },
+        });
+
+        test('shows the required error after a submit attempt without the field being touched', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldFileTestWrapper
+                    name="testFile"
+                    descriptor={requiredDescriptor}
+                    onFileDrop={noop}
+                    onFileDragOver={noop}
+                    onFileChanged={noop}
+                    withSubmit
+                />,
+            );
+            const content = page.locator('#testFile-content');
+            await expect(page.getByText('Required Field')).toHaveCount(0);
+            await expect(content).not.toHaveAttribute('aria-invalid');
+
+            await page.getByRole('button', { name: 'Submit' }).click();
+
+            const error = page.getByText('Required Field');
+            await expect(error).toBeVisible();
+            await expect(content).toHaveAttribute('aria-invalid', 'true');
+            await expect(content).toHaveAttribute('aria-describedby', 'testFile-content-error');
+            const errorColor = await error.evaluate((el) => getComputedStyle(el).color);
+            await expect(content).toHaveCSS('border-top-color', errorColor);
+        });
+
+        test('shows the required error once the field is left', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldFileTestWrapper
+                    name="testFile"
+                    descriptor={requiredDescriptor}
+                    onFileDrop={noop}
+                    onFileDragOver={noop}
+                    onFileChanged={noop}
+                    mode="onChange"
+                    validateOnMount
+                    withNextField
+                />,
+            );
+            await expect(page.getByText('Required Field')).toHaveCount(0);
+
+            await page.locator('#testFile-content').focus();
+            await page.getByRole('textbox', { name: 'Next field' }).focus();
+
+            await expect(page.getByText('Required Field')).toBeVisible();
+        });
     });
 });

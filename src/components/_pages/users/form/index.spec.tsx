@@ -1,4 +1,5 @@
 import { expect, test } from '../../../../../playwright/ct-test';
+import type { CustomAttributeModel } from 'types/attributes';
 import type { RoleResponseModel, UserDetailModel } from 'types/auth';
 import UserFormWithStore from './UserFormWithStore';
 
@@ -20,6 +21,16 @@ const USER: UserDetailModel = {
     groups: [],
     roles: [ROLES[1]],
 };
+
+const STAGE_ATTRIBUTE = {
+    uuid: 'stage-uuid',
+    name: 'stage',
+    version: 3,
+    type: 'custom',
+    contentType: 'string',
+    content: [{ data: 's1' }, { data: 's2' }, { data: 's3' }],
+    properties: { label: 'Stage', visible: true, required: true, readOnly: false, list: true, multiSelect: false },
+} as unknown as CustomAttributeModel;
 
 test.describe('UserForm', () => {
     test('explains the Enabled switch in a toggletip beside its label', async ({ mount, page }) => {
@@ -95,5 +106,32 @@ test.describe('UserForm', () => {
         }>;
         const update = dispatched.find(({ type }) => type === 'users/update');
         expect(update?.payload.roles).toEqual(['role-auditor', 'role-operator']);
+    });
+
+    test('keeps a selected required list value after a failed create, so the form can be resubmitted as is', async ({ mount, page }) => {
+        await mount(<UserFormWithStore roles={ROLES} customAttributes={[STAGE_ATTRIBUTE]} withCreateFailure />);
+
+        const username = page.locator('#username');
+        await username.click();
+        await username.fill('jdoe');
+        await page.getByTestId('select-__attributes__customUser__.stageSelect-trigger').click();
+        await page.getByRole('option', { name: 's2', exact: true }).click();
+        const create = page.getByTestId('progress-button');
+        await expect(create).toBeEnabled();
+
+        await create.click();
+        await expect(create).toBeDisabled();
+        await page.getByRole('button', { name: 'Fail create' }).click();
+
+        // The select can keep showing a value the form has already dropped, so the enabled button and the retried payload are the checks.
+        await expect(create).toBeEnabled();
+        await create.click();
+        const dispatched = JSON.parse((await page.getByTestId('user-actions').textContent()) ?? '[]') as Array<{
+            type: string;
+            payload: unknown;
+        }>;
+        const creates = dispatched.filter(({ type }) => type === 'users/create');
+        expect(creates).toHaveLength(2);
+        expect(JSON.stringify(creates[1].payload)).toContain('"s2"');
     });
 });
