@@ -19,6 +19,8 @@ export type CertificateDetailsContentTestWrapperProps = Readonly<{
     registrationState?: CertificateRegistrationState;
     /** What the allowed-actions endpoint answered for the certificate; omitted means every action. */
     allowedActions?: ResourceAction[];
+    /** Fields that replace the test certificate's own, such as a pending state or a trusted flag. */
+    certificateOverrides?: Partial<CertificateDetailResponseModel>;
 }>;
 
 const testCertificate = (registrationState: CertificateRegistrationState | undefined): CertificateDetailResponseModel =>
@@ -54,8 +56,15 @@ const rootReducer = overlaySliceReducer('certificates', certificatesReducer, dia
 
 const profile = { username: 'user' } as UserProfileDetailModel;
 
-export function CertificateDetailsContentTestWrapper({ registrationState, allowedActions }: CertificateDetailsContentTestWrapperProps) {
-    const certificate = useMemo(() => testCertificate(registrationState), [registrationState]);
+export function CertificateDetailsContentTestWrapper({
+    registrationState,
+    allowedActions,
+    certificateOverrides,
+}: CertificateDetailsContentTestWrapperProps) {
+    const certificate = useMemo(
+        () => ({ ...testCertificate(registrationState), ...certificateOverrides }),
+        [registrationState, certificateOverrides],
+    );
     const can: ActionAvailability = useCallback(
         (action) =>
             allowedActions

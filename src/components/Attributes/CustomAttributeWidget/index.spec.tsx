@@ -162,4 +162,28 @@ test.describe('CustomAttributeWidget without permission to change', () => {
         await expect(component.getByText('Add custom attribute')).toHaveCount(0);
         await expect(component.getByText('You need the Update permission on Certificates.')).toBeVisible();
     });
+
+    const unassigned = { ...descriptor, uuid: 'attr-2', name: 'otherAttr', properties: { ...descriptor.properties, label: 'Other' } };
+    const assigned = [{ ...descriptor, label: 'Test Attribute', content: [{ data: 'initial' }] }] as any;
+
+    test('offers an unassigned attribute when the requirement is met', async ({ mount }) => {
+        const component = await mount(
+            <CustomAttributeWidgetMountHarness
+                attributes={assigned}
+                availableAttributes={[descriptor, unassigned]}
+                requires={{ available: true, hidden: false, loading: false }}
+            />,
+        );
+
+        await expect(component.getByText('Add custom attribute')).toBeVisible();
+    });
+
+    test('withholds an unassigned attribute when the requirement is denied', async ({ mount }) => {
+        const component = await mount(
+            <CustomAttributeWidgetMountHarness attributes={assigned} availableAttributes={[descriptor, unassigned]} requires={denied} />,
+        );
+
+        await expect(component.getByText('initial')).toBeVisible();
+        await expect(component.getByText('Add custom attribute')).toHaveCount(0);
+    });
 });
