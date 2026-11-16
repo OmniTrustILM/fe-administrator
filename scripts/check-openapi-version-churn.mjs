@@ -9,7 +9,7 @@ import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
+import { fileURLToPath, pathToFileURL } from 'node:url';
 import { patchTree } from './patch-openapi-runtime.mjs';
 import { setContactInTree } from './set-openapi-contact.mjs';
 
@@ -44,7 +44,7 @@ function readTree(dir, base = dir, files = new Map()) {
     return files;
 }
 
-function generate(workDir, name, spec) {
+function generate(exec, workDir, name, spec) {
     const specPath = path.join(workDir, `${name}.yaml`);
     const output = path.join(workDir, name);
     writeFileSync(specPath, spec);
@@ -60,13 +60,13 @@ function generate(workDir, name, spec) {
     writeFileSync(toolsPath, JSON.stringify(tools, null, 4));
 
     const bin = (tool) => path.join(root, 'node_modules', '.bin', tool);
-    execFileSync(bin('openapi-generator-cli'), ['--openapitools', toolsPath, 'generate', '--generator-key', GENERATOR_KEY], {
+    exec(bin('openapi-generator-cli'), ['--openapitools', toolsPath, 'generate', '--generator-key', GENERATOR_KEY], {
         cwd: root,
         stdio: 'inherit',
     });
     setContactInTree(output);
     patchTree(output);
-    execFileSync(bin('biome'), ['format', '--write', '--vcs-use-ignore-file=false', output], { cwd: root, stdio: 'inherit' });
+    exec(bin('biome'), ['format', '--write', '--vcs-use-ignore-file=false', output], { cwd: root, stdio: 'inherit' });
     return readTree(output);
 }
 
@@ -85,13 +85,13 @@ function assert(condition, message) {
     if (!condition) throw new Error(message);
 }
 
-function run() {
+export function run(exec = execFileSync) {
     const workDir = mkdtempSync(path.join(os.tmpdir(), 'openapi-version-churn-'));
     try {
-        const first = generate(workDir, 'first', withVersion(fixture, '1.0.0-SNAPSHOT'));
-        const bumped = generate(workDir, 'bumped', withVersion(fixture, '1.1.0'));
-        const repeated = generate(workDir, 'repeated', withVersion(fixture, '1.0.0-SNAPSHOT'));
-        const changed = generate(workDir, 'changed', withExtraProperty(withVersion(fixture, '1.0.0-SNAPSHOT')));
+        const first = generate(exec, workDir, 'first', withVersion(fixture, '1.0.0-SNAPSHOT'));
+        const bumped = generate(exec, workDir, 'bumped', withVersion(fixture, '1.1.0'));
+        const repeated = generate(exec, workDir, 'repeated', withVersion(fixture, '1.0.0-SNAPSHOT'));
+        const changed = generate(exec, workDir, 'changed', withExtraProperty(withVersion(fixture, '1.0.0-SNAPSHOT')));
 
         assertEqual(first.get(VERSION_FILE), '1.0.0-SNAPSHOT\n', `${VERSION_FILE} must hold info.version with a trailing newline`);
         assert(first.get(MANIFEST)?.split('\n').includes(VERSION_FILE), `${MANIFEST} must register ${VERSION_FILE}`);
@@ -115,4 +115,7 @@ function run() {
     }
 }
 
-run();
+const invokedDirectly = process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href;
+if (invokedDirectly) {
+    run();
+}
