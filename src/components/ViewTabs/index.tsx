@@ -152,10 +152,13 @@ export function ViewStripOpeningPlaceholder({
     const opening = toOpening(handedIn, views);
     const returnedTo = opening.returnsToView ? views.find((view) => view.uuid === opening.position?.viewId) : undefined;
     // Sieved as the open strip sieves both sides, or a filter it will not count reserves a save offer that never shows.
+    // Its stored side also withholds filters on held-back fields, as the open strip's does.
     const held = returnedTo?.filters ?? [];
+    const heldKeys = heldKeysOf(returnedTo);
+    const baseline = held.map(toTableFilter).filter((filter) => !heldKeys.has(getColumnKey(filter)));
     const storable = toStorableFilters(filters, catalogue, held);
     const opensDirty = returnedTo
-        ? areFiltersDifferent(toStorableFilters(held.map(toTableFilter), catalogue, held), storable)
+        ? areFiltersDifferent(toStorableFilters(baseline, catalogue, held), storable)
         : handedIn !== undefined && storable.length > 0;
     return (
         <ViewStripPlaceholder

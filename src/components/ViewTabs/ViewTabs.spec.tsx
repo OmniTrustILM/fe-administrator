@@ -934,6 +934,30 @@ test.describe('ViewTabs', () => {
         expect(Math.abs((belowAfter?.y ?? 0) - (below?.y ?? 0))).toBeLessThanOrEqual(1);
     });
 
+    test('reserves no save offer for a return whose only difference is a filter on a held-back field', async ({ mount, page }) => {
+        const view = expiryWatch({
+            columns: [stored('COMMON_NAME'), replaced(stored('retired', FilterFieldSource.Custom))],
+            filters: [stateFilter, replaced(retiredFilter)],
+        });
+        await mount(
+            strip({
+                fields: withRetired,
+                views: [view],
+                isRefreshing: true,
+                refreshedViews: [view],
+                returnTo: { viewId: 'view-1', filters: [stateFilter] },
+            }),
+        );
+
+        await expect(page.getByTestId('view-tabs-placeholder')).toBeAttached();
+        await expect(page.getByTestId('view-tabs-placeholder-summary-save')).toHaveCount(0);
+
+        await page.getByTestId('simulate-list-success').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-summary-save')).toHaveCount(0);
+    });
+
     test('holds no place for a strip whose catalogue could not be read, since it will not arrive', async ({ mount, page }) => {
         await mount(strip({ withheldCatalogue: true, isCatalogueFailed: true }));
 
