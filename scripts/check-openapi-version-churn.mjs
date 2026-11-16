@@ -72,7 +72,7 @@ function generate(workDir, name, spec) {
 
 function changedPaths(left, right) {
     const paths = new Set([...left.keys(), ...right.keys()]);
-    return [...paths].filter((file) => left.get(file) !== right.get(file)).sort();
+    return [...paths].filter((file) => left.get(file) !== right.get(file)).sort((a, b) => a.localeCompare(b));
 }
 
 function assertEqual(actual, expected, message) {
