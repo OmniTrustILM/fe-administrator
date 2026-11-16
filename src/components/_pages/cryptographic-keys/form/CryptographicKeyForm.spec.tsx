@@ -3,7 +3,6 @@ import CryptographicKeyFormWithStore from 'components/_pages/cryptographic-keys/
 import {
     AttributeContentType,
     AttributeType,
-    AttributeVersion,
     InspectedEntryKind,
     KeyAlgorithm,
     KeyRequestType,
@@ -16,6 +15,7 @@ import { actions as connectorActions } from 'ducks/connectors';
 import { actions as certificateActions } from 'ducks/certificates';
 import { actions as tokenProfilesActions } from 'ducks/token-profiles';
 import { keyPairMeta } from 'ducks/__fixtures__/token-keys';
+import { customAttributeValue, demoNoteAttribute, teamAttribute } from 'components/_pages/test-utils/customAttributes';
 import type { UnknownAction } from '@reduxjs/toolkit';
 import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
 import type { TokenProfileResponseModel } from 'types/token-profiles';
@@ -77,35 +77,6 @@ async function selectKeyToOnboard(page: Page, profile: TokenProfileResponseModel
     await page.getByTestId('select-onboardTokenProfileSelect-trigger').click();
     await page.getByRole('option', { name: `${profile.tokenInstanceName} / ${profile.name}` }).click();
     await page.getByRole('checkbox', { name: 'Select signer' }).click();
-}
-
-const teamAttribute = {
-    uuid: 'team',
-    name: 'team',
-    type: AttributeType.Custom,
-    contentType: AttributeContentType.String,
-    content: [{ data: 'PKI' }],
-    properties: { label: 'Team', required: true, readOnly: false, visible: true, list: false, multiSelect: false },
-} as CustomAttributeModel;
-
-const demoNoteAttribute = {
-    uuid: 'demo-note',
-    name: 'demoNote',
-    type: AttributeType.Custom,
-    contentType: AttributeContentType.String,
-    properties: { label: 'Demo note', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
-} as CustomAttributeModel;
-
-function customAttributeValue(descriptor: CustomAttributeModel, data: string) {
-    return {
-        uuid: descriptor.uuid,
-        name: descriptor.name,
-        label: descriptor.properties.label,
-        type: AttributeType.Custom,
-        contentType: AttributeContentType.String,
-        version: AttributeVersion.V2,
-        content: [{ data }],
-    };
 }
 
 const viewedKey = {

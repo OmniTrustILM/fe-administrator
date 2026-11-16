@@ -1,37 +1,7 @@
 import { test, expect, type Page } from 'playwright/ct-test';
-import { AttributeContentType, AttributeType, AttributeVersion } from 'types/openapi';
-import type { CustomAttributeModel } from 'types/attributes';
+import { customAttributeValue, demoNoteAttribute, teamAttribute } from 'components/_pages/test-utils/customAttributes';
 import type { RoleDetailModel } from 'types/roles';
 import RoleFormWithStore from './RoleFormWithStore';
-
-const teamAttribute = {
-    uuid: 'team',
-    name: 'team',
-    type: AttributeType.Custom,
-    contentType: AttributeContentType.String,
-    content: [{ data: 'PKI' }],
-    properties: { label: 'Team', required: true, readOnly: false, visible: true, list: false, multiSelect: false },
-} as CustomAttributeModel;
-
-const demoNoteAttribute = {
-    uuid: 'demo-note',
-    name: 'demoNote',
-    type: AttributeType.Custom,
-    contentType: AttributeContentType.String,
-    properties: { label: 'Demo note', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
-} as CustomAttributeModel;
-
-function customAttributeValue(descriptor: CustomAttributeModel, data: string) {
-    return {
-        uuid: descriptor.uuid,
-        name: descriptor.name,
-        label: descriptor.properties.label,
-        type: AttributeType.Custom,
-        contentType: AttributeContentType.String,
-        version: AttributeVersion.V2,
-        content: [{ data }],
-    };
-}
 
 const viewedRole: RoleDetailModel = {
     uuid: 'viewed-role',
