@@ -815,10 +815,7 @@ export default function FilterWidget({
                                 key={f.fieldIdentifier + i}
                                 onClick={() => toggleFilter(i)}
                                 color={selectedFilter === i ? 'primary' : 'secondary'}
-                                onRemove={() => {
-                                    if (disableBadgeRemove) return;
-                                    onRemoveFilterClick(i);
-                                }}
+                                onRemove={disableBadgeRemove ? undefined : () => onRemoveFilterClick(i)}
                                 size="medium"
                             >
                                 {!isFetchingAvailableFilters && !busyBadges && getBadgeContent(i, f.fieldSource, f.condition, label, value)}
