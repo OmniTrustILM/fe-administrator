@@ -58,7 +58,7 @@ const onboardableKeys: TokenKeyListResponseDto = {
     items: [
         {
             keyPairMeta: keyPairMeta('onboardable'),
-            label: 'signer',
+            storageName: 'signer',
             keyAlgorithm: KeyAlgorithm.Rsa,
             length: 2048,
             status: TokenKeyStatus.Onboardable,

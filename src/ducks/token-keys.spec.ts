@@ -29,7 +29,7 @@ const page: TokenKeyListResponseDto = {
     items: [
         {
             keyPairMeta: keyPairMeta('handle-1'),
-            label: 'signer',
+            storageName: 'signer',
             keyAlgorithm: KeyAlgorithm.Rsa,
             length: 2048,
             status: TokenKeyStatus.Onboardable,
@@ -53,7 +53,7 @@ const skipped: TokenKeyOnboardingResultDto = {
     keyPairMeta: keyPairMeta('handle-2'),
     onboarded: false,
     intoExistingKey: false,
-    reason: 'Key signer already holds this key pair.',
+    reason: "Key 'signer' already holds this key pair.",
 };
 const secondOnboarded: TokenKeyOnboardingResultDto = {
     keyPairMeta: keyPairMeta('handle-3'),
@@ -71,7 +71,7 @@ const skippedForName: TokenKeyOnboardingResultDto = {
     keyPairMeta: keyPairMeta('handle-5'),
     onboarded: false,
     intoExistingKey: false,
-    reason: 'A key named backup already exists.',
+    reason: "A key 'backup' already exists.",
 };
 
 const request = { tokenInstanceUuid: 'token', tokenProfileUuid: 'profile' };
@@ -292,7 +292,7 @@ describe('token key epics', () => {
         expect(emitted).toEqual([
             actions.onboardTokenKeysSuccess({ results: [onboarded, skipped] }),
             alertActions.error(
-                'Onboarded 1 of 2 key pairs and failed to onboard 1.\narchive-pair: Key signer already holds this key pair.',
+                "Onboarded 1 of 2 key pairs and failed to onboard 1.\narchive-pair: Key 'signer' already holds this key pair.",
             ),
         ]);
     });
@@ -312,7 +312,7 @@ describe('token key epics', () => {
         // then
         expect(emitted).toEqual([
             actions.onboardTokenKeysSuccess({ results: [skipped] }),
-            alertActions.error('Failed to onboard the key pair. Key signer already holds this key pair.'),
+            alertActions.error("Failed to onboard the key pair. Key 'signer' already holds this key pair."),
         ]);
     });
 
@@ -373,7 +373,7 @@ describe('summarizeOnboarding', () => {
         {
             batch: 'its one key refused',
             results: [skipped],
-            expected: { allOnboarded: false, message: 'Failed to onboard the key pair. Key signer already holds this key pair.' },
+            expected: { allOnboarded: false, message: "Failed to onboard the key pair. Key 'signer' already holds this key pair." },
         },
         {
             batch: 'its one key refused without a reason',
@@ -386,7 +386,7 @@ describe('summarizeOnboarding', () => {
             expected: {
                 allOnboarded: false,
                 message:
-                    'Failed to onboard 2 key pairs.\narchive-pair: Key signer already holds this key pair.\nbackup-pair: A key named backup already exists.',
+                    "Failed to onboard 2 key pairs.\narchive-pair: Key 'signer' already holds this key pair.\nbackup-pair: A key 'backup' already exists.",
             },
         },
         {
@@ -395,7 +395,7 @@ describe('summarizeOnboarding', () => {
             expected: {
                 allOnboarded: false,
                 message:
-                    'Failed to onboard 2 key pairs.\narchive-pair: Key signer already holds this key pair.\nlegacy-pair: No reason was given.',
+                    "Failed to onboard 2 key pairs.\narchive-pair: Key 'signer' already holds this key pair.\nlegacy-pair: No reason was given.",
             },
         },
         {
@@ -404,7 +404,7 @@ describe('summarizeOnboarding', () => {
             expected: {
                 allOnboarded: false,
                 message:
-                    'Onboarded 1 of 3 key pairs and failed to onboard 2.\narchive-pair: Key signer already holds this key pair.\nbackup-pair: A key named backup already exists.',
+                    "Onboarded 1 of 3 key pairs and failed to onboard 2.\narchive-pair: Key 'signer' already holds this key pair.\nbackup-pair: A key 'backup' already exists.",
             },
         },
     ])('summarizes a batch with $batch', ({ results, expected }) => {
@@ -420,7 +420,7 @@ describe('summarizeOnboarding', () => {
 
         // then
         expect(message).toBe(
-            'Failed to onboard 2 key pairs.\narchive-pair: Key signer already holds this key pair.\nA key named backup already exists.',
+            "Failed to onboard 2 key pairs.\narchive-pair: Key 'signer' already holds this key pair.\nA key 'backup' already exists.",
         );
     });
 });
