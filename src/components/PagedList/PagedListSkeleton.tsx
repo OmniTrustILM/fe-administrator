@@ -1,5 +1,6 @@
 import { FilterWidgetSkeleton } from 'components/FilterWidget';
 import TableSkeleton from 'components/CustomTable/TableSkeleton';
+import type { ReactNode } from 'react';
 
 const barClass = 'rounded bg-surface-sunken';
 const cardClass = 'relative flex flex-col rounded-xl border border-divider p-4 md:p-5 shadow-2xs bg-surface-raised w-full';
@@ -11,6 +12,7 @@ type Props = {
     columnsCount?: number;
     hasCheckboxes?: boolean;
     hasExtraFilter?: boolean;
+    viewStrip?: ReactNode;
 };
 
 function PagedListSkeleton({
@@ -20,9 +22,11 @@ function PagedListSkeleton({
     columnsCount = 4,
     hasCheckboxes = true,
     hasExtraFilter = false,
+    viewStrip,
 }: Readonly<Props>) {
     return (
         <div className="flex flex-col gap-4 md:gap-8" data-testid="paged-list-skeleton">
+            {viewStrip}
             {hasFilter && <FilterWidgetSkeleton title={filterTitle} dataTestId="filter-widget-skeleton" hasExtraFilter={hasExtraFilter} />}
             <section className={cardClass}>
                 <div className="flex items-center justify-between flex-wrap gap-2 mb-4 animate-pulse">
