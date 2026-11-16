@@ -579,6 +579,7 @@ test.describe('FilterWidgetRuleAction', () => {
         });
         const chips = page.getByTestId('filter-value-chip');
         await expect(chips).toHaveText(['Tag One', 'Tag Two']);
+        await expect(page.locator('button button, button [tabindex]')).toHaveCount(0);
 
         await page.getByRole('button', { name: 'Remove Tag One from Tags', exact: true }).click();
 
@@ -700,7 +701,7 @@ test.describe('FilterWidgetRuleAction', () => {
         });
 
         const statusBadge = page.getByTestId('badge').filter({ hasText: 'Status' });
-        await statusBadge.getByRole('button').click();
+        await statusBadge.getByRole('button', { name: 'Remove filter' }).click();
         expect(actions.current).toHaveLength(1);
         expect(firstAction(actions.current).fieldIdentifier).toBe('tags');
         expect(firstAction(actions.current).data[0]).toBe('t1');

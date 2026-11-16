@@ -757,35 +757,30 @@ export default function FilterWidgetRuleAction({
     );
 
     const renderBadgeContent = useCallback(
-        (itemNumber: number, value: React.ReactNode, label?: string, fieldSource?: string, isMapped?: boolean) => (
+        (itemNumber: number, value: string, chips: React.ReactNode, label?: string, fieldSource?: string, isMapped?: boolean) => (
             <React.Fragment key={itemNumber}>
-                <b>{fieldSource && getEnumLabel(searchGroupEnum, fieldSource)}&nbsp;</b>'{label}
-                '&nbsp;to&nbsp;
-                {isMapped ? <i>{value}</i> : value}
+                <button
+                    type="button"
+                    className="cursor-pointer rounded-sm focus-visible:outline-2 focus-visible:outline-brand"
+                    onClick={() => toggleFilter(itemNumber)}
+                >
+                    <b>{fieldSource && getEnumLabel(searchGroupEnum, fieldSource)}&nbsp;</b>'{label}
+                    '&nbsp;to{value && <>&nbsp;{isMapped ? <i>{value}</i> : value}</>}
+                </button>
+                {chips}
                 {!disableBadgeRemove && (
-                    // biome-ignore lint/a11y/useSemanticElements: can't be a <button> — this remove control is rendered inside the badge's own <button>, and nested buttons are invalid HTML; role="button" with key handling keeps it accessible.
-                    <span // NOSONAR(S6819)
-                        onClick={(event) => {
-                            event.stopPropagation();
-                            onRemoveFilterClick(itemNumber);
-                        }}
-                        role="button"
-                        tabIndex={0}
+                    <button
+                        type="button"
                         aria-label="Remove filter"
-                        onKeyDown={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                onRemoveFilterClick(itemNumber);
-                            }
-                        }}
+                        className="cursor-pointer rounded-sm focus-visible:outline-2 focus-visible:outline-brand"
+                        onClick={() => onRemoveFilterClick(itemNumber)}
                     >
                         &times;
-                    </span>
+                    </button>
                 )}
             </React.Fragment>
         ),
-        [onRemoveFilterClick, searchGroupEnum, disableBadgeRemove],
+        [onRemoveFilterClick, searchGroupEnum, disableBadgeRemove, toggleFilter],
     );
 
     const isUpdateButtonDisabled = useMemo(() => {
@@ -990,35 +985,32 @@ export default function FilterWidgetRuleAction({
                         const field = findFieldDef(availableFilters, f.fieldSource, f.fieldIdentifier);
                         const label = field ? field.fieldLabel : f.fieldIdentifier;
                         const isMapped = !!f.sourceFieldSource && !!f.sourceFieldIdentifier;
-                        let value: React.ReactNode;
+                        let value = '';
+                        let chips: React.ReactNode = null;
                         if (isMapped) {
                             const sourceField = findFieldDef(sourceAvailableFilters, f.sourceFieldSource, f.sourceFieldIdentifier);
                             const sourceLabel = sourceField?.fieldLabel ?? f.sourceFieldIdentifier;
                             value = `${getEnumLabel(searchGroupEnum, f.sourceFieldSource!)} '${sourceLabel}'`;
-                        } else {
-                            const nonArrayValue = f.data ? `'${formatBadgeDataValue(f.data, field, platformEnums)}'` : '';
-                            const arrayOrScalarValue = Array.isArray(f.data) ? (
+                        } else if (field?.type === FilterFieldType.Boolean) {
+                            value = `'${booleanOptions.find((b) => !!f.data === b.value)?.label}'`;
+                        } else if (Array.isArray(f.data)) {
+                            chips = (
                                 <FilterValueChips
                                     values={f.data.map((v) => formatBadgeDataValue(v, field, platformEnums))}
                                     filterLabel={label}
                                     onRemoveValue={disableBadgeRemove ? undefined : (valueIndex) => onRemoveActionValueClick(i, valueIndex)}
                                 />
-                            ) : (
-                                nonArrayValue
                             );
-                            value =
-                                field?.type === FilterFieldType.Boolean
-                                    ? `'${booleanOptions.find((b) => !!f.data === b.value)?.label}'`
-                                    : arrayOrScalarValue;
+                        } else if (f.data) {
+                            value = `'${formatBadgeDataValue(f.data, field, platformEnums)}'`;
                         }
                         return (
                             <Badge
                                 key={`${i}-${f.fieldSource}-${f.fieldIdentifier}`}
-                                onClick={() => toggleFilter(i)}
                                 color={selectedFilter === i ? 'primary' : 'secondary'}
                             >
                                 {!isFetchingAvailableFilters && !busyBadges && (
-                                    <>{renderBadgeContent(i, value, label, f.fieldSource, isMapped)}</>
+                                    <>{renderBadgeContent(i, value, chips, label, f.fieldSource, isMapped)}</>
                                 )}
                             </Badge>
                         );

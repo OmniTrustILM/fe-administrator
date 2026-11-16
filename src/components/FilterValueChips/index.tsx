@@ -17,25 +17,14 @@ function FilterValueChips({ values, filterLabel, onRemoveValue }: Props) {
                 >
                     {value}
                     {onRemoveValue && (
-                        // biome-ignore lint/a11y/useSemanticElements: the chip sits inside the filter badge's own <button>, so a nested <button> would be invalid
-                        <span
-                            role="button" // NOSONAR(S6819): the chip sits inside the filter badge's own <button>, so a nested <button> would be invalid
-                            tabIndex={0}
+                        <button
+                            type="button"
                             aria-label={filterLabel ? `Remove ${value} from ${filterLabel}` : `Remove ${value}`}
-                            className="shrink-0 inline-flex items-center justify-center rounded-full size-3.5 hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-brand"
-                            onClick={(event) => {
-                                event.stopPropagation();
-                                onRemoveValue(index);
-                            }}
-                            onKeyDown={(event) => {
-                                if (event.key !== 'Enter' && event.key !== ' ') return;
-                                event.preventDefault();
-                                event.stopPropagation();
-                                onRemoveValue(index);
-                            }}
+                            className="shrink-0 inline-flex items-center justify-center rounded-full size-3.5 cursor-pointer hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-brand"
+                            onClick={() => onRemoveValue(index)}
                         >
                             <X className="size-3" aria-hidden />
-                        </span>
+                        </button>
                     )}
                 </span>
             ))}

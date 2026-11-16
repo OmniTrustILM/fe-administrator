@@ -516,17 +516,40 @@ export default function FilterWidget({
     }, [currentField, platformEnums]);
 
     const getBadgeContent = useCallback(
-        (itemNumber: number, fieldSource: string, fieldCondition: string, label: string, value: React.ReactNode) => {
+        (itemNumber: number, fieldSource: string, fieldCondition: string, label: string, value: string | string[]) => {
             if (isFetchingAvailableFilters || busyBadges) return null;
             return (
                 <React.Fragment key={itemNumber}>
-                    <b>{getEnumLabel(searchGroupEnum, fieldSource)}&nbsp;</b>'{label}'&nbsp;
-                    {getEnumLabel(FilterConditionOperatorEnum, fieldCondition)}&nbsp;
-                    {value}
+                    <button
+                        type="button"
+                        className="cursor-pointer rounded-sm focus-visible:outline-2 focus-visible:outline-brand"
+                        onClick={() => toggleFilter(itemNumber)}
+                    >
+                        <b>{getEnumLabel(searchGroupEnum, fieldSource)}&nbsp;</b>'{label}'&nbsp;
+                        {getEnumLabel(FilterConditionOperatorEnum, fieldCondition)}
+                        {!Array.isArray(value) && <>&nbsp;{value}</>}
+                    </button>
+                    {Array.isArray(value) && (
+                        <FilterValueChips
+                            values={value}
+                            filterLabel={label}
+                            onRemoveValue={
+                                disableBadgeRemove ? undefined : (valueIndex) => onRemoveFilterValueClick(itemNumber, valueIndex)
+                            }
+                        />
+                    )}
                 </React.Fragment>
             );
         },
-        [isFetchingAvailableFilters, FilterConditionOperatorEnum, searchGroupEnum, busyBadges],
+        [
+            isFetchingAvailableFilters,
+            FilterConditionOperatorEnum,
+            searchGroupEnum,
+            busyBadges,
+            toggleFilter,
+            disableBadgeRemove,
+            onRemoveFilterValueClick,
+        ],
     );
 
     const renderFilterValueInput = useCallback(() => {
@@ -824,20 +847,10 @@ export default function FilterWidget({
                         const label = field
                             ? (fieldLabelMapsBySource.get(f.fieldSource)?.get(field.fieldIdentifier) ?? field.fieldLabel)
                             : f.fieldIdentifier;
-                        const badgeValue = getFilterBadgeValue(f, field);
-                        const value = Array.isArray(badgeValue) ? (
-                            <FilterValueChips
-                                values={badgeValue}
-                                filterLabel={label}
-                                onRemoveValue={disableBadgeRemove ? undefined : (valueIndex) => onRemoveFilterValueClick(i, valueIndex)}
-                            />
-                        ) : (
-                            badgeValue
-                        );
+                        const value = getFilterBadgeValue(f, field);
                         return (
                             <Badge
                                 key={f.fieldIdentifier + i}
-                                onClick={() => toggleFilter(i)}
                                 color={selectedFilter === i ? 'primary' : 'secondary'}
                                 onRemove={() => {
                                     if (disableBadgeRemove) return;

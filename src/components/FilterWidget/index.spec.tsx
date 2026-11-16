@@ -223,7 +223,7 @@ test.describe('FilterWidget', () => {
         const badges = page.getByTestId('badge');
         const count = await badges.count();
         for (let i = 0; i < count; i += 1) {
-            await badges.nth(i).click();
+            await badges.nth(i).getByRole('button').first().click();
             await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeVisible();
         }
     });
@@ -274,6 +274,7 @@ test.describe('FilterWidget', () => {
         const chips = page.getByTestId('filter-value-chip');
         await expect(chips).toHaveText(['Alice', 'Bob']);
         await expect(page.getByText(/OR/)).toHaveCount(0);
+        await expect(page.locator('button button, button [tabindex]')).toHaveCount(0);
 
         await page.getByRole('button', { name: 'Remove Alice from Owners', exact: true }).click();
 
