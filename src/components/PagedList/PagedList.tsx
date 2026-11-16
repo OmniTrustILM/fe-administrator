@@ -625,10 +625,9 @@ function PagedList<TRow extends object>({
 
     const columnHeaders = useMemo(() => {
         if (!isColumnDriven) return headers ?? EMPTY_HEADERS;
-        const isOrderingHeld = isStripReady && !canEditColumns;
-        const headed = isOrderingHeld ? appliedColumns.map((column) => ({ ...column, sortable: false })) : appliedColumns;
-        return buildColumnHeaders(headed, { sort: appliedSort, info: headerInfo });
-    }, [isColumnDriven, isStripReady, canEditColumns, appliedColumns, appliedSort, headerInfo, headers]);
+        const built = buildColumnHeaders(appliedColumns, { sort: appliedSort, info: headerInfo });
+        return canEditColumns ? built : built.map((header) => ({ ...header, isSortHeld: true }));
+    }, [isColumnDriven, canEditColumns, appliedColumns, appliedSort, headerInfo, headers]);
 
     const heldRows = useHeldRows(columnsRows, isFetchingList, projectedKeys);
 
