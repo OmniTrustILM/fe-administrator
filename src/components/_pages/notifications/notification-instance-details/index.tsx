@@ -8,6 +8,7 @@ import { actions as customAttributesActions, selectors as customAttributesSelect
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { actions as notificationsActions, selectors as notificationsSelectors } from 'ducks/notifications';
 import { PlatformEnum, Resource } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
@@ -19,6 +20,7 @@ import Breadcrumb from 'components/Breadcrumb';
 
 const NotificationInstanceDetails = () => {
     const { id } = useParams();
+    const can = useActionAvailability(Resource.NotificationInstances);
     const dispatch = useDispatch();
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
     const notificationInstance = useSelector(notificationsSelectors.notificationInstanceDetail);
@@ -86,7 +88,10 @@ const NotificationInstanceDetails = () => {
         getFreshNotificationInstanceDetail();
     }, [getFreshNotificationInstanceDetail]);
 
-    const buttons: WidgetButtonProps[] = useMemo(() => getEditAndDeleteWidgetButtons(onEditClick, setConfirmDelete), [onEditClick]);
+    const buttons: WidgetButtonProps[] = useMemo(
+        () => getEditAndDeleteWidgetButtons(onEditClick, setConfirmDelete, can),
+        [onEditClick, can],
+    );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
 

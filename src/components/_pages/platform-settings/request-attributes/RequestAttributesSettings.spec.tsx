@@ -73,6 +73,17 @@ test.describe('RequestAttributesSettings (platform default set)', () => {
         await expect(page.getByTestId('request-attributes-update-error')).toContainText('Attribute definition is invalid');
     });
 
+    test('keeps the editor read-only and says why for a user who may not update settings', async ({ mount, page }) => {
+        const reason = 'You need the update permission on Settings.';
+        const component = await mount(
+            <RequestAttributesSettingsWithStore requires={{ available: false, hidden: false, loading: false, reason }} />,
+        );
+
+        await expect(component.getByTestId('request-attribute-authoring-attribute-add')).toBeDisabled();
+        await expect(component.locator('input[type="radio"]').first()).toBeDisabled();
+        await expect(page.getByText(reason)).toBeVisible();
+    });
+
     test('reflects the preloaded strict validation flag', async ({ mount, page }) => {
         const component = await mount(<RequestAttributesSettingsWithStore strict />);
 

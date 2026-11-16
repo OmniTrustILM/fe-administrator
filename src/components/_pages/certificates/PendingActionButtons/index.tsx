@@ -4,20 +4,23 @@ import type { CertificateDetailResponseModel } from 'types/certificate';
 import { selectors as certificatesSelectors } from 'ducks/certificates';
 import Button from 'components/Button';
 import { iconRegistry } from 'utils/icons';
-import { useActionAvailability } from 'utils/useActionAvailability';
+import { type ActionAvailability, useActionAvailability } from 'utils/useActionAvailability';
 import type { PendingAction } from './types';
 
 type Props = Readonly<{
     certificate: Pick<CertificateDetailResponseModel, 'uuid' | 'state' | 'raProfile'>;
     compact?: boolean;
     onAction: (action: PendingAction) => void;
+    /** Answers for this certificate on its detail page; without them the resource-level grants decide. */
+    can?: ActionAvailability;
 }>;
 
-export default function PendingActionButtons({ certificate, compact = false, onAction }: Props) {
+export default function PendingActionButtons({ certificate, compact = false, onAction, can: objectCan }: Props) {
     const finalizing = useSelector(certificatesSelectors.finalizingIssueCertificateUuids);
     const confirming = useSelector(certificatesSelectors.confirmingRevokeCertificateUuids);
     const canceling = useSelector(certificatesSelectors.cancelingPendingCertificateUuids);
-    const can = useActionAvailability(Resource.Certificates);
+    const resourceCan = useActionAvailability(Resource.Certificates);
+    const can = objectCan ?? resourceCan;
 
     const isFinalizingThis = finalizing.includes(certificate.uuid);
     const isConfirmingThis = confirming.includes(certificate.uuid);

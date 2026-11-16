@@ -15,7 +15,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router';
 import ConnectorLink from 'components/ConnectorLink';
 import TokenForm from '../form';
-import { PlatformEnum, Resource, TokenInstanceStatus } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction, TokenInstanceStatus } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import TokenActivationDialogBody from '../TokenActivationDialogBody';
@@ -30,6 +31,8 @@ export default function TokenDetail() {
     const dispatch = useDispatch();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Tokens, id);
+    const canOnKeys = useActionAvailability(Resource.Keys);
 
     const token = useSelector(selectors.token);
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
@@ -119,6 +122,7 @@ export default function TokenDetail() {
             {
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: () => {
                     onEditClick();
@@ -127,6 +131,7 @@ export default function TokenDetail() {
             {
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => {
                     setConfirmDelete(true);
@@ -143,6 +148,7 @@ export default function TokenDetail() {
             {
                 icon: 'refresh',
                 disabled: token?.status.status !== TokenInstanceStatus.Activated,
+                requires: canOnKeys(ResourceAction.Update),
                 tooltip: 'Sync Keys',
                 onClick: () => {
                     onSync();
@@ -151,6 +157,7 @@ export default function TokenDetail() {
             {
                 icon: 'check',
                 disabled: token?.status.status !== TokenInstanceStatus.Deactivated,
+                requires: can(ResourceAction.Activate),
                 tooltip: 'Activate',
                 onClick: () => {
                     setActivateToken(true);
@@ -159,6 +166,7 @@ export default function TokenDetail() {
             {
                 icon: 'times',
                 disabled: token?.status.status !== TokenInstanceStatus.Activated,
+                requires: can(ResourceAction.Activate),
                 tooltip: 'Deactivate',
                 onClick: () => {
                     setConfirmDeactivation(true);
@@ -173,7 +181,7 @@ export default function TokenDetail() {
                 },
             },
         ],
-        [onEditClick, onReload, token?.status.status, onSync, setRandomDataGeneration],
+        [onEditClick, onReload, token?.status.status, onSync, setRandomDataGeneration, can, canOnKeys],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -245,6 +253,7 @@ export default function TokenDetail() {
                                     resource={Resource.Tokens}
                                     resourceUuid={token.uuid}
                                     attributes={token.customAttributes}
+                                    requires={can(ResourceAction.Update)}
                                 />
                             )}
 

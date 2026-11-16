@@ -10,6 +10,10 @@ import TokenProfileDetail from './index';
 setupReactActEnvironment();
 
 vi.mock('react-redux', async () => await import('../../test-utils/reactReduxMockModule'));
+vi.mock('utils/useActionAvailability', async () => {
+    const { actionAvailabilityMockModule } = await import('../../test-utils/mockModules');
+    return actionAvailabilityMockModule();
+});
 vi.mock('react-router', () => ({
     Link: ({ to, children }: { to: string; children?: React.ReactNode }) => <a href={to}>{children}</a>,
     useParams: () => ({ id: 'profile-1', tokenId: 'token-1' }),

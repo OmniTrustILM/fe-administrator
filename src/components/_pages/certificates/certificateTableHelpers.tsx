@@ -28,6 +28,7 @@ import CertificateStatus from './CertificateStatus';
 import { validationPanelMessages } from './validationPanel';
 import PendingActionButtons from './PendingActionButtons';
 import type { PendingAction } from './PendingActionButtons/types';
+import type { ActionAvailability } from 'utils/useActionAvailability';
 
 type PlatformEnumMap = { [key: string]: EnumItemModel } | undefined;
 
@@ -311,6 +312,7 @@ export function buildCertificateDetailBaseRows(
     dateFormatter: (d: Date) => string,
     getEnumLabel: (e: PlatformEnumMap, key: string) => string,
     onPendingAction: (action: PendingAction) => void,
+    can?: ActionAvailability,
 ): TableDataRow[] {
     const rows: TableDataRow[] = [
         {
@@ -393,7 +395,7 @@ export function buildCertificateDetailBaseRows(
                         <CertificateStatus status={certificate.state} />
                         <EnumValueDescription platformEnum={PlatformEnum.CertificateState} value={certificate.state} />
                     </span>
-                    <PendingActionButtons certificate={certificate} onAction={onPendingAction} />
+                    <PendingActionButtons certificate={certificate} onAction={onPendingAction} can={can} />
                 </React.Fragment>,
             ],
         },

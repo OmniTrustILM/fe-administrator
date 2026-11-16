@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { UserProfileDetailModel } from 'types/auth';
 import type { ResourceModel } from 'types/resource';
 import { Resource, ResourceAction } from 'types/openapi';
-import { type ActionRule, missingPermissionReason, resolveAvailability } from './availability';
+import { type ActionRule, type Availability, missingPermissionReason, requireAll, resolveAvailability } from './availability';
 import { objectAccessOf, objectAnswerFor } from './useActionAvailability';
 
 const profileWith = (allowedActions: UserProfileDetailModel['permissions']['allowedActions']): UserProfileDetailModel =>
@@ -188,5 +188,31 @@ describe('objectAccessOf', () => {
 
     it('reports no object access for a resource missing from a settled list, as after a failed request', () => {
         expect(objectAccessOf([], true, Resource.Secrets)).toBe(false);
+    });
+});
+
+describe('requireAll', () => {
+    const available: Availability = { available: true, hidden: false, loading: false };
+    const loading: Availability = { available: false, hidden: false, loading: true };
+    const deniedCreate: Availability = {
+        available: false,
+        hidden: false,
+        loading: false,
+        reason: 'You need the create permission on Secrets.',
+    };
+    const deniedDetail: Availability = {
+        available: false,
+        hidden: false,
+        loading: false,
+        reason: 'You need the detail permission on Users.',
+    };
+
+    it('is available when every action is', () => {
+        expect(requireAll(available, available)).toEqual(available);
+    });
+
+    it('reports the first action that is not available', () => {
+        expect(requireAll(available, deniedCreate, deniedDetail)).toEqual(deniedCreate);
+        expect(requireAll(loading, deniedDetail)).toEqual(loading);
     });
 });

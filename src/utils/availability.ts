@@ -40,6 +40,11 @@ export const missingPermissionReason = ({ resource, action }: AvailabilityLabels
 const LOADING: Availability = { available: false, hidden: false, loading: true };
 const AVAILABLE: Availability = { available: true, hidden: false, loading: false };
 
+/** Combines actions the server checks together: available only when every one is, otherwise the first that is not. */
+export function requireAll(first: Availability, ...rest: Availability[]): Availability {
+    return [first, ...rest].find((availability) => !availability.available) ?? first;
+}
+
 /** Whether the resource's objects can be granted one by one; `'loading'` until the resource list is in. */
 export type ObjectAccess = boolean | 'loading';
 

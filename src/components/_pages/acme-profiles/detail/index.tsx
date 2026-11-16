@@ -13,7 +13,9 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import AcmeProfileForm from '../form';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { PlatformEnum, Resource } from '../../../../types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from '../../../../types/openapi';
+import { requireAll } from 'utils/availability';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import { createWidgetDetailHeaders, getGroupNames, getOwnerName } from 'utils/widget';
 import { actions as groupsActions, selectors as groupsSelectors } from 'ducks/certificateGroups';
@@ -32,6 +34,9 @@ export default function AdministratorDetail() {
     const dispatch = useDispatch();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.AcmeProfiles, id);
+    const canOnSecrets = useActionAvailability(Resource.Secrets);
+    const canOnAcmeProfiles = useActionAvailability(Resource.AcmeProfiles);
 
     const acmeProfile = useSelector(selectors.acmeProfile);
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
@@ -121,6 +126,7 @@ export default function AdministratorDetail() {
             {
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: () => {
                     onEditClick();
@@ -129,6 +135,7 @@ export default function AdministratorDetail() {
             {
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => {
                     setConfirmDelete(true);
@@ -137,6 +144,7 @@ export default function AdministratorDetail() {
             {
                 icon: 'check',
                 disabled: acmeProfile?.enabled || false,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Enable',
                 onClick: () => {
                     onEnableClick();
@@ -145,13 +153,14 @@ export default function AdministratorDetail() {
             {
                 icon: 'times',
                 disabled: !(acmeProfile?.enabled || false),
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Disable',
                 onClick: () => {
                     onDisableClick();
                 },
             },
         ],
-        [acmeProfile, onEditClick, onDisableClick, onEnableClick],
+        [acmeProfile, onEditClick, onDisableClick, onEnableClick, can],
     );
 
     const tableHeader: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -371,6 +380,7 @@ export default function AdministratorDetail() {
                             resource={Resource.AcmeProfiles}
                             resourceUuid={acmeProfile.uuid}
                             attributes={acmeProfile.customAttributes}
+                            requires={can(ResourceAction.Update)}
                         />
                     )}
                     {acmeProfile && (
@@ -380,6 +390,7 @@ export default function AdministratorDetail() {
                             isLoading={isFetchingSecrets}
                             listError={secretsListError}
                             onGenerateKey={() => setIsKeyDialogOpen(true)}
+                            generateRequires={requireAll(canOnSecrets(ResourceAction.Create), canOnAcmeProfiles(ResourceAction.Create))}
                         />
                     )}
                     <GenerateEabKeyDialog isOpen={isKeyDialogOpen} onClose={() => setIsKeyDialogOpen(false)} />

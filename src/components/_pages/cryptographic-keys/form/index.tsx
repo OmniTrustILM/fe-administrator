@@ -39,7 +39,7 @@ import { type KeyRequestType, PlatformEnum, Resource, ResourceAction } from 'typ
 import Container from 'components/Container';
 import Button from 'components/Button';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
-import { hasResourceAction } from 'utils/permissions';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 const EXPORTABLE_HINT_FOR_REQUEST =
     'Required to download the certificate with its private key (PKCS12) after issuance. Cannot be enabled later.';
@@ -91,6 +91,7 @@ export default function CryptographicKeyForm({
     const groups = useSelector(groupSelectors.certificateGroups);
     const users = useSelector(userSelectors.users);
     const auth = useSelector(authSelectors.profile);
+    const can = useActionAvailability(Resource.Keys);
     const keyRequestTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyRequestType));
     const supportedKeyRequestTypes = useSelector(cryptographicKeysSelectors.supportedKeyRequestTypes);
     const isFetchingSupportedKeyRequestTypes = useSelector(cryptographicKeysSelectors.isFetchingSupportedKeyRequestTypes);
@@ -699,8 +700,8 @@ export default function CryptographicKeyForm({
     );
 
     const createsAnew = !editMode && !usesGlobalModal;
-    const offersImport = createsAnew && hasResourceAction(auth, Resource.Keys, ResourceAction.ImportKey);
-    const offersOnboarding = createsAnew && hasResourceAction(auth, Resource.Keys, ResourceAction.Create);
+    const offersImport = createsAnew && can(ResourceAction.ImportKey).available;
+    const offersOnboarding = createsAnew && can(ResourceAction.Create).available;
     // Leaving an import or an onboarding while it runs would drop its results, so the other tabs wait for it.
     const isTransferring = isImporting || isOnboarding;
 

@@ -1,11 +1,15 @@
 import { act } from 'react';
 import { createRoot, type Root } from 'react-dom/client';
-import { afterEach, beforeEach, describe, expect, test } from 'vitest';
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest';
 import { JwkSetLoadFailure } from 'types/openapi';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
 import { JWK_SET_LOAD_FAILURES, OAuth2ProviderDetailTestWrapper } from '../jwkSetLoadFailureTestFixtures';
 
 setupReactActEnvironment();
+vi.mock('utils/useActionAvailability', async () => {
+    const { actionAvailabilityMockModule } = await import('../../test-utils/mockModules');
+    return actionAvailabilityMockModule();
+});
 
 describe('OAuth2 provider JWK Set load warning', () => {
     let container: HTMLDivElement;

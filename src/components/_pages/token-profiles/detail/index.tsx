@@ -19,7 +19,8 @@ import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EnumValueDescription } from 'components/EnumDescription';
 import Label from 'components/Label';
 import Badge from 'components/Badge';
-import { type KeyUsage, PlatformEnum, Resource } from 'types/openapi';
+import { type KeyUsage, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import { createWidgetDetailHeaders } from 'utils/widget';
@@ -31,6 +32,7 @@ export default function TokenProfileDetail() {
     const dispatch = useDispatch();
 
     const { id, tokenId } = useParams();
+    const can = useActionAvailability(Resource.TokenProfiles, id);
 
     const tokenProfile = useSelector(tokenProfilesSelectors.tokenProfile);
 
@@ -112,6 +114,7 @@ export default function TokenProfileDetail() {
             {
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: () => {
                     onEditClick();
@@ -120,6 +123,7 @@ export default function TokenProfileDetail() {
             {
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => {
                     setConfirmDelete(true);
@@ -128,6 +132,7 @@ export default function TokenProfileDetail() {
             {
                 icon: 'check',
                 disabled: !tokenProfile?.tokenInstanceUuid || tokenProfile?.enabled || false,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Enable',
                 onClick: () => {
                     onEnableClick();
@@ -136,6 +141,7 @@ export default function TokenProfileDetail() {
             {
                 icon: 'times',
                 disabled: !tokenProfile?.tokenInstanceUuid || !(tokenProfile?.enabled || false),
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Disable',
                 onClick: () => {
                     onDisableClick();
@@ -144,13 +150,14 @@ export default function TokenProfileDetail() {
             {
                 icon: 'key',
                 disabled: !tokenProfile?.tokenInstanceUuid || false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Update Key Usages',
                 onClick: () => {
                     onKeyUsageEditClick();
                 },
             },
         ],
-        [tokenProfile, onEditClick, onDisableClick, onEnableClick, onKeyUsageEditClick],
+        [tokenProfile, onEditClick, onDisableClick, onEnableClick, onKeyUsageEditClick, can],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -263,6 +270,7 @@ export default function TokenProfileDetail() {
                                 resource={Resource.TokenProfiles}
                                 resourceUuid={tokenProfile.uuid}
                                 attributes={tokenProfile.customAttributes}
+                                requires={can(ResourceAction.Update)}
                             />
                         )}
                     </Container>

@@ -1,6 +1,7 @@
 import cn from 'classnames';
 import Button, { type ButtonColor, type Props as ButtonProps } from 'components/Button';
 import Spinner from 'components/Spinner';
+import type { Availability } from 'utils/availability';
 
 type Props = {
     disabled?: boolean;
@@ -12,6 +13,7 @@ type Props = {
     type?: 'submit' | 'reset' | 'button';
     onClick?: () => void;
     dataTestId?: string;
+    requires?: Availability;
 };
 
 function ProgressButton({
@@ -23,6 +25,7 @@ function ProgressButton({
     type = 'submit',
     onClick,
     dataTestId,
+    requires,
 }: Readonly<Props>) {
     const buttonProps: ButtonProps = {
         color,
@@ -31,6 +34,7 @@ function ProgressButton({
         className: cn('relative', { 'opacity-50': inProgress }),
         type,
         'data-testid': dataTestId || 'progress-button',
+        requires,
     };
 
     return (
