@@ -315,13 +315,6 @@ export default function FilterWidgetRuleAction({
         }
     }, [sourceAvailableFilters, sourceCurrentFields, sourceFilterField]);
 
-    const notifyActionsUpdate = useCallback(
-        (next: ExecutionItemRequestModel[]) => {
-            onActionsUpdate?.(next.map((a) => mapActionToExecutionItem(a, availableFilters)));
-        },
-        [onActionsUpdate, availableFilters],
-    );
-
     const currentField = useMemo(() => currentFields?.find((f) => f.fieldIdentifier === filterField), [filterField, currentFields]);
 
     const normalizeSelectValue = useCallback((value: unknown): SelectableValue => {
@@ -342,6 +335,17 @@ export default function FilterWidgetRuleAction({
 
         return toSelectableValue(record.name ?? record.label ?? value);
     }, []);
+
+    const notifyActionsUpdate = useCallback(
+        (next: ExecutionItemRequestModel[]) => {
+            onActionsUpdate?.(
+                next
+                    .map((a) => (Array.isArray(a.data) ? { ...a, data: a.data.map(normalizeSelectValue) } : a))
+                    .map((a) => mapActionToExecutionItem(a, availableFilters)),
+            );
+        },
+        [onActionsUpdate, availableFilters, normalizeSelectValue],
+    );
 
     const mapActionDataToSelectValue = useCallback(
         (field: FieldData, actionData: unknown) => {
@@ -513,14 +517,15 @@ export default function FilterWidgetRuleAction({
                 onRemoveFilterClick(index);
                 return;
             }
-            const retained = action.data.filter((_, i) => i !== valueIndex);
-            setActions(actions.map((a, i) => (i === index ? { ...action, data: retained } : a)));
+            const updated = { ...action, data: action.data.filter((_, i) => i !== valueIndex) };
+            const newActions = actions.map((a, i) => (i === index ? updated : a));
+            setActions(newActions);
             if (onActionsUpdate) {
-                notifyActionsUpdate(actions.map((a, i) => (i === index ? { ...action, data: retained.map(normalizeSelectValue) } : a)));
+                notifyActionsUpdate(newActions);
             }
             setSelectedFilter(-1);
         },
-        [actions, onActionsUpdate, notifyActionsUpdate, onRemoveFilterClick, normalizeSelectValue],
+        [actions, onActionsUpdate, notifyActionsUpdate, onRemoveFilterClick],
     );
 
     const toggleFilter = useCallback(

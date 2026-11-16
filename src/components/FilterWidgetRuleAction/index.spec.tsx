@@ -622,6 +622,24 @@ test.describe('FilterWidgetRuleAction', () => {
         expect(firstAction(updates.at(-1)!).data).toEqual(['r2']);
     });
 
+    test('emits the identifiers of every other saved list action when a value is removed', async ({ mount, page }) => {
+        const actions = await mountWithActions(mount, {
+            availableFilters: [
+                ...makeSearchFieldList(FilterFieldSource.Meta, [{ ...modeFieldDef, multiValue: true, value: ['alpha', 'beta', 'gamma'] }]),
+                ...makeSearchFieldList(FilterFieldSource.Custom, [{ ...customAttrFieldDef, multiValue: true }]),
+            ],
+            ExecutionsList: [
+                { fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'mode', data: ['alpha', 'beta'] },
+                { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'customAttr', data: ['r1', 'r2'] },
+            ],
+        });
+
+        await page.getByRole('button', { name: 'Remove alpha from Mode', exact: true }).click();
+
+        await expect.poll(() => actions.current.length).toBe(2);
+        expect((actions.current as Record<string, unknown>[]).map((a) => a.data)).toEqual([['beta'], ['r1', 'r2']]);
+    });
+
     test('offers no per-value removal on a read-only action badge', async ({ mount, page }) => {
         await mountWithExecution(mount, {
             source: FilterFieldSource.Property,
