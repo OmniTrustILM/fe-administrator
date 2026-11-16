@@ -725,7 +725,7 @@ test.describe('PagedList · column header menu', () => {
         expect(await dispatchedTypes(page)).toEqual(['listViews/listViews']);
     });
 
-    test('stores nothing on Standard either, where a sort has no view to write to', async ({ mount, page }) => {
+    test('stores nothing on Standard either, and reports no unsaved change for a sort', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
         await expect.poll(() => headings(page)).toHaveLength(3);
 
@@ -733,9 +733,41 @@ test.describe('PagedList · column header menu', () => {
         await page.getByTestId(`column-header-menu-${COMMON_NAME}-sort-desc`).click();
 
         await expect.poll(async () => (await lastRequest(page))?.sort?.direction).toBe('desc');
-        await expect(page.getByTestId('view-tabs-summary-unsaved')).toBeVisible();
-        await expect(page.getByTestId('view-tabs-summary-save')).toHaveText('Save as view…');
+        await expect(page.getByTestId('view-tabs-summary-sort')).toContainText('Sorted by Common Name');
+        await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveCount(0);
         expect(await dispatchedTypes(page)).toEqual(['listViews/listViews']);
+    });
+
+    test('reports no unsaved change for a sort on a view, and saves it with a reorder made after it', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} views={[expiryWatch]} />,
+        );
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toBeVisible();
+        await expect.poll(() => headings(page)).toHaveLength(3);
+
+        await openMenu(page, COMMON_NAME);
+        await page.getByTestId(`column-header-menu-${COMMON_NAME}-sort-desc`).click();
+        await expect.poll(async () => (await lastRequest(page))?.sort?.direction).toBe('desc');
+        await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveCount(0);
+
+        await openMenu(page, DEPARTMENT);
+        await page.getByTestId(`column-header-menu-${DEPARTMENT}-move-start`).click();
+        await expect(page.getByTestId('view-tabs-summary-unsaved')).toBeVisible();
+
+        await page.getByTestId('view-tabs-summary-save').click();
+
+        await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
+        const dispatched = JSON.parse((await page.getByTestId('dispatched').textContent()) ?? '[]') as Array<{
+            type: string;
+            payload?: { view?: Pick<ListViewModel, 'columns' | 'sort'> };
+        }>;
+        const view = dispatched.findLast((action) => action.type === 'listViews/updateView')?.payload?.view;
+        expect(view?.columns).toEqual([
+            { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'department|STRING' },
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' },
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'NOT_AFTER' },
+        ]);
+        expect(view?.sort).toMatchObject({ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' });
     });
 
     test('opens from the keyboard and hands focus back to the control on dismissal', async ({ mount, page }) => {

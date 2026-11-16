@@ -473,10 +473,10 @@ test.describe('ViewTabs', () => {
         mount,
         page,
     }) => {
-        const driftSort = { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' as const };
-        await mount(strip({ views: overflowing(), driftSort }));
+        const nameFilter: SearchFilterModel = { ...stateFilter, fieldIdentifier: 'COMMON_NAME', value: 'example' };
+        await mount(strip({ views: overflowing(), driftFilter: nameFilter }));
         await page.getByTestId('view-tabs-tab-view-1').click();
-        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('drift-filter').click();
 
         await page.getByRole('button', { name: 'More saved views' }).click();
         const actions = page.getByRole('menuitem', { name: 'Actions for View 6' });
@@ -488,7 +488,7 @@ test.describe('ViewTabs', () => {
 
         await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
-        expect((await appliedSlice(page)).sort).toEqual(driftSort);
+        expect((await appliedSlice(page)).filters).toEqual([nameFilter]);
     });
 
     test('holds the overflow actions while a mutation is in flight, but not the views themselves', async ({ mount, page }) => {
@@ -500,17 +500,42 @@ test.describe('ViewTabs', () => {
         await expect(page.getByRole('menuitem', { name: 'View 6', exact: true })).not.toHaveAttribute('aria-disabled', 'true');
     });
 
-    test('marks the tab and offers to save once the ordering drifts from the view', async ({ mount, page }) => {
+    test('reports an ordering change alone as no unsaved change to the view', async ({ mount, page }) => {
         await mount(strip({ driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' } }));
 
         await page.getByTestId('view-tabs-tab-view-1').click();
+        await page.getByTestId('drift-sort').click();
+
+        await expect(page.getByTestId('view-tabs-summary-sort')).toContainText('Sorted by Common Name');
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-summary-save')).toHaveCount(0);
+    });
+
+    test('reports an ordering change alone on Standard as no unsaved change either', async ({ mount, page }) => {
+        await mount(strip({ driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' } }));
 
         await page.getByTestId('drift-sort').click();
 
+        await expect(page.getByTestId('view-tabs-summary-sort')).toContainText('Sorted by Common Name');
+        await expect(page.getByTestId('view-tabs-tab-standard-dirty')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveCount(0);
+    });
+
+    test('saves the ordering with a column change made after it', async ({ mount, page }) => {
+        await mount(
+            strip({
+                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
+                driftColumn: serialNumber,
+            }),
+        );
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('drift-columns').click();
+
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
         await expect(page.getByTestId('view-tabs-summary-unsaved')).toHaveText('Unsaved changes to this view');
-        await expect(page.getByTestId('view-tabs-summary-sort')).toContainText('Sorted by Common Name');
 
         await page.getByTestId('view-tabs-summary-save').click();
 
@@ -520,8 +545,25 @@ test.describe('ViewTabs', () => {
             uuid: 'view-1',
             view: {
                 name: 'Expiry watch',
+                columns: [stored('COMMON_NAME'), stored('NOT_AFTER'), stored('SERIAL_NUMBER')],
                 sort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: SortDirection.Desc },
             },
+        });
+    });
+
+    test('puts the ordering of a view back when the view is applied again after a sort', async ({ mount, page }) => {
+        await mount(strip({ driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' } }));
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('view-tabs-tab-standard').click();
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await expect(page.getByTestId('view-tabs-summary-sort')).toContainText('Sorted by Expires');
+        expect((await appliedSlice(page)).sort).toEqual({
+            fieldSource: FilterFieldSource.Property,
+            fieldIdentifier: 'NOT_AFTER',
+            direction: 'asc',
         });
     });
 
@@ -865,9 +907,15 @@ test.describe('ViewTabs', () => {
     });
 
     test('puts the tab back when a create from the current slice fails, without dropping what it was saving', async ({ mount, page }) => {
-        await mount(strip({ driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' } }));
+        await mount(
+            strip({
+                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
+                driftColumn: column('NOT_AFTER', 'Expires At'),
+            }),
+        );
 
         await page.getByTestId('drift-sort').click();
+        await page.getByTestId('drift-columns').click();
         await page.getByTestId('view-tabs-summary-save').click();
         await page.getByTestId('view-tabs-create').getByRole('button', { name: 'Create view' }).click();
 
@@ -979,7 +1027,7 @@ test.describe('ViewTabs', () => {
         expect(JSON.stringify(action)).not.toContain('hunter2');
     });
 
-    test('keeps a column it cannot show when the ordering alone is saved', async ({ mount, page }) => {
+    test('keeps a column it cannot show when a filter alone is saved', async ({ mount, page }) => {
         const stale = expiryWatch({
             defaultView: true,
             columns: [stored('COMMON_NAME'), stored('vaultToken', FilterFieldSource.Custom)],
@@ -988,11 +1036,11 @@ test.describe('ViewTabs', () => {
             strip({
                 fields: secretCatalogue,
                 views: [stale],
-                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
+                driftFilter: { ...stateFilter, fieldIdentifier: 'COMMON_NAME', value: 'example' },
             }),
         );
 
-        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('drift-filter').click();
         await page.getByTestId('view-tabs-summary-save').click();
 
         // The table never showed the column, so the user was never offered the choice to drop it. Only
@@ -1123,12 +1171,12 @@ test.describe('ViewTabs', () => {
             strip({
                 views: [expiryWatch({ defaultView: true, columns: [stored('CERTIFICATE_TYPE')] })],
                 standardColumns: [commonName, certificateType],
-                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
+                driftFilter: { ...stateFilter, fieldIdentifier: 'COMMON_NAME', value: 'example' },
             }),
         );
 
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
-        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('drift-filter').click();
         await page.getByTestId('view-tabs-summary-save').click();
 
         await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
@@ -1144,12 +1192,12 @@ test.describe('ViewTabs', () => {
         await mount(
             strip({
                 views: [dormant],
-                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
+                driftFilter: { ...stateFilter, fieldIdentifier: 'COMMON_NAME', value: 'example' },
             }),
         );
 
         await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
-        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('drift-filter').click();
         await page.getByTestId('view-tabs-summary-save').click();
 
         await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
@@ -1444,7 +1492,7 @@ test.describe('ViewTabs', () => {
         await mount(
             heldBackStrip({
                 driftColumn: column('retired', 'Retired', FilterFieldSource.Custom),
-                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'asc' },
+                driftFilter: { ...stateFilter, fieldIdentifier: 'COMMON_NAME', value: 'example' },
             }),
         );
         await expect(page.getByTestId('view-tabs-returned')).toBeVisible();
@@ -1456,7 +1504,7 @@ test.describe('ViewTabs', () => {
         await expect.poll(async () => (await appliedSlice(page)).filters).toEqual([]);
         await expect(page.getByTestId('view-tabs-returned')).toContainText('this view is not showing or filtering by it');
 
-        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('drift-filter').click();
         await page.getByTestId('view-tabs-summary-save').click();
 
         await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');
@@ -1941,12 +1989,12 @@ test.describe('ViewTabs', () => {
             await mount(
                 strip({
                     views: [expiryWatch({ defaultView: true, filters: [stateFilter, deadFilter] })],
-                    driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
+                    driftColumn: serialNumber,
                 }),
             );
 
             await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toHaveCount(0);
-            await page.getByTestId('drift-sort').click();
+            await page.getByTestId('drift-columns').click();
             await page.getByTestId('view-tabs-summary-save').click();
 
             await expect.poll(() => dispatchedTypes(page)).toContain('listViews/updateView');

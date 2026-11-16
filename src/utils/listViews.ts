@@ -19,7 +19,7 @@ import {
 } from 'types/openapi';
 import type { ColumnDefinition, PickerColumn, SourcedCatalogueField } from 'types/tableColumns';
 import { resolveColumns } from './columnPicker';
-import { type ColumnSort, getColumnHeading, getColumnKey, getSortKey } from './tableColumns';
+import { type ColumnSort, getColumnHeading, getColumnKey } from './tableColumns';
 
 /**
  * The identity of the Standard tab. Standard is the platform default column set, and deliberately not
@@ -487,16 +487,16 @@ function filterSignature(filters: readonly SearchFilterModel[]): string {
     return JSON.stringify(filters.map(getFilterKey));
 }
 
-function sortSignature(sort: ColumnSort | undefined): string {
-    return sort ? `${getSortKey(sort)}:${sort.direction}` : '';
-}
-
 /**
  * Whether the table has drifted from the view behind the active tab.
  *
- * Sorting and filtering are edits to the view, so both mark the tab and offer Revert / Save to view.
+ * Column and filter changes are edits to the view, so both mark the tab and offer Revert / Save to view.
  * Never autosaved: a view is the thing a user comes back to, and a stray click on a header should not
  * quietly redefine "Expiry watch".
+ *
+ * The ordering is left out. Sorting is how a list is read, mostly for a moment, and reporting every
+ * header click as unsaved work buries the offer when it matters. A view still carries its ordering:
+ * any save writes the current one, and applying the view puts its own back.
  *
  * Against a stored view, display-only columns are left out on both sides: the view never stores one, so a
  * save could neither keep nor take it away, and a view that fell back to the platform set shows them too.
@@ -508,8 +508,7 @@ export function isSliceDirty(stored: ViewSlice, current: ViewSlice, against: 'st
 
     return (
         columnSignature(storable(stored.columns)) !== columnSignature(storable(current.columns)) ||
-        filterSignature(stored.filters) !== filterSignature(current.filters) ||
-        sortSignature(stored.sort) !== sortSignature(current.sort)
+        filterSignature(stored.filters) !== filterSignature(current.filters)
     );
 }
 
