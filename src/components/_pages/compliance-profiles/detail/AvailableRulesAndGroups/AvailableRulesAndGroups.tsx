@@ -103,7 +103,7 @@ export default function AvailableRulesAndGroups({
 }: Props) {
     const { id } = useParams();
     // Internal rules are not owned by one profile, so core checks their changes on compliance profiles as a whole.
-    const mayChangeInternalRules = useActionAvailability(Resource.ComplianceProfiles)(ResourceAction.Update);
+    const internalRulesRequire = useActionAvailability(Resource.ComplianceProfiles)(ResourceAction.Update);
     const dispatch = useDispatch();
 
     const isFetchingRules = useSelector(selectors.isFetchingRules);
@@ -316,7 +316,7 @@ export default function AvailableRulesAndGroups({
                                               id: 'delete',
                                               icon: 'trash',
                                               disabled: false,
-                                              requires: mayChangeInternalRules,
+                                              requires: internalRulesRequire,
                                               tooltip: 'Delete',
                                               onClick: () => {
                                                   setDeletingInternalRuleId(ruleOrGroup.uuid);
@@ -326,7 +326,7 @@ export default function AvailableRulesAndGroups({
                                               id: 'edit',
                                               icon: 'pencil',
                                               disabled: false,
-                                              requires: mayChangeInternalRules,
+                                              requires: internalRulesRequire,
                                               tooltip: 'Edit',
                                               onClick: () => {
                                                   setEditingInternalRule(ruleOrGroup);
@@ -349,7 +349,7 @@ export default function AvailableRulesAndGroups({
             onRuleAssign,
             onGroupAssign,
             requires,
-            mayChangeInternalRules,
+            internalRulesRequire,
         ],
     );
 
@@ -411,7 +411,7 @@ export default function AvailableRulesAndGroups({
                                     data-testid="add-internal-rule-button"
                                     variant="transparent"
                                     title="Create internal rule"
-                                    requires={mayChangeInternalRules}
+                                    requires={internalRulesRequire}
                                     onClick={() => setIsAddingInternalRule(true)}
                                 >
                                     <Plus size={16} />
