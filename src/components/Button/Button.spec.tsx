@@ -156,7 +156,8 @@ test.describe('Button', () => {
         await expect(component).toBeDisabled();
     });
 
-    test('should not show its own disabled reason when only a loading requirement disables it', async ({ mount }) => {
+    test('should not show its own disabled reason when only a loading requirement disables it', async ({ mount, page }) => {
+        await page.clock.install();
         const component = await mount(
             <Button disabledTooltip="A retry is already in flight" requires={{ available: false, hidden: false, loading: true }}>
                 Retry
@@ -165,6 +166,9 @@ test.describe('Button', () => {
 
         await expect(component).toHaveRole('button');
         await expect(component).toBeDisabled();
+        await component.hover({ force: true });
+        await page.clock.runFor(1000);
+        await expect(page.getByRole('tooltip')).toHaveCount(0);
     });
 
     test('should stay enabled and clickable when its requirement is met', async ({ mount }) => {

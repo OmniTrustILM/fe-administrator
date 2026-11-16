@@ -57,35 +57,35 @@ test.describe('useActionAvailability', () => {
         await expect(component.getByTestId('availability')).toHaveText(JSON.stringify({ available: true, hidden: false, loading: false }));
     });
 
-    test('lets an answer arriving after mount decide', async ({ mount }) => {
-        const component = await mount(
-            <UseActionAvailabilityWithStore
-                resource={Resource.Secrets}
-                objectUuid="uuid-1"
-                preloadedState={{ auth: { profile: profileWithout }, enums }}
-            />,
-        );
-        await expect(component.getByTestId('availability')).toHaveText(JSON.stringify({ available: false, hidden: false, loading: true }));
+    const answersAfterMount = [
+        {
+            name: 'lets an answer arriving after mount decide',
+            simulate: 'simulate-answer-update',
+            expected: { available: true, hidden: false, loading: false },
+        },
+        {
+            name: 'falls back to the profile when the request fails after mount',
+            simulate: 'simulate-answer-failure',
+            expected: { available: false, hidden: false, loading: false, reason: 'You need the Update permission on Secrets.' },
+        },
+    ];
 
-        await component.getByTestId('simulate-answer-update').click();
+    for (const { name, simulate, expected } of answersAfterMount) {
+        test(name, async ({ mount }) => {
+            const component = await mount(
+                <UseActionAvailabilityWithStore
+                    resource={Resource.Secrets}
+                    objectUuid="uuid-1"
+                    preloadedState={{ auth: { profile: profileWithout }, enums }}
+                />,
+            );
+            await expect(component.getByTestId('availability')).toHaveText(
+                JSON.stringify({ available: false, hidden: false, loading: true }),
+            );
 
-        await expect(component.getByTestId('availability')).toHaveText(JSON.stringify({ available: true, hidden: false, loading: false }));
-    });
+            await component.getByTestId(simulate).click();
 
-    test('falls back to the profile when the request fails after mount', async ({ mount }) => {
-        const component = await mount(
-            <UseActionAvailabilityWithStore
-                resource={Resource.Secrets}
-                objectUuid="uuid-1"
-                preloadedState={{ auth: { profile: profileWithout }, enums }}
-            />,
-        );
-        await expect(component.getByTestId('availability')).toHaveText(JSON.stringify({ available: false, hidden: false, loading: true }));
-
-        await component.getByTestId('simulate-answer-failure').click();
-
-        await expect(component.getByTestId('availability')).toHaveText(
-            JSON.stringify({ available: false, hidden: false, loading: false, reason: 'You need the Update permission on Secrets.' }),
-        );
-    });
+            await expect(component.getByTestId('availability')).toHaveText(JSON.stringify(expected));
+        });
+    }
 });
