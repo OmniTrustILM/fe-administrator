@@ -57,6 +57,8 @@ type Props = Readonly<{
     refreshedCatalogue?: SearchFieldListModel[];
     /** Renders a control that fails the catalogue read, which settles it with no fields behind it. */
     withCatalogueFailureControl?: boolean;
+    /** Fails the catalogue read as the page mounts over a catalogue an earlier visit read successfully. */
+    failsCatalogueOnMount?: boolean;
     /** Renders a control that lands the withheld view list, so a test can act before the strip is up. */
     withViewsControl?: boolean;
     /** Renders a control that blanks the rows and puts a list request in flight, as a listing duck does. */
@@ -175,20 +177,25 @@ function CatalogueControl({ catalogue }: Readonly<{ catalogue: SearchFieldListMo
     );
 }
 
+const catalogueFailure = {
+    type: 'filters/getAvailableFiltersFailure',
+    payload: { entity: EntityType.CERTIFICATE, error: 'Catalogue unavailable' },
+};
+
+/** Fails the catalogue read in the mount commit, before the strip can open on the copy an earlier visit left. */
+function CatalogueFailureOnMount() {
+    const dispatch = useDispatch();
+    useEffect(() => {
+        dispatch(catalogueFailure);
+    }, [dispatch]);
+    return null;
+}
+
 function CatalogueFailureControl() {
     const dispatch = useDispatch();
 
     return (
-        <button
-            type="button"
-            data-testid="fail-catalogue"
-            onClick={() =>
-                dispatch({
-                    type: 'filters/getAvailableFiltersFailure',
-                    payload: { entity: EntityType.CERTIFICATE, error: 'Catalogue unavailable' },
-                })
-            }
-        >
+        <button type="button" data-testid="fail-catalogue" onClick={() => dispatch(catalogueFailure)}>
             Fail catalogue
         </button>
     );
@@ -251,6 +258,7 @@ export default function PagedListColumnsWithStore({
     withCatalogueControl = false,
     refreshedCatalogue,
     withCatalogueFailureControl = false,
+    failsCatalogueOnMount = false,
     withViewsControl = false,
     withListInFlightControl = false,
     withFirstPageControl = false,
@@ -361,6 +369,8 @@ export default function PagedListColumnsWithStore({
                 {withCatalogueControl && <CatalogueControl catalogue={refreshedCatalogue ?? catalogue} />}
 
                 {withCatalogueFailureControl && <CatalogueFailureControl />}
+
+                {failsCatalogueOnMount && <CatalogueFailureOnMount />}
 
                 {withViewsControl && <ViewsControl views={views} />}
 
