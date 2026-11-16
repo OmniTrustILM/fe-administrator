@@ -590,6 +590,38 @@ test.describe('FilterWidgetRuleAction', () => {
         expect(last).toContain('t2');
     });
 
+    test('emits the remaining identifiers when a value is removed from a saved string list', async ({ mount, page }) => {
+        const updates: unknown[][] = [];
+        await mountWithExecution(mount, {
+            source: FilterFieldSource.Meta,
+            fieldDef: { ...modeFieldDef, multiValue: true, value: ['alpha', 'beta', 'gamma'] },
+            fieldIdentifier: 'mode',
+            data: ['alpha', 'beta'],
+            extraProps: { onActionsUpdate: (actions) => updates.push(actions) },
+        });
+
+        await page.getByRole('button', { name: 'Remove alpha from Mode', exact: true }).click();
+
+        await expect.poll(() => updates.length).toBeGreaterThan(0);
+        expect(firstAction(updates.at(-1)!).data).toEqual(['beta']);
+    });
+
+    test('emits the remaining references when a value is removed from a saved reference list', async ({ mount, page }) => {
+        const updates: unknown[][] = [];
+        await mountWithExecution(mount, {
+            source: FilterFieldSource.Custom,
+            fieldDef: { ...customAttrFieldDef, multiValue: true },
+            fieldIdentifier: 'customAttr',
+            data: ['r1', 'r2'],
+            extraProps: { onActionsUpdate: (actions) => updates.push(actions) },
+        });
+
+        await page.getByTestId('filter-value-chip').first().getByRole('button').click();
+
+        await expect.poll(() => updates.length).toBeGreaterThan(0);
+        expect(firstAction(updates.at(-1)!).data).toEqual(['r2']);
+    });
+
     test('offers no per-value removal on a read-only action badge', async ({ mount, page }) => {
         await mountWithExecution(mount, {
             source: FilterFieldSource.Property,

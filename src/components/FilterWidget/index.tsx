@@ -522,7 +522,7 @@ export default function FilterWidget({
                 <React.Fragment key={itemNumber}>
                     <button
                         type="button"
-                        className="cursor-pointer rounded-sm focus-visible:outline-2 focus-visible:outline-brand"
+                        className="cursor-pointer rounded-sm focus-visible:outline-2 focus-visible:outline-current"
                         onClick={() => toggleFilter(itemNumber)}
                     >
                         <b>{getEnumLabel(searchGroupEnum, fieldSource)}&nbsp;</b>'{label}'&nbsp;
