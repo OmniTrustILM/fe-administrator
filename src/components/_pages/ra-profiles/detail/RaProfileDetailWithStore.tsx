@@ -16,6 +16,8 @@ import RaProfileDetail from './index';
 type Props = Readonly<{
     /** What the allowed-actions endpoint answered for the RA profile; every action when omitted. */
     allowedActions?: ResourceAction[];
+    /** Actions the user holds on whole resources; none when omitted. */
+    resourceGrants?: { resource: Resource; actions: ResourceAction[] }[];
 }>;
 
 const raProfile = {
@@ -28,12 +30,13 @@ const raProfile = {
     certificateValidationSettings: { usePlatformSettings: true },
 } as unknown as RaProfileResponseModel;
 
-export default function RaProfileDetailWithStore({ allowedActions = Object.values(ResourceAction) }: Props) {
+export default function RaProfileDetailWithStore({ allowedActions = Object.values(ResourceAction), resourceGrants }: Props) {
     const [store] = useState(() =>
         createObjectPermissionStore({
             resource: Resource.RaProfiles,
             uuid: raProfile.uuid,
             allowedActions,
+            resourceGrants,
             realSlices: [acmeProfilesSlice, approvalProfilesSlice, cmpProfilesSlice, scepProfilesSlice],
             preloadedState: {
                 raprofiles: { ...raProfilesInitialState, ...testInitialState.raprofiles, raProfile },

@@ -1,8 +1,9 @@
-import { ResourceAction } from 'types/openapi';
+import { Resource, ResourceAction } from 'types/openapi';
 import { expect, test } from '../../../../../playwright/ct-test';
 import RaProfileDetailWithStore from './RaProfileDetailWithStore';
 
 test.describe('RaProfileDetail actions by permission', () => {
+    const mayCheckCompliance = [{ resource: Resource.ComplianceProfiles, actions: [ResourceAction.CheckCompliance] }];
     const changing = ['edit-button', 'delete-button', 'disable-button', 'check-compliance-button'];
 
     test('disables changing actions a read-only user lacks', async ({ mount, page }) => {
@@ -26,10 +27,25 @@ test.describe('RaProfileDetail actions by permission', () => {
     });
 
     test('offers every action to a fully privileged user as before', async ({ mount, page }) => {
-        await mount(<RaProfileDetailWithStore />);
+        await mount(<RaProfileDetailWithStore resourceGrants={mayCheckCompliance} />);
 
         for (const testId of changing) {
             await expect(page.getByTestId(testId)).toBeEnabled();
         }
+    });
+
+    test('offers Check Compliance on the compliance profile grant, which the compliance check endpoint checks', async ({ mount, page }) => {
+        await mount(<RaProfileDetailWithStore allowedActions={[ResourceAction.Detail]} resourceGrants={mayCheckCompliance} />);
+
+        await expect(page.getByTestId('check-compliance-button')).toBeEnabled();
+    });
+
+    test('disables Check Compliance without the compliance profile grant, even when the RA profile answer allows it', async ({
+        mount,
+        page,
+    }) => {
+        await mount(<RaProfileDetailWithStore allowedActions={[ResourceAction.Detail, ResourceAction.CheckCompliance]} />);
+
+        await expect(page.getByTestId('check-compliance-button')).toBeDisabled();
     });
 });

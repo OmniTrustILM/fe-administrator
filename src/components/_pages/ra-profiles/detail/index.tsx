@@ -387,14 +387,14 @@ export default function RaProfileDetail() {
                 id: 'check-compliance',
                 icon: 'gavel',
                 disabled: !raProfile?.authorityInstanceUuid || false,
-                requires: can(ResourceAction.CheckCompliance),
+                requires: canOnComplianceProfiles(ResourceAction.CheckCompliance),
                 tooltip: 'Check Compliance',
                 onClick: () => {
                     setComplianceCheck(true);
                 },
             },
         ],
-        [raProfile, onEditClick, onDisableClick, onEnableClick, authorityId, can],
+        [raProfile, onEditClick, onDisableClick, onEnableClick, authorityId, can, canOnComplianceProfiles],
     );
 
     const complianceProfileButtons: WidgetButtonProps[] = useMemo(
