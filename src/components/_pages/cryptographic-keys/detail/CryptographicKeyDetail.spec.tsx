@@ -656,4 +656,19 @@ test.describe('CryptographicKeyDetail actions by permission', () => {
         }
         await expect(page.getByTestId('export-button')).toBeDisabled();
     });
+
+    test('disables Sign and Verify on a key without a token profile and gives that as the reason', async ({ mount, page }) => {
+        await mount(
+            <CryptographicKeyDetailWithStore
+                cryptographicKey={aSynchronizedKey().withUsages([KeyUsage.Sign, KeyUsage.Verify]).build()}
+                allowedActions={[ResourceAction.Detail]}
+            />,
+        );
+
+        for (const testId of ['sign-button', 'verify-button']) {
+            await expect(page.getByTestId(testId)).toBeDisabled();
+            await page.getByTestId(testId).locator('..').hover();
+            await expect(page.getByRole('tooltip')).toHaveText('The key has no token profile');
+        }
+    });
 });

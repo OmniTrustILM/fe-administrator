@@ -296,8 +296,13 @@ export default function CryptographicKeyItem({
                 id: 'sign',
                 icon: 'sign',
                 disabled:
-                    keyItem.state !== KeyState.Active || !keyItem.enabled || !keyItem.usage?.includes(KeyUsage.Sign) || !tokenInstanceUuid,
-                requires: can(ResourceAction.Sign),
+                    keyItem.state !== KeyState.Active ||
+                    !keyItem.enabled ||
+                    !keyItem.usage?.includes(KeyUsage.Sign) ||
+                    !tokenInstanceUuid ||
+                    !tokenProfileUuid,
+                requires: tokenProfileUuid ? can(ResourceAction.Sign) : undefined,
+                disabledTooltip: tokenProfileUuid ? undefined : 'The key has no token profile',
                 tooltip: 'Sign',
                 onClick: () => {
                     setSignData(true);
@@ -310,8 +315,10 @@ export default function CryptographicKeyItem({
                     keyItem.state !== KeyState.Active ||
                     !keyItem.enabled ||
                     !keyItem.usage?.includes(KeyUsage.Verify) ||
-                    !tokenInstanceUuid,
-                requires: can(ResourceAction.Verify),
+                    !tokenInstanceUuid ||
+                    !tokenProfileUuid,
+                requires: tokenProfileUuid ? can(ResourceAction.Verify) : undefined,
+                disabledTooltip: tokenProfileUuid ? undefined : 'The key has no token profile',
                 tooltip: 'Verify',
                 onClick: () => {
                     setVerifyData(true);
@@ -342,6 +349,7 @@ export default function CryptographicKeyItem({
         keyItem.state,
         keyItem.usage,
         tokenInstanceUuid,
+        tokenProfileUuid,
         supportedKeyUsages,
         canExportKeyItem,
         can,
