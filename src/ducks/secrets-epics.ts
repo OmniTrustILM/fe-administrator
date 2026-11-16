@@ -3,7 +3,7 @@ import { EMPTY, type Observable, of } from 'rxjs';
 import { catchError, expand, filter, map, mergeMap, reduce, switchMap, takeUntil } from 'rxjs/operators';
 
 import type { AttributeDescriptorDto, AttributeDescriptorModel } from 'types/attributes';
-import type { SecretDto, SecretType, VaultProfileManagementApi } from 'types/openapi';
+import { Resource, type SecretDto, type SecretType, type VaultProfileManagementApi } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { extractError } from 'utils/net';
 
@@ -11,6 +11,7 @@ import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { EntityType } from './filters';
 import { actions as pagingActions } from './paging';
+import { actions as resourceActions } from './resource';
 import { SECRET_OPTIONS_PAGE_SIZE, slice } from './secrets';
 import { actions as userInterfaceActions } from './user-interface';
 import { transformSearchRequestModelToDto } from './transform/certificates';
@@ -226,6 +227,8 @@ const updateSecretObjects: AppEpic = (action$, state$, deps) => {
                     mergeMap(() =>
                         of(
                             slice.actions.updateSecretObjectsSuccess({ uuid: action.payload.uuid }),
+                            // Core answers a secret's allowed actions from its owner and groups, so a change to them invalidates the answer.
+                            resourceActions.listObjectAllowedActions({ resource: Resource.Secrets, uuid: action.payload.uuid }),
                             alertActions.success('Secret updated successfully.'),
                         ),
                     ),
