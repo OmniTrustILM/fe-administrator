@@ -513,15 +513,14 @@ export default function FilterWidgetRuleAction({
                 onRemoveFilterClick(index);
                 return;
             }
-            const updated = { ...action, data: action.data.filter((_, i) => i !== valueIndex) };
-            const newActions = actions.map((a, i) => (i === index ? updated : a));
-            setActions(newActions);
+            const retained = action.data.filter((_, i) => i !== valueIndex);
+            setActions(actions.map((a, i) => (i === index ? { ...action, data: retained } : a)));
             if (onActionsUpdate) {
-                notifyActionsUpdate(newActions);
+                notifyActionsUpdate(actions.map((a, i) => (i === index ? { ...action, data: retained.map(normalizeSelectValue) } : a)));
             }
             setSelectedFilter(-1);
         },
-        [actions, onActionsUpdate, notifyActionsUpdate, onRemoveFilterClick],
+        [actions, onActionsUpdate, notifyActionsUpdate, onRemoveFilterClick, normalizeSelectValue],
     );
 
     const toggleFilter = useCallback(
@@ -764,7 +763,7 @@ export default function FilterWidgetRuleAction({
             <React.Fragment key={itemNumber}>
                 <button
                     type="button"
-                    className="cursor-pointer rounded-sm focus-visible:outline-2 focus-visible:outline-brand"
+                    className="cursor-pointer rounded-sm focus-visible:outline-2 focus-visible:outline-current"
                     onClick={() => toggleFilter(itemNumber)}
                 >
                     <b>{fieldSource && getEnumLabel(searchGroupEnum, fieldSource)}&nbsp;</b>'{label}
@@ -775,7 +774,7 @@ export default function FilterWidgetRuleAction({
                     <button
                         type="button"
                         aria-label="Remove filter"
-                        className="cursor-pointer rounded-sm focus-visible:outline-2 focus-visible:outline-brand"
+                        className="cursor-pointer rounded-sm focus-visible:outline-2 focus-visible:outline-current"
                         onClick={() => onRemoveFilterClick(itemNumber)}
                     >
                         &times;
