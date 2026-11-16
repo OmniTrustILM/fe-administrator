@@ -60,9 +60,9 @@ const statusColors: Record<TokenKeyStatus, BadgeColor> = {
 
 const headers: TableHeader[] = [
     { id: 'select', content: '', width: '5%' },
-    { id: 'label', content: 'Label' },
+    { id: 'storageName', content: 'Storage name' },
     { id: 'algorithm', content: 'Algorithm' },
-    { id: 'length', content: 'Length' },
+    { id: 'length', content: 'Size' },
     { id: 'status', content: 'Status' },
     { id: 'name', content: 'Onboard as' },
 ];
@@ -74,17 +74,17 @@ function rowId(handle: string | undefined, index: number): string {
 
 const unselectableCells: SelectionCells = ['', ''];
 
-/** A label is optional in a key storage, so a pair without one goes by its fingerprint. */
+/** A storage name is optional. A pair without one goes by its fingerprint. */
 function captionOf(key: TokenKeyDto): string {
-    return key.label || key.fingerprint || '';
+    return key.storageName || key.fingerprint || '';
 }
 
-/** The fingerprint is muted, so that it does not read as the pair's label. */
-function labelCell(key: TokenKeyDto): ReactNode {
-    if (key.label) return key.label;
+/** The fingerprint is muted to set it apart from a storage name. */
+function storageNameCell(key: TokenKeyDto): ReactNode {
+    if (key.storageName) return key.storageName;
     if (!key.fingerprint) return '';
     return (
-        <span key="label" className="break-all text-content-muted">
+        <span key="fingerprint" className="break-all text-content-muted">
             {key.fingerprint}
         </span>
     );
@@ -366,7 +366,7 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
                 id: rowId(key.keyPairMeta && handleOf(key.keyPairMeta), index),
                 columns: [
                     select,
-                    labelCell(key),
+                    storageNameCell(key),
                     key.keyAlgorithm ? getEnumLabel(algorithmEnum, key.keyAlgorithm) : '',
                     key.length?.toString() ?? '',
                     statusCell(key, getEnumLabel(statusEnum, key.status)),
