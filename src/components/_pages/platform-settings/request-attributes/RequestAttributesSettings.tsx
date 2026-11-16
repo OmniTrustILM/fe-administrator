@@ -7,6 +7,7 @@ import Widget from 'components/Widget';
 import { actions, selectors } from 'ducks/raProfileRequestAttributes';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
+import type { Availability } from 'utils/availability';
 import { useRunOnFailedFinish } from 'utils/common-hooks';
 import {
     buildPlatformDefaultUpdateDto,
@@ -20,7 +21,7 @@ import {
  * `CertificateSettings.requestAttributes` sub-section through the duck (no bespoke endpoint,
  * no merge mode).
  */
-export default function RequestAttributesSettings() {
+export default function RequestAttributesSettings({ requires }: Readonly<{ requires?: Availability }>) {
     const dispatch = useDispatch();
 
     const defaultSet = useSelector(selectors.defaultSet);
@@ -43,6 +44,7 @@ export default function RequestAttributesSettings() {
 
     const [form, setForm] = useState<RequestAttributeAuthoringFormValues>(emptyAuthoringForm());
     const [loaded, setLoaded] = useState(false);
+    const denied = !!requires && !requires.available;
 
     useEffect(() => {
         dispatch(actions.getPlatformDefaultRequestAttributes());
@@ -97,7 +99,7 @@ export default function RequestAttributesSettings() {
                 value={form}
                 onChange={onChange}
                 showBindings={false}
-                disabled={isUpdating || !loaded}
+                disabled={isUpdating || !loaded || denied}
                 persist={{ pending: isUpdating, error: updateError }}
                 rdnOptions={rdnOptions}
                 extensionOptions={extensionOptions}
@@ -115,6 +117,7 @@ export default function RequestAttributesSettings() {
             form,
             onChange,
             isUpdating,
+            denied,
             updateError,
             loaded,
             rdnOptions,
@@ -151,10 +154,11 @@ export default function RequestAttributesSettings() {
                     <ExternalCsrValidationRadio
                         strict={form.externalCsrValidationStrict ?? false}
                         onChange={(c) => onChange({ ...form, externalCsrValidationStrict: c })}
-                        disabled={isUpdating || !loaded}
+                        disabled={isUpdating || !loaded || denied}
                     />
                 </div>
                 {editor}
+                {denied && requires.reason && <p className="text-sm text-content-muted">{requires.reason}</p>}
             </div>
         </Widget>
     );

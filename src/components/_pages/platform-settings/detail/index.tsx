@@ -85,7 +85,7 @@ export default function PlatformSettingsDetail() {
         },
         {
             title: 'Request Attributes',
-            content: <RequestAttributesSettings />,
+            content: <RequestAttributesSettings requires={can(ResourceAction.Update)} />,
         },
         // Omitted rather than shown read-only: branding is the operator's identity, and someone who cannot change it
         // has nothing to do on this tab. The colours and logos themselves are visible to everyone in the applied UI.
