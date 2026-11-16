@@ -289,7 +289,12 @@ function PagedList<TRow extends object>({
     const hasLoadedViews = useSelector(selectHasLoadedViews);
     const isFetchingViews = useSelector(selectIsFetchingViews);
     const isStaleViews = useSelector(selectIsStaleViews);
-    const isStripReady = isViewStripReady(hasLoadedViews && !isFetchingViews && !isStaleViews, hasSettledCatalogue);
+    const hasFreshViews = hasLoadedViews && !isFetchingViews && !isStaleViews;
+    const isStripReady = isViewStripReady(hasFreshViews, hasSettledCatalogue);
+    // The strip applies its opening view only once a catalogue read succeeds, wiping any column edit made before it.
+    const openedStripRef = useRef<Resource | undefined>(undefined);
+    if (isViewStripReady(hasFreshViews, hasCatalogueForViews)) openedStripRef.current = columnsResource;
+    const canEditColumns = isStripReady && openedStripRef.current === columnsResource;
 
     const totalItems = useSelector(selectors.totalItems(entity));
     const checkedRows = useSelector(selectors.checkedRows(entity));
@@ -355,8 +360,8 @@ function PagedList<TRow extends object>({
                     shippedColumns={sortableStandardColumns}
                     // Both withheld until the strip is up: applying the opening view replaces the column
                     // set wholesale, so a change made before that would be wiped without a trace.
-                    onToggle={isStripReady ? onToggleColumn : undefined}
-                    onReset={isStripReady ? onResetColumns : undefined}
+                    onToggle={canEditColumns ? onToggleColumn : undefined}
+                    onReset={canEditColumns ? onResetColumns : undefined}
                     isStorable={isStorable}
                 />
             ) : undefined,
@@ -368,7 +373,7 @@ function PagedList<TRow extends object>({
             sortableStandardColumns,
             onToggleColumn,
             onResetColumns,
-            isStripReady,
+            canEditColumns,
             isStorable,
         ],
     );
@@ -569,7 +574,8 @@ function PagedList<TRow extends object>({
                     label={getColumnName(column)}
                     heading={getColumnHeading(column)}
                     columnKeys={columnKeys}
-                    sortable={column.sortable === true}
+                    sortable={canEditColumns && column.sortable === true}
+                    canEdit={canEditColumns}
                     hasCatalogueFailed={hasCatalogueFailed}
                     onRetryCatalogue={onRetryCatalogue}
                     onSort={(direction) => onSortChanged(header.id, direction)}
@@ -584,6 +590,7 @@ function PagedList<TRow extends object>({
         },
         [
             isStripReady,
+            canEditColumns,
             appliedColumns,
             columnKeys,
             hasCatalogueFailed,
@@ -599,7 +606,7 @@ function PagedList<TRow extends object>({
 
     const renderHeaderLead = useCallback(
         (header: TableHeader) => {
-            if (!isStripReady) return undefined;
+            if (!canEditColumns) return undefined;
 
             const column = appliedColumns.find((candidate) => getColumnKey(candidate) === header.id);
             if (!column) return undefined;
@@ -614,7 +621,7 @@ function PagedList<TRow extends object>({
                 />
             );
         },
-        [isStripReady, appliedColumns, columnKeys, onMoveColumn],
+        [canEditColumns, appliedColumns, columnKeys, onMoveColumn],
     );
 
     const columnHeaders = useMemo(
