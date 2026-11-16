@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
 import type { UnknownAction } from '@reduxjs/toolkit';
-import { BehaviorSubject, firstValueFrom, of, throwError } from 'rxjs';
+import { BehaviorSubject, firstValueFrom, of, Subject, throwError } from 'rxjs';
 import { toArray } from 'rxjs/operators';
 import { Resource, ResourceAction } from 'types/openapi';
 import { actions } from './resource';
@@ -12,9 +12,13 @@ vi.mock('../App', () => ({
     },
 }));
 
-async function runListObjectAllowedActions(listObjectAllowedActions: (...args: unknown[]) => unknown): Promise<UnknownAction[]> {
+async function listObjectAllowedActionsEpic() {
     const { default: epics } = await import('./resource-epics');
-    const epic = epics[3];
+    return epics[3];
+}
+
+async function runListObjectAllowedActions(listObjectAllowedActions: (...args: unknown[]) => unknown): Promise<UnknownAction[]> {
+    const epic = await listObjectAllowedActionsEpic();
     const deps = { apiClients: { resources: { listObjectAllowedActions } } };
     const output$ = epic(
         of(actions.listObjectAllowedActions({ resource: Resource.Secrets, uuid: 'uuid-1' })),
@@ -52,5 +56,64 @@ describe('listObjectAllowedActions epic', () => {
         const emitted = await runListObjectAllowedActions(() => throwError(() => new Error('boom')));
 
         expect(emitted).toEqual([actions.listObjectAllowedActionsFailure({ resource: Resource.Secrets, uuid: 'uuid-1' })]);
+    });
+
+    test('keeps only the answer to the newest request for the same object', async () => {
+        const epic = await listObjectAllowedActionsEpic();
+        const older = new Subject<{ items: { uuid: string; allowedActions: ResourceAction[] }[] }>();
+        const newer = new Subject<{ items: { uuid: string; allowedActions: ResourceAction[] }[] }>();
+        const request = vi.fn().mockReturnValueOnce(older).mockReturnValueOnce(newer);
+        const action$ = new Subject<UnknownAction>();
+        const emitted: UnknownAction[] = [];
+        epic(
+            action$ as never,
+            new BehaviorSubject({}) as never,
+            { apiClients: { resources: { listObjectAllowedActions: request } } } as never,
+        ).subscribe((action) => emitted.push(action));
+
+        action$.next(actions.listObjectAllowedActions({ resource: Resource.Secrets, uuid: 'uuid-1' }));
+        action$.next(actions.listObjectAllowedActions({ resource: Resource.Secrets, uuid: 'uuid-1' }));
+        newer.next({ items: [{ uuid: 'uuid-1', allowedActions: [ResourceAction.Update] }] });
+        older.next({ items: [{ uuid: 'uuid-1', allowedActions: [ResourceAction.Detail] }] });
+
+        expect(emitted).toEqual([
+            actions.listObjectAllowedActionsSuccess({
+                resource: Resource.Secrets,
+                uuid: 'uuid-1',
+                allowedActions: [ResourceAction.Update],
+            }),
+        ]);
+    });
+
+    test('answers requests for different objects independently', async () => {
+        const epic = await listObjectAllowedActionsEpic();
+        const first = new Subject<{ items: { uuid: string; allowedActions: ResourceAction[] }[] }>();
+        const second = new Subject<{ items: { uuid: string; allowedActions: ResourceAction[] }[] }>();
+        const request = vi.fn().mockReturnValueOnce(first).mockReturnValueOnce(second);
+        const action$ = new Subject<UnknownAction>();
+        const emitted: UnknownAction[] = [];
+        epic(
+            action$ as never,
+            new BehaviorSubject({}) as never,
+            { apiClients: { resources: { listObjectAllowedActions: request } } } as never,
+        ).subscribe((action) => emitted.push(action));
+
+        action$.next(actions.listObjectAllowedActions({ resource: Resource.Secrets, uuid: 'uuid-1' }));
+        action$.next(actions.listObjectAllowedActions({ resource: Resource.Secrets, uuid: 'uuid-2' }));
+        first.next({ items: [{ uuid: 'uuid-1', allowedActions: [ResourceAction.Detail] }] });
+        second.next({ items: [{ uuid: 'uuid-2', allowedActions: [ResourceAction.Update] }] });
+
+        expect(emitted).toEqual([
+            actions.listObjectAllowedActionsSuccess({
+                resource: Resource.Secrets,
+                uuid: 'uuid-1',
+                allowedActions: [ResourceAction.Detail],
+            }),
+            actions.listObjectAllowedActionsSuccess({
+                resource: Resource.Secrets,
+                uuid: 'uuid-2',
+                allowedActions: [ResourceAction.Update],
+            }),
+        ]);
     });
 });
