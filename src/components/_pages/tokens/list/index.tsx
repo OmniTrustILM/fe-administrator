@@ -14,10 +14,13 @@ import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import TokenStatusBadge from 'components/_pages/tokens/TokenStatusBadge';
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import TokenActivationDialogBody from '../TokenActivationDialogBody';
 
 function TokenList() {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.Tokens);
 
     const checkedRows = useSelector(selectors.checkedRows);
     const tokens = useSelector(selectors.tokens);
@@ -92,12 +95,14 @@ function TokenList() {
             {
                 icon: 'plus',
                 disabled: false,
+                requires: can(ResourceAction.Create),
                 tooltip: 'Create',
                 onClick: handleOpenAddModal,
             },
             {
                 icon: 'trash',
                 disabled: checkedRows.length === 0,
+                requires: can(ResourceAction.Delete, { onObjects: true }),
                 tooltip: 'Delete',
                 onClick: () => {
                     setConfirmDelete(true);
@@ -106,6 +111,7 @@ function TokenList() {
             {
                 icon: 'check',
                 disabled: checkedRows.length !== 1,
+                requires: can(ResourceAction.Activate, { onObjects: true }),
                 tooltip: 'Activate',
                 onClick: () => {
                     setActivateToken(true);
@@ -114,13 +120,14 @@ function TokenList() {
             {
                 icon: 'times',
                 disabled: checkedRows.length !== 1,
+                requires: can(ResourceAction.Activate, { onObjects: true }),
                 tooltip: 'Deactivate',
                 onClick: () => {
                     setConfirmDeactivation(true);
                 },
             },
         ],
-        [checkedRows, handleOpenAddModal],
+        [checkedRows, handleOpenAddModal, can],
     );
 
     const tokenRowHeader: TableHeader[] = useMemo(

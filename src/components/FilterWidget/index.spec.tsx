@@ -248,6 +248,24 @@ test.describe('FilterWidget', () => {
         await expect(page.getByText("'Status'")).not.toBeVisible();
     });
 
+    test('offers no remove control on a badge whose removal is disabled', async ({ mount, page }) => {
+        await mount(
+            <FilterWidgetTestWrapper
+                disableBadgeRemove
+                initialCurrentFilters={[
+                    {
+                        fieldSource: FilterFieldSource.Meta,
+                        fieldIdentifier: 'status',
+                        condition: FilterConditionOperator.Equals,
+                        value: 'queued',
+                    },
+                ]}
+            />,
+        );
+        await expect(page.getByTestId('badge').first()).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Remove badge' })).toHaveCount(0);
+    });
+
     test('extra component and two-column layout render', async ({ mount, page }) => {
         await mount(
             <FilterWidgetTestWrapper filterGridCols={2} extraFilterComponent={<div data-testid="extra-filter-content">Extra area</div>} />,

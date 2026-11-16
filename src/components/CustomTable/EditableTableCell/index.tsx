@@ -5,6 +5,7 @@ import Button from 'components/Button';
 import { Check, X } from 'lucide-react';
 import EditIcon from 'components/icons/EditIcon';
 import cn from 'classnames';
+import type { Availability } from 'utils/availability';
 
 export interface EditableTableCellProps<TValue> {
     value: TValue;
@@ -19,6 +20,7 @@ export interface EditableTableCellProps<TValue> {
     formProps?: {
         validate?: (value: TValue) => string | undefined;
     };
+    requires?: Availability;
 }
 
 interface FormValues<TValue> {
@@ -130,6 +132,7 @@ const EditableTableCell = <TValue,>({
     renderField,
     renderValue,
     formProps,
+    requires,
 }: EditableTableCellProps<TValue>) => {
     const [isEditing, setIsEditing] = useState(false);
     const blurListenerWrapperRef = useRef<HTMLFieldSetElement>(null);
@@ -195,6 +198,7 @@ const EditableTableCell = <TValue,>({
                     setIsEditing(true);
                 }}
                 disabled={busy}
+                requires={requires}
             >
                 <EditIcon size={16} />
             </Button>

@@ -9,7 +9,8 @@ import CustomTable, { type TableDataRow, type TableHeader } from 'components/Cus
 import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { actions, selectors } from 'ducks/trusted-certificates';
-import { Resource } from 'types/openapi';
+import { Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { formatTrustedCertificateDate, formatTrustedCertificateValue } from 'utils/trusted-certificate';
@@ -19,6 +20,8 @@ export const TrustedCertificateDetail = () => {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { id } = useParams();
+    // Core reports no per-object actions for this resource, so the profile's grants decide.
+    const can = useActionAvailability(Resource.TrustedCertificates);
 
     const trustedCertificate = useSelector(selectors.trustedCertificate);
     const isFetching = useSelector(selectors.isFetchingDetail);
@@ -60,11 +63,12 @@ export const TrustedCertificateDetail = () => {
             {
                 icon: 'trash',
                 disabled: !trustedCertificate,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => setConfirmDelete(true),
             },
         ],
-        [trustedCertificate],
+        [trustedCertificate, can],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);

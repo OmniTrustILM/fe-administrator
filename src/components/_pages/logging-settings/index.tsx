@@ -6,7 +6,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import Container from 'components/Container';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { useForm, Controller, FormProvider, useWatch } from 'react-hook-form';
-import { AuditLoggingSettingsDtoOutputEnum, Module, PlatformEnum, Resource } from 'types/openapi';
+import { AuditLoggingSettingsDtoOutputEnum, Module, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 import Select, { type OptionValue } from 'components/Select';
 import { selectors as enumSelectors, getEnumDescription, getEnumLabel } from 'ducks/enums';
@@ -39,6 +40,7 @@ type EventFormValues = Omit<CommonFormValues, 'output'>;
 
 const LoggingSetting = () => {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.Settings);
 
     const loggingSettings = useSelector(selectors.loggingSettings);
     const isFetching = useSelector(selectors.isFetchingLoggingSetting);
@@ -393,6 +395,7 @@ const LoggingSetting = () => {
                             disabled={auditIsSubmitting || isBusy || !hasAuditFormValuesChanged}
                             inProgress={isUpdating}
                             type="submit"
+                            requires={can(ResourceAction.Update)}
                         />
                     </div>
                 </form>
@@ -412,6 +415,7 @@ const LoggingSetting = () => {
         isBusy,
         hasAuditFormValuesChanged,
         isUpdating,
+        can,
     ]);
 
     const createEventForm = useCallback(() => {
@@ -539,6 +543,7 @@ const LoggingSetting = () => {
                             disabled={eventIsSubmitting || isBusy || !hasEventFormValuesChanged}
                             inProgress={isUpdating}
                             type="submit"
+                            requires={can(ResourceAction.Update)}
                         />
                     </div>
                 </form>
@@ -557,6 +562,7 @@ const LoggingSetting = () => {
         isBusy,
         hasEventFormValuesChanged,
         isUpdating,
+        can,
     ]);
 
     return (
