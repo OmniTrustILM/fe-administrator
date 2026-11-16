@@ -277,10 +277,9 @@ function PagedList<TRow extends object>({
     const isStaleViews = useSelector(selectIsStaleViews);
     const hasFreshViews = hasLoadedViews && !isFetchingViews && !isStaleViews;
     const isStripReady = isViewStripReady(hasFreshViews, hasSettledCatalogue);
-    // The strip applies its opening view only once a catalogue read succeeds, wiping any column edit made before it.
-    const openedStripRef = useRef<Resource | undefined>(undefined);
-    if (isViewStripReady(hasFreshViews, hasCatalogueForViews)) openedStripRef.current = columnsResource;
-    const canEditColumns = isStripReady && openedStripRef.current === columnsResource;
+    // Applying the opening view replaces the columns and the ordering, so an edit made before the strip opens is lost.
+    const [openedResource, setOpenedResource] = useState<Resource | undefined>(undefined);
+    const canEditColumns = isStripReady && openedResource === columnsResource;
 
     const totalItems = useSelector(selectors.totalItems(entity));
     const checkedRows = useSelector(selectors.checkedRows(entity));
@@ -609,10 +608,12 @@ function PagedList<TRow extends object>({
         [canEditColumns, appliedColumns, columnKeys, onMoveColumn],
     );
 
-    const columnHeaders = useMemo(
-        () => (isColumnDriven ? buildColumnHeaders(appliedColumns, { sort: appliedSort, info: headerInfo }) : (headers ?? EMPTY_HEADERS)),
-        [isColumnDriven, appliedColumns, appliedSort, headerInfo, headers],
-    );
+    const columnHeaders = useMemo(() => {
+        if (!isColumnDriven) return headers ?? EMPTY_HEADERS;
+        const isOrderingHeld = isStripReady && !canEditColumns;
+        const headed = isOrderingHeld ? appliedColumns.map((column) => ({ ...column, sortable: false })) : appliedColumns;
+        return buildColumnHeaders(headed, { sort: appliedSort, info: headerInfo });
+    }, [isColumnDriven, isStripReady, canEditColumns, appliedColumns, appliedSort, headerInfo, headers]);
 
     const heldRows = useHeldRows(columnsRows, isFetchingList, projectedKeys);
 
@@ -791,6 +792,7 @@ function PagedList<TRow extends object>({
                     handedIn={handedIn}
                     onPositionChange={onViewPositionChange}
                     onApply={onApplyView}
+                    onOpened={setOpenedResource}
                 />
             )}
 
