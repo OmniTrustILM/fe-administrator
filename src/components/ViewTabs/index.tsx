@@ -91,6 +91,8 @@ export type ViewTabsProps = Readonly<{
      * only when a return reopens the very tab the strip was left on, the one case a page may be kept.
      */
     onApply: (slice: ViewSlice, reopensLeftPosition?: boolean) => void;
+    /** Reports that the opening view has been applied, after which edits to the table are no longer overwritten. */
+    onOpened?: (resource: Resource) => void;
     dataTestId?: string;
 }>;
 
@@ -163,6 +165,7 @@ export default function ViewTabs({
     handedIn,
     onPositionChange,
     onApply,
+    onOpened,
     dataTestId = 'view-tabs',
 }: ViewTabsProps) {
     const dispatch = useDispatch();
@@ -342,6 +345,8 @@ export default function ViewTabs({
     // from re-running — and re-applying the view — on every render of the page around it.
     const applyRef = useRef(onApply);
     applyRef.current = onApply;
+    const openedRef = useRef(onOpened);
+    openedRef.current = onOpened;
 
     /**
      * The table's slice, moved on by every apply an effect makes. Effects of one commit share a render's props, and an
@@ -468,6 +473,7 @@ export default function ViewTabs({
         setActiveId(initial);
         setDrillDownFilters(isDrillDown ? liveSlice.current.filters : undefined);
         applyRef.current(handedIn ? { ...opening, filters: liveSlice.current.filters } : opening, initial === position?.viewId);
+        openedRef.current?.(resource);
     }, [resource, isReady, views, sliceOf, standardColumns, standardSort, handedIn]);
 
     const positionRef = useRef(onPositionChange);

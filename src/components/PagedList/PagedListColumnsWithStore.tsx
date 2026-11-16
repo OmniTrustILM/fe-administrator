@@ -11,7 +11,7 @@ import type { ListViewModel } from 'types/listViews';
 import { FilterFieldSource, Resource } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
 import type { ColumnSort } from 'utils/tableColumns';
-import { createMockStore } from 'utils/test-helpers';
+import { createRecordingStore } from 'utils/test-helpers';
 import PagedList from './PagedList';
 
 export type StubRow = {
@@ -57,6 +57,8 @@ type Props = Readonly<{
     refreshedCatalogue?: SearchFieldListModel[];
     /** Renders a control that fails the catalogue read, which settles it with no fields behind it. */
     withCatalogueFailureControl?: boolean;
+    /** Fails the catalogue read as the page mounts over a catalogue an earlier visit read successfully. */
+    failsCatalogueOnMount?: boolean;
     /** Renders a control that lands the withheld view list, so a test can act before the strip is up. */
     withViewsControl?: boolean;
     /** Renders a control that blanks the rows and puts a list request in flight, as a listing duck does. */
@@ -156,20 +158,25 @@ function CatalogueControl({ catalogue }: Readonly<{ catalogue: SearchFieldListMo
     );
 }
 
+const catalogueFailure = {
+    type: 'filters/getAvailableFiltersFailure',
+    payload: { entity: EntityType.CERTIFICATE, error: 'Catalogue unavailable' },
+};
+
+/** Fails the catalogue read in the mount commit, before the strip can open on the copy an earlier visit left. */
+function CatalogueFailureOnMount() {
+    const dispatch = useDispatch();
+    useEffect(() => {
+        dispatch(catalogueFailure);
+    }, [dispatch]);
+    return null;
+}
+
 function CatalogueFailureControl() {
     const dispatch = useDispatch();
 
     return (
-        <button
-            type="button"
-            data-testid="fail-catalogue"
-            onClick={() =>
-                dispatch({
-                    type: 'filters/getAvailableFiltersFailure',
-                    payload: { entity: EntityType.CERTIFICATE, error: 'Catalogue unavailable' },
-                })
-            }
-        >
+        <button type="button" data-testid="fail-catalogue" onClick={() => dispatch(catalogueFailure)}>
             Fail catalogue
         </button>
     );
@@ -232,43 +239,50 @@ export default function PagedListColumnsWithStore({
     withCatalogueControl = false,
     refreshedCatalogue,
     withCatalogueFailureControl = false,
+    failsCatalogueOnMount = false,
     withViewsControl = false,
     withListInFlightControl = false,
     typedFilters,
     retypedFilters,
 }: Props) {
+    const [catalogueReads, setCatalogueReads] = useState(0);
     const [store] = useState(() =>
-        createMockStore({
-            listViews: {
-                byResource: {
-                    [Resource.Certificates]: { views, isFetching: withheldViews, hasLoaded: !withheldViews, isMutating: false },
+        createRecordingStore(
+            {
+                listViews: {
+                    byResource: {
+                        [Resource.Certificates]: { views, isFetching: withheldViews, hasLoaded: !withheldViews, isMutating: false },
+                    },
+                    dispatched: [],
                 },
-                dispatched: [],
-            },
-            filters: {
-                filters: [
-                    {
-                        entity: EntityType.CERTIFICATE,
-                        filter: {
-                            availableFilters: withheldCatalogue ? [] : catalogue,
-                            currentFilters: drillDownFilters ?? initialFilters,
-                            handedIn: drillDownFilters ? { source: 'drill-down' as const, scope: '/certificates' } : undefined,
-                            isFetchingFilters: withheldCatalogue || isRefetchingCatalogue,
-                            hasLoadedFilters: !withheldCatalogue,
-                            hasFailedFilters: failedCatalogue,
+                filters: {
+                    filters: [
+                        {
+                            entity: EntityType.CERTIFICATE,
+                            filter: {
+                                availableFilters: withheldCatalogue ? [] : catalogue,
+                                currentFilters: drillDownFilters ?? initialFilters,
+                                handedIn: drillDownFilters ? { source: 'drill-down' as const, scope: '/certificates' } : undefined,
+                                isFetchingFilters: withheldCatalogue || isRefetchingCatalogue,
+                                hasLoadedFilters: !withheldCatalogue,
+                                hasFailedFilters: failedCatalogue,
+                            },
                         },
-                    },
-                ],
+                    ],
+                },
+                pagings: {
+                    pagings: [
+                        {
+                            entity: EntityType.CERTIFICATE,
+                            paging: { totalItems: rows.length, checkedRows: [], isFetchingList: false, pageNumber: 1, pageSize: 10 },
+                        },
+                    ],
+                },
             },
-            pagings: {
-                pagings: [
-                    {
-                        entity: EntityType.CERTIFICATE,
-                        paging: { totalItems: rows.length, checkedRows: [], isFetchingList: false, pageNumber: 1, pageSize: 10 },
-                    },
-                ],
+            ({ type }) => {
+                if (type === filterActions.getAvailableFilters.type) setCatalogueReads((count) => count + 1);
             },
-        }),
+        ),
     );
 
     const [answeredRows, setAnsweredRows] = useState(rows);
@@ -328,6 +342,8 @@ export default function PagedListColumnsWithStore({
 
                 {withCatalogueFailureControl && <CatalogueFailureControl />}
 
+                {failsCatalogueOnMount && <CatalogueFailureOnMount />}
+
                 {withViewsControl && <ViewsControl views={views} />}
 
                 {withListInFlightControl && <ListInFlightControl onBlank={() => setAnsweredRows([])} />}
@@ -344,6 +360,7 @@ export default function PagedListColumnsWithStore({
                     </button>
                 )}
 
+                <div data-testid="catalogue-reads">{catalogueReads}</div>
                 <ListRequests requests={requests} />
                 <CurrentFilters />
                 <HandedIn />

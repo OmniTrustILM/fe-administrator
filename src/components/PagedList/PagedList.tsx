@@ -275,7 +275,11 @@ function PagedList<TRow extends object>({
     const hasLoadedViews = useSelector(selectHasLoadedViews);
     const isFetchingViews = useSelector(selectIsFetchingViews);
     const isStaleViews = useSelector(selectIsStaleViews);
-    const isStripReady = isViewStripReady(hasLoadedViews && !isFetchingViews && !isStaleViews, hasSettledCatalogue);
+    const hasFreshViews = hasLoadedViews && !isFetchingViews && !isStaleViews;
+    const isStripReady = isViewStripReady(hasFreshViews, hasSettledCatalogue);
+    // Applying the opening view replaces the columns and the ordering, so an edit made before the strip opens is lost.
+    const [openedResource, setOpenedResource] = useState<Resource | undefined>(undefined);
+    const canEditColumns = isStripReady && openedResource === columnsResource;
 
     const totalItems = useSelector(selectors.totalItems(entity));
     const checkedRows = useSelector(selectors.checkedRows(entity));
@@ -341,8 +345,8 @@ function PagedList<TRow extends object>({
                     shippedColumns={sortableStandardColumns}
                     // Both withheld until the strip is up: applying the opening view replaces the column
                     // set wholesale, so a change made before that would be wiped without a trace.
-                    onToggle={isStripReady ? onToggleColumn : undefined}
-                    onReset={isStripReady ? onResetColumns : undefined}
+                    onToggle={canEditColumns ? onToggleColumn : undefined}
+                    onReset={canEditColumns ? onResetColumns : undefined}
                     isStorable={isStorable}
                 />
             ) : undefined,
@@ -354,7 +358,7 @@ function PagedList<TRow extends object>({
             sortableStandardColumns,
             onToggleColumn,
             onResetColumns,
-            isStripReady,
+            canEditColumns,
             isStorable,
         ],
     );
@@ -535,6 +539,11 @@ function PagedList<TRow extends object>({
         [sortableStandardColumns],
     );
 
+    const onRetryCatalogue = useMemo(
+        () => (getAvailableFiltersApi ? () => dispatch(filterActions.getAvailableFilters({ entity, getAvailableFiltersApi })) : undefined),
+        [dispatch, entity, getAvailableFiltersApi],
+    );
+
     const renderHeaderAction = useCallback(
         (header: TableHeader) => {
             // Withheld until the strip is up: the opening view replaces the columns and the ordering when
@@ -549,8 +558,10 @@ function PagedList<TRow extends object>({
                     columnKey={header.id}
                     label={getColumnHeading(column)}
                     columnKeys={columnKeys}
-                    sortable={column.sortable === true}
+                    sortable={canEditColumns && column.sortable === true}
+                    canEdit={canEditColumns}
                     hasCatalogueFailed={hasCatalogueFailed}
+                    onRetryCatalogue={onRetryCatalogue}
                     onSort={(direction) => onSortChanged(header.id, direction)}
                     onMove={onMoveColumn}
                     onRename={(next) => onRenameColumn(header.id, next)}
@@ -563,9 +574,11 @@ function PagedList<TRow extends object>({
         },
         [
             isStripReady,
+            canEditColumns,
             appliedColumns,
             columnKeys,
             hasCatalogueFailed,
+            onRetryCatalogue,
             onSortChanged,
             onMoveColumn,
             onRenameColumn,
@@ -577,7 +590,7 @@ function PagedList<TRow extends object>({
 
     const renderHeaderLead = useCallback(
         (header: TableHeader) => {
-            if (!isStripReady) return undefined;
+            if (!canEditColumns) return undefined;
 
             const column = appliedColumns.find((candidate) => getColumnKey(candidate) === header.id);
             if (!column) return undefined;
@@ -592,13 +605,14 @@ function PagedList<TRow extends object>({
                 />
             );
         },
-        [isStripReady, appliedColumns, columnKeys, onMoveColumn],
+        [canEditColumns, appliedColumns, columnKeys, onMoveColumn],
     );
 
-    const columnHeaders = useMemo(
-        () => (isColumnDriven ? buildColumnHeaders(appliedColumns, { sort: appliedSort, info: headerInfo }) : (headers ?? EMPTY_HEADERS)),
-        [isColumnDriven, appliedColumns, appliedSort, headerInfo, headers],
-    );
+    const columnHeaders = useMemo(() => {
+        if (!isColumnDriven) return headers ?? EMPTY_HEADERS;
+        const built = buildColumnHeaders(appliedColumns, { sort: appliedSort, info: headerInfo });
+        return canEditColumns ? built : built.map((header) => ({ ...header, isSortHeld: true }));
+    }, [isColumnDriven, canEditColumns, appliedColumns, appliedSort, headerInfo, headers]);
 
     const heldRows = useHeldRows(columnsRows, isFetchingList, projectedKeys);
 
@@ -777,6 +791,7 @@ function PagedList<TRow extends object>({
                     handedIn={handedIn}
                     onPositionChange={onViewPositionChange}
                     onApply={onApplyView}
+                    onOpened={setOpenedResource}
                 />
             )}
 

@@ -407,6 +407,98 @@ test.describe('PagedList · column header menu', () => {
         );
     });
 
+    test('reads the catalogue again from the menu when the read failed', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                withheldCatalogue
+                withCatalogueFailureControl
+            />,
+        );
+        await expect.poll(() => headings(page)).toHaveLength(3);
+
+        await page.getByTestId('fail-catalogue').click();
+        await expect(trigger(page, NOT_AFTER)).toBeVisible();
+        const readsBefore = Number(await page.getByTestId('catalogue-reads').textContent());
+
+        await openMenu(page, NOT_AFTER);
+        await page.getByTestId(`column-header-menu-${NOT_AFTER}-retry-catalogue`).click();
+
+        await expect(page.getByTestId('catalogue-reads')).toHaveText(String(readsBefore + 1));
+    });
+
+    test('keeps the columns uneditable until the catalogue answers, so the opening view cannot wipe an edit', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                withheldCatalogue
+                withCatalogueFailureControl
+                withCatalogueControl
+            />,
+        );
+        await expect.poll(() => headings(page)).toHaveLength(3);
+
+        await page.getByTestId('fail-catalogue').click();
+        await expect(trigger(page, NOT_AFTER)).toBeVisible();
+        await expect(grip(page, NOT_AFTER)).toHaveCount(0);
+
+        await openMenu(page, NOT_AFTER);
+        await expect(page.getByTestId(`column-header-menu-${NOT_AFTER}-retry-catalogue`)).toBeVisible();
+        for (const entry of ['move-start', 'rename', 'remove']) {
+            await expect(page.getByTestId(`column-header-menu-${NOT_AFTER}-${entry}`)).toHaveAttribute('aria-disabled', 'true');
+        }
+        await page.keyboard.press('Escape');
+
+        await page.getByTestId('land-catalogue').click();
+        await expect(grip(page, NOT_AFTER)).toBeVisible();
+        await openMenu(page, NOT_AFTER);
+        for (const entry of ['move-start', 'rename', 'remove']) {
+            await expect(page.getByTestId(`column-header-menu-${NOT_AFTER}-${entry}`)).not.toHaveAttribute('aria-disabled', 'true');
+        }
+    });
+
+    test('keeps the columns uneditable on a return visit whose catalogue read fails before the strip opens', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                failsCatalogueOnMount
+                withCatalogueControl
+            />,
+        );
+        await expect.poll(() => headings(page)).toHaveLength(3);
+        await expect(trigger(page, NOT_AFTER)).toBeVisible();
+
+        await expect(grip(page, NOT_AFTER)).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Expires At', exact: true })).toHaveCount(0);
+        await openMenu(page, NOT_AFTER);
+        for (const entry of ['sort-asc', 'move-start', 'rename', 'remove']) {
+            await expect(page.getByTestId(`column-header-menu-${NOT_AFTER}-${entry}`)).toHaveAttribute('aria-disabled', 'true');
+        }
+        await page.keyboard.press('Escape');
+
+        await page.getByTestId('land-catalogue').click();
+        await expect(grip(page, NOT_AFTER)).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Expires At', exact: true })).toBeVisible();
+    });
+
+    test('offers no retry when the catalogue answered', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
+        await expect.poll(() => headings(page)).toHaveLength(3);
+
+        await openMenu(page, DEPARTMENT);
+
+        await expect(page.getByTestId(`column-header-menu-${DEPARTMENT}-sort-unavailable`)).toHaveText(
+            'This field cannot be used for ordering.',
+        );
+        await expect(page.getByTestId(`column-header-menu-${DEPARTMENT}-retry-catalogue`)).toHaveCount(0);
+    });
+
     test('closes again when the control is pressed a second time', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
         await expect.poll(() => headings(page)).toHaveLength(3);
