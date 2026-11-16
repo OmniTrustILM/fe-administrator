@@ -7,6 +7,7 @@ on:
       - openapi-generator/**
       - scripts/*openapi*
       - scripts/fixtures/openapi-version-churn/**
+      - src/types/openapi/.openapi-generator-ignore
       - package.json
       - package-lock.json
       - biome.json
