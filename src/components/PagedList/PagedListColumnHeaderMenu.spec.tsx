@@ -429,6 +429,38 @@ test.describe('PagedList · column header menu', () => {
         await expect(page.getByTestId('catalogue-reads')).toHaveText(String(readsBefore + 1));
     });
 
+    test('keeps the columns uneditable until the catalogue answers, so the opening view cannot wipe an edit', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                withheldCatalogue
+                withCatalogueFailureControl
+                withCatalogueControl
+            />,
+        );
+        await expect.poll(() => headings(page)).toHaveLength(3);
+
+        await page.getByTestId('fail-catalogue').click();
+        await expect(trigger(page, NOT_AFTER)).toBeVisible();
+        await expect(grip(page, NOT_AFTER)).toHaveCount(0);
+
+        await openMenu(page, NOT_AFTER);
+        await expect(page.getByTestId(`column-header-menu-${NOT_AFTER}-retry-catalogue`)).toBeVisible();
+        for (const entry of ['move-start', 'rename', 'remove']) {
+            await expect(page.getByTestId(`column-header-menu-${NOT_AFTER}-${entry}`)).toHaveAttribute('aria-disabled', 'true');
+        }
+        await page.keyboard.press('Escape');
+
+        await page.getByTestId('land-catalogue').click();
+        await expect(grip(page, NOT_AFTER)).toBeVisible();
+        await openMenu(page, NOT_AFTER);
+        for (const entry of ['move-start', 'rename', 'remove']) {
+            await expect(page.getByTestId(`column-header-menu-${NOT_AFTER}-${entry}`)).not.toHaveAttribute('aria-disabled', 'true');
+        }
+    });
+
     test('offers no retry when the catalogue answered', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
         await expect.poll(() => headings(page)).toHaveLength(3);

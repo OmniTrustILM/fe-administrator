@@ -74,6 +74,8 @@ type Props = Readonly<{
     /** Every displayed column key in display order: the column's own position, and how far a move can send it. */
     columnKeys: readonly string[];
     sortable: boolean;
+    /** Whether the column can be moved, renamed or removed yet. */
+    canEdit?: boolean;
     /**
      * Whether the catalogue read failed. Distinguishes "the catalogue says no" from "the read failed",
      * which read identically on the column itself.
@@ -116,6 +118,7 @@ export default function ColumnHeaderMenu({
     label,
     columnKeys,
     sortable,
+    canEdit = true,
     hasCatalogueFailed = false,
     onRetryCatalogue,
     onSort,
@@ -161,7 +164,7 @@ export default function ColumnHeaderMenu({
         [index, total, onMove],
     );
 
-    const isMoveUnavailable = (kind: ColumnMove) => getMoveTarget(kind, index, total) === undefined;
+    const isMoveUnavailable = (kind: ColumnMove) => !canEdit || getMoveTarget(kind, index, total) === undefined;
 
     return (
         <DropdownMenu.Root open={isOpen} onOpenChange={setIsOpen}>
@@ -266,14 +269,14 @@ export default function ColumnHeaderMenu({
                             <MenuItem
                                 icon={<Pencil className={ICON_CLASS} aria-hidden="true" />}
                                 label="Rename…"
-                                disabled={false}
+                                disabled={!canEdit}
                                 dataTestId={`${dataTestId}-rename`}
                                 onSelect={() => setRenaming(label)}
                             />
                             <MenuItem
                                 icon={<RotateCcw className={ICON_CLASS} aria-hidden="true" />}
                                 label="Reset heading"
-                                disabled={!hasOverride}
+                                disabled={!canEdit || !hasOverride}
                                 dataTestId={`${dataTestId}-reset-heading`}
                                 onSelect={() => onRename(defaultHeading)}
                             />
@@ -287,7 +290,7 @@ export default function ColumnHeaderMenu({
                             <MenuItem
                                 icon={<EyeOff className={ICON_CLASS} aria-hidden="true" />}
                                 label="Remove column"
-                                disabled={isLastColumn}
+                                disabled={!canEdit || isLastColumn}
                                 describedBy={isLastColumn ? lastColumnId : undefined}
                                 dataTestId={`${dataTestId}-remove`}
                                 onSelect={onRemove}
