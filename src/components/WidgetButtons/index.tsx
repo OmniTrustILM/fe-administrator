@@ -5,7 +5,7 @@ import type { IconName } from 'types/icons';
 import type { Availability } from 'utils/availability';
 import { iconRegistry } from 'utils/icons';
 
-export interface WidgetButtonProps {
+type WidgetButtonBase = {
     icon: IconName;
     id?: string;
     tooltip?: string;
@@ -13,11 +13,13 @@ export interface WidgetButtonProps {
     /** The accessible name. These buttons carry an icon and no text, and a tooltip describes a control, it does not name it. */
     'aria-label'?: string;
     disabled: boolean;
-    requires?: Availability;
-    custom?: React.ReactNode;
     onClick: (event: React.MouseEvent) => void;
     className?: string;
-}
+};
+
+/** A `custom` entry renders as given, so it cannot carry a requirement it would silently drop. */
+export type WidgetButtonProps = WidgetButtonBase &
+    ({ custom?: undefined; requires?: Availability } | { custom: React.ReactNode; requires?: never });
 
 type Props = {
     buttons: WidgetButtonProps[];
