@@ -167,6 +167,20 @@ test.describe('Button', () => {
         await expect(component).toBeDisabled();
     });
 
+    test('should stay enabled and clickable when its requirement is met', async ({ mount }) => {
+        let clicked = false;
+        const component = await mount(
+            <Button requires={{ available: true, hidden: false, loading: false }} onClick={() => (clicked = true)}>
+                Edit
+            </Button>,
+        );
+
+        await expect(component).toHaveRole('button');
+        await expect(component).toBeEnabled();
+        await component.click();
+        expect(clicked).toBe(true);
+    });
+
     test('should keep its own disabled reason when the requirement is met', async ({ mount, page }) => {
         const component = await mount(
             <Button disabled disabledTooltip="Already running" requires={{ available: true, hidden: false, loading: false }}>
