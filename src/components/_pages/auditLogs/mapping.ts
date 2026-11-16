@@ -14,6 +14,7 @@ export const auditLogsTypeMapping: Record<string, string> = {
     acmeProfiles: 'acmeprofiles',
     scepProfiles: 'scepprofiles',
     cmpProfiles: 'cmpprofiles',
+    estProfiles: 'estprofiles',
     authorities: 'authorities',
     /*  raProfiles: 'raprofiles', */ //need extra param from API
     certificates: 'certificates',

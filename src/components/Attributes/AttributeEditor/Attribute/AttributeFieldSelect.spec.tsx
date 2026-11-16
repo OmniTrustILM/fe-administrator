@@ -1,7 +1,8 @@
+import type { Page } from '@playwright/test';
 import { test, expect } from '../../../../../playwright/ct-test';
 import { AttributeFieldSelectTestWrapper } from './AttributeFieldSelectTestWrapper';
 import type { DataAttributeModel } from 'types/attributes';
-import { AttributeContentType, AttributeType } from 'types/openapi';
+import { AttributeConstraintType, AttributeContentType, AttributeType } from 'types/openapi';
 
 const defaultProperties = {
     label: 'Test Select',
@@ -344,6 +345,75 @@ test.describe('AttributeFieldSelect', () => {
         await expect(page.getByRole('option', { name: 'extra' })).toBeVisible();
     });
 
+    test.describe('extensible list with a range constraint', () => {
+        const rangeMessage = 'Between 1 and 100';
+        const rangeDescriptor = () =>
+            minimalDescriptor({
+                contentType: AttributeContentType.Integer,
+                properties: { ...defaultProperties, list: true, extensibleList: true, label: 'Parallel executions' },
+                constraints: [{ type: AttributeConstraintType.Range, data: { from: 1, to: 100 }, errorMessage: rangeMessage }],
+            } as any);
+
+        const addCustomValue = async (page: Page, value: string) => {
+            await page.getByRole('button', { name: 'Add custom value' }).click();
+            await page.getByTestId('testSelect-add-custom-panel').locator('input[type="number"]').fill(value);
+            await page.getByTestId('testSelect-add-custom-value').click();
+        };
+
+        test('shows the constraint message as soon as an out-of-range custom value is added', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldSelectTestWrapper
+                    name="testSelect"
+                    descriptor={rangeDescriptor()}
+                    options={[{ label: '1', value: 1 }]}
+                    mode="onChange"
+                />,
+            );
+
+            await addCustomValue(page, '101');
+            await expect(page.getByText(rangeMessage)).toBeVisible();
+
+            await addCustomValue(page, '100');
+            await expect(page.getByText(rangeMessage)).toHaveCount(0);
+        });
+
+        test('blocks the submit with the constraint message and submits once the value is in range', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldSelectTestWrapper name="testSelect" descriptor={rangeDescriptor()} options={[{ label: '1', value: 1 }]} />,
+            );
+
+            await addCustomValue(page, '101');
+            await page.getByTestId('submit-form').click();
+            await expect(page.getByTestId('submit-count')).toHaveText('1');
+            await expect(page.getByText(rangeMessage)).toBeVisible();
+            await expect(page.getByTestId('submit-success')).toHaveCount(0);
+
+            await addCustomValue(page, '100');
+            await expect(page.getByText(rangeMessage)).toHaveCount(0);
+            await page.getByTestId('submit-form').click();
+            await expect(page.getByTestId('submit-success')).toBeVisible();
+        });
+
+        test('reveals the constraint message of an untouched out-of-range value once the form is submitted', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldSelectTestWrapper
+                    name="testSelect"
+                    descriptor={rangeDescriptor()}
+                    options={[{ label: '1', value: 1 }]}
+                    defaultValues={{ testSelect: 101 }}
+                    validateOnMount
+                />,
+            );
+            await expect(page.getByText(rangeMessage)).toHaveCount(0);
+
+            await page.getByTestId('submit-form').click();
+
+            await expect(page.getByTestId('submit-count')).toHaveText('1');
+            await expect(page.getByText(rangeMessage)).toBeVisible();
+            await expect(page.getByTestId('submit-success')).toHaveCount(0);
+        });
+    });
+
     test('extensible list multi-select adds extra options for current values not in options', async ({ mount, page }) => {
         const descriptor = minimalDescriptor({
             properties: { ...defaultProperties, multiSelect: true, extensibleList: true, label: 'Extensible Multi' },
@@ -391,5 +461,151 @@ test.describe('AttributeFieldSelect', () => {
         await page.getByTestId('select-testSelectSelect-trigger').click();
         await expect(page.getByRole('option', { name: '[object Object]' })).toHaveCount(0);
         await expect(page.getByRole('option', { name: '111', exact: true })).toBeVisible();
+    });
+
+    test.describe('required list validation feedback', () => {
+        const requiredOptions = [
+            { label: 'First', value: 'first' },
+            { label: 'Second', value: 'second' },
+        ];
+
+        const requiredList = (overrides: Record<string, unknown> = {}) =>
+            minimalDescriptor({
+                properties: { ...defaultProperties, list: true, required: true, label: 'Profile', ...overrides },
+            } as any);
+
+        for (const multiSelect of [false, true]) {
+            test(`shows Required Field once an empty list is opened and left (multiSelect: ${multiSelect})`, async ({ mount, page }) => {
+                await mount(
+                    <AttributeFieldSelectTestWrapper
+                        name="testSelect"
+                        descriptor={requiredList({ multiSelect })}
+                        options={requiredOptions}
+                        mode="onChange"
+                        validateOnMount
+                        withNextField
+                    />,
+                );
+
+                const trigger = page.getByTestId('select-testSelectSelect-trigger');
+                await trigger.click();
+                await page.keyboard.press('Escape');
+                // Focus is back on the list, so the user has not left it yet.
+                await expect(trigger).toBeFocused();
+                await expect(page.getByText('Required Field')).toHaveCount(0);
+                await expect(trigger).not.toHaveClass(/border-danger/);
+
+                await page.keyboard.press('Tab');
+
+                await expect(page.getByText('Required Field')).toBeVisible();
+                await expect(trigger).toHaveClass(/border-danger/);
+                await expect(trigger).toHaveAttribute('aria-describedby', 'testSelect-error');
+            });
+        }
+
+        test('shows Required Field when the empty list is tabbed past without opening it', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldSelectTestWrapper
+                    name="testSelect"
+                    descriptor={requiredList()}
+                    options={requiredOptions}
+                    mode="onChange"
+                    validateOnMount
+                    withNextField
+                />,
+            );
+
+            await page.getByTestId('select-testSelectSelect-trigger').focus();
+            await page.keyboard.press('Tab');
+
+            await expect(page.getByText('Required Field')).toBeVisible();
+        });
+
+        test('shows Required Field after a submit without the list being touched', async ({ mount, page }) => {
+            await mount(<AttributeFieldSelectTestWrapper name="testSelect" descriptor={requiredList()} options={requiredOptions} />);
+
+            await expect(page.getByText('Required Field')).toHaveCount(0);
+            await page.getByRole('button', { name: 'Submit' }).click();
+
+            await expect(page.getByText('Required Field')).toBeVisible();
+            await expect(page.getByTestId('select-testSelectSelect-trigger')).toHaveClass(/border-danger/);
+        });
+
+        test('a hidden list is painted invalid but not linked to a message it does not render', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldSelectTestWrapper
+                    name="testSelect"
+                    descriptor={requiredList({ visible: false })}
+                    options={requiredOptions}
+                />,
+            );
+            await page.getByRole('button', { name: 'Submit' }).click();
+
+            const trigger = page.getByTestId('select-testSelectSelect-trigger');
+            await expect(trigger).toHaveClass(/border-danger/);
+            await expect(trigger).not.toHaveAttribute('aria-describedby');
+        });
+
+        test('choosing a value clears the message', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldSelectTestWrapper
+                    name="testSelect"
+                    descriptor={requiredList()}
+                    options={requiredOptions}
+                    mode="onChange"
+                    validateOnMount
+                    withNextField
+                />,
+            );
+
+            const trigger = page.getByTestId('select-testSelectSelect-trigger');
+            await trigger.focus();
+            await page.keyboard.press('Tab');
+            await expect(page.getByText('Required Field')).toBeVisible();
+
+            await trigger.click();
+            await page.getByRole('option', { name: 'Second', exact: true }).click();
+
+            await expect(page.getByText('Required Field')).toHaveCount(0);
+            await expect(trigger).not.toHaveClass(/border-danger/);
+        });
+
+        test('a cancelled "create new" leaves the empty list marked', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldSelectTestWrapper
+                    name="testSelect"
+                    descriptor={requiredList()}
+                    options={requiredOptions}
+                    addNewAttributeValue={{ label: '+ Create new', value: '__add_new__' }}
+                    mode="onChange"
+                    validateOnMount
+                />,
+            );
+
+            await page.getByTestId('select-testSelectSelect-trigger').click();
+            await page.getByRole('option', { name: '+ Create new' }).click();
+
+            await expect(page.getByText('Required Field')).toBeVisible();
+        });
+
+        test('holds the message while a custom value is being added to an extensible list', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldSelectTestWrapper
+                    name="testSelect"
+                    descriptor={requiredList({ extensibleList: true })}
+                    options={requiredOptions}
+                    mode="onChange"
+                    validateOnMount
+                />,
+            );
+
+            const trigger = page.getByTestId('select-testSelectSelect-trigger');
+            await trigger.click();
+            await page.keyboard.press('Escape');
+            await page.getByRole('button', { name: 'Add custom value' }).click();
+
+            await expect(page.getByText('Required Field')).toHaveCount(0);
+            await expect(trigger).not.toHaveClass(/border-danger/);
+        });
     });
 });

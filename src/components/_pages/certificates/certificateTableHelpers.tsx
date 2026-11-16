@@ -491,6 +491,8 @@ function getProtocolProfileLink(protocolInfo: CertificateProtocolDto): string | 
             return `../cmpprofiles/detail/${protocolInfo.protocolProfileUuid}`;
         case CertificateProtocol.Scep:
             return `../scepprofiles/detail/${protocolInfo.protocolProfileUuid}`;
+        case CertificateProtocol.Est:
+            return `../estprofiles/detail/${protocolInfo.protocolProfileUuid}`;
         default:
             // A protocol the backend added before these types were regenerated has no known profile route here.
             return undefined;

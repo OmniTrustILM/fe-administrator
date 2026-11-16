@@ -2,7 +2,7 @@ import * as Popover from '@radix-ui/react-popover';
 import cn from 'classnames';
 import Badge from 'components/Badge';
 import { CHECKBOX_INPUT_CLASS } from 'components/Checkbox';
-import SourceBadge, { DEFAULT_SOURCE_LABELS, SOURCE_COLORS } from 'components/SourceBadge';
+import SourceBadge, { SOURCE_COLORS, SOURCE_LABELS } from 'components/SourceBadge';
 import { Plus, RotateCcw, Search } from 'lucide-react';
 import { useCallback, useLayoutEffect, useMemo, useRef, useState } from 'react';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
@@ -11,6 +11,7 @@ import { type MenuSourceColumn, toMenuContents } from './sourceColumns';
 
 const LOCKED_AT_LAST_COLUMN = 'A view must keep at least one column';
 const LOCKED_WHILE_LOADING = 'Columns cannot be changed while the page is loading';
+const NO_COLUMNS: readonly ColumnDefinition[] = [];
 
 function getEmptyState(column: MenuSourceColumn, isCatalogueLoaded: boolean): string {
     // Three different answers, and reading them as one is what makes an exhausted source claim the
@@ -35,6 +36,11 @@ type Props = Readonly<{
      * change something else is about to overwrite.
      */
     onToggle?: (field: SourcedCatalogueField) => void;
+    /**
+     * The column set the page ships. One the catalogue does not publish is offered back from here once
+     * removed; the catalogue is otherwise the only thing the source columns are built from.
+     */
+    shippedColumns?: readonly ColumnDefinition[];
     /** Puts the platform's own column set back. Left out where there is nothing to go back to. */
     onReset?: () => void;
     /** Which columns a view can store, so the last of them is the one held. Defaults to every column not display-only. */
@@ -45,7 +51,6 @@ type Props = Readonly<{
 type FieldRowProps = Readonly<{
     field: SourcedCatalogueField;
     isSelected: boolean;
-    sourceLabel: string;
     /** Why the checkbox cannot be changed, which is also what it is titled and announced with. */
     lockReason?: string;
     withSourceBadge?: boolean;
@@ -54,7 +59,8 @@ type FieldRowProps = Readonly<{
     dataTestId: string;
 }>;
 
-function FieldRow({ field, isSelected, sourceLabel, lockReason, withSourceBadge, itemClassName, onToggle, dataTestId }: FieldRowProps) {
+function FieldRow({ field, isSelected, lockReason, withSourceBadge, itemClassName, onToggle, dataTestId }: FieldRowProps) {
+    const sourceLabel = SOURCE_LABELS[field.fieldSource];
     const sourceAndLockReason = lockReason ? `${sourceLabel}. ${lockReason}` : sourceLabel;
     return (
         <li className={itemClassName}>
@@ -74,7 +80,7 @@ function FieldRow({ field, isSelected, sourceLabel, lockReason, withSourceBadge,
                     className={cn('shrink-0', CHECKBOX_INPUT_CLASS)}
                 />
                 <span className="min-w-0 flex-1 truncate text-content">{field.fieldLabel}</span>
-                {withSourceBadge && <SourceBadge source={field.fieldSource} label={sourceLabel} />}
+                {withSourceBadge && <SourceBadge source={field.fieldSource} />}
                 {/* The source is what tells two like-named fields apart, so it belongs in the accessible
                     name of every checkbox — carried by the badge where one is rendered. */}
                 <span className="sr-only">{withSourceBadge ? lockReason : sourceAndLockReason}</span>
@@ -95,6 +101,7 @@ export default function AddColumnMenu({
     fields,
     isCatalogueLoaded = true,
     columns,
+    shippedColumns = NO_COLUMNS,
     onToggle,
     onReset,
     isStorable = isNotDisplayOnly,
@@ -126,7 +133,11 @@ export default function AddColumnMenu({
         // between the two lists. Keyed on anything stable, this would only ever run on mount.
     }, [dataTestId, columns]);
 
-    const { shown, sources } = useMemo(() => toMenuContents(fields, columns, search), [fields, columns, search]);
+    // Held back until the catalogue settles: before then every shipped column looks unpublished.
+    const { shown, sources } = useMemo(
+        () => toMenuContents(fields, columns, search, isCatalogueLoaded ? shippedColumns : NO_COLUMNS),
+        [fields, columns, search, isCatalogueLoaded, shippedColumns],
+    );
 
     const onOpenChange = useCallback((open: boolean) => {
         setIsOpen(open);
@@ -219,7 +230,6 @@ export default function AddColumnMenu({
                                             key={getColumnKey(field)}
                                             field={field}
                                             isSelected
-                                            sourceLabel={DEFAULT_SOURCE_LABELS[field.fieldSource]}
                                             lockReason={
                                                 isLocked || (isAtLastColumn && !unstorableKeys.has(getColumnKey(field)))
                                                     ? lockNotice
@@ -237,49 +247,44 @@ export default function AddColumnMenu({
                     )}
 
                     <div className="mt-3 grid min-h-0 flex-1 grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4">
-                        {sources.map((menuColumn) => {
-                            const label = DEFAULT_SOURCE_LABELS[menuColumn.source];
+                        {sources.map((menuColumn) => (
+                            <fieldset
+                                key={menuColumn.source}
+                                className="flex min-h-0 min-w-0 flex-col"
+                                data-testid={`${dataTestId}-source-${menuColumn.source}`}
+                            >
+                                <legend className="mb-1">
+                                    <Badge
+                                        color={SOURCE_COLORS[menuColumn.source]}
+                                        size="small"
+                                        dataTestId={`${dataTestId}-legend-${menuColumn.source}`}
+                                    >
+                                        {SOURCE_LABELS[menuColumn.source]}
+                                    </Badge>
+                                </legend>
 
-                            return (
-                                <fieldset
-                                    key={menuColumn.source}
-                                    className="flex min-h-0 min-w-0 flex-col"
-                                    data-testid={`${dataTestId}-source-${menuColumn.source}`}
-                                >
-                                    <legend className="mb-1">
-                                        <Badge
-                                            color={SOURCE_COLORS[menuColumn.source]}
-                                            size="small"
-                                            dataTestId={`${dataTestId}-legend-${menuColumn.source}`}
-                                        >
-                                            {label}
-                                        </Badge>
-                                    </legend>
-
-                                    <div className="min-h-0 flex-1 overflow-y-auto">
-                                        {menuColumn.fields.length === 0 ? (
-                                            <p className="px-1 py-1 text-xs text-content-subtle">
-                                                {getEmptyState(menuColumn, isCatalogueLoaded)}
-                                            </p>
-                                        ) : (
-                                            <ul className="m-0 flex list-none flex-col p-0">
-                                                {menuColumn.fields.map((field) => (
-                                                    <FieldRow
-                                                        key={getColumnKey(field)}
-                                                        field={field}
-                                                        isSelected={false}
-                                                        sourceLabel={label}
-                                                        lockReason={isLocked ? lockNotice : undefined}
-                                                        onToggle={onToggleField}
-                                                        dataTestId={dataTestId}
-                                                    />
-                                                ))}
-                                            </ul>
-                                        )}
-                                    </div>
-                                </fieldset>
-                            );
-                        })}
+                                <div className="min-h-0 flex-1 overflow-y-auto">
+                                    {menuColumn.fields.length === 0 ? (
+                                        <p className="px-1 py-1 text-xs text-content-subtle">
+                                            {getEmptyState(menuColumn, isCatalogueLoaded)}
+                                        </p>
+                                    ) : (
+                                        <ul className="m-0 flex list-none flex-col p-0">
+                                            {menuColumn.fields.map((field) => (
+                                                <FieldRow
+                                                    key={getColumnKey(field)}
+                                                    field={field}
+                                                    isSelected={false}
+                                                    lockReason={isLocked ? lockNotice : undefined}
+                                                    onToggle={onToggleField}
+                                                    dataTestId={dataTestId}
+                                                />
+                                            ))}
+                                        </ul>
+                                    )}
+                                </div>
+                            </fieldset>
+                        ))}
                     </div>
 
                     {lockNotice && (

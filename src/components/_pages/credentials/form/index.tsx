@@ -86,6 +86,8 @@ export default function CredentialForm({ credentialId, onCancel, onSuccess, uses
             isFetchingResourceCustomAttributes,
         ],
     );
+    // The custom attribute editor resets its fields when it mounts, so it hides only while its own inputs load.
+    const customAttributesLoading = isFetchingCredentialDetail || isFetchingResourceCustomAttributes;
 
     const previousIdRef = useRef<string | undefined>(undefined);
     const fetchedDescriptorsKeyRef = useRef<string | undefined>(undefined);
@@ -305,7 +307,7 @@ export default function CredentialForm({ credentialId, onCancel, onSuccess, uses
     }, [editMode, credential, id, reset, isFetchingCredentialDetail]);
 
     const renderCustomAttributesEditor = useCallback(() => {
-        if (isBusy) return <></>;
+        if (customAttributesLoading) return <></>;
         return (
             <AttributeEditor
                 id="customCredential"
@@ -313,7 +315,7 @@ export default function CredentialForm({ credentialId, onCancel, onSuccess, uses
                 attributes={credential?.customAttributes}
             />
         );
-    }, [resourceCustomAttributes, credential, isBusy]);
+    }, [resourceCustomAttributes, credential, customAttributesLoading]);
 
     useRunOnSuccessfulFinish(isCreating, createCredentialSucceeded, onSuccess);
     useRunOnSuccessfulFinish(isUpdating, updateCredentialSucceeded, onSuccess);

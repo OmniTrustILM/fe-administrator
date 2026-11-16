@@ -35,6 +35,7 @@ export enum Resource {
     CryptoAssets = 'cryptoAssets',
     ScepProfiles = 'scepProfiles',
     CmpProfiles = 'cmpProfiles',
+    EstProfiles = 'estProfiles',
     Authorities = 'authorities',
     RaProfiles = 'raProfiles',
     Certificates = 'certificates',

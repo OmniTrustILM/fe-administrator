@@ -19,6 +19,7 @@ export type StubRow = {
     commonName: string;
     notAfter: string;
     serialNumber?: string;
+    associations?: number;
     attributeValues?: Record<string, Record<string, unknown[]>>;
 };
 
@@ -70,6 +71,7 @@ const registry: CellRegistry<StubRow> = {
     'property:COMMON_NAME': (row) => row.commonName,
     'property:NOT_AFTER': (row) => row.notAfter,
     'property:SERIAL_NUMBER': (row) => row.serialNumber,
+    'property:ASSOCIATIONS': (row) => row.associations?.toString(),
 };
 
 function ListInFlightControl({ onBlank }: Readonly<{ onBlank: () => void }>) {

@@ -111,4 +111,48 @@ describe('toMenuContents', () => {
 
         expect(toMenuContents(fields, columns, '').shown[0].fieldLabel).toBe('Certs');
     });
+
+    it('offers a shipped column the catalogue does not publish under its source once it is off the table', () => {
+        const shipped = [
+            {
+                fieldSource: FilterFieldSource.Property,
+                fieldIdentifier: 'CK_ASSOCIATIONS',
+                catalogueLabel: 'Associations',
+                label: 'Linked',
+            },
+        ];
+
+        const property = toMenuContents(fields, [], '', shipped).sources[3];
+
+        expect(property.fields.map((entry) => entry.fieldIdentifier)).toEqual(['COMMON_NAME', 'NOT_AFTER', 'CK_ASSOCIATIONS']);
+        expect(property.fields[2].fieldLabel).toBe('Linked');
+    });
+
+    it('does not offer a shipped column again while it is on the table', () => {
+        const shipped = [{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CK_ASSOCIATIONS', catalogueLabel: 'Associations' }];
+
+        const { shown, sources } = toMenuContents(fields, shipped, '', shipped);
+
+        expect(shown.map((entry) => entry.fieldIdentifier)).toEqual(['CK_ASSOCIATIONS']);
+        expect(sources[3].fields.map((entry) => entry.fieldIdentifier)).toEqual(['COMMON_NAME', 'NOT_AFTER']);
+    });
+
+    it('lists a shipped column the catalogue publishes once, as the catalogue publishes it', () => {
+        const shipped = [
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'NOT_AFTER', catalogueLabel: 'Expiry', label: 'Exp.' },
+        ];
+
+        const property = toMenuContents(fields, [], '', shipped).sources[3];
+
+        expect(property.fields.map((entry) => entry.fieldLabel)).toEqual(['Common Name', 'Expires At']);
+    });
+
+    it('counts a source as publishing when only a shipped column fills it', () => {
+        const shipped = [{ fieldSource: FilterFieldSource.Data, fieldIdentifier: 'shipped|STRING', catalogueLabel: 'Shipped' }];
+
+        const data = toMenuContents(fields, [], '', shipped).sources[2];
+
+        expect(data.isPublishing).toBe(true);
+        expect(data.fields.map((entry) => entry.fieldLabel)).toEqual(['Shipped']);
+    });
 });

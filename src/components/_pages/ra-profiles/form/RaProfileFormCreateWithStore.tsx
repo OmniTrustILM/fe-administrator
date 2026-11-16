@@ -13,14 +13,31 @@ import RaProfileForm from './index';
 // The authority is pre-selected via the `authorityId` prop, so no Select interaction is needed to
 // enable the request-attributes tab. Pass authorityId="" to exercise the no-authority state where the
 // attribute tabs are disabled.
+type TestState = ReturnType<typeof testReducers>;
+
+// Keeps the detail fetch the form dispatches on mount in flight until the test answers it with getRaProfileDetailSuccess.
+function withRaProfileDetailFetch(state: TestState | undefined, action: UnknownAction): TestState {
+    const next = testReducers(state, action);
+    if (action.type === 'raprofiles/getRaProfileDetail') {
+        return { ...next, raprofiles: { ...next.raprofiles, isFetchingDetail: true } };
+    }
+    if (action.type === 'raprofiles/getRaProfileDetailSuccess') {
+        const { raProfile } = action.payload as { raProfile: TestState['raprofiles']['raProfile'] };
+        return { ...next, raprofiles: { ...next.raprofiles, isFetchingDetail: false, raProfile } };
+    }
+    return next;
+}
+
 export default function RaProfileFormCreateWithStore({
     authorityId = 'auth-1',
     raProfileId,
     preloadedState,
+    withDetailFetch = false,
 }: {
     authorityId?: string;
     raProfileId?: string;
-    preloadedState?: Partial<ReturnType<typeof testReducers>>;
+    preloadedState?: Partial<TestState>;
+    withDetailFetch?: boolean;
 }) {
     const capturedActions: UnknownAction[] = [];
     (globalThis as unknown as { __raProfileActions__: UnknownAction[] }).__raProfileActions__ = capturedActions;
@@ -30,7 +47,7 @@ export default function RaProfileFormCreateWithStore({
         return next(action);
     };
     const store = configureStore({
-        reducer: testReducers,
+        reducer: withDetailFetch ? withRaProfileDetailFetch : testReducers,
         middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(captureMiddleware),
         preloadedState: { ...testInitialState, ...preloadedState },
     });
