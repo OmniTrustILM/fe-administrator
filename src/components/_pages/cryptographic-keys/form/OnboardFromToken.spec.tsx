@@ -3,6 +3,7 @@ import { test, expect, type Locator, type Page } from 'playwright/ct-test';
 import { keyPairMeta } from 'ducks/__fixtures__/token-keys';
 import { actions as tokenKeyActions } from 'ducks/token-keys';
 import { actions as tokenProfileActions } from 'ducks/token-profiles';
+import { handleOf } from 'ducks/transform/token-keys';
 import type { CustomAttributeModel } from 'types/attributes';
 import {
     AttributeContentType,
@@ -85,6 +86,23 @@ const page: TokenKeyListResponseDto = {
     totalItems: 6,
 };
 
+const secondPage: TokenKeyListResponseDto = {
+    items: [
+        {
+            keyPairMeta: keyPairMeta('archiving'),
+            label: 'archiver',
+            keyAlgorithm: KeyAlgorithm.Rsa,
+            length: 2048,
+            status: TokenKeyStatus.Onboardable,
+            suggestedName: 'signer',
+        },
+    ],
+    itemsPerPage: 10,
+    pageNumber: 2,
+    totalPages: 2,
+    totalItems: 7,
+};
+
 const department = {
     uuid: '7a1c2e3f-4b5d-4c6e-8f9a-0b1c2d3e4f5a',
     name: 'department',
@@ -102,6 +120,14 @@ async function chooseProfile(browser: Page, option = PROFILE_OPTION) {
 
 function sentKeys(dispatched: readonly UnknownAction[]) {
     return dispatched.filter(tokenKeyActions.onboardTokenKeys.match).map((action) => action.payload.keys);
+}
+
+async function onboardSignerAndArchiverFromTwoPages(browser: Page) {
+    await chooseProfile(browser);
+    await browser.getByRole('checkbox', { name: 'Select signer' }).click();
+    await browser.getByTestId('pagination-next').click();
+    await browser.getByRole('checkbox', { name: 'Select archiver' }).click();
+    await browser.getByRole('button', { name: 'Onboard', exact: true }).click();
 }
 
 /** A text field stays read-only until it is focused, so it is clicked before it is filled. */
@@ -323,6 +349,7 @@ test.describe('OnboardFromToken', () => {
                     tokenInstanceUuid: 'token',
                     tokenProfileUuid: 'profile',
                     keys: [{ keyPairMeta: keyPairMeta('onboardable'), name: 'Payments signer' }],
+                    captions: { [handleOf(keyPairMeta('onboardable'))]: 'signer' },
                     customAttributes: [],
                 },
             ]);
@@ -401,7 +428,7 @@ test.describe('OnboardFromToken', () => {
         expect(dispatched.filter(tokenKeyActions.onboardTokenKeys.match)).toEqual([]);
     });
 
-    test('shows what became of each key pair and offers to finish once one was onboarded', async ({ mount, page: browser }) => {
+    test('offers to finish once a key pair was onboarded', async ({ mount, page: browser }) => {
         let done = false;
         await mount(
             <OnboardFromTokenWithStore
@@ -435,14 +462,12 @@ test.describe('OnboardFromToken', () => {
         await browser.getByRole('checkbox', { name: 'Select certified' }).click();
         await browser.getByRole('button', { name: 'Onboard', exact: true }).click();
 
-        const results = browser.getByRole('list', { name: 'Onboarding results' });
-        await expect(results).toContainText('signer: onboarded as signer');
-        await expect(results).toContainText('certified: private key added to key certificate key');
         await browser.getByRole('button', { name: 'Done' }).click();
         await expect.poll(() => done).toBe(true);
     });
 
-    test('shows a skipped key pair with its reason and keeps it selected', async ({ mount, page: browser }) => {
+    test('keeps a skipped key pair selected', async ({ mount, page: browser }) => {
+        const dispatched: UnknownAction[] = [];
         await mount(
             <OnboardFromTokenWithStore
                 profiles={[profile]}
@@ -455,6 +480,7 @@ test.describe('OnboardFromToken', () => {
                         reason: 'Another key is named signer.',
                     },
                 ]}
+                onAction={(action) => dispatched.push(action)}
             />,
         );
         await chooseProfile(browser);
@@ -462,12 +488,12 @@ test.describe('OnboardFromToken', () => {
         await browser.getByRole('checkbox', { name: 'Select signer' }).click();
         await browser.getByRole('button', { name: 'Onboard', exact: true }).click();
 
-        await expect(browser.getByRole('list', { name: 'Onboarding results' })).toContainText('signer: Another key is named signer.');
+        await expect.poll(() => dispatched.filter(tokenKeyActions.listTokenKeysSuccess.match).length).toBe(2);
         await expect(browser.getByRole('checkbox', { name: 'Select signer' })).toBeChecked();
         await expect(browser.getByRole('button', { name: 'Done' })).toHaveCount(0);
     });
 
-    test('names a key pair with a blank label by its fingerprint, in its row and in its result', async ({ mount, page: browser }) => {
+    test('names a key pair with a blank label by its fingerprint', async ({ mount, page: browser }) => {
         const unlabelled: TokenKeyListResponseDto = {
             ...page,
             items: [
@@ -483,28 +509,11 @@ test.describe('OnboardFromToken', () => {
             ],
             totalItems: 1,
         };
-        await mount(
-            <OnboardFromTokenWithStore
-                profiles={[profile]}
-                page={unlabelled}
-                onboardingResults={[
-                    {
-                        keyPairMeta: keyPairMeta('unlabelled'),
-                        onboarded: false,
-                        intoExistingKey: false,
-                        reason: 'Another key is named key (5f2b9c).',
-                    },
-                ]}
-            />,
-        );
+        await mount(<OnboardFromTokenWithStore profiles={[profile]} page={unlabelled} />);
         await chooseProfile(browser);
 
         const row = browser.getByRole('row').filter({ has: browser.getByRole('checkbox', { name: 'Select 5f2b9c' }) });
         await expect(row.getByRole('cell').nth(1)).toHaveText('5f2b9c');
-        await row.getByRole('checkbox').click();
-        await browser.getByRole('button', { name: 'Onboard', exact: true }).click();
-
-        await expect(browser.getByRole('list', { name: 'Onboarding results' })).toContainText('5f2b9c: Another key is named key (5f2b9c).');
     });
 
     test('drops a selected key pair from the selection once a later listing finds it in the inventory', async ({
@@ -606,14 +615,14 @@ test.describe('OnboardFromToken', () => {
         await chooseProfile(browser);
         await browser.getByRole('checkbox', { name: 'Select signer' }).click();
         await browser.getByRole('button', { name: 'Onboard', exact: true }).click();
-        await expect(browser.getByRole('list', { name: 'Onboarding results' })).toBeVisible();
+        await expect(browser.getByRole('button', { name: 'Done' })).toBeVisible();
         await expect.poll(listingsAnswered).toBe(2);
 
         await chooseProfile(browser, 'HSM / Archive');
 
         await expect.poll(listingsAnswered).toBe(3);
         expect(listedProfiles()).toEqual(['profile', 'profile', 'archive']);
-        await expect(browser.getByRole('list', { name: 'Onboarding results' })).toHaveCount(0);
+        await expect(browser.getByRole('button', { name: 'Done' })).toHaveCount(0);
     });
 
     test('keeps the listing when the chosen profile is chosen again', async ({ mount, page: browser }) => {
@@ -626,78 +635,11 @@ test.describe('OnboardFromToken', () => {
         await expect(browser.getByRole('checkbox', { name: 'Select signer' })).toBeVisible();
     });
 
-    test('names each key pair in the results by its label, whichever page it was picked on', async ({ mount, page: browser }) => {
-        const secondPage: TokenKeyListResponseDto = {
-            items: [
-                {
-                    keyPairMeta: keyPairMeta('archiving'),
-                    label: 'archiver',
-                    keyAlgorithm: KeyAlgorithm.Rsa,
-                    length: 2048,
-                    status: TokenKeyStatus.Onboardable,
-                    suggestedName: 'archiver',
-                },
-            ],
-            itemsPerPage: 10,
-            pageNumber: 2,
-            totalPages: 2,
-            totalItems: 7,
-        };
-        await mount(
-            <OnboardFromTokenWithStore
-                profiles={[profile]}
-                page={{ ...page, totalPages: 2, totalItems: 7 }}
-                secondPage={secondPage}
-                onboardingResults={[
-                    {
-                        keyPairMeta: keyPairMeta('onboardable'),
-                        onboarded: true,
-                        intoExistingKey: false,
-                        keyUuid: 'key-1',
-                        keyName: 'Payments signer',
-                    },
-                    {
-                        keyPairMeta: keyPairMeta('archiving'),
-                        onboarded: false,
-                        intoExistingKey: false,
-                        reason: 'Another key is named archiver.',
-                    },
-                ]}
-            />,
-        );
-        await chooseProfile(browser);
-
-        await browser.getByRole('checkbox', { name: 'Select signer' }).click();
-        await browser.getByTestId('pagination-next').click();
-        await browser.getByRole('checkbox', { name: 'Select archiver' }).click();
-        await browser.getByRole('button', { name: 'Onboard', exact: true }).click();
-
-        const results = browser.getByRole('list', { name: 'Onboarding results' });
-        await expect(results).toContainText('signer: onboarded as Payments signer');
-        await expect(results).toContainText('archiver: Another key is named archiver.');
-    });
-
     test('leaves the names of key pairs picked on different pages to Core, although each page suggests the same', async ({
         mount,
         page: browser,
     }) => {
         const dispatched: UnknownAction[] = [];
-        const secondPage: TokenKeyListResponseDto = {
-            items: [
-                {
-                    keyPairMeta: keyPairMeta('archiving'),
-                    label: 'archiver',
-                    keyAlgorithm: KeyAlgorithm.Rsa,
-                    length: 2048,
-                    status: TokenKeyStatus.Onboardable,
-                    suggestedName: 'signer',
-                },
-            ],
-            itemsPerPage: 10,
-            pageNumber: 2,
-            totalPages: 2,
-            totalItems: 7,
-        };
         await mount(
             <OnboardFromTokenWithStore
                 profiles={[profile]}
@@ -706,34 +648,28 @@ test.describe('OnboardFromToken', () => {
                 onAction={(action) => dispatched.push(action)}
             />,
         );
-        await chooseProfile(browser);
-
-        await browser.getByRole('checkbox', { name: 'Select signer' }).click();
-        await browser.getByTestId('pagination-next').click();
-        await browser.getByRole('checkbox', { name: 'Select archiver' }).click();
-        await browser.getByRole('button', { name: 'Onboard', exact: true }).click();
+        await onboardSignerAndArchiverFromTwoPages(browser);
 
         const expected = [[{ keyPairMeta: keyPairMeta('onboardable') }, { keyPairMeta: keyPairMeta('archiving') }]];
         await expect.poll(() => sentKeys(dispatched)).toEqual(expected);
         expect(sentKeys(dispatched)).toEqual(expected);
     });
 
-    test('says a private key joined an existing key the caller may not see', async ({ mount, page: browser }) => {
+    test('captions each key pair it onboards by its label, whichever page it was picked on', async ({ mount, page: browser }) => {
+        const dispatched: UnknownAction[] = [];
         await mount(
             <OnboardFromTokenWithStore
                 profiles={[profile]}
-                page={page}
-                onboardingResults={[{ keyPairMeta: keyPairMeta('into'), onboarded: true, intoExistingKey: true }]}
+                page={{ ...page, totalPages: 2, totalItems: 7 }}
+                secondPage={secondPage}
+                onAction={(action) => dispatched.push(action)}
             />,
         );
-        await chooseProfile(browser);
+        await onboardSignerAndArchiverFromTwoPages(browser);
 
-        await browser.getByRole('checkbox', { name: 'Select certified' }).click();
-        await browser.getByRole('button', { name: 'Onboard', exact: true }).click();
-
-        await expect(browser.getByRole('list', { name: 'Onboarding results' })).toContainText(
-            'certified: private key added to an existing key',
-        );
+        await expect
+            .poll(() => dispatched.filter(tokenKeyActions.onboardTokenKeys.match).map((action) => action.payload.captions))
+            .toEqual([{ [handleOf(keyPairMeta('onboardable'))]: 'signer', [handleOf(keyPairMeta('archiving'))]: 'archiver' }]);
     });
 
     test('asks a name for a selected key pair whose public key no key holds any more', async ({ mount, page: browser }) => {

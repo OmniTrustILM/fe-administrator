@@ -17,7 +17,7 @@ import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import reducer, { actions, initialState, selectors } from './token-keys';
 import tokenKeyEpics from './token-keys-epics';
-import { describeOnboarding } from './transform/token-keys';
+import { handleOf, summarizeOnboarding } from './transform/token-keys';
 
 function epicNamed(epics: unknown[], name: string) {
     const epic = (epics as { name: string }[]).find((candidate) => candidate.name === name);
@@ -45,16 +45,44 @@ const page: TokenKeyListResponseDto = {
 const onboarded: TokenKeyOnboardingResultDto = {
     keyPairMeta: keyPairMeta('handle-1'),
     onboarded: true,
+    intoExistingKey: false,
     keyUuid: 'key-1',
     keyName: 'signer',
 };
 const skipped: TokenKeyOnboardingResultDto = {
     keyPairMeta: keyPairMeta('handle-2'),
     onboarded: false,
+    intoExistingKey: false,
     reason: 'Key signer already holds this key pair.',
+};
+const secondOnboarded: TokenKeyOnboardingResultDto = {
+    keyPairMeta: keyPairMeta('handle-3'),
+    onboarded: true,
+    intoExistingKey: false,
+    keyUuid: 'key-3',
+    keyName: 'archiver',
+};
+const skippedWithoutReason: TokenKeyOnboardingResultDto = {
+    keyPairMeta: keyPairMeta('handle-4'),
+    onboarded: false,
+    intoExistingKey: false,
+};
+const skippedForName: TokenKeyOnboardingResultDto = {
+    keyPairMeta: keyPairMeta('handle-5'),
+    onboarded: false,
+    intoExistingKey: false,
+    reason: 'A key named backup already exists.',
 };
 
 const request = { tokenInstanceUuid: 'token', tokenProfileUuid: 'profile' };
+
+const captions = {
+    [handleOf(keyPairMeta('handle-1'))]: 'signer',
+    [handleOf(keyPairMeta('handle-2'))]: 'archive-pair',
+    [handleOf(keyPairMeta('handle-3'))]: 'archiver',
+    [handleOf(keyPairMeta('handle-4'))]: 'legacy-pair',
+    [handleOf(keyPairMeta('handle-5'))]: 'backup-pair',
+};
 
 type TokenKeysClient = {
     onboardTokenKeys: () => Observable<OnboardTokenKeysResponseDto>;
@@ -122,7 +150,10 @@ describe('token keys slice', () => {
         const earlier = { ...initialState, tokenKeyOnboardingResults: [skipped] };
 
         // when
-        const onboarding = reducer(earlier, actions.onboardTokenKeys({ ...request, keys: [{ keyPairMeta: keyPairMeta('handle-1') }] }));
+        const onboarding = reducer(
+            earlier,
+            actions.onboardTokenKeys({ ...request, captions, keys: [{ keyPairMeta: keyPairMeta('handle-1') }] }),
+        );
         const done = reducer(onboarding, actions.onboardTokenKeysSuccess({ results: [onboarded] }));
 
         // then
@@ -136,7 +167,7 @@ describe('token keys slice', () => {
         // given
         const onboarding = reducer(
             { ...initialState, tokenKeys: page, tokenKeyOnboardingResults: [onboarded] },
-            actions.onboardTokenKeys({ ...request, keys: [{ keyPairMeta: keyPairMeta('handle-1') }] }),
+            actions.onboardTokenKeys({ ...request, captions, keys: [{ keyPairMeta: keyPairMeta('handle-1') }] }),
         );
 
         // when
@@ -150,7 +181,7 @@ describe('token keys slice', () => {
         // given
         const lateOnboarding = new Subject<OnboardTokenKeysResponseDto>();
         const { dispatch, state } = observeTokenKeys({ onboardTokenKeys: () => lateOnboarding, listTokenKeys: () => of(page) });
-        dispatch(actions.onboardTokenKeys({ ...request, keys: [{ keyPairMeta: keyPairMeta('handle-1') }] }));
+        dispatch(actions.onboardTokenKeys({ ...request, captions, keys: [{ keyPairMeta: keyPairMeta('handle-1') }] }));
         dispatch(actions.clearTokenKeys());
         dispatch(actions.listTokenKeys({ tokenInstanceUuid: 'token', tokenProfileUuid: 'other-profile', pageNumber: 1, itemsPerPage: 10 }));
         const listed = state();
@@ -221,11 +252,28 @@ describe('token key epics', () => {
         ]);
     });
 
-    test('onboardTokenKeys reports onboarded keys as a success', async () => {
+    test('onboardTokenKeys reports an onboarding of every key as a success', async () => {
+        // given
+        const onboardTokenKeys = vi.fn(() => of({ results: [onboarded] }));
+        const action = actions.onboardTokenKeys({ ...request, captions, keys: [{ keyPairMeta: keyPairMeta('handle-1') }] });
+
+        // when
+        const emitted = await firstValueFrom(
+            epicNamed(tokenKeyEpics, 'onboardTokenKeys')(of(action), of({}), {
+                apiClients: { cryptographicKeys: { onboardTokenKeys } },
+            }).pipe(toArray()),
+        );
+
+        // then
+        expect(emitted).toEqual([actions.onboardTokenKeysSuccess({ results: [onboarded] }), alertActions.success('Onboarded 1 key pair.')]);
+    });
+
+    test('onboardTokenKeys reports a batch with a refused key as an error', async () => {
         // given
         const onboardTokenKeys = vi.fn(() => of({ results: [onboarded, skipped] }));
         const action = actions.onboardTokenKeys({
             ...request,
+            captions,
             keys: [{ keyPairMeta: keyPairMeta('handle-1') }, { keyPairMeta: keyPairMeta('handle-2') }],
         });
 
@@ -243,14 +291,16 @@ describe('token key epics', () => {
         });
         expect(emitted).toEqual([
             actions.onboardTokenKeysSuccess({ results: [onboarded, skipped] }),
-            alertActions.success('Onboarded 1 of 2 key pairs.'),
+            alertActions.error(
+                'Onboarded 1 of 2 key pairs and failed to onboard 1.\narchive-pair: Key signer already holds this key pair.',
+            ),
         ]);
     });
 
-    test('onboardTokenKeys reports zero onboarded keys as information', async () => {
+    test('onboardTokenKeys reports a refused key as an error with its reason', async () => {
         // given
         const onboardTokenKeys = vi.fn(() => of({ results: [skipped] }));
-        const action = actions.onboardTokenKeys({ ...request, keys: [{ keyPairMeta: keyPairMeta('handle-2') }] });
+        const action = actions.onboardTokenKeys({ ...request, captions, keys: [{ keyPairMeta: keyPairMeta('handle-2') }] });
 
         // when
         const emitted = await firstValueFrom(
@@ -260,14 +310,17 @@ describe('token key epics', () => {
         );
 
         // then
-        expect(emitted).toEqual([actions.onboardTokenKeysSuccess({ results: [skipped] }), alertActions.info('Onboarded 0 of 1 key pair.')]);
+        expect(emitted).toEqual([
+            actions.onboardTokenKeysSuccess({ results: [skipped] }),
+            alertActions.error('Failed to onboard the key pair. Key signer already holds this key pair.'),
+        ]);
     });
 
     test('onboardTokenKeys reports a refused onboarding', async () => {
         // given
         const refusal = new Error('refused');
         const onboardTokenKeys = vi.fn(() => throwError(() => refusal));
-        const action = actions.onboardTokenKeys({ ...request, keys: [{ keyPairMeta: keyPairMeta('handle-1') }] });
+        const action = actions.onboardTokenKeys({ ...request, captions, keys: [{ keyPairMeta: keyPairMeta('handle-1') }] });
 
         // when
         const emitted = await firstValueFrom(
@@ -287,7 +340,12 @@ describe('token key epics', () => {
         // given
         const onboardTokenKeys = vi.fn(() => of({ results: [onboarded] }));
         const customAttributes = [{ name: 'department', version: 'v3', uuid: 'department-uuid', content: [] }] as RequestAttribute[];
-        const action = actions.onboardTokenKeys({ ...request, keys: [{ keyPairMeta: keyPairMeta('handle-1') }], customAttributes });
+        const action = actions.onboardTokenKeys({
+            ...request,
+            captions,
+            keys: [{ keyPairMeta: keyPairMeta('handle-1') }],
+            customAttributes,
+        });
 
         // when
         await firstValueFrom(
@@ -304,12 +362,65 @@ describe('token key epics', () => {
     });
 });
 
-describe('describeOnboarding', () => {
-    test('counts what was onboarded', () => {
-        expect(describeOnboarding([onboarded, skipped])).toBe('Onboarded 1 of 2 key pairs.');
+describe('summarizeOnboarding', () => {
+    test.each([
+        { batch: 'its one key onboarded', results: [onboarded], expected: { allOnboarded: true, message: 'Onboarded 1 key pair.' } },
+        {
+            batch: 'every key onboarded',
+            results: [onboarded, secondOnboarded],
+            expected: { allOnboarded: true, message: 'Onboarded 2 key pairs.' },
+        },
+        {
+            batch: 'its one key refused',
+            results: [skipped],
+            expected: { allOnboarded: false, message: 'Failed to onboard the key pair. Key signer already holds this key pair.' },
+        },
+        {
+            batch: 'its one key refused without a reason',
+            results: [skippedWithoutReason],
+            expected: { allOnboarded: false, message: 'Failed to onboard the key pair. No reason was given.' },
+        },
+        {
+            batch: 'every key refused',
+            results: [skipped, skippedForName],
+            expected: {
+                allOnboarded: false,
+                message:
+                    'Failed to onboard 2 key pairs.\narchive-pair: Key signer already holds this key pair.\nbackup-pair: A key named backup already exists.',
+            },
+        },
+        {
+            batch: 'every key refused, one without a reason',
+            results: [skipped, skippedWithoutReason],
+            expected: {
+                allOnboarded: false,
+                message:
+                    'Failed to onboard 2 key pairs.\narchive-pair: Key signer already holds this key pair.\nlegacy-pair: No reason was given.',
+            },
+        },
+        {
+            batch: 'some keys refused',
+            results: [onboarded, skipped, skippedForName],
+            expected: {
+                allOnboarded: false,
+                message:
+                    'Onboarded 1 of 3 key pairs and failed to onboard 2.\narchive-pair: Key signer already holds this key pair.\nbackup-pair: A key named backup already exists.',
+            },
+        },
+    ])('summarizes a batch with $batch', ({ results, expected }) => {
+        expect(summarizeOnboarding(results, captions)).toEqual(expected);
     });
 
-    test('names a single key pair in the singular', () => {
-        expect(describeOnboarding([onboarded])).toBe('Onboarded 1 of 1 key pair.');
+    test('gives a refusal of a key pair without a caption its reason alone', () => {
+        // given
+        const archiveCaptionOnly = { [handleOf(keyPairMeta('handle-2'))]: 'archive-pair' };
+
+        // when
+        const { message } = summarizeOnboarding([skipped, skippedForName], archiveCaptionOnly);
+
+        // then
+        expect(message).toBe(
+            'Failed to onboard 2 key pairs.\narchive-pair: Key signer already holds this key pair.\nA key named backup already exists.',
+        );
     });
 });
