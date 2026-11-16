@@ -24,8 +24,9 @@ export interface AuthenticationSettingsDto {
      */
     disableLocalhostUser: boolean;
     /**
+     * Map of OAuth2 providers settings where key is provider name
      * @type {{ [key: string]: OAuth2ProviderSettingsDto; }}
      * @memberof AuthenticationSettingsDto
      */
-    oauth2Providers?: { [key: string]: OAuth2ProviderSettingsDto };
+    oauth2Providers: { [key: string]: OAuth2ProviderSettingsDto };
 }

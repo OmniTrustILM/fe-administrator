@@ -125,6 +125,7 @@ export interface UpdateComplianceProfileV2Request {
  */
 export class ComplianceProfileManagementV2Api extends BaseAPI {
     /**
+     * The object must exist and be of a resource that compliance checks apply to.
      * Associate Compliance Profile to specified resource object
      */
     associateComplianceProfileV2({ uuid, resource, associationObjectUuid }: AssociateComplianceProfileV2Request): Observable<void>;
@@ -265,6 +266,7 @@ export class ComplianceProfileManagementV2Api extends BaseAPI {
     }
 
     /**
+     * Refused while the profile is associated with existing objects; use force delete to remove it anyway.
      * Delete Compliance Profile
      */
     deleteComplianceProfileV2({ uuid }: DeleteComplianceProfileV2Request): Observable<void>;

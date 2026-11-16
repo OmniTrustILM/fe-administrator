@@ -60,11 +60,11 @@ export interface KeyItemDetailDto {
      */
     keyData?: string;
     /**
-     * Key Length
+     * Key length in bits. Required for RSA, ECDSA and AES; optional otherwise.
      * @type {number}
      * @memberof KeyItemDetailDto
      */
-    length: number;
+    length?: number | null;
     /**
      * Metadata for the key
      * @type {Array<MetadataResponseDto>}

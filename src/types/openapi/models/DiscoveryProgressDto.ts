@@ -37,7 +37,7 @@ export interface DiscoveryProgressDto {
      */
     targetsFailed?: number;
     /**
-     * Targets attempted that held nothing to discover, such as an empty mount, template or report, or a target the provider only guessed at, like an address in a swept range, that does not answer. Part of targetsProcessed, never also counted as failed: an empty target is a normal outcome. Omitted if the provider does not tell empty targets apart.
+     * Targets attempted that held nothing to discover, such as an empty mount, template or report, or a target the provider only guessed at, like an address in a swept range, that does not answer. Part of targetsProcessed, never also counted as failed: an empty target is a normal outcome. Omitted if the provider does not tell empty targets apart; the remainder in targetsProcessed then mixes empty targets with those that yielded items.
      * @type {number}
      * @memberof DiscoveryProgressDto
      */

@@ -18,5 +18,6 @@
 export enum SigningProtocol {
     CscApi = 'csc_api',
     Tsp = 'tsp',
+    IlmNative = 'ilm_native',
     InternalTsa = 'internal_tsa',
 }

@@ -22,6 +22,8 @@ export enum FeatureFlag {
     KeyImport = 'keyImport',
     KeyExport = 'keyExport',
     KeyList = 'keyList',
+    PrehashedSigning = 'prehashedSigning',
+    SignerBoundAtCreation = 'signerBoundAtCreation',
     SecretVersioning = 'secretVersioning',
     SecretRotation = 'secretRotation',
     ContentSigning = 'contentSigning',

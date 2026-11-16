@@ -18,6 +18,8 @@ import type {
     ResponseAttribute,
     SignatureFamily,
     SignatureLevel,
+    SignatureParameterGroup,
+    SignatureParameters,
     SigningWorkflowType,
     TimeQualityConfigurationDto,
     TimestampSourceDto,

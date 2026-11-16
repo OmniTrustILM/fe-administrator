@@ -161,6 +161,7 @@ export class ComplianceProfileManagementApi extends BaseAPI {
     }
 
     /**
+     * The RA profiles must exist. Either all are associated or none.
      * Associate Compliance Profile to RA Profile
      */
     associateProfiles({ uuid, raProfileAssociationRequestDto }: AssociateProfilesRequest): Observable<void>;
@@ -272,6 +273,7 @@ export class ComplianceProfileManagementApi extends BaseAPI {
     }
 
     /**
+     * Refused while the profile is associated with existing objects; use force delete to remove it anyway.
      * Delete Compliance Profile
      */
     deleteComplianceProfile({ uuid }: DeleteComplianceProfileRequest): Observable<void>;

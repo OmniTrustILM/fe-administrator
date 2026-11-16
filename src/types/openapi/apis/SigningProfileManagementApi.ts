@@ -33,6 +33,10 @@ import type {
     TspActivationDetailDto,
 } from '../models';
 
+export interface ActivateIlmNativeRequest {
+    uuid: string;
+}
+
 export interface ActivateTspRequest {
     signingProfileUuid: string;
     tspProfileUuid: string;
@@ -52,6 +56,10 @@ export interface BulkEnableSigningProfilesRequest {
 
 export interface CreateSigningProfileRequest {
     signingProfileRequestDto: SigningProfileRequestDto;
+}
+
+export interface DeactivateIlmNativeRequest {
+    uuid: string;
 }
 
 export interface DeactivateTspRequest {
@@ -124,6 +132,24 @@ export interface UpdateSigningProfileRequest {
  * no description
  */
 export class SigningProfileManagementApi extends BaseAPI {
+    /**
+     * Enables the native signing API on a content-signing or raw-signing profile that uses ILM-managed signing. Refused with 422 on a timestamping profile and on a profile that uses delegated signing.
+     * Activate the ILM Native API for Signing Profile
+     */
+    activateIlmNative({ uuid }: ActivateIlmNativeRequest): Observable<void>;
+    activateIlmNative({ uuid }: ActivateIlmNativeRequest, opts?: OperationOpts): Observable<void | AjaxResponse<void>>;
+    activateIlmNative({ uuid }: ActivateIlmNativeRequest, opts?: OperationOpts): Observable<void | AjaxResponse<void>> {
+        throwIfNullOrUndefined(uuid, 'uuid', 'activateIlmNative');
+
+        return this.request<void>(
+            {
+                url: '/v1/signingProfiles/{uuid}/protocols/ilmNative/activate'.replace('{uuid}', encodeURI(uuid)),
+                method: 'PATCH',
+            },
+            opts?.responseOpts,
+        );
+    }
+
     /**
      * Activate TSP for Signing Profile
      */
@@ -261,6 +287,23 @@ export class SigningProfileManagementApi extends BaseAPI {
                 method: 'POST',
                 headers,
                 body: signingProfileRequestDto,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Deactivate the ILM Native API for Signing Profile
+     */
+    deactivateIlmNative({ uuid }: DeactivateIlmNativeRequest): Observable<void>;
+    deactivateIlmNative({ uuid }: DeactivateIlmNativeRequest, opts?: OperationOpts): Observable<void | AjaxResponse<void>>;
+    deactivateIlmNative({ uuid }: DeactivateIlmNativeRequest, opts?: OperationOpts): Observable<void | AjaxResponse<void>> {
+        throwIfNullOrUndefined(uuid, 'uuid', 'deactivateIlmNative');
+
+        return this.request<void>(
+            {
+                url: '/v1/signingProfiles/{uuid}/protocols/ilmNative/deactivate'.replace('{uuid}', encodeURI(uuid)),
+                method: 'PATCH',
             },
             opts?.responseOpts,
         );
@@ -620,6 +663,7 @@ export class SigningProfileManagementApi extends BaseAPI {
     }
 
     /**
+     * Lists the protocols a profile of this workflow type can enable. Activation can still refuse a protocol for the profile\'s signing scheme: the ILM Native API needs ILM-managed signing.
      * List signing protocols supported for a given workflow type
      */
     listSupportedProtocols({ signingWorkflowType }: ListSupportedProtocolsRequest): Observable<Array<SigningProtocol>>;
