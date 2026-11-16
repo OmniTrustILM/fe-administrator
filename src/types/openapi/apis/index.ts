@@ -47,6 +47,7 @@ export * from './SCEPProfileManagementApi';
 export * from './ScheduledJobsManagementApi';
 export * from './SecretManagementApi';
 export * from './SettingsApi';
+export * from './SignatureParametersApi';
 export * from './SigningProfileManagementApi';
 export * from './SigningRecordManagementApi';
 export * from './StatisticsDashboardApi';
