@@ -18,6 +18,7 @@ import type { OperationOpts, HttpHeaders, HttpQuery } from '../runtime';
 import type {
     ActivateAcmeForRaProfileRequestDto,
     ActivateCmpForRaProfileRequestDto,
+    ActivateEstForRaProfileRequestDto,
     ActivateScepForRaProfileRequestDto,
     AddRaProfileRequestDto,
     ApprovalProfileDto,
@@ -31,6 +32,7 @@ import type {
     RaProfileCertificateValidationSettingsUpdateDto,
     RaProfileCmpDetailResponseDto,
     RaProfileDto,
+    RaProfileEstDetailResponseDto,
     RaProfileScepDetailResponseDto,
     SimplifiedComplianceProfileDto,
     UuidDto,
@@ -48,6 +50,13 @@ export interface ActivateCmpForRaProfileRequest {
     raProfileUuid: string;
     cmpProfileUuid: string;
     activateCmpForRaProfileRequestDto: ActivateCmpForRaProfileRequestDto;
+}
+
+export interface ActivateEstForRaProfileRequest {
+    authorityUuid: string;
+    raProfileUuid: string;
+    estProfileUuid: string;
+    activateEstForRaProfileRequestDto: ActivateEstForRaProfileRequestDto;
 }
 
 export interface ActivateScepForRaProfileRequest {
@@ -90,6 +99,11 @@ export interface DeactivateAcmeForRaProfileRequest {
 }
 
 export interface DeactivateCmpForRaProfileRequest {
+    authorityUuid: string;
+    raProfileUuid: string;
+}
+
+export interface DeactivateEstForRaProfileRequest {
     authorityUuid: string;
     raProfileUuid: string;
 }
@@ -151,6 +165,11 @@ export interface GetAuthorityCertificateChainRequest {
 }
 
 export interface GetCmpForRaProfileRequest {
+    authorityUuid: string;
+    raProfileUuid: string;
+}
+
+export interface GetEstForRaProfileRequest {
     authorityUuid: string;
     raProfileUuid: string;
 }
@@ -284,6 +303,46 @@ export class RAProfileManagementApi extends BaseAPI {
                 method: 'PATCH',
                 headers,
                 body: activateCmpForRaProfileRequestDto,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Activate EST for RA Profile
+     */
+    activateEstForRaProfile({
+        authorityUuid,
+        raProfileUuid,
+        estProfileUuid,
+        activateEstForRaProfileRequestDto,
+    }: ActivateEstForRaProfileRequest): Observable<RaProfileEstDetailResponseDto>;
+    activateEstForRaProfile(
+        { authorityUuid, raProfileUuid, estProfileUuid, activateEstForRaProfileRequestDto }: ActivateEstForRaProfileRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<RaProfileEstDetailResponseDto>>;
+    activateEstForRaProfile(
+        { authorityUuid, raProfileUuid, estProfileUuid, activateEstForRaProfileRequestDto }: ActivateEstForRaProfileRequest,
+        opts?: OperationOpts,
+    ): Observable<RaProfileEstDetailResponseDto | AjaxResponse<RaProfileEstDetailResponseDto>> {
+        throwIfNullOrUndefined(authorityUuid, 'authorityUuid', 'activateEstForRaProfile');
+        throwIfNullOrUndefined(raProfileUuid, 'raProfileUuid', 'activateEstForRaProfile');
+        throwIfNullOrUndefined(estProfileUuid, 'estProfileUuid', 'activateEstForRaProfile');
+        throwIfNullOrUndefined(activateEstForRaProfileRequestDto, 'activateEstForRaProfileRequestDto', 'activateEstForRaProfile');
+
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        return this.request<RaProfileEstDetailResponseDto>(
+            {
+                url: '/v1/authorities/{authorityUuid}/raProfiles/{raProfileUuid}/protocols/est/activate/{estProfileUuid}'
+                    .replace('{authorityUuid}', encodeURI(authorityUuid))
+                    .replace('{raProfileUuid}', encodeURI(raProfileUuid))
+                    .replace('{estProfileUuid}', encodeURI(estProfileUuid)),
+                method: 'PATCH',
+                headers,
+                body: activateEstForRaProfileRequestDto,
             },
             opts?.responseOpts,
         );
@@ -530,6 +589,32 @@ export class RAProfileManagementApi extends BaseAPI {
         return this.request<void>(
             {
                 url: '/v1/authorities/{authorityUuid}/raProfiles/{raProfileUuid}/protocols/cmp/deactivate'
+                    .replace('{authorityUuid}', encodeURI(authorityUuid))
+                    .replace('{raProfileUuid}', encodeURI(raProfileUuid)),
+                method: 'PATCH',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Deactivate EST for RA Profile
+     */
+    deactivateEstForRaProfile({ authorityUuid, raProfileUuid }: DeactivateEstForRaProfileRequest): Observable<void>;
+    deactivateEstForRaProfile(
+        { authorityUuid, raProfileUuid }: DeactivateEstForRaProfileRequest,
+        opts?: OperationOpts,
+    ): Observable<void | AjaxResponse<void>>;
+    deactivateEstForRaProfile(
+        { authorityUuid, raProfileUuid }: DeactivateEstForRaProfileRequest,
+        opts?: OperationOpts,
+    ): Observable<void | AjaxResponse<void>> {
+        throwIfNullOrUndefined(authorityUuid, 'authorityUuid', 'deactivateEstForRaProfile');
+        throwIfNullOrUndefined(raProfileUuid, 'raProfileUuid', 'deactivateEstForRaProfile');
+
+        return this.request<void>(
+            {
+                url: '/v1/authorities/{authorityUuid}/raProfiles/{raProfileUuid}/protocols/est/deactivate'
                     .replace('{authorityUuid}', encodeURI(authorityUuid))
                     .replace('{raProfileUuid}', encodeURI(raProfileUuid)),
                 method: 'PATCH',
@@ -849,6 +934,32 @@ export class RAProfileManagementApi extends BaseAPI {
         return this.request<RaProfileCmpDetailResponseDto>(
             {
                 url: '/v1/authorities/{authorityUuid}/raProfiles/{raProfileUuid}/protocols/cmp'
+                    .replace('{authorityUuid}', encodeURI(authorityUuid))
+                    .replace('{raProfileUuid}', encodeURI(raProfileUuid)),
+                method: 'GET',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Get EST details for RA Profile
+     */
+    getEstForRaProfile({ authorityUuid, raProfileUuid }: GetEstForRaProfileRequest): Observable<RaProfileEstDetailResponseDto>;
+    getEstForRaProfile(
+        { authorityUuid, raProfileUuid }: GetEstForRaProfileRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<RaProfileEstDetailResponseDto>>;
+    getEstForRaProfile(
+        { authorityUuid, raProfileUuid }: GetEstForRaProfileRequest,
+        opts?: OperationOpts,
+    ): Observable<RaProfileEstDetailResponseDto | AjaxResponse<RaProfileEstDetailResponseDto>> {
+        throwIfNullOrUndefined(authorityUuid, 'authorityUuid', 'getEstForRaProfile');
+        throwIfNullOrUndefined(raProfileUuid, 'raProfileUuid', 'getEstForRaProfile');
+
+        return this.request<RaProfileEstDetailResponseDto>(
+            {
+                url: '/v1/authorities/{authorityUuid}/raProfiles/{raProfileUuid}/protocols/est'
                     .replace('{authorityUuid}', encodeURI(authorityUuid))
                     .replace('{raProfileUuid}', encodeURI(raProfileUuid)),
                 method: 'GET',

@@ -14,11 +14,13 @@ import {
     transformRaProfileAcmeDetailResponseDtoToModel,
     transformRaProfileActivateAcmeRequestModelToDto,
     transformRaProfileActivateCmpRequestModelToDto,
+    transformRaProfileActivateEstRequestModelToDto,
     transformRaProfileActivateScepRequestModelToDto,
     transformRaProfileAddRequestModelToDto,
     transformRaProfileCertificateValidationSettingsUpdateModelToDto,
     transformRaProfileCmpDetailResponseDtoToModel,
     transformRaProfileEditRequestModelToDto,
+    transformRaProfileEstDetailResponseDtoToModel,
     transformRaProfileResponseDtoToModel,
     transformRaProfileScepDetailResponseDtoToModel,
 } from './transform/ra-profiles';
@@ -518,6 +520,81 @@ const getScepDetails: AppEpic = (action$, state$, deps) => {
     );
 };
 
+const activateEst: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.activateEst.match),
+        switchMap((action) =>
+            deps.apiClients.raProfiles
+                .activateEstForRaProfile({
+                    authorityUuid: action.payload.authorityUuid,
+                    raProfileUuid: action.payload.uuid,
+                    estProfileUuid: action.payload.estProfileUuid,
+                    activateEstForRaProfileRequestDto: transformRaProfileActivateEstRequestModelToDto(
+                        action.payload.raProfileActivateEstRequest,
+                    ),
+                })
+                .pipe(
+                    map((raProfileEstDetailResponse) =>
+                        slice.actions.activateEstSuccess({
+                            raProfileEstDetailResponse: transformRaProfileEstDetailResponseDtoToModel(raProfileEstDetailResponse),
+                        }),
+                    ),
+
+                    catchError((err) =>
+                        of(
+                            slice.actions.activateEstFailure({ error: extractError(err, 'Failed to activate EST') }),
+                            appRedirectActions.fetchError({ error: err, message: 'Failed to activate EST' }),
+                        ),
+                    ),
+                ),
+        ),
+    );
+};
+
+const deactivateEst: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.deactivateEst.match),
+        switchMap((action) =>
+            deps.apiClients.raProfiles
+                .deactivateEstForRaProfile({ authorityUuid: action.payload.authorityUuid, raProfileUuid: action.payload.uuid })
+                .pipe(
+                    map(() => slice.actions.deactivateEstSuccess({ uuid: action.payload.uuid })),
+
+                    catchError((err) =>
+                        of(
+                            slice.actions.deactivateEstFailure({ error: extractError(err, 'Failed to deactivate EST') }),
+                            appRedirectActions.fetchError({ error: err, message: 'Failed to deactivate EST' }),
+                        ),
+                    ),
+                ),
+        ),
+    );
+};
+
+const getEstDetails: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.getEstDetails.match),
+        switchMap((action) =>
+            deps.apiClients.raProfiles
+                .getEstForRaProfile({ authorityUuid: action.payload.authorityUuid, raProfileUuid: action.payload.uuid })
+                .pipe(
+                    map((estDetails) =>
+                        slice.actions.getEstDetailsSuccess({
+                            raEstLink: transformRaProfileEstDetailResponseDtoToModel(estDetails),
+                        }),
+                    ),
+
+                    catchError((err) =>
+                        of(
+                            slice.actions.getEstDetailsFailure({ error: extractError(err, 'Failed to get EST details') }),
+                            appRedirectActions.fetchError({ error: err, message: 'Failed to get EST details' }),
+                        ),
+                    ),
+                ),
+        ),
+    );
+};
+
 const listIssuanceAttributeDescriptors: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.listIssuanceAttributeDescriptors.match),
@@ -820,6 +897,9 @@ const epics = [
     activateScep,
     deactivateScep,
     getScepDetails,
+    activateEst,
+    deactivateEst,
+    getEstDetails,
     listIssuanceAttributeDescriptors,
     listRevocationAttributeDescriptors,
     bulkEnableProfiles,
