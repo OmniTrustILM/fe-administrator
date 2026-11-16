@@ -17,7 +17,7 @@ test.describe('GroupDetail actions by permission', () => {
         await expect(page.getByTestId('trash-button')).toBeDisabled();
     });
 
-    test('offers every action to a fully privileged user as before', async ({ mount, page }) => {
+    test('offers every action on this group when its answer allows them all', async ({ mount, page }) => {
         await mount(<GroupDetailWithStore />);
 
         await expect(page.getByTestId('pencil-button')).toBeEnabled();
