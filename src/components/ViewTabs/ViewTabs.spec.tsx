@@ -139,11 +139,13 @@ type MountOptions = {
     withheldCatalogue?: boolean;
     dropsUnshownSort?: boolean;
     isCatalogueLoaded?: boolean;
+    isCatalogueFailed?: boolean;
     renderableProperties?: string[];
     driftColumn?: ColumnDefinition;
     driftSort?: { fieldSource: FilterFieldSource; fieldIdentifier: string; direction: 'asc' | 'desc' };
     driftFilter?: SearchFilterModel;
     returnTo?: { viewId: string; filters: SearchFilterModel[] };
+    drillDownFilters?: SearchFilterModel[];
 };
 
 const strip = ({
@@ -157,11 +159,13 @@ const strip = ({
     withheldCatalogue,
     dropsUnshownSort,
     isCatalogueLoaded,
+    isCatalogueFailed,
     renderableProperties,
     driftColumn,
     driftSort,
     driftFilter,
     returnTo,
+    drillDownFilters,
 }: MountOptions = {}) => (
     <ViewTabsWithStore
         resource={Resource.Certificates}
@@ -175,11 +179,13 @@ const strip = ({
         withheldCatalogue={withheldCatalogue}
         dropsUnshownSort={dropsUnshownSort}
         isCatalogueLoaded={isCatalogueLoaded}
+        isCatalogueFailed={isCatalogueFailed}
         renderableProperties={renderableProperties}
         driftColumn={driftColumn}
         driftSort={driftSort}
         driftFilter={driftFilter}
         returnTo={returnTo}
+        drillDownFilters={drillDownFilters}
     />
 );
 
@@ -862,12 +868,153 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-summary-sort').getByLabel('descending')).toBeVisible();
     });
 
-    test('renders nothing until the view list has settled', async ({ mount, page }) => {
+    test('renders no strip, only its placeholder, until the view list has settled', async ({ mount, page }) => {
         // An empty read is otherwise indistinguishable from one still in flight, and the strip would
         // then read the first optimistic create as the initial result and throw the user off it.
         await mount(strip({ hasLoaded: false }));
 
         await expect(page.getByTestId('view-tabs')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-placeholder')).toBeAttached();
+    });
+
+    test('reserves the height of the strip and its summary while it waits, so nothing below moves when it lands', async ({
+        mount,
+        page,
+    }) => {
+        await mount(strip({ views: [expiryWatch({ defaultView: true })], withheldCatalogue: true }));
+
+        const placeholder = page.getByTestId('view-tabs-placeholder');
+        await expect(placeholder).toBeAttached();
+        await expect(placeholder).toHaveAttribute('aria-hidden', 'true');
+        await expect(placeholder).toBeHidden();
+        await expect(page.getByText('Expiry watch')).toHaveCount(0);
+        const reserved = await placeholder.boundingBox();
+        const below = await page.getByTestId('applied-slice').boundingBox();
+
+        await page.getByTestId('release-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await expect(placeholder).toHaveCount(0);
+        const rendered = await page.getByTestId('view-tabs').boundingBox();
+        const belowAfter = await page.getByTestId('applied-slice').boundingBox();
+
+        expect(reserved?.height).toBeGreaterThan(0);
+        expect(Math.abs((rendered?.height ?? 0) - (reserved?.height ?? 0))).toBeLessThanOrEqual(1);
+        expect(Math.abs((belowAfter?.y ?? 0) - (below?.y ?? 0))).toBeLessThanOrEqual(1);
+    });
+
+    test('reserves the save offer a drill-down opens with, so nothing below moves when the strip lands', async ({ mount, page }) => {
+        await mount(strip({ views: [expiryWatch({ defaultView: true })], withheldCatalogue: true, drillDownFilters: [stateFilter] }));
+
+        await expect(page.getByTestId('view-tabs-placeholder')).toBeAttached();
+        const below = await page.getByTestId('applied-slice').boundingBox();
+
+        await page.getByTestId('release-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs-tab-standard')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-summary-save')).toBeVisible();
+        const belowAfter = await page.getByTestId('applied-slice').boundingBox();
+        expect(Math.abs((belowAfter?.y ?? 0) - (below?.y ?? 0))).toBeLessThanOrEqual(1);
+    });
+
+    test('reserves the save offer a return to a view opens with when its filters differ from the stored ones', async ({ mount, page }) => {
+        const otherFilter: SearchFilterModel = { ...stateFilter, value: 'revoked' };
+        await mount(strip({ withheldCatalogue: true, returnTo: { viewId: 'view-1', filters: [otherFilter] } }));
+
+        await expect(page.getByTestId('view-tabs-placeholder')).toBeAttached();
+        const below = await page.getByTestId('applied-slice').boundingBox();
+
+        await page.getByTestId('release-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-summary-save')).toBeVisible();
+        const belowAfter = await page.getByTestId('applied-slice').boundingBox();
+        expect(Math.abs((belowAfter?.y ?? 0) - (below?.y ?? 0))).toBeLessThanOrEqual(1);
+    });
+
+    test('reserves no save offer for a return whose only difference is a filter on secret content', async ({ mount, page }) => {
+        await mount(
+            strip({
+                fields: secretCatalogue,
+                views: [expiryWatch()],
+                isRefreshing: true,
+                refreshedViews: [expiryWatch()],
+                returnTo: { viewId: 'view-1', filters: [stateFilter, secretFilter] },
+            }),
+        );
+
+        await expect(page.getByTestId('view-tabs-placeholder')).toBeAttached();
+        await expect(page.getByTestId('view-tabs-placeholder-summary-save')).toHaveCount(0);
+        const below = await page.getByTestId('applied-slice').boundingBox();
+
+        await page.getByTestId('simulate-list-success').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-summary-save')).toHaveCount(0);
+        const belowAfter = await page.getByTestId('applied-slice').boundingBox();
+        expect(Math.abs((belowAfter?.y ?? 0) - (below?.y ?? 0))).toBeLessThanOrEqual(1);
+    });
+
+    test('reserves no save offer for a return whose only difference is a filter on a held-back field', async ({ mount, page }) => {
+        const view = expiryWatch({
+            columns: [stored('COMMON_NAME'), replaced(stored('retired', FilterFieldSource.Custom))],
+            filters: [stateFilter, replaced(retiredFilter)],
+        });
+        await mount(
+            strip({
+                fields: withRetired,
+                views: [view],
+                isRefreshing: true,
+                refreshedViews: [view],
+                returnTo: { viewId: 'view-1', filters: [stateFilter] },
+            }),
+        );
+
+        await expect(page.getByTestId('view-tabs-placeholder')).toBeAttached();
+        await expect(page.getByTestId('view-tabs-placeholder-summary-save')).toHaveCount(0);
+
+        await page.getByTestId('simulate-list-success').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByTestId('view-tabs-summary-save')).toHaveCount(0);
+    });
+
+    test('holds no place for a strip whose catalogue could not be read, since it will not arrive', async ({ mount, page }) => {
+        await mount(strip({ withheldCatalogue: true, isCatalogueFailed: true }));
+
+        await expect(page.getByTestId('applied-slice')).toBeVisible();
+        await expect(page.getByTestId('view-tabs-placeholder')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs')).toHaveCount(0);
+    });
+
+    test('keeps the save offer it was showing while a set-aside list is read again', async ({ mount, page }) => {
+        await mount(strip({ views: [expiryWatch({ defaultView: true })], driftFilter: { ...stateFilter, value: 'revoked' } }));
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await page.getByTestId('drift-filter').click();
+        await expect(page.getByTestId('view-tabs-summary-save')).toHaveText('Save to view');
+        const below = await page.getByTestId('applied-slice').boundingBox();
+
+        await page.getByTestId('simulate-list-set-aside').click();
+
+        await expect(page.getByTestId('view-tabs')).toHaveCount(0);
+        await expect(page.getByTestId('view-tabs-placeholder-summary-save')).toHaveText('Save to view');
+        const belowAfter = await page.getByTestId('applied-slice').boundingBox();
+        expect(Math.abs((belowAfter?.y ?? 0) - (below?.y ?? 0))).toBeLessThanOrEqual(1);
+    });
+
+    test('keeps the placeholder out of reach of the keyboard and of assistive technology', async ({ mount, page }) => {
+        await mount(strip({ hasLoaded: false }));
+
+        const placeholder = page.getByTestId('view-tabs-placeholder');
+        await expect(placeholder).toBeAttached();
+        await expect(placeholder).toHaveAttribute('inert');
+        await expect(page.getByRole('tab')).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'New view' })).toHaveCount(0);
+
+        await page.keyboard.press('Tab');
+        const isFocusInside = await placeholder.evaluate((node) => node.contains(document.activeElement));
+        expect(isFocusInside).toBe(false);
     });
 
     test('waits for the catalogue before offering any tab', async ({ mount, page }) => {
@@ -2063,5 +2210,206 @@ test.describe('ViewTabs', () => {
 
         await expect(page.getByTestId('view-tabs-new')).toBeDisabled();
         await expect(page.getByRole('button', { name: 'Actions for Standard' })).toBeDisabled();
+    });
+});
+
+test.describe('ViewTabs switch notice', () => {
+    const notice = (page: Page) => page.getByTestId('view-tabs-switched');
+
+    test('reports the filters and ordering a view applies as the user switches to it', async ({ mount, page }) => {
+        await mount(strip());
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await expect(page.getByRole('status').filter({ hasText: 'Switching to' })).toHaveText(
+            'Switching to "Expiry watch" applied its filters and ordering.',
+        );
+        const slice = await appliedSlice(page);
+        expect(slice.filters).toEqual([stateFilter]);
+        expect(slice.sort).toEqual({ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'NOT_AFTER', direction: 'asc' });
+    });
+
+    test('reports a view that carries no filters as having cleared the ones typed', async ({ mount, page }) => {
+        await mount(strip({ views: [expiryWatch(), audit()], driftFilter: stateFilter }));
+
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('view-tabs-tab-view-2').click();
+
+        await expect(notice(page)).toHaveText('Switching to "Audit" cleared the filters, as it carries none.');
+        expect((await appliedSlice(page)).filters).toEqual([]);
+    });
+
+    test('tells the filters a view applies apart from the ordering it clears', async ({ mount, page }) => {
+        await mount(strip({ views: [expiryWatch({ defaultView: true }), audit({ filters: [{ ...stateFilter, value: 'revoked' }] })] }));
+
+        await page.getByTestId('view-tabs-tab-view-2').click();
+
+        await expect(notice(page)).toHaveText('Switching to "Audit" applied its filters and cleared the ordering, as it carries none.');
+    });
+
+    test('reports nothing when the view lists under the filters and ordering already applied', async ({ mount, page }) => {
+        await mount(strip({ views: [expiryWatch(), audit()] }));
+
+        await page.getByTestId('view-tabs-tab-view-2').click();
+
+        await expect(page.getByTestId('view-tabs-tab-view-2')).toHaveAttribute('aria-selected', 'true');
+        await settle(page);
+        await expect(notice(page)).toBeEmpty();
+        await expect(notice(page)).toHaveRole('status');
+    });
+
+    test('keeps the empty announcement region out of the layout, so it opens no gap under the tabs', async ({ mount, page }) => {
+        await mount(strip());
+
+        await expect(notice(page)).toBeEmpty();
+        await expect(notice(page)).toHaveCSS('position', 'absolute');
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await expect(notice(page)).toHaveCSS('position', 'static');
+    });
+
+    test('keeps unsaved edits and reports nothing when the active tab is clicked again', async ({ mount, page }) => {
+        const editedFilter = { ...stateFilter, value: 'revoked' };
+        await mount(strip({ driftFilter: editedFilter }));
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await page.getByTestId('drift-filter').click();
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await settle(page);
+
+        expect((await appliedSlice(page)).filters).toEqual([editedFilter]);
+        await expect(page.getByTestId('view-tabs-tab-view-1-dirty')).toBeVisible();
+        await expect(notice(page)).toBeEmpty();
+    });
+
+    test('says nothing on the view the strip opens on, which no switch replaced anything for', async ({ mount, page }) => {
+        await mount(strip({ views: [expiryWatch({ defaultView: true })] }));
+
+        await expect(page.getByTestId('view-tabs-tab-view-1')).toHaveAttribute('aria-selected', 'true');
+        await settle(page);
+        await expect(notice(page)).toBeEmpty();
+    });
+
+    test('replaces the report with the next switch, and drops it when the next switch changes nothing', async ({ mount, page }) => {
+        await mount(strip({ views: [expiryWatch(), audit()] }));
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await expect(notice(page)).toContainText('Switching to');
+
+        await page.getByTestId('view-tabs-tab-standard').click();
+        await expect(notice(page)).toHaveText('Switching to "Standard" cleared the filters and ordering, as it carries none.');
+
+        await page.getByTestId('view-tabs-tab-view-2').click();
+        await expect(page.getByTestId('view-tabs-tab-view-2')).toHaveAttribute('aria-selected', 'true');
+        await expect(notice(page)).toBeEmpty();
+    });
+
+    test('goes away when dismissed', async ({ mount, page }) => {
+        await mount(strip());
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await notice(page).getByRole('button', { name: 'Dismiss' }).click();
+
+        await expect(notice(page)).toBeEmpty();
+        expect((await appliedSlice(page)).filters).toEqual([stateFilter]);
+    });
+
+    test('goes away once the user changes the filters or the ordering the switch applied', async ({ mount, page }) => {
+        await mount(strip({ driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' } }));
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await expect(notice(page)).toContainText('Switching to');
+
+        await page.getByTestId('drift-sort').click();
+
+        await expect(notice(page)).toBeEmpty();
+    });
+
+    test('stays up when the page lists the switched-to view under an ordering it sieved', async ({ mount, page }) => {
+        await mount(strip({ dropsUnshownSort: true, views: [expiryWatch({ columns: [stored('COMMON_NAME')] })] }));
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await expect(notice(page)).toHaveText('Switching to "Expiry watch" applied its filters.');
+        expect((await appliedSlice(page)).sort).toBeUndefined();
+        await settle(page);
+        await expect(notice(page)).toContainText('Switching to');
+    });
+
+    test("says an ordering it cleared was the view's own one the page could not apply, not one it lacks", async ({ mount, page }) => {
+        await mount(
+            strip({
+                dropsUnshownSort: true,
+                driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' },
+                views: [expiryWatch({ columns: [stored('COMMON_NAME')] })],
+            }),
+        );
+
+        await page.getByTestId('drift-sort').click();
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await expect(notice(page)).toHaveText(
+            'Switching to "Expiry watch" applied its filters and cleared the ordering, as its own cannot be applied here.',
+        );
+        expect((await appliedSlice(page)).sort).toBeUndefined();
+    });
+
+    test("says filters it cleared were the view's own held-back ones, not ones it lacks", async ({ mount, page }) => {
+        await mount(
+            strip({
+                fields: withRetired,
+                driftFilter: stateFilter,
+                views: [expiryWatch({ columns: [stored('COMMON_NAME')], filters: [replaced(retiredFilter)], sort: undefined })],
+            }),
+        );
+
+        await page.getByTestId('drift-filter').click();
+        await page.getByTestId('view-tabs-tab-view-1').click();
+
+        await expect(notice(page)).toHaveText('Switching to "Expiry watch" cleared the filters, as its own cannot be applied here.');
+        await expect(page.getByTestId('view-tabs-held-filters')).toBeVisible();
+        expect((await appliedSlice(page)).filters).toEqual([]);
+    });
+
+    test('goes away once the view switched to is kept as a new view, which takes over the tab', async ({ mount, page }) => {
+        await mount(strip());
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await expect(notice(page)).toContainText('Switching to');
+
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Duplicate' }).click();
+
+        await expect(page.getByTestId('view-tabs-tab-pending-view')).toHaveAttribute('aria-selected', 'true');
+        await expect(notice(page)).toBeEmpty();
+    });
+
+    test('names the view switched to by its new name once it is renamed', async ({ mount, page }) => {
+        await mount(strip());
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Rename…' }).click();
+        await page.getByTestId('view-tabs-rename-input').click();
+        await page.getByTestId('view-tabs-rename-input').fill('Expiring soon');
+        await page.getByTestId('view-tabs-rename').getByRole('button', { name: 'Rename' }).click();
+
+        await expect(notice(page)).toHaveText('Switching to "Expiring soon" applied its filters and ordering.');
+    });
+
+    test('reports what deleting the open view did as the strip falls back to another', async ({ mount, page }) => {
+        await mount(strip());
+
+        await page.getByTestId('view-tabs-tab-view-1').click();
+        await openTabMenu(page, 'Expiry watch');
+        await page.getByRole('menuitem', { name: 'Delete view' }).click();
+        await page.getByTestId('view-tabs-delete').getByRole('button', { name: 'Delete' }).click();
+
+        await expect(page.getByTestId('view-tabs-tab-standard')).toHaveAttribute('aria-selected', 'true');
+        await expect(notice(page)).toHaveText('Switching to "Standard" cleared the filters and ordering, as it carries none.');
+        expect((await appliedSlice(page)).filters).toEqual([]);
     });
 });

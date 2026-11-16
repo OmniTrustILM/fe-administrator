@@ -20,7 +20,7 @@ import CustomTable, { type SortDirection, type TableDataRow, type TableHeader } 
 import { buildTableRows, type CellRegistry } from 'components/CustomTable/columns';
 import Dialog from 'components/Dialog';
 import FilterWidget from 'components/FilterWidget';
-import ViewTabs, { isViewStripReady } from 'components/ViewTabs';
+import ViewTabs, { isViewStripReady, ViewStripOpeningPlaceholder } from 'components/ViewTabs';
 import Widget from 'components/Widget';
 import type { ReactNode, RefObject } from 'react';
 import { selectors as listViewSelectors } from 'ducks/listViews';
@@ -194,6 +194,8 @@ function PagedList<TRow extends object>({
     const hasSettledCatalogue = hasLoadedCatalogue && !isFetchingCatalogue;
     // Nor on one a failed read left behind: stored columns would resolve against stale or no fields, and writes send them on.
     const hasCatalogueForViews = hasSettledCatalogue && !hasCatalogueFailed;
+    const isCatalogueFailed = hasCatalogueFailed && !isFetchingCatalogue;
+    const hasFilterWidget = Boolean(getAvailableFiltersApi) && Boolean(filterTitle);
 
     // Taken apart rather than depended on whole: an unmemoised config would rebuild `getFreshData`
     // every render, and the effect watching it would refetch forever.
@@ -758,12 +760,28 @@ function PagedList<TRow extends object>({
         const estimatedButtonCount = (addHidden ? 0 : 1) + (onDeleteCallback ? 1 : 0) + (additionalButtons?.length ?? 0);
         return (
             <PagedListSkeleton
-                hasFilter={Boolean(getAvailableFiltersApi) && Boolean(filterTitle)}
+                hasFilter={hasFilterWidget}
                 filterTitle={filterTitle}
                 buttonsCount={estimatedButtonCount}
                 columnsCount={columnHeaders.length + (isColumnDriven ? 1 : 0)}
                 hasCheckboxes={hasCheckboxes}
                 hasExtraFilter={Boolean(extraFilterComponent)}
+                viewStrip={
+                    columnsResource &&
+                    standardColumns &&
+                    // The filter widget re-reads the catalogue on mount, so a past failure drops the strip only where none mounts.
+                    !(isCatalogueFailed && !hasFilterWidget) && (
+                        <ViewStripOpeningPlaceholder
+                            resource={columnsResource}
+                            handedIn={handedIn}
+                            catalogue={catalogue}
+                            columns={appliedColumns}
+                            filters={currentFilters}
+                            sort={appliedSort}
+                            dataTestId="paged-list-skeleton-view-strip"
+                        />
+                    )
+                }
             />
         );
     }
@@ -776,6 +794,7 @@ function PagedList<TRow extends object>({
                     resource={columnsResource}
                     catalogue={catalogue}
                     isCatalogueLoaded={hasCatalogueForViews}
+                    isCatalogueFailed={isCatalogueFailed}
                     standardColumns={sortableStandardColumns}
                     standardSort={defaultSort}
                     renderableProperties={renderableProperties}
