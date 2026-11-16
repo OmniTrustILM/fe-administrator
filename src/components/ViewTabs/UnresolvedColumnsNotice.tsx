@@ -1,7 +1,7 @@
 import Button from 'components/Button';
 import { TriangleAlert, X } from 'lucide-react';
 import type { PickerColumn } from 'types/tableColumns';
-import { getColumnHeading } from 'utils/tableColumns';
+import { getColumnName } from 'utils/tableColumns';
 
 type Props = Readonly<{
     /** The stored columns this table cannot render, which may be none even when it fell back. */
@@ -22,7 +22,7 @@ type Props = Readonly<{
 }>;
 
 const list = (columns: PickerColumn[]): string => {
-    const names = columns.map(getColumnHeading);
+    const names = columns.map(getColumnName);
     if (names.length === 1) return names[0];
     return `${names.slice(0, -1).join(', ')} and ${names.at(-1)}`;
 };

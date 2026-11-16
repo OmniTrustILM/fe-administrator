@@ -112,6 +112,23 @@ describe('toMenuContents', () => {
         expect(toMenuContents(fields, columns, '').shown[0].fieldLabel).toBe('Certs');
     });
 
+    it('names a column whose heading was cleared by its catalogue label', () => {
+        const columns = [
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CK_ASSOCIATIONS', catalogueLabel: 'Associations', label: '' },
+        ];
+
+        expect(toMenuContents(fields, columns, '').shown[0].fieldLabel).toBe('Associations');
+    });
+
+    it('names a cleared shipped column by its catalogue label in the shown section and under its source', () => {
+        const shipped = [
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CK_ASSOCIATIONS', catalogueLabel: 'Associations', label: '' },
+        ];
+
+        expect(toMenuContents(fields, shipped, '', shipped).shown[0].fieldLabel).toBe('Associations');
+        expect(toMenuContents(fields, [], '', shipped).sources[3].fields[2].fieldLabel).toBe('Associations');
+    });
+
     it('offers a shipped column the catalogue does not publish under its source once it is off the table', () => {
         const shipped = [
             {

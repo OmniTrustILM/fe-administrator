@@ -407,10 +407,10 @@ describe('renameColumn', () => {
         expect(renameColumn(overridden, 'property:COMMON_NAME', undefined)[0]).not.toHaveProperty('label');
     });
 
-    it('clears it for an empty heading rather than storing one', () => {
+    it.each(['', '   '])('stores the blank heading %j as an empty override rather than clearing it', (blank) => {
         const overridden = renameColumn(columns, 'property:COMMON_NAME', 'Host');
 
-        expect(renameColumn(overridden, 'property:COMMON_NAME', '   ')[0]).not.toHaveProperty('label');
+        expect(renameColumn(overridden, 'property:COMMON_NAME', blank)[0]).toHaveProperty('label', '');
     });
 
     it('stores no override for the name the catalogue already publishes, so a relabel carries through', () => {

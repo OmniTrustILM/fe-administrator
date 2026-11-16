@@ -68,8 +68,10 @@ function MenuItem({ icon, label, disabled, dataTestId, describedBy, onSelect }: 
 type Props = Readonly<{
     /** The column this control belongs to, keyed the way the table's header ids are. */
     columnKey: string;
-    /** The column's heading, which is what names the control and the menu. */
+    /** The column's name, which is what names the control and the menu. Never blank, unlike the heading. */
     label: string;
+    /** The heading the column shows, which an operator may have cleared. Defaults to `label`. */
+    heading?: string;
     /** Every displayed column key in display order: the column's own position, and how far a move can send it. */
     columnKeys: readonly string[];
     sortable: boolean;
@@ -111,6 +113,7 @@ type Props = Readonly<{
 export default function ColumnHeaderMenu({
     columnKey,
     label,
+    heading = label,
     columnKeys,
     sortable,
     hasCatalogueFailed = false,
@@ -132,11 +135,9 @@ export default function ColumnHeaderMenu({
     const isRenaming = renaming !== undefined;
 
     const commitRename = useCallback(() => {
-        // An emptied field is the same request Reset heading makes: the heading the page ships, which
-        // is not always what the catalogue calls the field.
-        onRename?.(renaming?.trim() ? renaming : defaultHeading);
+        onRename?.(renaming);
         setRenaming(undefined);
-    }, [onRename, renaming, defaultHeading]);
+    }, [onRename, renaming]);
 
     // The dialog opens focused on its own container, so without this the operator has to click into the
     // field before typing. Deferred a frame, because the dialog's own focus handling runs first.
@@ -147,7 +148,7 @@ export default function ColumnHeaderMenu({
         );
         return () => cancelAnimationFrame(frame);
     }, [isRenaming, dataTestId]);
-    const hasOverride = defaultHeading !== undefined && label !== defaultHeading;
+    const hasOverride = defaultHeading !== undefined && heading !== defaultHeading;
 
     const move = useCallback(
         (kind: ColumnMove) => {
@@ -255,7 +256,7 @@ export default function ColumnHeaderMenu({
                                 label="Rename…"
                                 disabled={false}
                                 dataTestId={`${dataTestId}-rename`}
-                                onSelect={() => setRenaming(label)}
+                                onSelect={() => setRenaming(heading)}
                             />
                             <MenuItem
                                 icon={<RotateCcw className={ICON_CLASS} aria-hidden="true" />}
@@ -314,7 +315,6 @@ export default function ColumnHeaderMenu({
                                 label="Heading"
                                 value={renaming ?? ''}
                                 onChange={setRenaming}
-                                placeholder={defaultHeading}
                                 dataTestId={`${dataTestId}-rename-field`}
                             />
                         </form>

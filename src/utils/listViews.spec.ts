@@ -311,9 +311,50 @@ describe('toStoredColumns', () => {
             { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'cost_centre', label: 'Owning team' },
         ]);
     });
+
+    it('stores a cleared heading as an empty label rather than leaving it out', () => {
+        const columns: ColumnDefinition[] = [
+            { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'PRIVATE_KEY', catalogueLabel: 'Has private key', label: '' },
+        ];
+
+        expect(toStoredColumns(columns)).toEqual([{ fieldSource: FilterFieldSource.Property, fieldIdentifier: 'PRIVATE_KEY', label: '' }]);
+    });
 });
 
 describe('resolveView', () => {
+    it('keeps a cleared heading cleared, and reads a null one as absent', () => {
+        const resolved = resolveView(
+            [
+                { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'cost_centre', label: '' },
+                { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', label: null as unknown as string },
+            ],
+            [costCentre, commonName],
+            standardColumns,
+        );
+
+        expect(resolved.columns[0]).toMatchObject({ catalogueLabel: 'Cost centre', label: '' });
+        expect(resolved.columns[1]).not.toHaveProperty('label');
+    });
+
+    it('keeps a cleared heading on a column the catalogue does not publish but the page ships', () => {
+        const resolved = resolveView([{ ...toStoredColumns([standardColumns[0]])[0], label: '' }], [], standardColumns);
+
+        expect(resolved.renderable[0]).toMatchObject({ label: '' });
+    });
+
+    it('names a gone column with a cleared heading by its identifier', () => {
+        const resolved = resolveView(
+            [
+                { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME' },
+                { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'retired', label: '' },
+            ],
+            [commonName],
+            standardColumns,
+        );
+
+        expect(resolved.columns[1]).toMatchObject({ available: false, catalogueLabel: 'retired', label: '' });
+    });
+
     it('refreshes a resolved column from the catalogue and keeps the view label', () => {
         const resolved = resolveView(
             [{ fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'cost_centre', label: 'Owning team' }],
@@ -450,6 +491,13 @@ describe('isSliceDirty', () => {
         expect(isSliceDirty(stored, { ...stored, columns: [{ ...standardColumns[0], label: 'Name' }, standardColumns[1]] }, 'view')).toBe(
             true,
         );
+    });
+
+    it('tells a cleared heading apart from an absent one', () => {
+        const cleared = { ...stored, columns: [{ ...standardColumns[0], label: '' }, standardColumns[1]] };
+
+        expect(isSliceDirty(stored, cleared, 'view')).toBe(true);
+        expect(isSliceDirty(cleared, { ...cleared, columns: [...cleared.columns] }, 'view')).toBe(false);
     });
 
     it('sees a filter change, because a view carries its filters', () => {
