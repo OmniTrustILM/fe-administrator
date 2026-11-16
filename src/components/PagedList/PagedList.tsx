@@ -185,6 +185,8 @@ function PagedList<TRow extends object>({
     const hasSettledCatalogue = hasLoadedCatalogue && !isFetchingCatalogue;
     // Nor on one a failed read left behind: stored columns would resolve against stale or no fields, and writes send them on.
     const hasCatalogueForViews = hasSettledCatalogue && !hasCatalogueFailed;
+    const isCatalogueFailed = hasCatalogueFailed && !isFetchingCatalogue;
+    const hasFilterWidget = Boolean(getAvailableFiltersApi) && Boolean(filterTitle);
 
     // Taken apart rather than depended on whole: an unmemoised config would rebuild `getFreshData`
     // every render, and the effect watching it would refetch forever.
@@ -733,7 +735,7 @@ function PagedList<TRow extends object>({
         const estimatedButtonCount = (addHidden ? 0 : 1) + (onDeleteCallback ? 1 : 0) + (additionalButtons?.length ?? 0);
         return (
             <PagedListSkeleton
-                hasFilter={Boolean(getAvailableFiltersApi) && Boolean(filterTitle)}
+                hasFilter={hasFilterWidget}
                 filterTitle={filterTitle}
                 buttonsCount={estimatedButtonCount}
                 columnsCount={columnHeaders.length + (isColumnDriven ? 1 : 0)}
@@ -742,7 +744,8 @@ function PagedList<TRow extends object>({
                 viewStrip={
                     columnsResource &&
                     standardColumns &&
-                    !hasCatalogueFailed && (
+                    // The filter widget re-reads the catalogue on mount, so a past failure drops the strip only where none mounts.
+                    !(isCatalogueFailed && !hasFilterWidget) && (
                         <ViewStripOpeningPlaceholder
                             resource={columnsResource}
                             handedIn={handedIn}
@@ -766,7 +769,7 @@ function PagedList<TRow extends object>({
                     resource={columnsResource}
                     catalogue={catalogue}
                     isCatalogueLoaded={hasCatalogueForViews}
-                    isCatalogueFailed={hasCatalogueFailed && !isFetchingCatalogue}
+                    isCatalogueFailed={isCatalogueFailed}
                     standardColumns={sortableStandardColumns}
                     standardSort={defaultSort}
                     renderableProperties={renderableProperties}
