@@ -1,0 +1,53 @@
+openapi: 3.0.1
+info:
+  title: Core API
+  description: REST API for ILM Core
+  version: 1.0.0
+  contact:
+    email: info@otilm.com
+paths:
+  /v1/widgets/{uuid}:
+    get:
+      tags:
+        - Widget Management
+      operationId: getWidget
+      parameters:
+        - name: uuid
+          in: path
+          required: true
+          schema:
+            type: string
+        - name: tags
+          in: query
+          schema:
+            type: array
+            items:
+              type: string
+      responses:
+        '200':
+          description: Widget retrieved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WidgetDto'
+components:
+  schemas:
+    WidgetDto:
+      type: object
+      required:
+        - uuid
+        - name
+      properties:
+        uuid:
+          type: string
+          description: UUID of the widget
+        name:
+          type: string
+          description: Name of the widget
+        status:
+          $ref: '#/components/schemas/WidgetStatus'
+    WidgetStatus:
+      type: string
+      enum:
+        - active
+        - retired

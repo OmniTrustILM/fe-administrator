@@ -1,0 +1,118 @@
+// Prove that a spec version bump only changes src/types/openapi/API_VERSION.
+//
+// Generates the fixture spec through the same generator key, template override,
+// post-processing and formatting as `npm run generate-types-local`, varying one input
+// at a time: the `info.version`, nothing at all, and a schema property. Needs Java, and
+// downloads the pinned generator jar on first use.
+
+import { execFileSync } from 'node:child_process';
+import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import os from 'node:os';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+import { patchTree } from './patch-openapi-runtime.mjs';
+import { setContactInTree } from './set-openapi-contact.mjs';
+
+const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+const coreDir = path.join(root, 'src', 'types', 'openapi');
+const fixture = readFileSync(path.join(root, 'scripts', 'fixtures', 'openapi-version-churn', 'spec.yaml'), 'utf8');
+const GENERATOR_KEY = 'typescript-rxjs-local';
+const VERSION_FILE = 'API_VERSION';
+const MANIFEST = '.openapi-generator/FILES';
+
+function withVersion(spec, version) {
+    const updated = spec.replace(/^ {2}version: .*$/m, `  version: ${version}`);
+    if (updated === spec) throw new Error('fixture has no info.version line to replace');
+    return updated;
+}
+
+function withExtraProperty(spec) {
+    const anchor = '        status:\n';
+    if (!spec.includes(anchor)) throw new Error('fixture has no WidgetDto.status property to extend');
+    return spec.replace(
+        anchor,
+        `        serialNumber:\n          type: string\n          description: Serial number of the widget\n${anchor}`,
+    );
+}
+
+function readTree(dir, base = dir, files = new Map()) {
+    for (const entry of readdirSync(dir, { withFileTypes: true })) {
+        const full = path.join(dir, entry.name);
+        if (entry.isDirectory()) readTree(full, base, files);
+        else files.set(path.relative(base, full).split(path.sep).join('/'), readFileSync(full, 'utf8'));
+    }
+    return files;
+}
+
+function generate(workDir, name, spec) {
+    const specPath = path.join(workDir, `${name}.yaml`);
+    const output = path.join(workDir, name);
+    writeFileSync(specPath, spec);
+    mkdirSync(output);
+    cpSync(path.join(coreDir, '.openapi-generator-ignore'), path.join(output, '.openapi-generator-ignore'));
+
+    const tools = JSON.parse(readFileSync(path.join(root, 'openapitools.json'), 'utf8'));
+    const generator = tools['generator-cli'].generators[GENERATOR_KEY];
+    tools['generator-cli'].generators = {
+        [GENERATOR_KEY]: { ...generator, inputSpec: specPath, output, config: path.resolve(root, generator.config) },
+    };
+    const toolsPath = path.join(workDir, `${name}.openapitools.json`);
+    writeFileSync(toolsPath, JSON.stringify(tools, null, 4));
+
+    const bin = (tool) => path.join(root, 'node_modules', '.bin', tool);
+    execFileSync(bin('openapi-generator-cli'), ['--openapitools', toolsPath, 'generate', '--generator-key', GENERATOR_KEY], {
+        cwd: root,
+        stdio: 'inherit',
+    });
+    setContactInTree(output);
+    patchTree(output);
+    execFileSync(bin('biome'), ['format', '--write', '--vcs-use-ignore-file=false', output], { cwd: root, stdio: 'inherit' });
+    return readTree(output);
+}
+
+function changedPaths(left, right) {
+    const paths = new Set([...left.keys(), ...right.keys()]);
+    return [...paths].filter((file) => left.get(file) !== right.get(file)).sort();
+}
+
+function assertEqual(actual, expected, message) {
+    if (JSON.stringify(actual) !== JSON.stringify(expected)) {
+        throw new Error(`${message}\n  expected: ${JSON.stringify(expected)}\n  actual:   ${JSON.stringify(actual)}`);
+    }
+}
+
+function assert(condition, message) {
+    if (!condition) throw new Error(message);
+}
+
+function run() {
+    const workDir = mkdtempSync(path.join(os.tmpdir(), 'openapi-version-churn-'));
+    try {
+        const first = generate(workDir, 'first', withVersion(fixture, '1.0.0-SNAPSHOT'));
+        const bumped = generate(workDir, 'bumped', withVersion(fixture, '1.1.0'));
+        const repeated = generate(workDir, 'repeated', withVersion(fixture, '1.0.0-SNAPSHOT'));
+        const changed = generate(workDir, 'changed', withExtraProperty(withVersion(fixture, '1.0.0-SNAPSHOT')));
+
+        assertEqual(first.get(VERSION_FILE), '1.0.0-SNAPSHOT\n', `${VERSION_FILE} must hold info.version with a trailing newline`);
+        assert(first.get(MANIFEST)?.split('\n').includes(VERSION_FILE), `${MANIFEST} must register ${VERSION_FILE}`);
+        for (const [file, source] of first) {
+            if (!file.endsWith('.ts')) continue;
+            assert(!source.includes('The version of the OpenAPI document'), `${file} still carries the API version in its header`);
+        }
+        const header = first.get('models/WidgetDto.ts') ?? '';
+        assert(header.includes(' * Core API\n * REST API for ILM Core\n'), 'header lost the API title and description');
+        assert(header.includes(' * Contact: ilm@omnitrust.com\n'), 'header lost the contact line');
+        assert(header.includes(' * Do not edit the class manually.\n'), 'header lost the generator notice');
+
+        assertEqual(changedPaths(first, bumped), [VERSION_FILE], 'a version-only bump must change API_VERSION and nothing else');
+        assertEqual(changedPaths(first, repeated), [], 'regenerating identical input must change nothing');
+        assertEqual(changedPaths(first, changed), ['models/WidgetDto.ts'], 'a schema change must reach the generated model');
+        assert(changed.get('models/WidgetDto.ts')?.includes('serialNumber?: string;'), 'the added property is missing from the model');
+
+        console.log('OpenAPI generation check passed: a version bump changes only API_VERSION');
+    } finally {
+        rmSync(workDir, { recursive: true, force: true });
+    }
+}
+
+run();

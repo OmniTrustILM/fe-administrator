@@ -8,6 +8,7 @@
                 "generatorName": "typescript-rxjs",
                 "inputSpec": "./src/doc-openapi-ilm-core.yaml",
                 "output": "./src/types/openapi",
+                "config": "./openapi-generator/core.yaml",
                 "typeMappings": {
                     "set": "Array",
                     "Date": "string"
@@ -24,6 +25,7 @@
                 "generatorName": "typescript-rxjs",
                 "inputSpec": "https://api.otilm.com/main/doc-openapi-ilm-core.yaml",
                 "output": "./src/types/openapi",
+                "config": "./openapi-generator/core.yaml",
                 "typeMappings": {
                     "set": "Array",
                     "Date": "string"
