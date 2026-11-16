@@ -72,31 +72,47 @@ describe('resolveAvailability', () => {
         });
     });
 
-    it.each([ResourceAction.Create, ResourceAction.List, ResourceAction.Register])(
-        'lets the profile decide %s, which the object answer never reports',
-        (action) => {
-            const profile = profileWith([{ resource: Resource.Secrets, actions: [action] }]);
-            const objectRule = { ...rule, action };
+    it.each([
+        [Resource.Secrets, ResourceAction.Create],
+        [Resource.Secrets, ResourceAction.List],
+        [Resource.Secrets, ResourceAction.Register],
+        [Resource.Keys, ResourceAction.ImportKey],
+        [Resource.Attributes, ResourceAction.Members],
+    ])('lets the profile decide %s/%s, which the object answer never reports', (resource, action) => {
+        const profile = profileWith([{ resource, actions: [action] }]);
+        const objectRule = { resource, action };
 
-            expect(
-                resolveAvailability({
-                    rule: objectRule,
-                    profile,
-                    objectAnswer: { status: 'loaded', allowedActions: [ResourceAction.Detail] },
-                    labels,
-                }),
-            ).toEqual(available);
-            expect(resolveAvailability({ rule: objectRule, profile, objectAnswer: { status: 'loading' }, labels })).toEqual(available);
-            expect(
-                resolveAvailability({
-                    rule: objectRule,
-                    profile: withoutGrants,
-                    objectAnswer: { status: 'loaded', allowedActions: [action] },
-                    labels,
-                }),
-            ).toEqual(denied);
-        },
-    );
+        expect(
+            resolveAvailability({
+                rule: objectRule,
+                profile,
+                objectAnswer: { status: 'loaded', allowedActions: [ResourceAction.Detail] },
+                labels,
+            }),
+        ).toEqual(available);
+        expect(resolveAvailability({ rule: objectRule, profile, objectAnswer: { status: 'loading' }, labels })).toEqual(available);
+        expect(
+            resolveAvailability({
+                rule: objectRule,
+                profile: withoutGrants,
+                objectAnswer: { status: 'loaded', allowedActions: [action] },
+                labels,
+            }),
+        ).toEqual(denied);
+    });
+
+    it('lets the object answer decide members on a resource whose answer reports it', () => {
+        const profile = profileWith([{ resource: Resource.Groups, actions: [ResourceAction.Members] }]);
+
+        expect(
+            resolveAvailability({
+                rule: { resource: Resource.Groups, action: ResourceAction.Members },
+                profile,
+                objectAnswer: { status: 'loaded', allowedActions: [ResourceAction.Detail] },
+                labels,
+            }),
+        ).toEqual(denied);
+    });
 
     it('reports loading while the profile is not loaded', () => {
         expect(resolveAvailability({ rule, profile: undefined, labels })).toEqual({ available: false, hidden: false, loading: true });

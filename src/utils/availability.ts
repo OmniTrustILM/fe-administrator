@@ -1,5 +1,5 @@
 import type { UserProfileDetailModel } from 'types/auth';
-import { type Resource, ResourceAction } from 'types/openapi';
+import { Resource, ResourceAction } from 'types/openapi';
 import { hasResourceAction } from 'utils/permissions';
 
 export type ActionRule = {
@@ -36,7 +36,20 @@ const LOADING: Availability = { available: false, hidden: false, loading: true }
 const AVAILABLE: Availability = { available: true, hidden: false, loading: false };
 
 /** Actions that do not act on an existing object, which the object answer never reports. */
-const NOT_ON_AN_OBJECT: ReadonlySet<ResourceAction> = new Set([ResourceAction.Create, ResourceAction.List, ResourceAction.Register]);
+const NOT_ON_AN_OBJECT: ReadonlySet<ResourceAction> = new Set([
+    ResourceAction.Create,
+    ResourceAction.List,
+    ResourceAction.Register,
+    ResourceAction.ImportKey,
+]);
+
+/** Resource-level actions Core leaves out of the object answer on one resource only. */
+const NOT_ON_AN_OBJECT_OF: Partial<Record<Resource, ReadonlySet<ResourceAction>>> = {
+    [Resource.Attributes]: new Set([ResourceAction.Members]),
+};
+
+const decidedByProfile = ({ resource, action }: ActionRule): boolean =>
+    NOT_ON_AN_OBJECT.has(action) || !!NOT_ON_AN_OBJECT_OF[resource]?.has(action);
 
 /**
  * Decides whether one action is offered. An object answer, when there is one, decides on its own, because it already
@@ -55,7 +68,7 @@ export function resolveAvailability({
     objectAnswer?: ObjectAllowedActionsAnswer;
     labels: AvailabilityLabels;
 }): Availability {
-    const answer = NOT_ON_AN_OBJECT.has(rule.action) ? undefined : objectAnswer;
+    const answer = decidedByProfile(rule) ? undefined : objectAnswer;
     if (!profile || answer?.status === 'loading') return LOADING;
 
     const allowed =
