@@ -114,6 +114,8 @@ export default function RaProfileForm({
         () => isFetchingDetail || isCreating || isUpdating || isFetchingAuthorityRAProfileAttributes || isFetchingResourceCustomAttributes,
         [isCreating, isFetchingDetail, isUpdating, isFetchingAuthorityRAProfileAttributes, isFetchingResourceCustomAttributes],
     );
+    // The custom attribute editor resets its fields when it mounts, so it hides only while its own inputs load.
+    const customAttributesLoading = isFetchingDetail || isFetchingResourceCustomAttributes;
 
     useEffect(() => {
         dispatch(authoritiesActions.listAuthorities());
@@ -193,9 +195,18 @@ export default function RaProfileForm({
         name: 'authority',
     });
 
-    // Reset form values when raProfile is loaded in edit mode
+    // Reset form values once per loaded raProfile in edit mode. The profile changes identity mid-save too
+    // (a saved request-attribute set is patched into it), and a reset then would wipe the attribute values.
+    // A detail fetch clears the marker, so a cached profile is replaced by the fresh one.
+    const resetForProfileRef = useRef<string | undefined>(undefined);
     useEffect(() => {
-        if (editMode && id && raProfile?.uuid === id && !isFetchingDetail) {
+        if (isFetchingDetail) {
+            resetForProfileRef.current = undefined;
+            return;
+        }
+        if (editMode && id && raProfile?.uuid === id) {
+            if (resetForProfileRef.current === raProfile.uuid) return;
+            resetForProfileRef.current = raProfile.uuid;
             const newDefaultValues: FormValues = {
                 name: raProfile.name || '',
                 description: raProfile.description || '',
@@ -377,7 +388,7 @@ export default function RaProfileForm({
     );
 
     const renderCustomAttributesEditor = useMemo(() => {
-        if (isBusy) return <></>;
+        if (customAttributesLoading) return <></>;
         return (
             <AttributeEditor
                 id="customRaProfile"
@@ -385,7 +396,7 @@ export default function RaProfileForm({
                 attributes={raProfile?.customAttributes}
             />
         );
-    }, [isBusy, raProfile, resourceCustomAttributes]);
+    }, [customAttributesLoading, raProfile, resourceCustomAttributes]);
 
     return (
         <FormProvider {...methods}>

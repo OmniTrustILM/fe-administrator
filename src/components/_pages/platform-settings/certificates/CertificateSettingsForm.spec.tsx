@@ -1,3 +1,4 @@
+import type { Page } from '@playwright/test';
 import { test, expect } from '../../../../../playwright/ct-test';
 import { CertificateSettingsFormTestWrapper } from './CertificateSettingsFormTestWrapper';
 
@@ -141,5 +142,56 @@ test.describe('CertificateSettingsForm - Upload subsection', () => {
         await page.getByRole('button', { name: 'Save' }).click();
 
         await expect(page.getByTestId('update-platform-settings')).toContainText('"upload":{"automaticOwnership":false}');
+    });
+});
+
+test.describe('CertificateSettingsForm - saving', () => {
+    const settingsWithOwnershipOff = {
+        settings: {
+            platformSettings: { certificates: { upload: { automaticOwnership: false } } },
+            isFetchingPlatform: false,
+            isUpdatingPlatform: false,
+        },
+    };
+
+    const saveOwnershipOn = async (page: Page) => {
+        await page.getByText('Automatic Ownership', { exact: true }).click();
+        await page.getByRole('button', { name: 'Save' }).click();
+    };
+
+    test('closes once the update is saved', async ({ mount, page }) => {
+        let closed = false;
+        await mount(
+            <CertificateSettingsFormTestWrapper
+                preloadedState={settingsWithOwnershipOff}
+                onSuccess={() => {
+                    closed = true;
+                }}
+            />,
+        );
+
+        await saveOwnershipOn(page);
+        await page.getByTestId('simulate-update-success').click();
+
+        await expect.poll(() => closed).toBe(true);
+        expect(closed).toBe(true);
+    });
+
+    test('stays open when the update fails', async ({ mount, page }) => {
+        let closed = false;
+        await mount(
+            <CertificateSettingsFormTestWrapper
+                preloadedState={settingsWithOwnershipOff}
+                onSuccess={() => {
+                    closed = true;
+                }}
+            />,
+        );
+
+        await saveOwnershipOn(page);
+        await page.getByTestId('simulate-update-failure').click();
+
+        await expect(page.getByRole('button', { name: 'Save' })).toBeEnabled();
+        expect(closed).toBe(false);
     });
 });

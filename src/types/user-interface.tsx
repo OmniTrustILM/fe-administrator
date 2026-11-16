@@ -79,6 +79,8 @@ export enum LockWidgetNameEnum {
     CMPProfileDetails,
     ListOfSCEPProfiles,
     SCEPProfileDetails,
+    ListOfESTProfiles,
+    ESTProfileDetails,
     PlatformSettings,
     LoggingSettings,
     ListOfNotificationProfiles,

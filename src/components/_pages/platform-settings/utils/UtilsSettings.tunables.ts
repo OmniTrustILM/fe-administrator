@@ -1,26 +1,12 @@
+import type { IntegerTunable } from '../tunables';
+
 export type CbomSyncTunableName =
     | 'cbomSyncOverlapSeconds'
     | 'cbomSyncSkippedRetryRuns'
     | 'cbomSyncMaxIngestDocuments'
     | 'cbomSyncSkipRetentionDays';
 
-export type CbomSyncTunable = Readonly<{
-    name: CbomSyncTunableName;
-    label: string;
-    unit: string;
-    unitOne: string;
-    /**
-     * What the platform uses, and reports back, while the value is unset: the schema's `default`. Transcribed from the
-     * published core spec (`components.schemas.UtilsSettingsDto`), as `max` is: the type generator emits neither
-     * defaults nor bounds into the type, so a change there has to be carried here by hand.
-     */
-    defaultValue: number;
-    /** The schema's `minimum`, refused here before the value is sent; the whole-number validator already refuses below 0. */
-    min: number;
-    /** The schema's `maximum`, refused here before the value is sent. */
-    max: number;
-    help: string;
-}>;
+type CbomSyncTunable = IntegerTunable<CbomSyncTunableName>;
 
 /** The CBOM sync policy values an operator owns; one entry drives both the form field and the read row. */
 export const CBOM_SYNC_TUNABLES: readonly CbomSyncTunable[] = [
@@ -65,15 +51,3 @@ export const CBOM_SYNC_TUNABLES: readonly CbomSyncTunable[] = [
         help: 'How many days a repository entry the sync gave up on stays listed before a scheduled sweep removes its record; an entry still being retried is never swept.',
     },
 ];
-
-/** The form keeps numbers as text; empty means "not set", which the platform reads as its default. */
-export const integerText = (value?: number): string => (value == null ? '' : String(value));
-
-export const parseOptionalInteger = (value?: string): number | undefined =>
-    value === undefined || value === '' ? undefined : Number.parseInt(value, 10);
-
-/** What the read view shows: the value with its unit, or the platform default while nothing is set. */
-export const describeTunable = (tunable: CbomSyncTunable, value: number | undefined): string => {
-    if (value == null) return `platform default (${tunable.defaultValue} ${tunable.unit})`;
-    return `${value} ${value === 1 ? tunable.unitOne : tunable.unit}`;
-};

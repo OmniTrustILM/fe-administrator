@@ -292,6 +292,7 @@ const menuItemMappings: MenuItemMapping[] = [
             },
             { _key: '/acmeprofiles', name: 'ACME Profiles', link: '/acmeprofiles', requiredResources: [Resource.AcmeProfiles] },
             { _key: '/cmpprofiles', name: 'CMP Profiles', link: '/cmpprofiles', requiredResources: [Resource.CmpProfiles] },
+            { _key: '/estprofiles', name: 'EST Profiles', link: '/estprofiles', requiredResources: [Resource.EstProfiles] },
             { _key: '/scepprofiles', name: 'SCEP Profiles', link: '/scepprofiles', requiredResources: [Resource.ScepProfiles] },
             {
                 _key: `/${Resource.TspProfiles.toLowerCase()}`,
@@ -426,15 +427,15 @@ function getAllowedMenuItems(allowedResources?: Resource[]): MenuItemMapping[] {
         }
 
         if ('children' in mapping) {
-            mapping.children = mapping.children.filter((el) => {
+            const children = mapping.children.filter((el) => {
                 // Filter out Trusted Certificates if disabled
                 if (el._key === `/${Resource.TrustedCertificates.toLowerCase()}` && !isTrustedCertificatesEnabled) {
                     return false;
                 }
                 return !!el.requiredResources?.some((resource) => allowedResources.includes(resource));
             });
-            if (mapping.children.length > 0) {
-                allowedLinks.push(mapping);
+            if (children.length > 0) {
+                allowedLinks.push({ ...mapping, children });
             }
             continue;
         }
