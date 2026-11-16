@@ -87,3 +87,55 @@ export function SearchableHarness() {
         </div>
     );
 }
+
+export function BlurHarness({ isSearchable = false, isMulti = false }: { isSearchable?: boolean; isMulti?: boolean }) {
+    const [single, setSingle] = useState<SingleValueState>('');
+    const [multi, setMulti] = useState<MultiOption[] | undefined>([BASE_OPTIONS[0], BASE_OPTIONS[1]]);
+    const [blurCount, setBlurCount] = useState(0);
+    const onBlur = () => setBlurCount((c) => c + 1);
+    return (
+        <div>
+            {isMulti ? (
+                <Select
+                    id="b"
+                    value={multi ?? []}
+                    onChange={(nv) => setMulti(nv)}
+                    onBlur={onBlur}
+                    options={BASE_OPTIONS}
+                    isMulti
+                    dataTestId="sel"
+                />
+            ) : (
+                <Select
+                    id="b"
+                    value={single}
+                    onChange={(nv) => setSingle(nv)}
+                    onBlur={onBlur}
+                    options={BASE_OPTIONS}
+                    isSearchable={isSearchable}
+                    dataTestId="sel"
+                />
+            )}
+            {/* An input, not a button: WebKit on macOS does not move Tab focus to buttons. */}
+            <input aria-label="Next field" />
+            <div data-testid="blur-count">{blurCount}</div>
+        </div>
+    );
+}
+
+export function ToneHarness() {
+    return (
+        <div>
+            <Select id="valid" value="" onChange={() => {}} options={BASE_OPTIONS} dataTestId="valid" />
+            <Select
+                id="invalid"
+                value=""
+                onChange={() => {}}
+                options={BASE_OPTIONS}
+                error="Required Field"
+                dataTestId="invalid"
+                isSearchable
+            />
+        </div>
+    );
+}

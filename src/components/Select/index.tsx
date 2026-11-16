@@ -10,6 +10,7 @@ import {
     TRIGGER_CLASSES,
     TRIGGER_CLEARABLE_CLASSES,
     TRIGGER_DISABLED_CLASSES,
+    getToneClasses,
     PLACEHOLDER_CLASSES,
     TRIGGER_NO_OPTIONS_CLASSES,
     CHEVRON_CLASSES,
@@ -53,6 +54,11 @@ interface BaseProps {
     isClearable?: boolean;
     required?: boolean;
     error?: string;
+    /** Defaults to whether `error` is set. */
+    invalid?: boolean;
+    /** Fires when focus leaves the control as a whole: trigger, chips and the open dropdown. */
+    onBlur?: () => void;
+    ariaDescribedBy?: string;
     isSearchable?: boolean;
     minWidth?: number;
     /** @deprecated Kept for API compatibility. The Radix-based implementation always portals; this prop is a no-op. */
@@ -160,6 +166,16 @@ const renderColorizedVersionLabel = (text: string): React.ReactNode => {
 
 const ADD_NEW_VALUES = new Set(['__add_new__', '__add_custom__']);
 
+function getErrorState(id: string, error: string | undefined, invalid: boolean | undefined, ariaDescribedBy: string | undefined) {
+    const errorId = `${id}-error`;
+    const describedBy = [ariaDescribedBy, error ? errorId : undefined].filter(Boolean).join(' ') || undefined;
+    return { isInvalid: invalid ?? !!error, errorId, describedBy };
+}
+
+function isInsideAny(target: Node | null, ...containers: Array<HTMLElement | null>): boolean {
+    return containers.some((container) => container?.contains(target));
+}
+
 function Select({
     id,
     required,
@@ -176,6 +192,9 @@ function Select({
     isClearable,
     isSearchable = false,
     error,
+    invalid,
+    onBlur,
+    ariaDescribedBy,
     minWidth,
     dropdownWidth,
     dataTestId,
@@ -398,6 +417,8 @@ function Select({
                                 onClick={(e) => {
                                     e.stopPropagation();
                                     toggleMulti(v.value, v.label);
+                                    // The chip unmounts with focus on it, which loses focus without a blur event.
+                                    triggerRef.current?.focus();
                                 }}
                                 onPointerDown={(e) => e.stopPropagation()}
                             >
@@ -455,7 +476,12 @@ function Select({
     const clearableActive = effectiveClearable && hasValue;
     const multiBaseClass = clearableActive ? WRAPPER_CLEARABLE_CLASSES : WRAPPER_CLASSES;
     const singleBaseClass = clearableActive ? TRIGGER_CLEARABLE_CLASSES : TRIGGER_CLASSES;
-    const triggerClass = cn(isMulti ? multiBaseClass : singleBaseClass, triggerDisabled && TRIGGER_DISABLED_CLASSES);
+    const { isInvalid, errorId, describedBy } = getErrorState(id, error, invalid, ariaDescribedBy);
+    const triggerClass = cn(
+        isMulti ? multiBaseClass : singleBaseClass,
+        getToneClasses(isMulti, isInvalid),
+        triggerDisabled && TRIGGER_DISABLED_CLASSES,
+    );
 
     const listboxId = `${id}-listbox`;
     const getOptionDomId = (val: OptionValue) => `${id}-option-${getOptionValueString(val)}`;
@@ -472,7 +498,15 @@ function Select({
     return (
         <div data-testid={dataTestId ?? `select-${id}`}>
             {label && <Label htmlFor={id} title={label} required={required} labelTooltip={labelTooltip} />}
-            <div ref={wrapperRef} className={cn('relative', className)} style={minWidth ? { minWidth: `${minWidth}px` } : undefined}>
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: tracks focus leaving the control; React bubbles focus events through the portal, so this also hears the open dropdown */}
+            <div
+                ref={wrapperRef}
+                className={cn('relative', className)}
+                style={minWidth ? { minWidth: `${minWidth}px` } : undefined}
+                onBlur={(e) => {
+                    if (!isInsideAny(e.relatedTarget as Node | null, wrapperRef.current, contentRef.current)) onBlur?.();
+                }}
+            >
                 <Popover.Root
                     modal={modal}
                     open={open}
@@ -490,6 +524,7 @@ function Select({
                             aria-haspopup="listbox"
                             aria-expanded={open}
                             aria-controls={open ? listboxId : undefined}
+                            aria-describedby={describedBy}
                             className={triggerClass}
                             data-testid={dataTestId ? `${dataTestId}-trigger` : `select-${id}-trigger`}
                         >
@@ -535,6 +570,8 @@ function Select({
                                             aria-controls={listboxId}
                                             aria-expanded={open}
                                             aria-activedescendant={activeDescendantId}
+                                            aria-invalid={isInvalid || undefined}
+                                            aria-describedby={describedBy}
                                             onChange={(e) => {
                                                 const next = e.target.value;
                                                 setSearchTerm(next);
@@ -633,6 +670,7 @@ function Select({
                             } else {
                                 (onChange as SingleSelectProps['onChange'])('');
                             }
+                            triggerRef.current?.focus();
                         }}
                         aria-label="Clear selection"
                     >
@@ -640,7 +678,11 @@ function Select({
                     </Button>
                 )}
             </div>
-            {error && <div className="text-danger mt-1">{error}</div>}
+            {error && (
+                <div id={errorId} className="text-danger mt-1">
+                    {error}
+                </div>
+            )}
             {selectedDescription && (
                 <div
                     className="mt-2 rounded-r border-l-4 border-brand bg-brand-subtle px-3 py-2 text-sm text-content"

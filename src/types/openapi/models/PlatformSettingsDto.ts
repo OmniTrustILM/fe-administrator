@@ -11,7 +11,7 @@
  * Do not edit the class manually.
  */
 
-import type { BrandingSettingsDto, CertificateSettingsDto, UtilsSettingsDto } from './';
+import type { BrandingSettingsDto, CertificateSettingsDto, SigningSettingsDto, UtilsSettingsDto } from './';
 
 /**
  * @export
@@ -36,4 +36,10 @@ export interface PlatformSettingsDto {
      * @memberof PlatformSettingsDto
      */
     branding?: BrandingSettingsDto;
+    /**
+     * Signing settings shared by every Signing Profile
+     * @type {SigningSettingsDto}
+     * @memberof PlatformSettingsDto
+     */
+    signing?: SigningSettingsDto;
 }

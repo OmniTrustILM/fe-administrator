@@ -1,6 +1,7 @@
 import { slice as acmeAccountsSlice, initialState as initialAcmeAccountsState } from './acme-accounts';
 import { slice as acmeProfilesSlice, initialState as initialAcmeProfilesState } from './acme-profiles';
 import { slice as cmpProfilesSlice, initialState as initialCmpProfilesState } from './cmp-profiles';
+import { slice as estProfilesSlice, initialState as initialEstProfilesState } from './est-profiles';
 import { initialState as initialScepProfilesState, slice as scepProfilesSlice } from './scep-profiles';
 
 import { alertsSlice, initialState as initialAlertsState } from './alert-slice';
@@ -76,6 +77,7 @@ export const initialState = {
     [acmeProfilesSlice.name]: initialAcmeProfilesState,
     [scepProfilesSlice.name]: initialScepProfilesState,
     [cmpProfilesSlice.name]: initialCmpProfilesState,
+    [estProfilesSlice.name]: initialEstProfilesState,
     [initialComplianceProfilesSlice.name]: initialComplianceProfilesState,
     [initialCredentialsSlice.name]: initialCredentialsState,
     [initialEntitiesSlice.name]: initialEntitiesState,

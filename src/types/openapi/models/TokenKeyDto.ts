@@ -26,11 +26,11 @@ export interface TokenKeyDto {
      */
     keyPairMeta?: Array<MetadataAttribute>;
     /**
-     * Label the key storage keeps for the key
+     * Name the key storage shows for the key, such as a PKCS#11 label, a keystore alias or a KMS key name; it may be absent or shared by several keys
      * @type {string}
      * @memberof TokenKeyDto
      */
-    label?: string;
+    storageName?: string;
     /**
      * Algorithm of the key
      * @type {KeyAlgorithm}

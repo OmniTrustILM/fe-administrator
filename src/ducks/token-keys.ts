@@ -1,6 +1,7 @@
 import type { AppState } from 'ducks';
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { RequestAttribute, TokenKeyListResponseDto, TokenKeyOnboardingResultDto, TokenKeySelectionDto } from 'types/openapi';
+import type { CaptionsByHandle } from './transform/token-keys';
 
 export type State = {
     tokenKeys?: TokenKeyListResponseDto;
@@ -52,6 +53,7 @@ export const slice = createSlice({
                 tokenInstanceUuid: string;
                 tokenProfileUuid: string;
                 keys: TokenKeySelectionDto[];
+                captions: CaptionsByHandle;
                 customAttributes?: RequestAttribute[];
             }>,
         ) => {

@@ -2,6 +2,7 @@ import type { AttributeRequestModel, AttributeResponseModel } from './attributes
 import type {
     ActivateAcmeForRaProfileRequestDto,
     ActivateCmpForRaProfileRequestDto,
+    ActivateEstForRaProfileRequestDto,
     ActivateScepForRaProfileRequestDto,
     AddRaProfileRequestDto,
     EditRaProfileRequestDto,
@@ -10,6 +11,7 @@ import type {
     RaProfileCertificateValidationSettingsUpdateDto,
     RaProfileCmpDetailResponseDto,
     RaProfileDto,
+    RaProfileEstDetailResponseDto,
     RaProfileScepDetailResponseDto,
 } from './openapi';
 
@@ -18,6 +20,8 @@ export type {
     RaProfileAcmeDetailResponseDto,
     ActivateCmpForRaProfileRequestDto as RaProfileActivateCmpRequestDto,
     RaProfileCmpDetailResponseDto,
+    ActivateEstForRaProfileRequestDto as RaProfileActivateEstRequestDto,
+    RaProfileEstDetailResponseDto,
     ActivateScepForRaProfileRequestDto as RaProfileActivateScepRequestDto,
     RaProfileScepDetailResponseDto,
     AddRaProfileRequestDto as RaProfileAddRequestDto,
@@ -55,6 +59,14 @@ export type RaProfileCmpDetailResponseModel = Omit<
 > & {
     issueCertificateAttributes?: Array<AttributeResponseModel>;
     revokeCertificateAttributes?: Array<AttributeResponseModel>;
+};
+
+export type RaProfileActivateEstRequestModel = Omit<ActivateEstForRaProfileRequestDto, 'issueCertificateAttributes'> & {
+    issueCertificateAttributes: Array<AttributeRequestModel>;
+};
+
+export type RaProfileEstDetailResponseModel = Omit<RaProfileEstDetailResponseDto, 'issueCertificateAttributes'> & {
+    issueCertificateAttributes?: Array<AttributeResponseModel>;
 };
 
 export type RaProfileActivateScepRequestModel = Omit<ActivateScepForRaProfileRequestDto, 'issueCertificateAttributes'> & {

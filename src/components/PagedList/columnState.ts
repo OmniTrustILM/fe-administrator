@@ -70,9 +70,9 @@ export function toggleColumn(
 /**
  * The column list with one column's heading overridden, or the override taken away by `undefined`.
  *
- * An empty heading, or one equal to what the catalogue publishes, is not an override: it is cleared
- * instead, so a field relabelled upstream carries through rather than being frozen at the name it had
- * when someone typed it back.
+ * A blank heading is an override of its own, stored empty so the header shows nothing. One equal to what
+ * the catalogue publishes is not: it is cleared instead, so a field relabelled upstream carries through
+ * rather than being frozen at the name it had when someone typed it back.
  */
 export function renameColumn(columns: ColumnDefinition[], key: string, label: string | undefined): ColumnDefinition[] {
     return columns.map((column) => {
@@ -80,7 +80,7 @@ export function renameColumn(columns: ColumnDefinition[], key: string, label: st
 
         const trimmed = label?.trim();
         const { label: _previous, ...rest } = column;
-        return trimmed && trimmed !== column.catalogueLabel ? { ...rest, label: trimmed } : rest;
+        return trimmed === undefined || trimmed === column.catalogueLabel ? rest : { ...rest, label: trimmed };
     });
 }
 

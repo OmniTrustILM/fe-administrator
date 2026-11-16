@@ -739,6 +739,27 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-notice')).toContainText('showing 1 of its 2 columns');
     });
 
+    test('names a stored column it cannot display by its identifier when its heading was cleared', async ({ mount, page }) => {
+        const stale = expiryWatch({
+            defaultView: true,
+            columns: [stored('COMMON_NAME'), { ...stored('retired', FilterFieldSource.Custom), label: '' }],
+        });
+        await mount(strip({ views: [stale] }));
+
+        await expect(page.getByTestId('view-tabs-notice')).toContainText('retired cannot be shown');
+    });
+
+    test('names the ordering by the catalogue label when the sorted column has a cleared heading', async ({ mount, page }) => {
+        const cleared = expiryWatch({
+            defaultView: true,
+            columns: [{ ...stored('COMMON_NAME'), label: '' }],
+            sort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: SortDirection.Asc },
+        });
+        await mount(strip({ views: [cleared] }));
+
+        await expect(page.getByTestId('view-tabs-summary-sort')).toContainText('Sorted by Common Name');
+    });
+
     test('takes a column it cannot show out of the view, which has no header to remove it from', async ({ mount, page }) => {
         const stale = expiryWatch({
             defaultView: true,

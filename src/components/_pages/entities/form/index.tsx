@@ -86,6 +86,8 @@ export default function EntityForm({ entityId, onCancel, onSuccess }: EntityForm
             isFetchingResourceCustomAttributes,
         ],
     );
+    // The custom attribute editor resets its fields when it mounts, so it hides only while its own inputs load.
+    const customAttributesLoading = isFetchingEntityDetail || isFetchingResourceCustomAttributes;
 
     useEffect(() => {
         dispatch(connectorActions.clearCallbackData());
@@ -266,9 +268,9 @@ export default function EntityForm({ entityId, onCancel, onSuccess }: EntityForm
     );
 
     const renderCustomAttributesEditor = useMemo(() => {
-        if (isBusy) return <></>;
+        if (customAttributesLoading) return <></>;
         return <AttributeEditor id="customEntity" attributeDescriptors={resourceCustomAttributes} attributes={entity?.customAttributes} />;
-    }, [isBusy, entity, resourceCustomAttributes]);
+    }, [customAttributesLoading, entity, resourceCustomAttributes]);
 
     useRunOnSuccessfulFinish(isCreating, createEntitySucceeded, onSuccess);
     useRunOnSuccessfulFinish(isUpdating, updateEntitySucceeded, onSuccess);
