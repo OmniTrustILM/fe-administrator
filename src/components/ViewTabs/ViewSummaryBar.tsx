@@ -1,7 +1,7 @@
 import Button from 'components/Button';
 import { ArrowDown, ArrowUp } from 'lucide-react';
 import type { ColumnDefinition } from 'types/tableColumns';
-import { type ColumnSort, formatColumnCount, getColumnHeading, getSortKey } from 'utils/tableColumns';
+import { type ColumnSort, formatColumnCount, getColumnName, getSortKey } from 'utils/tableColumns';
 
 type Props = Readonly<{
     columns: ColumnDefinition[];
@@ -50,7 +50,7 @@ export default function ViewSummaryBar({
 
             {sort && (
                 <span className="inline-flex items-center gap-x-1" data-testid={`${dataTestId}-sort`}>
-                    {`Sorted by ${sorted ? getColumnHeading(sorted) : sort.fieldIdentifier}`}
+                    {`Sorted by ${sorted ? getColumnName(sorted) : sort.fieldIdentifier}`}
                     <SortGlyph className="size-3.5" aria-label={sort.direction === 'desc' ? 'descending' : 'ascending'} />
                 </span>
             )}

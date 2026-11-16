@@ -1,7 +1,7 @@
 import { FilterFieldSource } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
 import { groupCatalogueFields, matchesFieldSearch } from 'utils/columnPicker';
-import { getColumnHeading, getColumnKey } from 'utils/tableColumns';
+import { getColumnName, getColumnKey } from 'utils/tableColumns';
 
 /** The order the menu lays the sources out in, left to right. */
 export const MENU_SOURCE_ORDER: readonly FilterFieldSource[] = [
@@ -34,7 +34,7 @@ const toMenuField = (column: ColumnDefinition) =>
     ({
         fieldSource: column.fieldSource,
         fieldIdentifier: column.fieldIdentifier,
-        fieldLabel: getColumnHeading(column),
+        fieldLabel: getColumnName(column),
     }) as SourcedCatalogueField;
 
 /**
@@ -69,7 +69,7 @@ export function toMenuContents(
         // Headed the way the table heads it, published or not: listing a renamed column under its
         // catalogue name makes the section disagree with the header, and puts it out of reach of a
         // search for the name the operator gave it.
-        return published ? { ...published, fieldLabel: getColumnHeading(column) } : toMenuField(column);
+        return published ? { ...published, fieldLabel: getColumnName(column) } : toMenuField(column);
     });
 
     // Taken out of the source columns whether or not the search keeps them in the shown section, or a

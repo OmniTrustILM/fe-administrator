@@ -1,7 +1,7 @@
 import Button from 'components/Button';
 import { TriangleAlert } from 'lucide-react';
 import type { PickerColumn } from 'types/tableColumns';
-import { getColumnHeading } from 'utils/tableColumns';
+import { getColumnName } from 'utils/tableColumns';
 
 type Props = Readonly<{
     returned: PickerColumn[];
@@ -26,14 +26,14 @@ const list = (names: string[]): string => (names.length === 1 ? names[0] : `${na
 export default function ReturnedColumnsNotice({ returned, unfiltered = [], onShow, onRemove, isBusy = false, dataTestId }: Props) {
     if (returned.length === 0) return null;
 
-    const names = returned.map(getColumnHeading);
+    const names = returned.map(getColumnName);
     const subject = names.length === 1 ? `${names[0]} is` : `${list(names)} are`;
     const pronoun = names.length === 1 ? 'it' : 'them';
     const identity =
         names.length === 1
             ? 'may be a different attribute with the same name and content type'
             : 'may be different attributes with the same names and content types';
-    let withheld = `showing ${pronoun}, and is not filtering by ${list(unfiltered.map(getColumnHeading))}`;
+    let withheld = `showing ${pronoun}, and is not filtering by ${list(unfiltered.map(getColumnName))}`;
     if (unfiltered.length === 0) withheld = `showing ${pronoun}`;
     else if (unfiltered.length === returned.length) withheld = `showing or filtering by ${pronoun}`;
     const message = `${subject} available again, but ${identity}, so this view is not ${withheld}.`;
