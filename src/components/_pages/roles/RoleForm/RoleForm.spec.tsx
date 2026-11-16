@@ -39,13 +39,15 @@ test.describe('RoleForm', () => {
         await page.getByRole('button', { name: 'Create' }).click();
 
         // then
-        const created = async () => {
+        const createActions = async () => {
             const actions: { type: string; payload?: { customAttributes?: unknown } }[] = JSON.parse(
                 (await page.getByTestId('role-actions').textContent()) ?? '[]',
             );
-            return actions.filter((action) => action.type === 'roles/create').map((action) => action.payload?.customAttributes);
+            return actions.filter((action) => action.type === 'roles/create');
         };
-        await expect.poll(created).toEqual([[]]);
+        await expect.poll(createActions).toHaveLength(1);
+        const [created] = await createActions();
+        expect(created.payload?.customAttributes).toEqual([]);
     });
 
     test('lets a new role be named and created after viewing a system role', async ({ mount, page }) => {
@@ -93,5 +95,18 @@ test.describe('RoleForm', () => {
 
         await expect(page.getByRole('button', { name: 'Save' })).toBeVisible();
         await expect(page.getByTestId('text-input-description')).toBeDisabled();
+    });
+
+    test('keeps Save disabled for an edited system role after an e-mail change', async ({ mount, page }) => {
+        // given
+        await mount(<RoleFormWithStore {...editRoute} role={viewedSystemRole} />);
+
+        // when
+        const emailInput = page.getByTestId('text-input-email');
+        await emailInput.click();
+        await emailInput.fill('auditors@example.com');
+
+        // then
+        await expect(page.getByRole('button', { name: 'Save' })).toBeDisabled();
     });
 });
