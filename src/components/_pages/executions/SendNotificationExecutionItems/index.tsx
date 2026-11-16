@@ -8,6 +8,7 @@ import Label from 'components/Label';
 import Badge from 'components/Badge';
 import { selectors as notificationProfileSelectors, actions as notificationProfileActions } from 'ducks/notification-profiles';
 import Container from 'components/Container';
+import type { Availability } from 'utils/availability';
 
 interface SelectChangeValue {
     value: string;
@@ -19,9 +20,17 @@ type Props = Readonly<{
     isUpdating?: boolean;
     notificationProfileItems?: SelectChangeValue[];
     onNotificationProfileItemsChange: (items: SelectChangeValue[]) => void;
+    requires?: Availability;
 }>;
 
-export function SendNotificationExecutionItems({ mode, isUpdating, notificationProfileItems, onNotificationProfileItemsChange }: Props) {
+export function SendNotificationExecutionItems({
+    mode,
+    isUpdating,
+    notificationProfileItems,
+    onNotificationProfileItemsChange,
+    requires,
+}: Props) {
+    const denied = !!requires && !requires.available;
     const dispatch = useDispatch();
 
     const notificationProfiles = useSelector(notificationProfileSelectors.notificationProfiles);
@@ -100,10 +109,11 @@ export function SendNotificationExecutionItems({ mode, isUpdating, notificationP
                                 );
                             }}
                             value={selectedProfile?.value || ''}
+                            isDisabled={denied}
                         />
                     </div>
 
-                    <Button color="primary" disabled={isFetchingList || !selectedProfile} onClick={onAddProfileClick}>
+                    <Button color="primary" disabled={isFetchingList || !selectedProfile} requires={requires} onClick={onAddProfileClick}>
                         Add
                     </Button>
                 </Container>
@@ -113,7 +123,12 @@ export function SendNotificationExecutionItems({ mode, isUpdating, notificationP
                 <div className="flex gap-2 flex-wrap pt-2">
                     {selectedProfiles.map((profile, i) => (
                         <Badge key={profile.value + i}>
-                            {getBadgeContent(i, profile.label, profile.value, selectedProfiles.length <= 1 && mode === 'detail')}
+                            {getBadgeContent(
+                                i,
+                                profile.label,
+                                profile.value,
+                                denied || (selectedProfiles.length <= 1 && mode === 'detail'),
+                            )}
                         </Badge>
                     ))}
                 </div>

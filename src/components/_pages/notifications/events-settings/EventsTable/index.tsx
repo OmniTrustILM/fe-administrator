@@ -9,7 +9,9 @@ import { actions as resourceActions, selectors as resourceSelectors } from 'duck
 import { actions as settingsActions, selectors as settingsSelectors } from 'ducks/settings';
 import { actions as rulesActions, selectors as rulesSelectors } from 'ducks/rules';
 import { useDispatch, useSelector } from 'react-redux';
-import { PlatformEnum, Resource, type ResourceEvent } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction, type ResourceEvent } from 'types/openapi';
+import { requireAll } from 'utils/availability';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import type { LockWidgetNameEnum } from 'types/user-interface';
 import Dialog from 'components/Dialog';
 import { useForm, Controller, FormProvider, useWatch } from 'react-hook-form';
@@ -43,6 +45,13 @@ type FormValues = {
     triggerUuids?: string[];
 };
 const EventsTable = ({ mode, resource, resourceUuid, widgetLocks }: Props) => {
+    const canOnSettings = useActionAvailability(Resource.Settings);
+    const canOnTriggers = useActionAvailability(Resource.Triggers);
+    // Saving platform event settings also associates the triggers, which core checks as trigger update.
+    const updateRequires =
+        mode === 'association'
+            ? canOnTriggers(ResourceAction.Update)
+            : requireAll(canOnSettings(ResourceAction.Update), canOnTriggers(ResourceAction.Update));
     const dispatch = useDispatch();
 
     const allResourceEvents = useSelector(resourceSelectors.allResourceEvents);
@@ -249,6 +258,7 @@ const EventsTable = ({ mode, resource, resourceUuid, widgetLocks }: Props) => {
                             title="Edit"
                             key="edit"
                             onClick={() => onEdit(event as ResourceEvent)}
+                            requires={updateRequires}
                             className="!p-1"
                         >
                             <Edit size={16} />
@@ -256,7 +266,7 @@ const EventsTable = ({ mode, resource, resourceUuid, widgetLocks }: Props) => {
                     ],
                 };
             });
-    }, [mode, eventTriggerAssociation, eventsSettings, getResourceEventModel, resourceEventEnum, resourceEnum, onEdit]);
+    }, [mode, eventTriggerAssociation, eventsSettings, getResourceEventModel, resourceEventEnum, resourceEnum, onEdit, updateRequires]);
 
     const eventOptions = useMemo(() => {
         const source = mode === 'association' ? resourceEvents : allResourceEvents;
@@ -277,10 +287,11 @@ const EventsTable = ({ mode, resource, resourceUuid, widgetLocks }: Props) => {
                 icon: 'plus',
                 disabled: !eventOptions.length,
                 tooltip: textContent.addTooltip,
+                requires: updateRequires,
                 onClick: () => setIsTriggersDialogOpen(true),
             },
         ],
-        [eventOptions.length, textContent.addTooltip],
+        [eventOptions.length, textContent.addTooltip, updateRequires],
     );
 
     const defaultValues: FormValues = useMemo(() => {

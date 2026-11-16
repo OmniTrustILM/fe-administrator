@@ -15,10 +15,12 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router';
 import Container from 'components/Container';
-import { ExecutionType, PlatformEnum, Resource } from 'types/openapi';
+import { ExecutionType, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 const ExecutionDetails = () => {
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Actions);
     const dispatch = useDispatch();
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
     const executionTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.ExecutionType));
@@ -80,7 +82,7 @@ const ExecutionDetails = () => {
         [dispatch, id, executionDetails],
     );
 
-    const buttons = useMemo(() => getEditAndDeleteWidgetButtons(() => setIsEditOpen(true), setConfirmDelete), []);
+    const buttons = useMemo(() => getEditAndDeleteWidgetButtons(() => setIsEditOpen(true), setConfirmDelete, can), [can]);
     const executionTableHeaders = propertyValueActionsHeaders;
 
     const executionDetailsData: TableDataRow[] = useMemo(
@@ -124,7 +126,11 @@ const ExecutionDetails = () => {
             case ExecutionType.SetField:
                 return (
                     executionDetails?.resource && (
-                        <ConditionAndSetFieldExecutionItemsViewer resource={executionDetails.resource} formType="executionItems" />
+                        <ConditionAndSetFieldExecutionItemsViewer
+                            resource={executionDetails.resource}
+                            formType="executionItems"
+                            requires={can(ResourceAction.Update)}
+                        />
                     )
                 );
             case ExecutionType.SendNotification:
@@ -133,6 +139,7 @@ const ExecutionDetails = () => {
                         <SendNotificationExecutionItems
                             mode="detail"
                             isUpdating={isUpdatingDetails}
+                            requires={can(ResourceAction.Update)}
                             notificationProfileItems={
                                 executionDetails.items.map((el) => ({
                                     label: el.notificationProfileName ?? '',
@@ -146,7 +153,7 @@ const ExecutionDetails = () => {
                     </div>
                 );
         }
-    }, [executionDetails, isUpdatingDetails, onUpdateSendNotificationExecutionItems]);
+    }, [executionDetails, isUpdatingDetails, onUpdateSendNotificationExecutionItems, can]);
 
     if (isFetchingDetails && !executionDetails) {
         return <DetailPageSkeleton layout="simple" buttonsCount={1} />;

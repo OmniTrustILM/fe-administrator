@@ -18,6 +18,7 @@ import type { PlatformEnumModel } from 'types/enums';
 import { AttributeContentType, FilterFieldSource, FilterFieldType, PlatformEnum } from 'types/openapi';
 import type { ExecutionItemModel, ExecutionItemRequestModel } from 'types/rules';
 import { getFormTypeFromAttributeContentType, getFormTypeFromFilterFieldType } from 'utils/common-utils';
+import type { Availability } from 'utils/availability';
 import { toDisplayString } from 'utils/displayValue';
 import {
     checkIfFieldAttributeTypeIsDate,
@@ -159,6 +160,7 @@ type Props = {
     onActionsUpdate?: (actionRuleRequests: ExecutionItemModel[]) => void;
     ExecutionsList?: ExecutionItemModel[];
     disableBadgeRemove?: boolean;
+    requires?: Availability;
     busyBadges?: boolean;
 };
 
@@ -173,6 +175,7 @@ export default function FilterWidgetRuleAction({
     getAvailableFiltersApi,
     getSourceAvailableFiltersApi,
     disableBadgeRemove,
+    requires,
     busyBadges,
 }: Readonly<Props>) {
     const dispatch = useDispatch();
@@ -959,7 +962,13 @@ export default function FilterWidgetRuleAction({
                         )}
 
                         <div className="flex items-end">
-                            <Button color="primary" className="py-3 min-w-[62px]" onClick={onUpdateClick} disabled={isUpdateButtonDisabled}>
+                            <Button
+                                color="primary"
+                                className="py-3 min-w-[62px]"
+                                onClick={onUpdateClick}
+                                disabled={isUpdateButtonDisabled}
+                                requires={requires}
+                            >
                                 {selectedFilter === -1 ? 'Add' : 'Update'}
                             </Button>
                         </div>
