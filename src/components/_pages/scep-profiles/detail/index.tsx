@@ -15,7 +15,8 @@ import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import ScepProfileForm from '../form';
-import { PlatformEnum, Resource } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders, getGroupNames, getOwnerName } from 'utils/widget';
 import { actions as groupsActions, selectors as groupsSelectors } from 'ducks/certificateGroups';
@@ -31,6 +32,7 @@ export default function ScepProfileDetail() {
     const dispatch = useDispatch();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.ScepProfiles, id);
 
     const scepProfile = useSelector(selectors.scepProfile);
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
@@ -113,6 +115,7 @@ export default function ScepProfileDetail() {
             {
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: () => {
                     onEditClick();
@@ -121,6 +124,7 @@ export default function ScepProfileDetail() {
             {
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => {
                     setConfirmDelete(true);
@@ -129,6 +133,7 @@ export default function ScepProfileDetail() {
             {
                 icon: 'check',
                 disabled: scepProfile?.enabled || false,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Enable',
                 onClick: () => {
                     onEnableClick();
@@ -137,13 +142,14 @@ export default function ScepProfileDetail() {
             {
                 icon: 'times',
                 disabled: !(scepProfile?.enabled || false),
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Disable',
                 onClick: () => {
                     onDisableClick();
                 },
             },
         ],
-        [scepProfile, onEditClick, onDisableClick, onEnableClick],
+        [scepProfile, onEditClick, onDisableClick, onEnableClick, can],
     );
 
     const tableHeader: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -396,6 +402,7 @@ export default function ScepProfileDetail() {
                                 resource={Resource.ScepProfiles}
                                 resourceUuid={scepProfile.uuid}
                                 attributes={scepProfile.customAttributes}
+                                requires={can(ResourceAction.Update)}
                             />
                         )}
                     </Container>

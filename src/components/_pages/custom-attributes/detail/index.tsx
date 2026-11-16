@@ -10,7 +10,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router';
 import Badge from 'components/Badge';
 import { EnumValueDescription } from 'components/EnumDescription';
-import { PlatformEnum, Resource } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { getAttributeContent, getAttributeCopyValue } from 'utils/attributes/attributes';
 import { useCopyToClipboard } from 'utils/common-hooks';
@@ -26,6 +27,7 @@ export default function CustomAttributeDetail() {
     const dispatch = useDispatch();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Attributes, id);
 
     const customAttribute = useSelector(selectors.customAttribute);
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
@@ -78,6 +80,7 @@ export default function CustomAttributeDetail() {
         () => [
             {
                 icon: 'pencil',
+                requires: can(ResourceAction.Update),
                 disabled: false,
                 tooltip: 'Edit',
                 onClick: () => {
@@ -86,6 +89,7 @@ export default function CustomAttributeDetail() {
             },
             {
                 icon: 'trash',
+                requires: can(ResourceAction.Delete),
                 disabled: false,
                 tooltip: 'Delete',
                 onClick: () => {
@@ -94,6 +98,7 @@ export default function CustomAttributeDetail() {
             },
             {
                 icon: customAttribute?.enabled ? 'times' : 'check',
+                requires: can(ResourceAction.Enable),
                 disabled: !customAttribute || isEnabling || isDisabling,
                 tooltip: customAttribute?.enabled ? 'Disable' : 'Enable',
                 onClick: () => {
@@ -105,7 +110,7 @@ export default function CustomAttributeDetail() {
                 },
             },
         ],
-        [onEditClick, customAttribute, dispatch, isDisabling, isEnabling],
+        [onEditClick, customAttribute, dispatch, isDisabling, isEnabling, can],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);

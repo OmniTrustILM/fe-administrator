@@ -12,7 +12,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router';
 import Badge from 'components/Badge';
 import Switch from 'components/Switch';
-import { PlatformEnum, Resource } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { describeCronSchedule } from 'utils/cronSchedule';
 import { dateFormatter } from 'utils/dateUtil';
@@ -111,6 +112,7 @@ const CronExpressionForm = ({
 export default function SchedulerJobDetail() {
     const dispatch = useDispatch();
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Jobs);
     const schedulerJob = useSelector(selectors.schedulerJob);
     const isFetching = useSelector(selectors.isFetchingDetail);
     const isDeleting = useSelector(selectors.isDeleting);
@@ -198,6 +200,7 @@ export default function SchedulerJobDetail() {
         () => [
             {
                 icon: 'trash',
+                requires: can(ResourceAction.Delete),
                 disabled: isBusy || (schedulerJob?.system ?? true),
                 tooltip: 'Delete',
                 onClick: () => {
@@ -206,6 +209,7 @@ export default function SchedulerJobDetail() {
             },
             {
                 icon: 'check',
+                requires: can(ResourceAction.Enable),
                 disabled: isBusy || (schedulerJob?.enabled ?? true),
                 tooltip: 'Enable',
                 onClick: () => {
@@ -214,6 +218,7 @@ export default function SchedulerJobDetail() {
             },
             {
                 icon: 'times',
+                requires: can(ResourceAction.Enable),
                 disabled: isBusy || !schedulerJob?.enabled,
                 tooltip: 'Disable',
                 onClick: () => {
@@ -222,12 +227,13 @@ export default function SchedulerJobDetail() {
             },
             {
                 icon: 'pencil',
+                requires: can(ResourceAction.Update),
                 disabled: isBusy || !schedulerJob,
                 tooltip: 'Edit CRON Expression',
                 onClick: openEditCronModal,
             },
         ],
-        [dispatch, schedulerJob, openEditCronModal, isBusy],
+        [dispatch, schedulerJob, openEditCronModal, isBusy, can],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);

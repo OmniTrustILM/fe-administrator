@@ -12,6 +12,10 @@ setupReactActEnvironment();
 vi.mock('react-redux', async () => {
     return await import('../../test-utils/reactReduxMockModule');
 });
+vi.mock('utils/useActionAvailability', async () => {
+    const { actionAvailabilityMockModule } = await import('../../test-utils/mockModules');
+    return actionAvailabilityMockModule();
+});
 
 vi.mock('react-router', () => ({
     useParams: () => ({ id: 'auth-1' }),

@@ -12,7 +12,8 @@ import { Link, useParams } from 'react-router';
 import GroupForm from '../form';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { PlatformEnum, Resource } from '../../../../types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from '../../../../types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import EventsTable from 'components/_pages/notifications/events-settings/EventsTable';
 import ObjectEventHistoryWidget from 'components/_pages/notifications/events-settings/ObjectEventHistoryWidget';
@@ -26,6 +27,7 @@ export default function GroupDetail() {
     const dispatch = useDispatch();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Groups, id);
 
     const group = useSelector(selectors.certificateGroup);
     const groupUsers = useSelector(selectors.groupUsers);
@@ -76,7 +78,10 @@ export default function GroupDetail() {
         setConfirmDelete(false);
     }, [group, dispatch]);
 
-    const buttons: WidgetButtonProps[] = useMemo(() => getEditAndDeleteWidgetButtons(onEditClick, setConfirmDelete), [onEditClick]);
+    const buttons: WidgetButtonProps[] = useMemo(
+        () => getEditAndDeleteWidgetButtons(onEditClick, setConfirmDelete, can),
+        [onEditClick, can],
+    );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
 
@@ -164,6 +169,7 @@ export default function GroupDetail() {
                                                 resource={Resource.Groups}
                                                 resourceUuid={group.uuid}
                                                 attributes={group.customAttributes}
+                                                requires={can(ResourceAction.Update)}
                                             />
                                         )}
                                     </Container>

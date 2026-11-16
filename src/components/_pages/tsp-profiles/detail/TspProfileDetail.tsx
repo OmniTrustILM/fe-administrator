@@ -17,7 +17,9 @@ import CustomAttributeWidget from 'components/Attributes/CustomAttributeWidget';
 import { actions, selectors } from 'ducks/tsp-profiles';
 import { actions as basicCredentialActions, selectors as basicCredentialSelectors } from 'ducks/tsp-profile-basic-credentials';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
-import { PlatformEnum, Resource, TspAuthenticationMethod, type TspBasicCredentialDto } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction, TspAuthenticationMethod, type TspBasicCredentialDto } from 'types/openapi';
+import { requireAll } from 'utils/availability';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import TspBasicCredentialDialog from './TspBasicCredentialDialog';
@@ -27,6 +29,10 @@ export const TspProfileDetail = () => {
     const navigate = useNavigate();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.TspProfiles, id);
+    const canOnCredentials = useActionAvailability(Resource.TspProfileBasicCredentials);
+    const canOnSecrets = useActionAvailability(Resource.Secrets);
+    const canOnUsers = useActionAvailability(Resource.Users);
 
     const tspProfile = useSelector(selectors.tspProfile);
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
@@ -112,6 +118,7 @@ export const TspProfileDetail = () => {
                 id: 'edit',
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: onEditClick,
             },
@@ -119,6 +126,7 @@ export const TspProfileDetail = () => {
                 id: 'delete',
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => setConfirmDelete(true),
             },
@@ -126,6 +134,7 @@ export const TspProfileDetail = () => {
                 id: 'enable',
                 icon: 'check',
                 disabled: tspProfile?.enabled ?? true,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Enable',
                 onClick: onEnableClick,
             },
@@ -133,11 +142,12 @@ export const TspProfileDetail = () => {
                 id: 'disable',
                 icon: 'times',
                 disabled: !(tspProfile?.enabled ?? false),
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Disable',
                 onClick: onDisableClick,
             },
         ],
-        [tspProfile, onEditClick, onEnableClick, onDisableClick],
+        [tspProfile, onEditClick, onEnableClick, onDisableClick, can],
     );
 
     const tableHeader: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -276,6 +286,7 @@ export const TspProfileDetail = () => {
                                 id: 'editCredential',
                                 icon: 'pencil',
                                 disabled: isDeletingCredential,
+                                requires: canOnCredentials(ResourceAction.Update, { onObjects: true }),
                                 tooltip: 'Edit',
                                 onClick: () => {
                                     setEditCredential(credential);
@@ -286,6 +297,7 @@ export const TspProfileDetail = () => {
                                 id: 'deleteCredential',
                                 icon: 'trash',
                                 disabled: isDeletingCredential,
+                                requires: canOnCredentials(ResourceAction.Delete, { onObjects: true }),
                                 tooltip: 'Delete',
                                 onClick: () => setConfirmDeleteCredentialUuid(credential.uuid),
                             },
@@ -293,7 +305,7 @@ export const TspProfileDetail = () => {
                     />,
                 ],
             })),
-        [basicCredentials, isDeletingCredential],
+        [basicCredentials, isDeletingCredential, canOnCredentials],
     );
 
     const credentialWidgetButtons: WidgetButtonProps[] = useMemo(
@@ -302,11 +314,16 @@ export const TspProfileDetail = () => {
                 id: 'addCredential',
                 icon: 'plus',
                 disabled: !basicPasswordAllowed,
+                requires: requireAll(
+                    canOnCredentials(ResourceAction.Create),
+                    canOnSecrets(ResourceAction.Create),
+                    canOnUsers(ResourceAction.Detail),
+                ),
                 tooltip: 'Create Basic Credential',
                 onClick: openCreateCredentialDialog,
             },
         ],
-        [openCreateCredentialDialog, basicPasswordAllowed],
+        [openCreateCredentialDialog, basicPasswordAllowed, canOnCredentials, canOnSecrets, canOnUsers],
     );
 
     return (
@@ -333,6 +350,7 @@ export const TspProfileDetail = () => {
                                 resource={Resource.TspProfiles}
                                 resourceUuid={tspProfile.uuid}
                                 attributes={tspProfile.customAttributes}
+                                requires={can(ResourceAction.Update)}
                             />
                         )}
                     </Container>

@@ -17,7 +17,8 @@ import { actions as userInterfaceActions } from 'ducks/user-interface';
 
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type { FunctionGroupModel, HealthModel } from 'types/connectors';
-import { ConnectorStatus, ConnectorVersion, HealthStatus, PlatformEnum, Resource } from 'types/openapi';
+import { ConnectorStatus, ConnectorVersion, HealthStatus, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { inventoryStatus } from 'utils/connector';
@@ -76,6 +77,7 @@ export default function ConnectorDetail() {
     const dispatch = useDispatch();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Connectors, id);
 
     const authTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.AuthType));
 
@@ -214,6 +216,7 @@ export default function ConnectorDetail() {
             {
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: () => {
                     onEditClick();
@@ -222,6 +225,7 @@ export default function ConnectorDetail() {
             {
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => {
                     setConfirmDelete(true);
@@ -230,6 +234,7 @@ export default function ConnectorDetail() {
             {
                 icon: 'unplug',
                 disabled: false,
+                requires: can(ResourceAction.Connect),
                 tooltip: 'Reconnect',
                 onClick: () => {
                     onReconnectClick();
@@ -238,13 +243,14 @@ export default function ConnectorDetail() {
             {
                 icon: 'check',
                 disabled: connector ? connector.status === ConnectorStatus.Connected : false,
+                requires: can(ResourceAction.Approve),
                 tooltip: 'Approve',
                 onClick: () => {
                     setConfirmAuthorize(true);
                 },
             },
         ],
-        [onEditClick, onReconnectClick, setConfirmDelete, setConfirmAuthorize, connector],
+        [onEditClick, onReconnectClick, setConfirmDelete, setConfirmAuthorize, connector, can],
     );
 
     const attributesHeaders: TableHeader[] = useMemo(
@@ -413,6 +419,7 @@ export default function ConnectorDetail() {
                                 resource={Resource.Connectors}
                                 resourceUuid={connector.uuid}
                                 attributes={connector.customAttributes}
+                                requires={can(ResourceAction.Update)}
                             />
                         )}
                     </Container>
