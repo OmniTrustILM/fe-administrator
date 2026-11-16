@@ -6,12 +6,14 @@ import { initialState as certificatesInitialState } from 'ducks/certificates';
 import locationsReducer, { initialState as locationsInitialState } from 'ducks/locations';
 import { testInitialState, testReducers } from 'ducks/test-reducers';
 import type { CertificateDetailResponseModel } from 'types/certificate';
-import { CertificateState, type Resource } from 'types/openapi';
+import { CertificateState, Resource, type ResourceAction } from 'types/openapi';
 import { useRecordingStore } from 'utils/test-helpers';
 import CertificateDetail from './index';
 
 type Props = Readonly<{
     allowedListings: Resource[];
+    /** What the allowed-actions endpoint answered for the certificate; omitted leaves it loading. */
+    allowedActions?: ResourceAction[];
 }>;
 
 const certificate = {
@@ -36,14 +38,24 @@ const reducer = ((state: HarnessState | undefined, action: UnknownAction) => {
     return { ...testReducers(rest as ReturnType<typeof testReducers>, action), locations: locationsReducer(locations, action) };
 }) as unknown as typeof testReducers;
 
-export default function CertificateDetailWithStore({ allowedListings }: Props) {
+export default function CertificateDetailWithStore({ allowedListings, allowedActions }: Props) {
     const preloadedState = useMemo(
         () => ({
             auth: { ...testInitialState.auth, profile: { username: 'user', permissions: { allowedListings, allowedActions: [] } } },
             certificates: { ...certificatesInitialState, ...testInitialState.certificates, certificateDetail: certificate },
             locations: locationsInitialState,
+            resource: {
+                ...testInitialState.resource,
+                resourcesList: [
+                    { resource: Resource.Certificates, hasObjectAccess: true, hasOwner: true },
+                    { resource: Resource.Locations, hasObjectAccess: false, hasOwner: false },
+                ],
+                objectAllowedActions: allowedActions
+                    ? { [`${Resource.Certificates}/cert-uuid`]: { status: 'loaded' as const, allowedActions } }
+                    : {},
+            },
         }),
-        [allowedListings],
+        [allowedListings, allowedActions],
     );
     const { store, dispatched } = useRecordingStore(preloadedState as never, recorded, reducer);
 

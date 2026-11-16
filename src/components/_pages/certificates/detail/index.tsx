@@ -40,6 +40,7 @@ import type { AttributeDescriptorModel, AttributeResponseModel } from 'types/att
 import type { CertificateListResponseModel } from 'types/certificate';
 import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
 import { selectors as authSelectors } from 'ducks/auth';
+import { actions as resourceActions } from 'ducks/resource';
 import { useActionAvailability } from 'utils/useActionAvailability';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { collectFormAttributes } from 'utils/attributes/attributes';
@@ -390,6 +391,12 @@ export default function CertificateDetail() {
     useEffect(() => {
         getFreshCertificateDetail();
     }, [getFreshCertificateDetail, id]);
+
+    // The hook asks for the allowed actions once on mount; a later refetch has to ask again or the answer goes stale.
+    const refreshCertificateDetail = useCallback(() => {
+        getFreshCertificateDetail();
+        if (id) dispatch(resourceActions.listObjectAllowedActions({ resource: Resource.Certificates, uuid: id }));
+    }, [dispatch, id, getFreshCertificateDetail]);
 
     const getFreshCertificateValidations = useCallback(() => {
         if (!certificate) return;
@@ -1220,7 +1227,7 @@ export default function CertificateDetail() {
                                     certificate={certificate}
                                     validationResult={validationResult}
                                     isBusy={isBusy}
-                                    getFreshCertificateDetail={getFreshCertificateDetail}
+                                    getFreshCertificateDetail={refreshCertificateDetail}
                                     can={can}
                                 />
                             ),
@@ -1232,7 +1239,7 @@ export default function CertificateDetail() {
                                 <CertificateRequestContent
                                     certificate={certificate}
                                     isBusy={isBusy}
-                                    getFreshCertificateDetail={getFreshCertificateDetail}
+                                    getFreshCertificateDetail={refreshCertificateDetail}
                                     setSelectedAttributesInfo={setSelectedAttributesInfo}
                                 />
                             ),
