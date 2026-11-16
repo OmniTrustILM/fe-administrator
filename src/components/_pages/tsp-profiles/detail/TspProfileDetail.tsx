@@ -18,6 +18,7 @@ import { actions, selectors } from 'ducks/tsp-profiles';
 import { actions as basicCredentialActions, selectors as basicCredentialSelectors } from 'ducks/tsp-profile-basic-credentials';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { PlatformEnum, Resource, ResourceAction, TspAuthenticationMethod, type TspBasicCredentialDto } from 'types/openapi';
+import { requireAll } from 'utils/availability';
 import { useActionAvailability } from 'utils/useActionAvailability';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders } from 'utils/widget';
@@ -30,6 +31,8 @@ export const TspProfileDetail = () => {
     const { id } = useParams();
     const can = useActionAvailability(Resource.TspProfiles, id);
     const canOnCredentials = useActionAvailability(Resource.TspProfileBasicCredentials);
+    const canOnSecrets = useActionAvailability(Resource.Secrets);
+    const canOnUsers = useActionAvailability(Resource.Users);
 
     const tspProfile = useSelector(selectors.tspProfile);
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
@@ -311,12 +314,16 @@ export const TspProfileDetail = () => {
                 id: 'addCredential',
                 icon: 'plus',
                 disabled: !basicPasswordAllowed,
-                requires: canOnCredentials(ResourceAction.Create),
+                requires: requireAll(
+                    canOnCredentials(ResourceAction.Create),
+                    canOnSecrets(ResourceAction.Create),
+                    canOnUsers(ResourceAction.Detail),
+                ),
                 tooltip: 'Create Basic Credential',
                 onClick: openCreateCredentialDialog,
             },
         ],
-        [openCreateCredentialDialog, basicPasswordAllowed, canOnCredentials],
+        [openCreateCredentialDialog, basicPasswordAllowed, canOnCredentials, canOnSecrets, canOnUsers],
     );
 
     return (
