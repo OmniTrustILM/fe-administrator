@@ -10,16 +10,19 @@ import AcmeProfileDetail from './index';
 type Props = Readonly<{
     /** What the allowed-actions endpoint answered for the ACME profile; every action when omitted. */
     allowedActions?: ResourceAction[];
+    /** Actions the user holds on whole resources; none when omitted. */
+    resourceGrants?: { resource: Resource; actions: ResourceAction[] }[];
 }>;
 
 const acmeProfile = { uuid: 'acme-profile-1', name: 'ACME profile', enabled: true } as unknown as AcmeProfileResponseModel;
 
-export default function AcmeProfileDetailWithStore({ allowedActions = Object.values(ResourceAction) }: Props) {
+export default function AcmeProfileDetailWithStore({ allowedActions = Object.values(ResourceAction), resourceGrants }: Props) {
     const [store] = useState(() =>
         createObjectPermissionStore({
             resource: Resource.AcmeProfiles,
             uuid: acmeProfile.uuid,
             allowedActions,
+            resourceGrants,
             realSlices: [acmeProfilesSlice],
             preloadedState: { acmeProfiles: { ...acmeProfilesInitialState, acmeProfile } },
         }),

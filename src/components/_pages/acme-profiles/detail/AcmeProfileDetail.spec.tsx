@@ -1,4 +1,4 @@
-import { ResourceAction } from 'types/openapi';
+import { Resource, ResourceAction } from 'types/openapi';
 import { expect, test } from '../../../../../playwright/ct-test';
 import AcmeProfileDetailWithStore from './AcmeProfileDetailWithStore';
 
@@ -27,5 +27,30 @@ test.describe('AcmeProfileDetail actions by permission', () => {
         for (const testId of changing) {
             await expect(page.getByTestId(testId)).toBeEnabled();
         }
+    });
+
+    test('disables Generate key without ACME profile create, which generating the key needs as well as secret create', async ({
+        mount,
+        page,
+    }) => {
+        await mount(<AcmeProfileDetailWithStore resourceGrants={[{ resource: Resource.Secrets, actions: [ResourceAction.Create] }]} />);
+
+        const generate = page.getByRole('button', { name: 'Generate key' });
+        await expect(generate).toBeDisabled();
+        await generate.locator('..').hover();
+        await expect(page.getByRole('tooltip')).toContainText(/create permission on acme/i);
+    });
+
+    test('offers Generate key with both secret create and ACME profile create', async ({ mount, page }) => {
+        await mount(
+            <AcmeProfileDetailWithStore
+                resourceGrants={[
+                    { resource: Resource.Secrets, actions: [ResourceAction.Create] },
+                    { resource: Resource.AcmeProfiles, actions: [ResourceAction.Create] },
+                ]}
+            />,
+        );
+
+        await expect(page.getByRole('button', { name: 'Generate key' })).toBeEnabled();
     });
 });

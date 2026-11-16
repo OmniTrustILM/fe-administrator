@@ -6,19 +6,22 @@ type TestState = ReturnType<typeof testReducers>;
 type State = TestState & Record<string, unknown>;
 
 /**
- * A store for a detail page whose allowed-actions answer for one object is already in, with a profile holding no
- * resource grant, so every control follows that answer. `realSlices` stand in for slices the test reducers lack.
+ * A store for a detail page whose allowed-actions answer for one object is already in, with a profile holding only the
+ * given resource grants (none by default), so every control on the object follows that answer. `realSlices` stand in
+ * for slices the test reducers lack.
  */
 export function createObjectPermissionStore({
     resource,
     uuid,
     allowedActions,
+    resourceGrants = [],
     realSlices = [],
     preloadedState = {},
 }: {
     resource: Resource;
     uuid: string;
     allowedActions: ResourceAction[];
+    resourceGrants?: { resource: Resource; actions: ResourceAction[] }[];
     realSlices?: Slice[];
     preloadedState?: Record<string, unknown>;
 }) {
@@ -35,7 +38,10 @@ export function createObjectPermissionStore({
         middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }),
         preloadedState: {
             ...reducer(undefined, { type: 'init' }),
-            auth: { ...testInitialState.auth, profile: { username: 'user', permissions: { allowedListings: [], allowedActions: [] } } },
+            auth: {
+                ...testInitialState.auth,
+                profile: { username: 'user', permissions: { allowedListings: [], allowedActions: resourceGrants } },
+            },
             resource: {
                 ...testInitialState.resource,
                 objectAllowedActions: { [`${resource}/${uuid}`]: { status: 'loaded', allowedActions } },

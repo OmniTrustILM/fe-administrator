@@ -14,6 +14,7 @@ import { Link, useParams } from 'react-router';
 import AcmeProfileForm from '../form';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { PlatformEnum, Resource, ResourceAction } from '../../../../types/openapi';
+import { requireAll } from 'utils/availability';
 import { useActionAvailability } from 'utils/useActionAvailability';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import { createWidgetDetailHeaders, getGroupNames, getOwnerName } from 'utils/widget';
@@ -35,6 +36,7 @@ export default function AdministratorDetail() {
     const { id } = useParams();
     const can = useActionAvailability(Resource.AcmeProfiles, id);
     const canOnSecrets = useActionAvailability(Resource.Secrets);
+    const canOnAcmeProfiles = useActionAvailability(Resource.AcmeProfiles);
 
     const acmeProfile = useSelector(selectors.acmeProfile);
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
@@ -388,7 +390,7 @@ export default function AdministratorDetail() {
                             isLoading={isFetchingSecrets}
                             listError={secretsListError}
                             onGenerateKey={() => setIsKeyDialogOpen(true)}
-                            generateRequires={canOnSecrets(ResourceAction.Create)}
+                            generateRequires={requireAll(canOnSecrets(ResourceAction.Create), canOnAcmeProfiles(ResourceAction.Create))}
                         />
                     )}
                     <GenerateEabKeyDialog isOpen={isKeyDialogOpen} onClose={() => setIsKeyDialogOpen(false)} />
