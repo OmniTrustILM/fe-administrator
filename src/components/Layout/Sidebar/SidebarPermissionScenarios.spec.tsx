@@ -43,7 +43,7 @@ test.describe('Sidebar sections by permission scenario', () => {
             if (shown.some((entry) => profiles.includes(entry))) await component.getByTestId('sidebar-profiles').click();
 
             for (const [entry, testId] of Object.entries(entries) as [Entry, string][]) {
-                if (shown.includes(entry)) await expect(component.getByTestId(testId)).toBeVisible();
+                if (shown.includes(entry)) await expect(component.getByTestId(testId)).toBeInViewport();
                 else await expect(component.getByTestId(testId)).toHaveCount(0);
             }
         });
