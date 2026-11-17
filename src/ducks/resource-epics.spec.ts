@@ -55,6 +55,19 @@ describe('listObjectAllowedActions epic', () => {
         ]);
     });
 
+    test('matches the answer to a mixed-case request UUID', async () => {
+        const uuid = 'AB12CD34-0000-4000-8000-00000000000F';
+        const request = () => of({ items: [{ uuid: uuid.toLowerCase(), allowedActions: [ResourceAction.Update] }] });
+
+        const emitted = await startListObjectAllowedActions(request, [
+            actions.listObjectAllowedActions({ resource: Resource.Secrets, uuid }),
+        ]);
+
+        expect(emitted).toEqual([
+            actions.listObjectAllowedActionsSuccess({ resource: Resource.Secrets, uuid, allowedActions: [ResourceAction.Update] }),
+        ]);
+    });
+
     test('stores no actions for an object left out of the answer', async () => {
         const emitted = await runListObjectAllowedActions(() => of({ items: [] }));
 

@@ -2,7 +2,15 @@ import { describe, expect, it } from 'vitest';
 import type { UserProfileDetailModel } from 'types/auth';
 import type { ResourceModel } from 'types/resource';
 import { Resource, ResourceAction } from 'types/openapi';
-import { type ActionRule, type Availability, missingPermissionReason, requireAll, requireAny, resolveAvailability } from './availability';
+import {
+    type ActionRule,
+    type Availability,
+    missingPermissionReason,
+    objectDeniedReason,
+    requireAll,
+    requireAny,
+    resolveAvailability,
+} from './availability';
 import { objectAccessOf, objectAnswerFor } from './useActionAvailability';
 
 const profileWith = (allowedActions: UserProfileDetailModel['permissions']['allowedActions']): UserProfileDetailModel =>
@@ -39,11 +47,23 @@ describe('resolveAvailability', () => {
         expect(resolveAvailability({ rule, profile: withoutGrants, objectAnswer, labels })).toEqual(available);
     });
 
-    it('disables an action the object answer leaves out despite a resource grant', () => {
+    it('disables an action the object answer leaves out despite a resource grant, without naming a missing grant', () => {
+        const result = resolveAvailability({
+            rule,
+            profile: withUpdate,
+            objectAnswer: { status: 'loaded', allowedActions: [ResourceAction.Detail] },
+            labels,
+        });
+
+        expect(result).toEqual({ ...denied, reason: objectDeniedReason(labels) });
+        expect(result.reason).toBe('Your permissions do not allow Update on this object.');
+    });
+
+    it('names the missing resource grant when the object answer and the profile both deny', () => {
         expect(
             resolveAvailability({
                 rule,
-                profile: withUpdate,
+                profile: withoutGrants,
                 objectAnswer: { status: 'loaded', allowedActions: [ResourceAction.Detail] },
                 labels,
             }),
@@ -53,7 +73,7 @@ describe('resolveAvailability', () => {
     it('disables every action on an object left out of the answer', () => {
         expect(
             resolveAvailability({ rule, profile: withUpdate, objectAnswer: { status: 'loaded', allowedActions: undefined }, labels }),
-        ).toEqual(denied);
+        ).toEqual({ ...denied, reason: objectDeniedReason(labels) });
     });
 
     it('lets the profile decide when no object answer is asked for', () => {
@@ -112,7 +132,7 @@ describe('resolveAvailability', () => {
                 objectAnswer: { status: 'loaded', allowedActions: [ResourceAction.Detail] },
                 labels,
             }),
-        ).toEqual(denied);
+        ).toEqual({ ...denied, reason: objectDeniedReason(labels) });
     });
 
     it('reports loading while the profile is not loaded', () => {

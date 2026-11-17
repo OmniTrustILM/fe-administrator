@@ -37,6 +37,8 @@ export type AvailabilityLabels = {
 export const missingPermissionReason = ({ resource, action }: AvailabilityLabels): string =>
     `You need the ${action} permission on ${resource}.`;
 
+export const objectDeniedReason = ({ action }: AvailabilityLabels): string => `Your permissions do not allow ${action} on this object.`;
+
 const LOADING: Availability = { available: false, hidden: false, loading: true };
 const AVAILABLE: Availability = { available: true, hidden: false, loading: false };
 
@@ -106,5 +108,10 @@ export function resolveAvailability({
             : hasResourceAction(profile, rule.resource, rule.action);
 
     if (allowed) return AVAILABLE;
-    return { available: false, hidden: !!rule.hideWhenDenied, loading: false, reason: missingPermissionReason(labels) };
+    // The object answer can also deny for a missing grant on a related resource, so it does not name one.
+    const reason =
+        answer?.status === 'loaded' && hasResourceAction(profile, rule.resource, rule.action)
+            ? objectDeniedReason(labels)
+            : missingPermissionReason(labels);
+    return { available: false, hidden: !!rule.hideWhenDenied, loading: false, reason };
 }

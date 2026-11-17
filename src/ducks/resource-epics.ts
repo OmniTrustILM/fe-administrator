@@ -64,7 +64,8 @@ const listObjectAllowedActions: AppEpic = (action$, state, deps) => {
                                 slice.actions.listObjectAllowedActionsSuccess({
                                     resource,
                                     uuid,
-                                    allowedActions: response.items.find((item) => item.uuid === uuid)?.allowedActions,
+                                    allowedActions: response.items.find((item) => item.uuid.toLowerCase() === uuid.toLowerCase())
+                                        ?.allowedActions,
                                 }),
                             ),
                             catchError(() => of(slice.actions.listObjectAllowedActionsFailure({ resource, uuid }))),
