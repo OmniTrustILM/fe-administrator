@@ -7,11 +7,13 @@ import { extractComplianceErrors } from 'utils/raProfileValidation';
 import { fileNameFromContentDisposition, triggerBlobDownload } from 'utils/download';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
+import { actions as resourceActions } from './resource';
 
 import * as slice from './certificates';
 import { transformAttributeDescriptorDtoToModel, transformAttributeRequestModelToDto } from './transform/attributes';
 
 import { store } from '../App';
+import { Resource } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { EntityType } from './filters';
 import { actions as pagingActions, selectors as pagingSelectors } from './paging';
@@ -630,6 +632,9 @@ const deleteCertificate: AppEpic = (action$, state, deps) => {
     );
 };
 
+// Core answers a certificate's allowed actions from its owner, groups and RA profile, so a change to them invalidates the answer.
+const refreshAllowedActions = (uuid: string) => resourceActions.listObjectAllowedActions({ resource: Resource.Certificates, uuid });
+
 const updateGroup: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.updateGroup.match),
@@ -646,6 +651,7 @@ const updateGroup: AppEpic = (action$, state, deps) => {
                                 uuid: action.payload.uuid,
                             }),
                             slice.actions.getCertificateHistory({ uuid: action.payload.uuid }),
+                            refreshAllowedActions(action.payload.uuid),
                             slice.actions.getCertificateDetail({ uuid: action.payload.uuid }),
                         ),
                     ),
@@ -677,6 +683,7 @@ const deleteGroups: AppEpic = (action$, state, deps) => {
                                 uuid: action.payload.uuid,
                             }),
                             slice.actions.getCertificateHistory({ uuid: action.payload.uuid }),
+                            refreshAllowedActions(action.payload.uuid),
                             slice.actions.getCertificateDetail({ uuid: action.payload.uuid }),
                         ),
                     ),
@@ -734,7 +741,10 @@ const updateRaProfile: AppEpic = (action$, state, deps) => {
                                     ),
                                 ),
                                 // The switch has already gone through, so the certificate is re-read even when the lookup fails.
-                                endWith(slice.actions.getCertificateDetail({ uuid: action.payload.uuid })),
+                                endWith(
+                                    slice.actions.getCertificateDetail({ uuid: action.payload.uuid }),
+                                    refreshAllowedActions(action.payload.uuid),
+                                ),
                             ),
                     ),
 
@@ -765,6 +775,7 @@ const deleteRaProfile: AppEpic = (action$, state, deps) => {
                                 uuid: action.payload.uuid,
                             }),
                             slice.actions.getCertificateHistory({ uuid: action.payload.uuid }),
+                            refreshAllowedActions(action.payload.uuid),
                         ),
                     ),
 
@@ -803,6 +814,7 @@ const updateOwner: AppEpic = (action$, state, deps) => {
                                 user: action.payload.user,
                             }),
                             slice.actions.getCertificateHistory({ uuid: action.payload.uuid }),
+                            refreshAllowedActions(action.payload.uuid),
                         ),
                     ),
 
@@ -833,6 +845,7 @@ const deleteOwner: AppEpic = (action$, state, deps) => {
                                 uuid: action.payload.uuid,
                             }),
                             slice.actions.getCertificateHistory({ uuid: action.payload.uuid }),
+                            refreshAllowedActions(action.payload.uuid),
                         ),
                     ),
 

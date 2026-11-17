@@ -32,10 +32,13 @@ import {
     CertificateSubjectType,
     type CertificateValidationResultDto,
     PlatformEnum,
+    ResourceAction,
 } from 'types/openapi';
+import type { ActionAvailability } from 'utils/useActionAvailability';
 import CertificateDownloadForm from './CertificateDownloadForm';
 import CompleteRegisteredDialog from './CompleteRegisteredDialog';
 import Button from 'components/Button';
+import Tooltip from 'components/Tooltip';
 import { Trash2 } from 'lucide-react';
 import EditIcon from 'components/icons/EditIcon';
 import { buildCertificateDetailBaseRows, buildCertificateProtocolRows } from '../certificateTableHelpers';
@@ -62,9 +65,11 @@ type Props = Readonly<{
     validationResult: CertificateValidationResultDto | undefined;
     isBusy: boolean;
     getFreshCertificateDetail: () => void;
+    /** Answers for this certificate, from the page that requested its allowed actions alongside the detail. */
+    can: ActionAvailability;
 }>;
 
-export default function CertificateDetailsContent({ certificate, validationResult, isBusy, getFreshCertificateDetail }: Props) {
+export default function CertificateDetailsContent({ certificate, validationResult, isBusy, getFreshCertificateDetail, can }: Props) {
     const dispatch = useDispatch();
     const copyToClipboard = useCopyToClipboard();
 
@@ -100,6 +105,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
     const [userOptions, setUserOptions] = useState<{ label: string; value: string }[]>([]);
 
     const isCertificateArchived = !!certificate?.archived;
+    const canUpdate = useMemo(() => can(ResourceAction.Update), [can]);
 
     useEffect(() => {
         setUserOptions(
@@ -308,12 +314,14 @@ export default function CertificateDetailsContent({ certificate, validationResul
             {
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => setConfirmDelete(true),
             },
             {
                 icon: 'cubes',
                 disabled: !certificate?.raProfile || certificate?.state !== CertStatus.Requested || isCertificateArchived,
+                requires: can(ResourceAction.Issue),
                 tooltip: 'Issue',
                 onClick: () => {
                     dispatch(
@@ -328,6 +336,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
             {
                 icon: 'retweet',
                 disabled: !certificate?.raProfile || certificate?.state !== CertStatus.Issued || isCertificateArchived,
+                requires: can(ResourceAction.Renew),
                 tooltip: 'Renew',
                 onClick: () => {
                     attemptFailed.current = false;
@@ -337,6 +346,8 @@ export default function CertificateDetailsContent({ certificate, validationResul
             {
                 icon: 'rekey',
                 disabled: !certificate?.raProfile || certificate?.state !== CertStatus.Issued || isCertificateArchived,
+                // Core checks rekey as renew.
+                requires: can(ResourceAction.Renew),
                 tooltip: 'Rekey',
                 onClick: () => {
                     attemptFailed.current = false;
@@ -346,18 +357,22 @@ export default function CertificateDetailsContent({ certificate, validationResul
             {
                 icon: 'minus-square',
                 disabled: !certificate?.raProfile || certificate?.state !== CertStatus.Issued || isCertificateArchived,
+                requires: can(ResourceAction.Revoke),
                 tooltip: 'Revoke',
                 onClick: () => setRevoke(true),
             },
             {
                 icon: 'check',
                 disabled: completeDisabled,
+                // Completing a registration issues the certificate.
+                requires: can(ResourceAction.Issue),
                 tooltip: completeTooltip,
                 onClick: () => setComplete(true),
             },
             {
                 icon: 'gavel',
                 disabled: !certificate?.raProfile || !certificate?.certificateContent || isCertificateArchived,
+                requires: can(ResourceAction.CheckCompliance),
                 tooltip: 'Check Compliance',
                 onClick: onComplianceCheck,
             },
@@ -382,6 +397,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
             {
                 icon: 'archive',
                 disabled: isCertificateArchived || isArchiving,
+                requires: can(ResourceAction.Archive),
                 tooltip: 'Archive',
                 onClick: () => {
                     dispatch(actions.archiveCertificate({ uuid: certificate?.uuid ?? '' }));
@@ -390,13 +406,14 @@ export default function CertificateDetailsContent({ certificate, validationResul
             {
                 icon: 'unarchive',
                 disabled: !isCertificateArchived || isArchiving,
+                requires: can(ResourceAction.Archive),
                 tooltip: 'Unarchive',
                 onClick: () => {
                     dispatch(actions.unarchiveCertificate({ uuid: certificate?.uuid ?? '' }));
                 },
             },
         ];
-    }, [certificate, onComplianceCheck, dispatch, onDownloadClick, copyToClipboard, isCertificateArchived, isArchiving]);
+    }, [certificate, onComplianceCheck, dispatch, onDownloadClick, copyToClipboard, isCertificateArchived, isArchiving, can]);
 
     const detailData: TableDataRow[] = useMemo(() => {
         const certDetail = certificate
@@ -408,6 +425,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                   dateFormatter,
                   getEnumLabel,
                   setPendingAction,
+                  can,
               )
             : [];
 
@@ -426,23 +444,41 @@ export default function CertificateDetailsContent({ certificate, validationResul
         }
 
         if (certificate?.trustedCa !== undefined) {
+            const trustedSwitch = (
+                <Switch
+                    key="trustedCa-switch"
+                    id="trustedCa"
+                    disabled={isUpdatingTrustedStatus || !canUpdate.available}
+                    checked={certificate.trustedCa ?? false}
+                    onChange={switchCallback}
+                />
+            );
             certDetail.unshift({
                 id: 'trustedCa',
                 columns: [
                     certificate?.subjectType === CertificateSubjectType.SelfSignedEndEntity ? 'Trusted Self-Signed' : 'Trusted CA',
-                    <Switch
-                        key="trustedCa-switch"
-                        id="trustedCa"
-                        disabled={isUpdatingTrustedStatus}
-                        checked={certificate.trustedCa ?? false}
-                        onChange={switchCallback}
-                    />,
+                    canUpdate.reason ? (
+                        <Tooltip key="trustedCa-switch" content={canUpdate.reason}>
+                            <span className="inline-flex">{trustedSwitch}</span>
+                        </Tooltip>
+                    ) : (
+                        trustedSwitch
+                    ),
                 ],
             });
         }
 
         return certDetail;
-    }, [certificate, validationResult, isCertificateArchived, certificateKeyUsageEnum, isUpdatingTrustedStatus, switchCallback]);
+    }, [
+        certificate,
+        validationResult,
+        isCertificateArchived,
+        certificateKeyUsageEnum,
+        isUpdatingTrustedStatus,
+        switchCallback,
+        canUpdate,
+        can,
+    ]);
 
     const sanData: TableDataRow[] = useMemo(() => {
         const sanList: TableDataRow[] = [];
@@ -535,6 +571,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                           <div key="owner-actions" className="flex">
                               <Button
                                   disabled={isCertificateArchived}
+                                  requires={canUpdate}
                                   variant="transparent"
                                   color="secondary"
                                   onClick={() => {
@@ -552,6 +589,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                                   variant="transparent"
                                   title="Remove owner"
                                   disabled={!certificate?.ownerUuid || isCertificateArchived}
+                                  requires={canUpdate}
                                   onClick={() => {
                                       if (!certificate?.ownerUuid || !certificate?.uuid) return;
                                       dispatch(
@@ -581,6 +619,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                           <div key="groups-actions" className="flex">
                               <Button
                                   disabled={isCertificateArchived}
+                                  requires={canUpdate}
                                   variant="transparent"
                                   color="secondary"
                                   onClick={() => {
@@ -596,6 +635,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                                   variant="transparent"
                                   title="Remove groups"
                                   disabled={!certificate?.groups?.length || isCertificateArchived}
+                                  requires={canUpdate}
                                   onClick={() => {
                                       if (!certificate?.uuid) return;
                                       dispatch(
@@ -627,6 +667,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                           <div key="raProfile-actions" className="flex">
                               <Button
                                   disabled={isCertificateArchived}
+                                  requires={canUpdate}
                                   variant="transparent"
                                   color="secondary"
                                   onClick={() => setUpdateRaProfile(true)}
@@ -639,6 +680,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                                   variant="transparent"
                                   title="Remove RA profile"
                                   disabled={!certificate?.raProfile?.uuid || isCertificateArchived}
+                                  requires={canUpdate}
                                   onClick={() => {
                                       if (!certificate?.raProfile?.authorityInstanceUuid || !certificate?.uuid) return;
                                       dispatch(
@@ -659,7 +701,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                   },
               ]
             : [];
-    }, [certificate, dispatch, isCertificateArchived]);
+    }, [certificate, dispatch, isCertificateArchived, canUpdate]);
 
     return (
         <>

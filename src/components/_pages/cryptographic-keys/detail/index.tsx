@@ -19,7 +19,8 @@ import Select from 'components/Select';
 
 import { selectors as enumSelectors, getEnumLabel, getEnumDescription } from 'ducks/enums';
 import { EnumColumnDescription } from 'components/EnumDescription';
-import { KeyCompromiseReason, KeyState, KeyType, KeyUsage, PlatformEnum, Resource } from 'types/openapi';
+import { KeyCompromiseReason, KeyState, KeyType, KeyUsage, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { dateFormatter } from 'utils/dateUtil';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
@@ -36,6 +37,7 @@ export default function CryptographicKeyDetail() {
     const dispatch = useDispatch();
 
     const { id, keyItemUuid } = useParams();
+    const can = useActionAvailability(Resource.Keys, id);
     const keysListPath = '/keys';
 
     const cryptographicKey = useSelector(selectors.cryptographicKey);
@@ -219,6 +221,7 @@ export default function CryptographicKeyDetail() {
             {
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: () => {
                     onEditClick();
@@ -227,6 +230,7 @@ export default function CryptographicKeyDetail() {
             {
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => {
                     setConfirmDelete(true);
@@ -235,6 +239,7 @@ export default function CryptographicKeyDetail() {
             {
                 icon: 'check',
                 disabled: cryptographicKey?.items.every((item) => item.enabled) ?? false,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Enable',
                 onClick: () => {
                     onEnableClick();
@@ -243,6 +248,7 @@ export default function CryptographicKeyDetail() {
             {
                 icon: 'times',
                 disabled: cryptographicKey?.items.every((item) => !item.enabled) ?? false,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Disable',
                 onClick: () => {
                     onDisableClick();
@@ -254,6 +260,7 @@ export default function CryptographicKeyDetail() {
                     cryptographicKey?.items.every(
                         (item) => ![KeyState.PreActive, KeyState.Active, KeyState.Deactivated].includes(item.state),
                     ) ?? false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Compromise',
                 onClick: () => {
                     setConfirmCompromise(true);
@@ -265,6 +272,7 @@ export default function CryptographicKeyDetail() {
                     cryptographicKey?.items.every(
                         (item) => ![KeyState.PreActive, KeyState.Compromised, KeyState.Deactivated].includes(item.state),
                     ) ?? false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Destroy',
                 onClick: () => {
                     setConfirmDestroy(true);
@@ -275,6 +283,7 @@ export default function CryptographicKeyDetail() {
                       {
                           icon: 'package-minus' as const,
                           disabled: isBusy,
+                          requires: can(ResourceAction.Delete),
                           tooltip: 'Remove from inventory',
                           'aria-label': 'Remove from inventory',
                           onClick: () => setConfirmRemoveFromInventory(true),
@@ -282,7 +291,17 @@ export default function CryptographicKeyDetail() {
                   ]
                 : []),
         ],
-        [cryptographicKey, keyForCurrentRoute, isBusy, onEditClick, onDisableClick, onEnableClick, setConfirmCompromise, setConfirmDestroy],
+        [
+            cryptographicKey,
+            keyForCurrentRoute,
+            isBusy,
+            onEditClick,
+            onDisableClick,
+            onEnableClick,
+            setConfirmCompromise,
+            setConfirmDestroy,
+            can,
+        ],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -435,12 +454,13 @@ export default function CryptographicKeyDetail() {
                         tokenProfileUuid={cryptographicKey!.tokenProfileUuid}
                         supportedKeyUsages={supportedKeyUsages}
                         totalKeyItems={cryptographicKey!.items.length}
+                        can={can}
                     />
                 </Widget>
             ),
         }));
         return { tabs };
-    }, [cryptographicKey, isBusy, isFetchingHistory, keyTypeEnum, supportedKeyUsages]);
+    }, [cryptographicKey, isBusy, isFetchingHistory, keyTypeEnum, supportedKeyUsages, can]);
 
     useEffect(() => {
         if (cryptographicKey?.items) {
@@ -494,6 +514,7 @@ export default function CryptographicKeyDetail() {
                                                     resource={Resource.Keys}
                                                     resourceUuid={cryptographicKey.uuid}
                                                     attributes={cryptographicKey.customAttributes}
+                                                    requires={can(ResourceAction.Update)}
                                                 />
                                             )}
                                         </Container>

@@ -11,6 +11,13 @@ setupReactActEnvironment();
 vi.mock('react-redux', async () => {
     return await import('../../test-utils/reactReduxMockModule');
 });
+const deniedActions = vi.hoisted(() => new Set<string>());
+vi.mock('utils/useActionAvailability', () => ({
+    useActionAvailability: () => (action: string) =>
+        deniedActions.has(action)
+            ? { available: false, hidden: false, loading: false }
+            : { available: true, hidden: false, loading: false },
+}));
 
 vi.mock('react-router', () => ({
     useParams: () => ({ id: 'user-1' }),
@@ -113,6 +120,7 @@ describe('UserDetail - user certificate details', () => {
         document.body.appendChild(container);
         root = createRoot(container);
         useDispatchMock.mockReturnValue(vi.fn());
+        deniedActions.clear();
     });
 
     afterEach(() => {
@@ -157,5 +165,18 @@ describe('UserDetail - user certificate details', () => {
 
         expect(container.querySelector('[data-testid="user-no-certificate"]')).toBeNull();
         expect(container.textContent).toContain('Certificate information not available');
+    });
+
+    it('disables Disable on an enabled user without the users enable permission', async () => {
+        deniedActions.add('enable');
+        await render(buildState({ user: baseUser }));
+
+        expect((container.querySelector('button[title="Disable"]') as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it('offers Disable on an enabled user with the users enable permission', async () => {
+        await render(buildState({ user: baseUser }));
+
+        expect((container.querySelector('button[title="Disable"]') as HTMLButtonElement).disabled).toBe(false);
     });
 });

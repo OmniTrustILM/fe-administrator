@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest';
 import type { UserProfileDetailModel } from 'types/auth';
+import type { ResourceModel } from 'types/resource';
 import { Resource, ResourceAction } from 'types/openapi';
-import { type ActionRule, missingPermissionReason, resolveAvailability } from './availability';
-import { objectAnswerFor } from './useActionAvailability';
+import { type ActionRule, type Availability, missingPermissionReason, requireAll, requireAny, resolveAvailability } from './availability';
+import { objectAccessOf, objectAnswerFor } from './useActionAvailability';
 
 const profileWith = (allowedActions: UserProfileDetailModel['permissions']['allowedActions']): UserProfileDetailModel =>
     ({ permissions: { allowedListings: [], allowedActions } }) as unknown as UserProfileDetailModel;
@@ -130,5 +131,102 @@ describe('objectAnswerFor', () => {
 
     it('returns no answer when no object is requested', () => {
         expect(objectAnswerFor({ status: 'failed' }, undefined)).toBeUndefined();
+    });
+});
+
+describe('resolveAvailability for an action on objects', () => {
+    const onObjects: ActionRule = { ...rule, onObjects: true };
+
+    it('stays available on a resource with object access the profile grants nothing on, and the server decides', () => {
+        expect(resolveAvailability({ rule: onObjects, profile: withoutGrants, objectAccess: true, labels })).toEqual(available);
+    });
+
+    it('lets the profile decide on a resource without object access', () => {
+        expect(resolveAvailability({ rule: onObjects, profile: withoutGrants, objectAccess: false, labels })).toEqual(denied);
+    });
+
+    it('reports loading while object access is unknown', () => {
+        expect(resolveAvailability({ rule: onObjects, profile: withoutGrants, objectAccess: 'loading', labels })).toEqual({
+            available: false,
+            hidden: false,
+            loading: true,
+        });
+    });
+
+    it('lets an object answer decide even on a resource with object access', () => {
+        expect(
+            resolveAvailability({
+                rule: onObjects,
+                profile: withoutGrants,
+                objectAnswer: { status: 'loaded', allowedActions: [ResourceAction.Detail] },
+                objectAccess: true,
+                labels,
+            }),
+        ).toEqual(denied);
+    });
+
+    it('does not apply object access to an action not on objects', () => {
+        expect(resolveAvailability({ rule, profile: withoutGrants, objectAccess: true, labels })).toEqual(denied);
+    });
+});
+
+describe('objectAccessOf', () => {
+    const entry = (resource: Resource, hasObjectAccess: boolean, hasOwner: boolean) =>
+        ({ resource, hasObjectAccess, hasOwner }) as ResourceModel;
+
+    it('reports object access for a resource whose objects can be granted', () => {
+        expect(objectAccessOf([entry(Resource.RaProfiles, true, false)], true, Resource.RaProfiles)).toBe(true);
+    });
+
+    it('reports object access for an owned resource, whose owner core authorizes without a resource grant', () => {
+        expect(objectAccessOf([entry(Resource.Certificates, false, true)], true, Resource.Certificates)).toBe(true);
+    });
+
+    it('reports no object access for a resource neither granted per object nor owned', () => {
+        expect(objectAccessOf([entry(Resource.Credentials, false, false)], true, Resource.Credentials)).toBe(false);
+    });
+
+    it('reports loading until the list settles', () => {
+        expect(objectAccessOf([], false, Resource.Secrets)).toBe('loading');
+    });
+
+    it('reports no object access for a resource missing from a settled list, as after a failed request', () => {
+        expect(objectAccessOf([], true, Resource.Secrets)).toBe(false);
+    });
+});
+
+const loading: Availability = { available: false, hidden: false, loading: true };
+const deniedCreate: Availability = {
+    available: false,
+    hidden: false,
+    loading: false,
+    reason: 'You need the create permission on Secrets.',
+};
+const deniedDetail: Availability = {
+    available: false,
+    hidden: false,
+    loading: false,
+    reason: 'You need the detail permission on Users.',
+};
+
+describe('requireAll', () => {
+    it('is available when every action is', () => {
+        expect(requireAll(available, available)).toEqual(available);
+    });
+
+    it('reports the first action that is not available', () => {
+        expect(requireAll(available, deniedCreate, deniedDetail)).toEqual(deniedCreate);
+        expect(requireAll(loading, deniedDetail)).toEqual(loading);
+    });
+});
+
+describe('requireAny', () => {
+    it('is available when any action is', () => {
+        expect(requireAny(deniedCreate, available)).toEqual(available);
+    });
+
+    it('reports the first action when none is available', () => {
+        expect(requireAny(deniedCreate, deniedDetail)).toEqual(deniedCreate);
+        expect(requireAny(loading, deniedDetail)).toEqual(loading);
     });
 });

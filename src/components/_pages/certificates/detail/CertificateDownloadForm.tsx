@@ -2,7 +2,6 @@ import { Buffer } from 'buffer';
 import { actions as userInterfaceActions } from '../../../../ducks/user-interface';
 
 import { actions as alertActions } from 'ducks/alerts';
-import { selectors as authSelectors } from 'ducks/auth';
 import { actions, selectors } from 'ducks/certificates';
 
 import { CertificateFormat, CertificateFormatEncoding, KeyType } from '../../../../types/openapi';
@@ -14,7 +13,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { downloadFile } from 'utils/certificate';
 
 import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
-import { hasResourceAction } from 'utils/permissions';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 import Button from 'components/Button';
 import Container from 'components/Container';
@@ -33,7 +32,7 @@ interface ChainDownloadSwitchState {
 const CertificateDownloadForm = () => {
     const dispatch = useDispatch();
     const certificate = useSelector(selectors.certificateDetail);
-    const profile = useSelector(authSelectors.profile);
+    const canOnKeys = useActionAvailability(Resource.Keys);
     const certificateChainDownloadContent = useSelector(selectors.certificateChainDownloadContent);
     const certificateDownloadContent = useSelector(selectors.certificateDownloadContent);
     const certificateRequestFormatEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateFormat));
@@ -94,8 +93,7 @@ const CertificateDownloadForm = () => {
 
     const privateKeyItem = certificate?.key?.items.find((item) => item.type === KeyType.Private);
     // The certificate comes with its private key, so the download asks for the key export permission.
-    const keystoreOfferable =
-        !!certificate?.keystoreAvailable && !!privateKeyItem && hasResourceAction(profile, Resource.Keys, ResourceAction.ExportKey);
+    const keystoreOfferable = !!certificate?.keystoreAvailable && !!privateKeyItem && canOnKeys(ResourceAction.ExportKey).available;
 
     const certificateFormatOptionsWithKeystore = keystoreOfferable
         ? [...certificateFormatOptions, { label: KEYSTORE_FORMAT_OPTION.label, value: KEYSTORE_FORMAT_OPTION.value }]

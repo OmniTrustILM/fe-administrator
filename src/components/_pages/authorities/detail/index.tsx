@@ -12,7 +12,8 @@ import { useNavigate, useParams } from 'react-router';
 import ConnectorLink from 'components/ConnectorLink';
 import Label from 'components/Label';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { PlatformEnum, Resource } from '../../../../types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from '../../../../types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import { getEditAndDeleteWidgetButtons, createWidgetDetailHeaders } from 'utils/widget';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
@@ -26,6 +27,7 @@ export default function AuthorityDetail() {
     const navigate = useNavigate();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Authorities, id);
 
     const authority = useSelector(selectors.authority);
 
@@ -66,7 +68,10 @@ export default function AuthorityDetail() {
         dispatch(actions.bulkForceDeleteAuthority({ uuids: [authority.uuid], redirect: `../authorities` }));
     }, [authority, dispatch]);
 
-    const buttons: WidgetButtonProps[] = useMemo(() => getEditAndDeleteWidgetButtons(onEditClick, setConfirmDelete), [onEditClick]);
+    const buttons: WidgetButtonProps[] = useMemo(
+        () => getEditAndDeleteWidgetButtons(onEditClick, setConfirmDelete, can),
+        [onEditClick, can],
+    );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
 
@@ -147,6 +152,7 @@ export default function AuthorityDetail() {
                             resource={Resource.Authorities}
                             resourceUuid={authority.uuid}
                             attributes={authority.customAttributes}
+                            requires={can(ResourceAction.Update)}
                         />
                     )}
 

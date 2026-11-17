@@ -11,13 +11,16 @@ import {
     slice as cryptographicOperationSlice,
     type State as CryptographicOperationState,
 } from 'ducks/cryptographic-operations';
+import { actions as resourceActions, slice as resourceSlice, type State as ResourceState } from 'ducks/resource';
 import { testInitialState, testReducers } from 'ducks/test-reducers';
+import { ResourceAction } from 'types/openapi';
 import { actions as profileActions, slice as profileSlice, type State as ProfileState } from 'ducks/token-profiles';
 import type { CryptographicKeyDetailResponseModel } from 'types/cryptographic-keys';
 import type { TokenProfileDetailResponseModel } from 'types/token-profiles';
 import type { AttributeDescriptorModel } from 'types/attributes';
 
-type State = Omit<ReturnType<typeof testReducers>, 'cryptographicKeys' | 'tokenprofiles' | 'cryptographicOperations'> & {
+type State = Omit<ReturnType<typeof testReducers>, 'cryptographicKeys' | 'tokenprofiles' | 'cryptographicOperations' | 'resource'> & {
+    resource: ResourceState;
     cryptographicKeys: KeyState;
     tokenprofiles: ProfileState;
     cryptographicOperations: CryptographicOperationState;
@@ -27,6 +30,7 @@ function reducer(state: State | undefined, action: UnknownAction): State {
     const testState = state && { ...state, cryptographicOperations: testInitialState.cryptographicOperations };
     return {
         ...testReducers(testState, action),
+        resource: resourceSlice.reducer(state?.resource, action),
         cryptographicKeys: keySlice.reducer(state?.cryptographicKeys, action),
         tokenprofiles: profileSlice.reducer(state?.tokenprofiles, action),
         cryptographicOperations: cryptographicOperationSlice.reducer(state?.cryptographicOperations, action),
@@ -40,6 +44,8 @@ type Props = Readonly<{
     exportAnswer?: ExportAnswer;
     /** Whether the signed-in user holds the key export permission. */
     canExportKeys?: boolean;
+    /** What the allowed-actions endpoint answers for the key; every action, less export when it is not held, if absent. */
+    allowedActions?: ResourceAction[];
     signatureDescriptors?: AttributeDescriptorModel[];
     failSignatureDescriptors?: boolean;
     onAction?: (action: UnknownAction) => void;
@@ -50,6 +56,7 @@ export default function CryptographicKeyDetailWithStore({
     tokenProfile,
     exportAnswer,
     canExportKeys = true,
+    allowedActions,
     signatureDescriptors,
     failSignatureDescriptors,
     onAction,
@@ -59,7 +66,16 @@ export default function CryptographicKeyDetailWithStore({
         let hasResolvedProfileRequest = false;
         const apiResponses: Middleware = (api) => (next) => (action) => {
             const result = next(action);
-            if (keyActions.getCryptographicKeyDetail.match(action)) {
+            if (resourceActions.listObjectAllowedActions.match(action)) {
+                api.dispatch(
+                    resourceActions.listObjectAllowedActionsSuccess({
+                        ...action.payload,
+                        allowedActions:
+                            allowedActions ??
+                            Object.values(ResourceAction).filter((granted) => canExportKeys || granted !== ResourceAction.ExportKey),
+                    }),
+                );
+            } else if (keyActions.getCryptographicKeyDetail.match(action)) {
                 api.dispatch(keyActions.getCryptographicKeyDetailSuccess({ cryptographicKey }));
             } else if (keyActions.getHistory.match(action)) {
                 api.dispatch(keyActions.getHistorySuccess({ keyItemUuid: action.payload.keyItemUuid, keyHistory: [] }));
@@ -88,7 +104,16 @@ export default function CryptographicKeyDetailWithStore({
             middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(apiResponses),
             preloadedState: { ...reducer(undefined, { type: 'init' }), auth: keyPermissionsAuth({ exportKey: canExportKeys }) },
         });
-    }, [cryptographicKey, tokenProfile, exportAnswer, canExportKeys, signatureDescriptors, failSignatureDescriptors, onAction]);
+    }, [
+        cryptographicKey,
+        tokenProfile,
+        exportAnswer,
+        canExportKeys,
+        allowedActions,
+        signatureDescriptors,
+        failSignatureDescriptors,
+        onAction,
+    ]);
 
     return (
         <Provider store={store}>

@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/experimental-ct-react';
 import type { AttributeDescriptorModel } from 'types/attributes';
-import { AttributeContentType, AttributeType, CertificateState } from 'types/openapi';
+import { AttributeContentType, AttributeType, CertificateState, ResourceAction } from 'types/openapi';
 import PendingActionButtonsWithStore from './PendingActionButtonsWithStore';
 
 const identifyDescriptor: AttributeDescriptorModel = {
@@ -195,6 +195,53 @@ test.describe('PendingActionButtons', () => {
         await page.getByRole('button', { name: /^close$/i }).click();
         await expect(page.getByRole('button', { name: /^cancel$/i })).toHaveCount(0);
     });
+
+    const cancelPermissionCases = [
+        { state: CertificateState.PendingIssue, granted: [ResourceAction.Issue], enabled: true },
+        {
+            state: CertificateState.PendingIssue,
+            granted: [ResourceAction.Revoke],
+            enabled: false,
+            missing: /issue permission on certificates/i,
+        },
+        {
+            state: CertificateState.PendingIssue,
+            granted: [ResourceAction.Detail],
+            enabled: false,
+            missing: /issue permission on certificates/i,
+        },
+        { state: CertificateState.PendingRevoke, granted: [ResourceAction.Revoke], enabled: true },
+        {
+            state: CertificateState.PendingRevoke,
+            granted: [ResourceAction.Issue],
+            enabled: false,
+            missing: /revoke permission on certificates/i,
+        },
+        {
+            state: CertificateState.PendingRevoke,
+            granted: [ResourceAction.Detail],
+            enabled: false,
+            missing: /revoke permission on certificates/i,
+        },
+    ];
+
+    for (const { state, granted, enabled, missing } of cancelPermissionCases) {
+        test(`cancel of a ${state} certificate is ${enabled ? 'offered' : 'disabled'} with only ${granted.join(', ')} granted`, async ({
+            mount,
+            page,
+        }) => {
+            await mount(<PendingActionButtonsWithStore certificate={buildCert(state)} certificateActions={granted} />);
+
+            const cancel = page.getByTestId('cancel-pending-button');
+            if (enabled) {
+                await expect(cancel).toBeEnabled();
+                return;
+            }
+            await expect(cancel).toBeDisabled();
+            await cancel.locator('..').hover();
+            await expect(page.getByRole('tooltip')).toContainText(missing as RegExp);
+        });
+    }
 
     test('renders nothing when raProfile.authorityInstanceUuid is undefined', async ({ mount }) => {
         // authorityInstanceUuid missing on raProfile

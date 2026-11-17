@@ -3,7 +3,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { TspProfileDetail } from './TspProfileDetail';
-import { PlatformEnum, Resource, TspAuthenticationMethod } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction, TspAuthenticationMethod } from 'types/openapi';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
 import { useDispatchMock, useSelectorMock } from '../../test-utils/reactReduxMockModule';
 
@@ -12,6 +12,13 @@ setupReactActEnvironment();
 vi.mock('react-redux', async () => {
     return await import('../../test-utils/reactReduxMockModule');
 });
+const deniedGrants = vi.hoisted(() => new Set<string>());
+vi.mock('utils/useActionAvailability', () => ({
+    useActionAvailability: (resource: string) => (action: string) =>
+        deniedGrants.has(`${resource}/${action}`)
+            ? { available: false, hidden: false, loading: false, reason: `Denied ${resource}/${action}` }
+            : { available: true, hidden: false, loading: false },
+}));
 
 vi.mock('react-router', () => ({
     Link: ({ to, children }: any) => <a href={to}>{children}</a>,
@@ -47,8 +54,8 @@ vi.mock('components/StatusBadge', () => ({ default: ({ enabled }: any) => <span>
 vi.mock('components/Attributes/CustomAttributeWidget', () => ({ default: () => null }));
 vi.mock('./TspBasicCredentialDialog', () => ({ default: () => <div data-testid="credential-dialog" /> }));
 
-// WidgetButtons mock that honors `disabled` (the shared mock does not), so we can
-// assert per-row actions are blocked while a delete is in flight.
+// WidgetButtons mock that honors `disabled` and `requires` (the shared mock does not), so we can
+// assert actions are blocked while a delete is in flight or without a permission.
 vi.mock('components/WidgetButtons', () => ({
     default: ({ buttons }: any) => (
         <div>
@@ -56,9 +63,9 @@ vi.mock('components/WidgetButtons', () => ({
                 <button
                     key={button.id}
                     title={button.tooltip}
-                    disabled={button.disabled}
+                    disabled={button.disabled || button.requires?.available === false}
                     onClick={() => {
-                        if (!button.disabled) button.onClick();
+                        if (!button.disabled && button.requires?.available !== false) button.onClick();
                     }}
                 >
                     {button.icon}
@@ -95,6 +102,7 @@ describe('TspProfileDetail Basic Credentials widget', () => {
         document.body.appendChild(container);
         root = createRoot(container);
 
+        deniedGrants.clear();
         dispatch = vi.fn();
         useDispatchMock.mockReturnValue(dispatch);
 
@@ -225,5 +233,27 @@ describe('TspProfileDetail Basic Credentials widget', () => {
         });
 
         expect(dispatchedTypes()).toContain('tspProfileBasicCredentials/resetState');
+    });
+
+    it.each([
+        [Resource.TspProfileBasicCredentials, ResourceAction.Create],
+        [Resource.Secrets, ResourceAction.Create],
+        [Resource.Users, ResourceAction.Detail],
+    ])('disables creating a Basic credential without %s %s, which saving it needs', async (resource, action) => {
+        deniedGrants.add(`${resource}/${action}`);
+
+        await act(async () => {
+            root.render(<TspProfileDetail />);
+        });
+
+        expect((container.querySelector('button[title="Create Basic Credential"]') as HTMLButtonElement).disabled).toBe(true);
+    });
+
+    it('offers creating a Basic credential with every permission saving it needs', async () => {
+        await act(async () => {
+            root.render(<TspProfileDetail />);
+        });
+
+        expect((container.querySelector('button[title="Create Basic Credential"]') as HTMLButtonElement).disabled).toBe(false);
     });
 });

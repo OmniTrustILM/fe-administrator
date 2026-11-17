@@ -29,6 +29,7 @@ import type { Resource } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
 import { moveColumn, toCatalogueFields } from 'utils/columnPicker';
 import { storableColumnTest } from 'utils/listViews';
+import type { Availability } from 'utils/availability';
 import {
     type ColumnSort,
     buildColumnHeaders,
@@ -80,6 +81,8 @@ export interface ConfigurableColumns<TRow extends object> {
 
 type Props<TRow extends object> = {
     entity: EntityType;
+    createRequires?: Availability;
+    deleteRequires?: Availability;
     headers?: TableHeader[];
     data?: TableDataRow[];
     configurableColumns?: ConfigurableColumns<TRow>;
@@ -150,6 +153,8 @@ function PagedList<TRow extends object>({
     filterTitle,
     addHidden,
     entity,
+    createRequires,
+    deleteRequires,
     title,
     isBusy = false,
     multiSelect = true,
@@ -699,6 +704,7 @@ function PagedList<TRow extends object>({
                 id: 'create',
                 icon: 'plus' as IconName,
                 disabled: false,
+                requires: createRequires,
                 tooltip: 'Create',
                 onClick: () => navigate(`./add`),
             });
@@ -708,6 +714,7 @@ function PagedList<TRow extends object>({
                 id: 'delete',
                 icon: 'trash' as IconName,
                 disabled: checkedRows.length === 0,
+                requires: deleteRequires,
                 tooltip: 'Delete',
                 onClick: () => setConfirmDelete(true),
             });
@@ -716,7 +723,7 @@ function PagedList<TRow extends object>({
             result.push(...additionalButtons);
         }
         return result.sort((a, b) => (a.icon === 'plus' ? -1 : 1));
-    }, [checkedRows, additionalButtons, navigate, addHidden, onDeleteCallback]);
+    }, [checkedRows, additionalButtons, navigate, addHidden, onDeleteCallback, createRequires, deleteRequires]);
 
     // An ordering the page did not declare counts, or there would be no way back from it. Measured
     // against `defaultSort` rather than against no ordering at all, so a page that opens sorted is not

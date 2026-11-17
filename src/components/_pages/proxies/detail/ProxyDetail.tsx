@@ -15,7 +15,8 @@ import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { actions as proxiesActions, selectors as proxiesSelectors } from 'ducks/proxies';
 import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
-import { PlatformEnum, ProxyStatus, Resource } from 'types/openapi';
+import { PlatformEnum, ProxyStatus, Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { dateFormatter } from 'utils/dateUtil';
 import ConnectorStatusBadge from '../../connectors/ConnectorStatus';
@@ -23,6 +24,7 @@ import { ProxyStatusBadge } from '../ProxyStatusBadge';
 
 export const ProxyDetail = () => {
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Proxies, id);
     const dispatch = useDispatch();
 
     const proxyDetails = useSelector(proxiesSelectors.proxy);
@@ -102,6 +104,7 @@ export const ProxyDetail = () => {
                 key: 'installation-instructions',
                 icon: 'key',
                 disabled: false,
+                requires: can(ResourceAction.GetProxyInstallation),
                 tooltip: 'Installation Instructions',
                 onClick: () => setShowInstallationInstructions(!showInstallationInstructions),
             },
@@ -109,11 +112,12 @@ export const ProxyDetail = () => {
                 key: 'delete',
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete Proxy',
                 onClick: () => setConfirmDelete(true),
             },
         ],
-        [showInstallationInstructions],
+        [showInstallationInstructions, can],
     );
 
     const tableHeader: TableHeader[] = useMemo(
@@ -189,6 +193,7 @@ export const ProxyDetail = () => {
                                     setUpdateDescriptionEditEnable(true);
                                 }}
                                 disabled={isUpdatingProxy}
+                                requires={can(ResourceAction.Update)}
                             >
                                 <EditIcon size={16} />
                             </Button>
@@ -213,6 +218,7 @@ export const ProxyDetail = () => {
         isUpdatingProxy,
         updatedDescription,
         isFetchingProxy,
+        can,
     ]);
 
     const showManagedConnectors = useMemo(() => {

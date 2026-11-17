@@ -13,6 +13,11 @@ import { useDispatchMock, useSelectorMock } from '../../test-utils/reactReduxMoc
 
 setupReactActEnvironment();
 
+vi.mock('utils/useActionAvailability', async () => {
+    const { actionAvailabilityMockModule } = await import('../../test-utils/mockModules');
+    return actionAvailabilityMockModule();
+});
+
 const pagedListProps = vi.hoisted(() => ({ current: undefined as Record<string, unknown> | undefined }));
 
 vi.mock('react-redux', async () => {

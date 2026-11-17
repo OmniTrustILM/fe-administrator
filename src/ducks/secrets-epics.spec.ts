@@ -9,6 +9,8 @@ import { actions as pagingActions } from './paging';
 import { actions as appRedirectActions } from './app-redirect';
 import { actions as alertActions } from './alerts';
 import { EntityType } from './filters';
+import { actions as resourceActions } from './resource';
+import { Resource } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 
 vi.mock('../App', async () => ({ store: (await import('./epics-test-mocks')).getEpicMocks().appStore }));
@@ -298,16 +300,17 @@ describe('secrets epics', () => {
         expect(emitted[1]).toEqual(appRedirectActions.fetchError({ error: err, message: 'Failed to update Secret' }));
     });
 
-    test('updateSecretObjects success emits updateSecretObjectsSuccess and info fetchError', async () => {
+    test('updateSecretObjects success emits updateSecretObjectsSuccess, asks for the allowed actions again and alerts', async () => {
         const emitted = await runEpic(
             SecretsEpicIndex.UpdateObjects,
             secretsActions.updateSecretObjects({ uuid: 's-1', update: { ownerUuid: 'u-1' } as any }),
             {},
-            2,
+            3,
         );
 
         expect(emitted[0]).toEqual(secretsActions.updateSecretObjectsSuccess({ uuid: 's-1' }));
-        expect(emitted[1]).toEqual(alertActions.success('Secret updated successfully.'));
+        expect(emitted[1]).toEqual(resourceActions.listObjectAllowedActions({ resource: Resource.Secrets, uuid: 's-1' }));
+        expect(emitted[2]).toEqual(alertActions.success('Secret updated successfully.'));
     });
 
     test('updateSecretObjects failure emits updateSecretObjectsFailure and fetchError', async () => {
