@@ -5,9 +5,9 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 // @ts-expect-error - plain ESM build script, no type declarations
 import { run } from './check-openapi-version-churn.mjs';
 
-type FakeGenerator = { versionInHeader?: boolean; versionInModel?: boolean; ignoresSchema?: boolean; crlfManifest?: boolean };
+type FakeGenerator = { versionInHeader?: boolean; versionInModel?: boolean; ignoresSchema?: boolean };
 
-function fakeExec({ versionInHeader = false, versionInModel = false, ignoresSchema = false, crlfManifest = false }: FakeGenerator = {}) {
+function fakeExec({ versionInHeader = false, versionInModel = false, ignoresSchema = false }: FakeGenerator = {}) {
     return vi.fn((_command: string, args: string[]) => {
         if (!args.includes('--openapitools')) return;
         const tools = JSON.parse(readFileSync(args[args.indexOf('--openapitools') + 1], 'utf8'));
@@ -21,8 +21,7 @@ function fakeExec({ versionInHeader = false, versionInModel = false, ignoresSche
         mkdirSync(path.join(output, 'models'), { recursive: true });
         mkdirSync(path.join(output, '.openapi-generator'), { recursive: true });
         writeFileSync(path.join(output, 'API_VERSION'), `${version}\n`);
-        const manifest = '.gitignore\nAPI_VERSION\nmodels/WidgetDto.ts\n';
-        writeFileSync(path.join(output, '.openapi-generator', 'FILES'), crlfManifest ? manifest.replaceAll('\n', '\r\n') : manifest);
+        writeFileSync(path.join(output, '.openapi-generator', 'FILES'), '.gitignore\nAPI_VERSION\nmodels/WidgetDto.ts\n');
         writeFileSync(
             path.join(output, 'models', 'WidgetDto.ts'),
             `// tslint:disable
@@ -73,10 +72,6 @@ describe('check-openapi-version-churn run', () => {
     it('passes when the fixture is checked out with CRLF line endings', () => {
         const fixture = readFileSync(path.join(__dirname, 'fixtures', 'openapi-version-churn', 'spec.yaml'), 'utf8');
         expect(() => run(fakeExec(), fixture.replaceAll('\n', '\r\n'))).not.toThrow();
-    });
-
-    it('passes when the generator writes the FILES manifest with CRLF line endings', () => {
-        expect(() => run(fakeExec({ crlfManifest: true }))).not.toThrow();
     });
 
     it('fails when the generated header still carries the API version', () => {

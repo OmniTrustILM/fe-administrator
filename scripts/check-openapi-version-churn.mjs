@@ -106,7 +106,7 @@ export function run(exec = execFileSync, spec = fixture) {
         const changed = generate(exec, workDir, 'changed', withExtraProperty(withVersion(source, '1.0.0-SNAPSHOT')));
 
         assertEqual(first.get(VERSION_FILE), '1.0.0-SNAPSHOT\n', `${VERSION_FILE} must hold info.version with a trailing newline`);
-        assert(first.get(MANIFEST)?.split(/\r?\n/).includes(VERSION_FILE), `${MANIFEST} must register ${VERSION_FILE}`);
+        assert(first.get(MANIFEST)?.split('\n').includes(VERSION_FILE), `${MANIFEST} must register ${VERSION_FILE}`);
         for (const [file, source] of first) {
             if (!file.endsWith('.ts')) continue;
             assert(!source.includes('The version of the OpenAPI document'), `${file} still carries the API version in its header`);
