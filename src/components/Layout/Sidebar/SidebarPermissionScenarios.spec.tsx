@@ -39,8 +39,12 @@ test.describe('Sidebar sections by permission scenario', () => {
                 withProviders(<Sidebar allowedResources={scenario.allowedListings} />, { store: createMockStore(), initialRoute: '/' }),
             );
 
+            await component.getByRole('button', { name: 'Expand' }).click();
+            if (shown.some((entry) => profiles.includes(entry))) await component.getByTestId('sidebar-profiles').click();
+
             for (const [entry, testId] of Object.entries(entries) as [Entry, string][]) {
-                await expect(component.getByTestId(testId)).toHaveCount(shown.includes(entry) ? 1 : 0);
+                if (shown.includes(entry)) await expect(component.getByTestId(testId)).toBeVisible();
+                else await expect(component.getByTestId(testId)).toHaveCount(0);
             }
         });
     }
