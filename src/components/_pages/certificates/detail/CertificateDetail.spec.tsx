@@ -146,6 +146,28 @@ test.describe('CertificateDetail — permission to change each location', () => 
         await expect(remove).toBeEnabled();
     });
 
+    test('keeps a dropped location unselected when a later refresh brings it back', async ({ mount, page }) => {
+        const thirdLocation = location('loc-3', 'Third location');
+        await mount(
+            <CertificateDetailWithStore
+                allowedListings={listings}
+                allowedActions={[ResourceAction.Detail]}
+                certificateLocations={[certificateLocations[0], thirdLocation]}
+                refreshedLocations={[thirdLocation]}
+                locationAnswers={answers}
+            />,
+        );
+        await page.getByRole('tab', { name: 'Locations' }).click();
+        await checkRow(page, 'First location');
+
+        await page.getByTestId('refresh-locations').click();
+        await expect(page.getByRole('row', { name: /First location/ })).toHaveCount(0);
+        await page.getByTestId('restore-locations').click();
+
+        await expect(page.getByRole('row', { name: /First location/ }).getByRole('checkbox')).not.toBeChecked();
+        await expect(page.getByTestId('trash-button')).toBeDisabled();
+    });
+
     test('asks for the allowed actions of every location of the certificate in one request', async ({ mount, page }) => {
         await mountLocations(mount);
 

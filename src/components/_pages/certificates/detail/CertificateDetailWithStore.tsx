@@ -15,7 +15,6 @@ type Props = Readonly<{
     allowedListings: Resource[];
     /** What the allowed-actions endpoint answered for the certificate; omitted leaves it loading. */
     allowedActions?: ResourceAction[];
-    /** The locations the certificate is in, and the ones it can be pushed to. */
     certificateLocations?: LocationResponseModel[];
     pushableLocations?: LocationResponseModel[];
     /** What the allowed-actions endpoint answered for each location; a location left out stays loading. */
@@ -107,6 +106,15 @@ export default function CertificateDetailWithStore({
                 </Routes>
             </MemoryRouter>
             <AnswerPushAttributes />
+            {refreshedLocations && certificateLocations && (
+                <button
+                    type="button"
+                    data-testid="restore-locations"
+                    onClick={() => store.dispatch(certificateActions.listCertificateLocationsSuccess({ certificateLocations }))}
+                >
+                    Answer a refresh with the initial locations
+                </button>
+            )}
             {refreshedLocations && (
                 <button
                     type="button"
