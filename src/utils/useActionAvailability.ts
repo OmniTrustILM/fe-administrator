@@ -21,8 +21,10 @@ export const objectAnswerFor = (
 ): ObjectAllowedActionsAnswer | undefined => (objectUuid ? (stored ?? LOADING_ANSWER) : undefined);
 
 /**
- * Ownership counts: core authorizes an action on objects that all belong to the caller without a resource grant. A
- * resource missing from a settled list, as after a failed request, has no object access.
+ * Ownership counts as object access because core lets an owner act without a resource grant on endpoints that take
+ * secured UUIDs or a security filter, as the certificate bulk actions do. Secret and key endpoints take plain UUIDs and
+ * still check the resource, so their actions must not be marked `onObjects`. A resource missing from a settled list,
+ * as after a failed request, has no object access.
  */
 export const objectAccessOf = (resourcesList: ResourceModel[], settled: boolean, resource: Resource): ObjectAccess => {
     const found = resourcesList.find((entry) => entry.resource === resource);

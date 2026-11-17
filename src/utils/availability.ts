@@ -50,7 +50,10 @@ export function requireAny(first: Availability, ...rest: Availability[]): Availa
     return [first, ...rest].find((availability) => availability.available) ?? first;
 }
 
-/** Whether the resource's objects can be granted one by one; `'loading'` until the resource list is in. */
+/**
+ * Whether an action on objects may be allowed without a resource grant, through a per-object grant or ownership;
+ * `'loading'` until the resource list is in.
+ */
 export type ObjectAccess = boolean | 'loading';
 
 /** Actions that do not act on an existing object, which the object answer never reports. */
