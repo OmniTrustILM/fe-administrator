@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { Resource, ResourceAction } from 'types/openapi';
-import reducer, { actions, initialState, objectKey, selectors } from './resource';
+import reducer, { actions, initialState, objectKey, objectsKey, selectors } from './resource';
 
 const sampleResource = { name: 'CERTIFICATES', hasComplianceProfiles: true } as any;
 const sampleResourceNoCompliance = { name: 'KEYS', hasComplianceProfiles: false } as any;
@@ -145,39 +145,51 @@ describe('resource slice', () => {
         });
     });
 
-    test('listObjectAllowedActions marks the object as loading', () => {
-        const state = reducer(initialState, actions.listObjectAllowedActions({ resource: Resource.Secrets, uuid: 'uuid-1' }));
-        expect(state.objectAllowedActions[objectKey(Resource.Secrets, 'uuid-1')]).toEqual({ status: 'loading' });
+    test('listObjectAllowedActions marks every requested object as loading', () => {
+        const state = reducer(initialState, actions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: ['uuid-1', 'uuid-2'] }));
+        expect(state.objectAllowedActions).toEqual({
+            [objectKey(Resource.Secrets, 'uuid-1')]: { status: 'loading' },
+            [objectKey(Resource.Secrets, 'uuid-2')]: { status: 'loading' },
+        });
     });
 
-    test('listObjectAllowedActionsSuccess stores the object answer', () => {
+    test('listObjectAllowedActionsSuccess stores each object answer', () => {
         const state = reducer(
             initialState,
             actions.listObjectAllowedActionsSuccess({
                 resource: Resource.Secrets,
-                uuid: 'uuid-1',
-                allowedActions: [ResourceAction.Update],
+                answers: [
+                    { uuid: 'uuid-1', allowedActions: [ResourceAction.Update] },
+                    { uuid: 'uuid-2', allowedActions: undefined },
+                ],
             }),
         );
-        expect(state.objectAllowedActions[objectKey(Resource.Secrets, 'uuid-1')]).toEqual({
-            status: 'loaded',
-            allowedActions: [ResourceAction.Update],
+        expect(state.objectAllowedActions).toEqual({
+            [objectKey(Resource.Secrets, 'uuid-1')]: { status: 'loaded', allowedActions: [ResourceAction.Update] },
+            [objectKey(Resource.Secrets, 'uuid-2')]: { status: 'loaded', allowedActions: undefined },
         });
     });
 
     test('a refresh under a differently cased uuid replaces the same object answer', () => {
-        const loading = reducer(initialState, actions.listObjectAllowedActions({ resource: Resource.Secrets, uuid: 'ABC-1' }));
+        const loading = reducer(initialState, actions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: ['ABC-1'] }));
         const state = reducer(
             loading,
-            actions.listObjectAllowedActionsSuccess({ resource: Resource.Secrets, uuid: 'abc-1', allowedActions: [ResourceAction.Update] }),
+            actions.listObjectAllowedActionsSuccess({
+                resource: Resource.Secrets,
+                answers: [{ uuid: 'abc-1', allowedActions: [ResourceAction.Update] }],
+            }),
         );
         expect(state.objectAllowedActions).toEqual({
             [objectKey(Resource.Secrets, 'ABC-1')]: { status: 'loaded', allowedActions: [ResourceAction.Update] },
         });
     });
 
-    test('listObjectAllowedActionsFailure marks the object as failed', () => {
-        const state = reducer(initialState, actions.listObjectAllowedActionsFailure({ resource: Resource.Secrets, uuid: 'uuid-1' }));
+    test('listObjectAllowedActionsFailure marks every requested object as failed', () => {
+        const state = reducer(initialState, actions.listObjectAllowedActionsFailure({ resource: Resource.Secrets, uuids: ['uuid-1'] }));
         expect(state.objectAllowedActions[objectKey(Resource.Secrets, 'uuid-1')]).toEqual({ status: 'failed' });
+    });
+
+    test('objectsKey names the same set of objects regardless of order and case', () => {
+        expect(objectsKey(Resource.Secrets, ['B-2', 'a-1'])).toBe(objectsKey(Resource.Secrets, ['A-1', 'b-2']));
     });
 });

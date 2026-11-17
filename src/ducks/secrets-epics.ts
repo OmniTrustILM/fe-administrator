@@ -228,7 +228,7 @@ const updateSecretObjects: AppEpic = (action$, state$, deps) => {
                         of(
                             slice.actions.updateSecretObjectsSuccess({ uuid: action.payload.uuid }),
                             // Core answers a secret's allowed actions from its owner and groups, so a change to them invalidates the answer.
-                            resourceActions.listObjectAllowedActions({ resource: Resource.Secrets, uuid: action.payload.uuid }),
+                            resourceActions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: [action.payload.uuid] }),
                             alertActions.success('Secret updated successfully.'),
                         ),
                     ),

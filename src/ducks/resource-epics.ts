@@ -1,8 +1,8 @@
 import type { AppEpic } from 'ducks';
-import { iif, of } from 'rxjs';
+import { from, iif, of } from 'rxjs';
 import { catchError, filter, groupBy, map, mergeMap, switchMap } from 'rxjs/operators';
 import { extractError } from 'utils/net';
-import { objectKey, slice } from './resource';
+import { objectsKey, slice } from './resource';
 
 const listResources: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
@@ -48,28 +48,41 @@ const listAllResourceEvents: AppEpic = (action$, state, deps) => {
     );
 };
 
+/** The most UUIDs `POST /v1/resources/{resource}/objects/allowed-actions` accepts in one request. */
+const ALLOWED_ACTIONS_BATCH = 1000;
+
+const inBatches = (uuids: string[]): string[][] =>
+    Array.from({ length: Math.ceil(uuids.length / ALLOWED_ACTIONS_BATCH) }, (_, index) =>
+        uuids.slice(index * ALLOWED_ACTIONS_BATCH, (index + 1) * ALLOWED_ACTIONS_BATCH),
+    );
+
 // Failure is not reported: without an object answer the profile's resource-level grants still decide the controls.
-// A newer request for the same object cancels the older one, so a late failure cannot overwrite a fresh answer.
+// A newer request for the same objects cancels the older one, so a late failure cannot overwrite a fresh answer.
 const listObjectAllowedActions: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.listObjectAllowedActions.match),
-        groupBy(({ payload: { resource, uuid } }) => objectKey(resource, uuid)),
-        mergeMap((sameObject$) =>
-            sameObject$.pipe(
-                switchMap(({ payload: { resource, uuid } }) =>
-                    deps.apiClients.resources
-                        .listObjectAllowedActions({ resource, objectAllowedActionsRequestDto: { uuids: [uuid] } })
-                        .pipe(
-                            map((response) =>
-                                slice.actions.listObjectAllowedActionsSuccess({
-                                    resource,
-                                    uuid,
-                                    allowedActions: response.items.find((item) => item.uuid.toLowerCase() === uuid.toLowerCase())
-                                        ?.allowedActions,
-                                }),
-                            ),
-                            catchError(() => of(slice.actions.listObjectAllowedActionsFailure({ resource, uuid }))),
+        groupBy(({ payload: { resource, uuids } }) => objectsKey(resource, uuids)),
+        mergeMap((sameObjects$) =>
+            sameObjects$.pipe(
+                switchMap(({ payload: { resource, uuids } }) =>
+                    from(inBatches(uuids)).pipe(
+                        mergeMap((batch) =>
+                            deps.apiClients.resources
+                                .listObjectAllowedActions({ resource, objectAllowedActionsRequestDto: { uuids: batch } })
+                                .pipe(
+                                    map((response) => {
+                                        const answered = new Map(
+                                            response.items.map((item) => [item.uuid.toLowerCase(), item.allowedActions]),
+                                        );
+                                        return slice.actions.listObjectAllowedActionsSuccess({
+                                            resource,
+                                            answers: batch.map((uuid) => ({ uuid, allowedActions: answered.get(uuid.toLowerCase()) })),
+                                        });
+                                    }),
+                                    catchError(() => of(slice.actions.listObjectAllowedActionsFailure({ resource, uuids: batch }))),
+                                ),
                         ),
+                    ),
                 ),
             ),
         ),

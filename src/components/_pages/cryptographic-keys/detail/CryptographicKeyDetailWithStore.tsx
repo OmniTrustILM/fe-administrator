@@ -69,10 +69,13 @@ export default function CryptographicKeyDetailWithStore({
             if (resourceActions.listObjectAllowedActions.match(action)) {
                 api.dispatch(
                     resourceActions.listObjectAllowedActionsSuccess({
-                        ...action.payload,
-                        allowedActions:
-                            allowedActions ??
-                            Object.values(ResourceAction).filter((granted) => canExportKeys || granted !== ResourceAction.ExportKey),
+                        resource: action.payload.resource,
+                        answers: action.payload.uuids.map((uuid) => ({
+                            uuid,
+                            allowedActions:
+                                allowedActions ??
+                                Object.values(ResourceAction).filter((granted) => canExportKeys || granted !== ResourceAction.ExportKey),
+                        })),
                     }),
                 );
             } else if (keyActions.getCryptographicKeyDetail.match(action)) {
