@@ -12,10 +12,11 @@ import type { PendingAction } from './types';
 export type PendingActionButtonsWithStoreProps = Readonly<
     Omit<React.ComponentProps<typeof PendingActionButtons>, 'onAction'> & {
         preloadedState?: Partial<CertificatesTestState>;
+        certificateActions?: ResourceAction[];
     }
 >;
 
-function ButtonsAndDialogs({ certificate, compact }: Omit<PendingActionButtonsWithStoreProps, 'preloadedState'>) {
+function ButtonsAndDialogs({ certificate, compact }: Omit<PendingActionButtonsWithStoreProps, 'preloadedState' | 'certificateActions'>) {
     const [action, setAction] = useState<PendingAction | null>(null);
     return (
         <>
@@ -25,18 +26,27 @@ function ButtonsAndDialogs({ certificate, compact }: Omit<PendingActionButtonsWi
     );
 }
 
-const pendingActionsProfile = {
+const issueAndRevoke = [ResourceAction.Issue, ResourceAction.Revoke];
+
+const pendingActionsProfile = (actions: ResourceAction[]) => ({
     username: 'operator',
     permissions: {
         allowedListings: [],
-        allowedActions: [{ resource: Resource.Certificates, actions: [ResourceAction.Issue, ResourceAction.Revoke] }],
+        allowedActions: [{ resource: Resource.Certificates, actions }],
     },
-};
+});
 
-export default function PendingActionButtonsWithStore({ preloadedState, ...props }: PendingActionButtonsWithStoreProps) {
+export default function PendingActionButtonsWithStore({
+    preloadedState,
+    certificateActions = issueAndRevoke,
+    ...props
+}: PendingActionButtonsWithStoreProps) {
     const state = useMemo(
-        () => ({ certificates: { ...testInitialState.certificates, ...preloadedState }, auth: { profile: pendingActionsProfile } }),
-        [preloadedState],
+        () => ({
+            certificates: { ...testInitialState.certificates, ...preloadedState },
+            auth: { profile: pendingActionsProfile(certificateActions) },
+        }),
+        [preloadedState, certificateActions],
     );
     const { store, dispatched } = useRecordingStore(state, 'certificates/manuallyIssueCertificate');
     const manualIssuePayload = dispatched.at(-1)?.payload;

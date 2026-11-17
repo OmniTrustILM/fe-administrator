@@ -12,6 +12,18 @@ test.describe('EventsTable actions by permission', () => {
         await expect(page.getByTestId('plus-button')).toBeDisabled();
     });
 
+    test('disables Add in platform mode without settings update and names the missing permission, even with trigger update', async ({
+        mount,
+        page,
+    }) => {
+        await mount(<EventsTableWithStore mode="platform" resourceGrants={[triggersUpdate]} />);
+
+        const add = page.getByTestId('plus-button');
+        await expect(add).toBeDisabled();
+        await add.locator('..').hover();
+        await expect(page.getByRole('tooltip')).toContainText(/update permission on settings/i);
+    });
+
     test('offers Add in platform mode with both settings and trigger update', async ({ mount, page }) => {
         await mount(<EventsTableWithStore mode="platform" resourceGrants={[settingsUpdate, triggersUpdate]} />);
 

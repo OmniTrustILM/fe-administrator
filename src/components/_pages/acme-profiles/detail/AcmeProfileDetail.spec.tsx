@@ -41,6 +41,20 @@ test.describe('AcmeProfileDetail actions by permission', () => {
         await expect(page.getByRole('tooltip')).toContainText(/create permission on acme/i);
     });
 
+    test('disables Generate key without secret create, which generating the key needs as well as ACME profile create', async ({
+        mount,
+        page,
+    }) => {
+        await mount(
+            <AcmeProfileDetailWithStore resourceGrants={[{ resource: Resource.AcmeProfiles, actions: [ResourceAction.Create] }]} />,
+        );
+
+        const generate = page.getByRole('button', { name: 'Generate key' });
+        await expect(generate).toBeDisabled();
+        await generate.locator('..').hover();
+        await expect(page.getByRole('tooltip')).toContainText(/create permission on secrets/i);
+    });
+
     test('offers Generate key with both secret create and ACME profile create', async ({ mount, page }) => {
         await mount(
             <AcmeProfileDetailWithStore
