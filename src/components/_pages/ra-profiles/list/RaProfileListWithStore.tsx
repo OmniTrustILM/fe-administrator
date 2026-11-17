@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
-import { PERMISSION_SCENARIOS, scenarioState } from 'components/_pages/test-utils/permissionScenarios';
+import { type PermissionScenario, scenarioState } from 'components/_pages/test-utils/permissionScenarios';
 import { initialState as raProfilesInitialState } from 'ducks/ra-profiles';
 import { testInitialState } from 'ducks/test-reducers';
 import type { RaProfileResponseModel } from 'types/ra-profiles';
@@ -20,10 +20,10 @@ const raProfile = {
  * The RA profile inventory with its one profile selected, as the named permission scenario sees it. The selection is
  * preloaded because the test reducer does not record it.
  */
-export default function RaProfileListWithStore({ scenario }: Readonly<{ scenario: string }>) {
+export default function RaProfileListWithStore({ scenario }: Readonly<{ scenario: PermissionScenario }>) {
     const [store] = useState(() =>
         createMockStore({
-            ...scenarioState(PERMISSION_SCENARIOS.find((candidate) => candidate.name === scenario)!),
+            ...scenarioState(scenario),
             raprofiles: {
                 ...raProfilesInitialState,
                 ...testInitialState.raprofiles,
