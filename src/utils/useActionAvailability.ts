@@ -21,12 +21,12 @@ export const objectAnswerFor = (
 ): ObjectAllowedActionsAnswer | undefined => (objectUuid ? (stored ?? LOADING_ANSWER) : undefined);
 
 /**
- * Ownership is left out: every action core runs on the owned resources (certificates, keys, secrets) also checks the
- * resource as a whole. A resource missing from a settled list, as after a failed request, has no object access.
+ * Ownership counts: core authorizes an action on objects that all belong to the caller without a resource grant. A
+ * resource missing from a settled list, as after a failed request, has no object access.
  */
 export const objectAccessOf = (resourcesList: ResourceModel[], settled: boolean, resource: Resource): ObjectAccess => {
     const found = resourcesList.find((entry) => entry.resource === resource);
-    if (found) return found.hasObjectAccess;
+    if (found) return found.hasObjectAccess || found.hasOwner;
     return settled ? false : 'loading';
 };
 

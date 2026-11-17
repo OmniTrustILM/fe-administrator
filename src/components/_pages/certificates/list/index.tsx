@@ -172,7 +172,7 @@ export default function CertificateList({
                           icon: 'group',
                           disabled: checkedRows.length === 0,
                           tooltip: 'Override Groups',
-                          requires: can(ResourceAction.Update),
+                          requires: can(ResourceAction.Update, { onObjects: true }),
                           onClick: () => {
                               setUpdateGroup(true);
                           },
@@ -181,7 +181,7 @@ export default function CertificateList({
                           icon: 'user-check',
                           disabled: checkedRows.length === 0,
                           tooltip: 'Override Owner',
-                          requires: can(ResourceAction.Update),
+                          requires: can(ResourceAction.Update, { onObjects: true }),
                           onClick: () => {
                               getUserList();
                               setUpdateOwner(true);
@@ -191,7 +191,7 @@ export default function CertificateList({
                           icon: 'shield-check',
                           disabled: checkedRows.length === 0,
                           tooltip: 'Override RA Profile',
-                          requires: can(ResourceAction.Update),
+                          requires: can(ResourceAction.Update, { onObjects: true }),
                           onClick: () => {
                               setUpdateRaProfile(true);
                           },
@@ -207,14 +207,14 @@ export default function CertificateList({
                           icon: 'archive',
                           disabled: checkedRows.length === 0,
                           tooltip: 'Archive',
-                          requires: can(ResourceAction.Archive),
+                          requires: can(ResourceAction.Archive, { onObjects: true }),
                           onClick: onArchiveClick,
                       },
                       {
                           icon: 'unarchive',
                           disabled: checkedRows.length === 0,
                           tooltip: 'Unarchive',
-                          requires: can(ResourceAction.Archive),
+                          requires: can(ResourceAction.Archive, { onObjects: true }),
                           onClick: onUnarchiveClick,
                       },
                   ],
@@ -297,7 +297,7 @@ export default function CertificateList({
                 onListCallback={onListCallback}
                 refreshToken={listRefreshToken}
                 backgroundRefreshToken={listBackgroundRefreshToken}
-                deleteRequires={can(ResourceAction.Delete)}
+                deleteRequires={can(ResourceAction.Delete, { onObjects: true })}
                 onDeleteCallback={(uuids, filters) => dispatch(actions.bulkDelete({ uuids, filters }))}
                 getAvailableFiltersApi={useCallback(
                     (apiClients: ApiClients) => apiClients.certificates.getCertificateSearchableFields(),
