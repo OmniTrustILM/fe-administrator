@@ -11,12 +11,14 @@ import type {
 export type State = {
     authenticationSettings?: AuthenticationSettingsModel;
     oauth2Provider?: OAuth2ProviderSettingsResponseModel;
+    oauth2ProviderETag?: string;
 
     isFetchingSettings: boolean;
     isFetchingProvider: boolean;
     isUpdatingSettings: boolean;
     isUpdatingProvider: boolean;
     updateProviderSucceeded: boolean;
+    updateProviderConflict: boolean;
     isRemovingProvider: boolean;
     isCreatingProvider: boolean;
     createProviderSucceeded: boolean;
@@ -28,6 +30,7 @@ export const initialState: State = {
     isUpdatingSettings: false,
     isUpdatingProvider: false,
     updateProviderSucceeded: false,
+    updateProviderConflict: false,
     isRemovingProvider: false,
     isCreatingProvider: false,
     createProviderSucceeded: false,
@@ -90,13 +93,20 @@ export const slice = createSlice({
 
         resetOAuth2ProviderSettings: (state, action: PayloadAction<void>) => {
             state.oauth2Provider = undefined;
+            state.oauth2ProviderETag = undefined;
+            state.updateProviderConflict = false;
         },
         getOAuth2ProviderSettings: (state, action: PayloadAction<{ providerName: string }>) => {
             state.isFetchingProvider = true;
+            state.updateProviderConflict = false;
         },
 
-        getOAuth2ProviderSettingsSuccess: (state, action: PayloadAction<{ oauth2Provider: OAuth2ProviderSettingsResponseModel }>) => {
+        getOAuth2ProviderSettingsSuccess: (
+            state,
+            action: PayloadAction<{ oauth2Provider: OAuth2ProviderSettingsResponseModel; eTag?: string }>,
+        ) => {
             state.oauth2Provider = action.payload.oauth2Provider;
+            state.oauth2ProviderETag = action.payload.eTag;
             state.isFetchingProvider = false;
         },
 
@@ -109,10 +119,12 @@ export const slice = createSlice({
             action: PayloadAction<{
                 providerName: string;
                 oauth2ProviderSettingsUpdateModel: OAuth2ProviderSettingsUpdateModel;
+                ifMatch?: string;
             }>,
         ) => {
             state.isUpdatingProvider = true;
             state.updateProviderSucceeded = false;
+            state.updateProviderConflict = false;
         },
 
         updateOAuth2ProviderSuccess: (state, action: PayloadAction<void>) => {
@@ -120,9 +132,10 @@ export const slice = createSlice({
             state.updateProviderSucceeded = true;
         },
 
-        updateOAuth2ProviderFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+        updateOAuth2ProviderFailure: (state, action: PayloadAction<{ error: string | undefined; conflict?: boolean }>) => {
             state.isUpdatingProvider = false;
             state.updateProviderSucceeded = false;
+            state.updateProviderConflict = action.payload.conflict ?? false;
         },
 
         createOAuth2Provider: (
@@ -164,12 +177,14 @@ const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 
 const authenticationSettings = createSelector(state, (state) => state.authenticationSettings);
 const oauth2Provider = createSelector(state, (state) => state.oauth2Provider);
+const oauth2ProviderETag = createSelector(state, (state) => state.oauth2ProviderETag);
 
 const isFetchingSettings = createSelector(state, (state) => state.isFetchingSettings);
 const isFetchingProvider = createSelector(state, (state) => state.isFetchingProvider);
 const isUpdatingSettings = createSelector(state, (state) => state.isUpdatingSettings);
 const isUpdatingProvider = createSelector(state, (state) => state.isUpdatingProvider);
 const updateProviderSucceeded = createSelector(state, (state) => state.updateProviderSucceeded);
+const updateProviderConflict = createSelector(state, (state) => state.updateProviderConflict);
 const isRemovingProvider = createSelector(state, (state) => state.isRemovingProvider);
 const isCreatingProvider = createSelector(state, (state) => state.isCreatingProvider);
 const createProviderSucceeded = createSelector(state, (state) => state.createProviderSucceeded);
@@ -178,12 +193,14 @@ export const selectors = {
     state,
     authenticationSettings,
     oauth2Provider,
+    oauth2ProviderETag,
 
     isFetchingSettings,
     isFetchingProvider,
     isUpdatingSettings,
     isUpdatingProvider,
     updateProviderSucceeded,
+    updateProviderConflict,
     isRemovingProvider,
     isCreatingProvider,
     createProviderSucceeded,

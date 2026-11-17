@@ -10,7 +10,7 @@
  * Do not edit the class manually.
  */
 
-import type { JwkDto, JwkSetLoadFailure } from './';
+import type { JwkDto, JwkSetLoadFailure, OAuth2ApplicationSettingsDto } from './';
 
 /**
  * @export
@@ -119,6 +119,12 @@ export interface OAuth2ProviderSettingsResponseDto {
      * @memberof OAuth2ProviderSettingsResponseDto
      */
     delegateClaim?: string;
+    /**
+     * Sign-in for applications through this provider. Not set means disabled.
+     * @type {OAuth2ApplicationSettingsDto}
+     * @memberof OAuth2ProviderSettingsResponseDto
+     */
+    applications?: OAuth2ApplicationSettingsDto;
     /**
      * Name of OAuth2 Provider
      * @type {string}

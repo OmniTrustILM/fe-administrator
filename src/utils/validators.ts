@@ -76,6 +76,60 @@ export const validateUrlWithRoute = (value: string) => {
 const IP_OCTET = String.raw`(?:25[0-5]|2[0-4]\d|[01]?\d\d?)`;
 const IP_REGEX = new RegExp(String.raw`^${IP_OCTET}\.${IP_OCTET}\.${IP_OCTET}\.${IP_OCTET}$`);
 
+const RESOURCE_INDICATOR_ERROR = 'Value must be an absolute http or https URL without credentials or a fragment';
+const URI_SCHEME_REGEX = /^([A-Za-z][A-Za-z0-9+.-]*):\/\/([^/?]*)(.*)$/;
+const URI_PATH_CHAR = String.raw`[A-Za-z0-9\-_.!~*'():@&=+$,;/]|%[0-9A-Fa-f]{2}|[^\u0000-   -     　]`;
+const URI_PATH_AND_QUERY_REGEX = new RegExp(String.raw`^(?:${URI_PATH_CHAR})*(?:\?(?:${URI_PATH_CHAR}|[?[\]])*)?$`);
+const HOSTNAME_LABEL_REGEX = /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/;
+const IPV6_GROUP_REGEX = /^[0-9A-Fa-f]{1,4}$/;
+const IPV6_REFERENCE_REGEX = /^\[([0-9A-Fa-f:.]+)(?:%[A-Za-z0-9_.]+)?\]$/;
+const PORT_REGEX = /^\d*$/;
+
+/** A hostname as `java.net.URI` reads one: dot-separated labels, of which the rightmost starts with a letter when there are several. */
+function isUriHostname(host: string): boolean {
+    const labels = host.endsWith('.') ? host.slice(0, -1).split('.') : host.split('.');
+    if (!labels.every((label) => HOSTNAME_LABEL_REGEX.test(label))) return false;
+    return labels.length === 1 || /^[A-Za-z]/.test(labels.at(-1) ?? '');
+}
+
+function isIpv6Address(address: string): boolean {
+    const halves = address.split('::');
+    if (halves.length > 2) return false;
+    const groups = halves.flatMap((half) => (half === '' ? [] : half.split(':')));
+    let groupCount = groups.length;
+    if (groups.at(-1)?.includes('.')) {
+        if (!IP_REGEX.test(groups.pop() ?? '')) return false;
+        groupCount += 1;
+    }
+    if (!groups.every((group) => IPV6_GROUP_REGEX.test(group))) return false;
+    return halves.length === 2 ? groupCount < 8 : groupCount === 8;
+}
+
+/** A server-based authority without userinfo, as `java.net.URI` parses it: a hostname, IPv4 or bracketed IPv6 host and an optional port. */
+function isUriServerAuthority(authority: string): boolean {
+    if (authority.includes('@')) return false;
+    const ipv6End = authority.startsWith('[') ? authority.indexOf(']') + 1 : 0;
+    const portStart = authority.indexOf(':', ipv6End);
+    const host = portStart < 0 ? authority : authority.slice(0, portStart);
+    const port = portStart < 0 ? '' : authority.slice(portStart + 1);
+    if (!PORT_REGEX.test(port)) return false;
+    const ipv6Address = IPV6_REFERENCE_REGEX.exec(host)?.[1];
+    if (ipv6Address !== undefined) return isIpv6Address(ipv6Address);
+    return IP_REGEX.test(host) || isUriHostname(host);
+}
+
+/** An RFC 8707 resource indicator as Core accepts it: an absolute http or https URI without credentials or a fragment. A blank value is unset. */
+export const validateResourceIndicator = () => (value: string | undefined) => {
+    const trimmed = value?.trim();
+    if (!trimmed) return undefined;
+    const [, scheme, authority, pathAndQuery] = URI_SCHEME_REGEX.exec(trimmed) ?? [];
+    const isValid =
+        ['http', 'https'].includes(scheme?.toLowerCase() ?? '') &&
+        isUriServerAuthority(authority ?? '') &&
+        URI_PATH_AND_QUERY_REGEX.test(pathAndQuery ?? '');
+    return isValid ? undefined : RESOURCE_INDICATOR_ERROR;
+};
+
 export const validateCustomIp = (value: string) => {
     return !value || IP_REGEX.test(value) ? undefined : 'Value must be a valid ip address';
 };
