@@ -10,7 +10,7 @@ import { EntityType } from 'ducks/filters';
 import pagingsReducer, { actions as pagingsActions, initialState as pagingsInitialState } from 'ducks/paging';
 import tokenKeysReducer, { actions as tokenKeysActions, initialState as tokenKeysInitialState } from 'ducks/token-keys';
 import { actions as tokenProfilesActions, initialState as tokenProfilesInitialState } from 'ducks/token-profiles';
-import { InspectedEntryKind, KeyState, KeyType } from 'types/openapi';
+import { InspectedEntryKind, KeyState, KeyType, ResourceAction } from 'types/openapi';
 import { REMOVE_KEY_FROM_INVENTORY_NOTE, REMOVE_KEYS_FROM_INVENTORY_NOTE } from '../constants';
 import { clickByText, clickByTitle } from '../../test-utils/domActions';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
@@ -18,10 +18,14 @@ import { useDispatchMock, useSelectorMock } from '../../test-utils/reactReduxMoc
 
 setupReactActEnvironment();
 
-vi.mock('utils/useActionAvailability', async () => {
-    const { actionAvailabilityMockModule } = await import('../../test-utils/mockModules');
-    return actionAvailabilityMockModule();
-});
+const availability = vi.hoisted(() => ({ granted: undefined as string[] | undefined }));
+
+vi.mock('utils/useActionAvailability', () => ({
+    useActionAvailability: () => (action: string) =>
+        !availability.granted || availability.granted.includes(action)
+            ? { available: true, hidden: false, loading: false }
+            : { available: false, hidden: false, loading: false, reason: `You need the ${action} permission on Keys.` },
+}));
 
 vi.mock('react-redux', async () => {
     return await import('../../test-utils/reactReduxMockModule');
@@ -36,6 +40,7 @@ vi.mock('components/PagedList/PagedList', () => ({
                     type="button"
                     title={button.tooltip}
                     data-disabled-tooltip={button.disabledTooltip}
+                    aria-disabled={button.requires ? !button.requires.available : undefined}
                     onClick={button.onClick}
                     disabled={button.disabled}
                 />
@@ -77,6 +82,7 @@ describe('CryptographicKeyList', () => {
         Array.from(container.querySelectorAll('[data-testid="dialog"]')).find((dialog) => dialog.textContent?.includes('Create Key'));
 
     beforeEach(() => {
+        availability.granted = undefined;
         state = {
             cryptographicKeys: keysInitialState,
             certificates: { ...certificatesInitialState, isImporting: true },
@@ -90,6 +96,25 @@ describe('CryptographicKeyList', () => {
         container = document.createElement('div');
         document.body.appendChild(container);
         root = createRoot(container);
+    });
+
+    const createKeyButton = () => container.querySelector('button[title="Create Key"]');
+
+    it.each([ResourceAction.Create, ResourceAction.ImportKey])(
+        'offers the Create Key dialog to a user holding only %s on keys',
+        async (action) => {
+            availability.granted = [action];
+            await renderList();
+
+            expect(createKeyButton()?.getAttribute('aria-disabled')).toBe('false');
+        },
+    );
+
+    it('withholds the Create Key dialog from a user who may neither create nor import keys', async () => {
+        availability.granted = [ResourceAction.Detail];
+        await renderList();
+
+        expect(createKeyButton()?.getAttribute('aria-disabled')).toBe('true');
     });
 
     it('refreshes as soon as an import from its Create Key dialog succeeds, however the dialog is then closed', async () => {

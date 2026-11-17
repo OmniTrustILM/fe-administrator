@@ -20,6 +20,7 @@ import { KeyCompromiseReason, type KeyUsage, PlatformEnum, Resource, ResourceAct
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { dateFormatter } from 'utils/dateUtil';
+import { requireAny } from 'utils/availability';
 import { useActionAvailability } from 'utils/useActionAvailability';
 import KeyUsageSelect from '../KeyUsageSelect';
 import { buildKeyCellRegistry, KEY_COLUMNS } from '../keyTableHelpers';
@@ -142,7 +143,7 @@ function CryptographicKeyList() {
         {
             icon: 'plus',
             tooltip: 'Create Key',
-            requires: can(ResourceAction.Create),
+            requires: requireAny(can(ResourceAction.Create), can(ResourceAction.ImportKey)),
             disabled: false,
             onClick: () => {
                 setIsAddDialogWide(false);

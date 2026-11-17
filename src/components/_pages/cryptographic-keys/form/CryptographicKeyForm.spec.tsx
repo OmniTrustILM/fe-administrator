@@ -291,7 +291,7 @@ test.describe('CryptographicKeyForm', () => {
         await expect(page.getByRole('tab', { name: 'Import material' })).toHaveCount(0);
     });
 
-    test('does not offer the Onboard from token tab without the key create permission', async ({ mount, page }) => {
+    test('offers only the Import material tab without the key create permission', async ({ mount, page }) => {
         const profile = aTokenProfile().build();
         await mount(
             <CryptographicKeyFormWithStore
@@ -302,7 +302,8 @@ test.describe('CryptographicKeyForm', () => {
             />,
         );
 
-        await expect(page.getByRole('tab', { name: 'Import material' })).toBeVisible();
+        await expect(page.getByRole('tab', { name: 'Import material' })).toHaveAttribute('aria-selected', 'true');
+        await expect(page.getByRole('tab', { name: 'Generate new' })).toHaveCount(0);
         await expect(page.getByRole('tab', { name: 'Onboard from token' })).toHaveCount(0);
     });
 

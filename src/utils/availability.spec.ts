@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { UserProfileDetailModel } from 'types/auth';
 import type { ResourceModel } from 'types/resource';
 import { Resource, ResourceAction } from 'types/openapi';
-import { type ActionRule, type Availability, missingPermissionReason, requireAll, resolveAvailability } from './availability';
+import { type ActionRule, type Availability, missingPermissionReason, requireAll, requireAny, resolveAvailability } from './availability';
 import { objectAccessOf, objectAnswerFor } from './useActionAvailability';
 
 const profileWith = (allowedActions: UserProfileDetailModel['permissions']['allowedActions']): UserProfileDetailModel =>
@@ -178,8 +178,12 @@ describe('objectAccessOf', () => {
         expect(objectAccessOf([entry(Resource.RaProfiles, true, false)], true, Resource.RaProfiles)).toBe(true);
     });
 
-    it('reports no object access for an owned resource, whose actions also check the resource', () => {
-        expect(objectAccessOf([entry(Resource.Secrets, false, true)], true, Resource.Secrets)).toBe(false);
+    it('reports object access for an owned resource, whose owner core authorizes without a resource grant', () => {
+        expect(objectAccessOf([entry(Resource.Certificates, false, true)], true, Resource.Certificates)).toBe(true);
+    });
+
+    it('reports no object access for a resource neither granted per object nor owned', () => {
+        expect(objectAccessOf([entry(Resource.Credentials, false, false)], true, Resource.Credentials)).toBe(false);
     });
 
     it('reports loading until the list settles', () => {
@@ -191,22 +195,21 @@ describe('objectAccessOf', () => {
     });
 });
 
-describe('requireAll', () => {
-    const available: Availability = { available: true, hidden: false, loading: false };
-    const loading: Availability = { available: false, hidden: false, loading: true };
-    const deniedCreate: Availability = {
-        available: false,
-        hidden: false,
-        loading: false,
-        reason: 'You need the create permission on Secrets.',
-    };
-    const deniedDetail: Availability = {
-        available: false,
-        hidden: false,
-        loading: false,
-        reason: 'You need the detail permission on Users.',
-    };
+const loading: Availability = { available: false, hidden: false, loading: true };
+const deniedCreate: Availability = {
+    available: false,
+    hidden: false,
+    loading: false,
+    reason: 'You need the create permission on Secrets.',
+};
+const deniedDetail: Availability = {
+    available: false,
+    hidden: false,
+    loading: false,
+    reason: 'You need the detail permission on Users.',
+};
 
+describe('requireAll', () => {
     it('is available when every action is', () => {
         expect(requireAll(available, available)).toEqual(available);
     });
@@ -214,5 +217,16 @@ describe('requireAll', () => {
     it('reports the first action that is not available', () => {
         expect(requireAll(available, deniedCreate, deniedDetail)).toEqual(deniedCreate);
         expect(requireAll(loading, deniedDetail)).toEqual(loading);
+    });
+});
+
+describe('requireAny', () => {
+    it('is available when any action is', () => {
+        expect(requireAny(deniedCreate, available)).toEqual(available);
+    });
+
+    it('reports the first action when none is available', () => {
+        expect(requireAny(deniedCreate, deniedDetail)).toEqual(deniedCreate);
+        expect(requireAny(loading, deniedDetail)).toEqual(loading);
     });
 });

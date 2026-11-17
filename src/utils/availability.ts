@@ -45,6 +45,11 @@ export function requireAll(first: Availability, ...rest: Availability[]): Availa
     return [first, ...rest].find((availability) => !availability.available) ?? first;
 }
 
+/** Combines alternative actions, any one of which suffices: available when one is, otherwise the first. */
+export function requireAny(first: Availability, ...rest: Availability[]): Availability {
+    return [first, ...rest].find((availability) => availability.available) ?? first;
+}
+
 /** Whether the resource's objects can be granted one by one; `'loading'` until the resource list is in. */
 export type ObjectAccess = boolean | 'loading';
 

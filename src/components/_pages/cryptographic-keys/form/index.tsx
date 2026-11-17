@@ -700,6 +700,7 @@ export default function CryptographicKeyForm({
     );
 
     const createsAnew = !editMode && !usesGlobalModal;
+    const offersGenerate = !createsAnew || can(ResourceAction.Create).available;
     const offersImport = createsAnew && can(ResourceAction.ImportKey).available;
     const offersOnboarding = createsAnew && can(ResourceAction.Create).available;
     // Leaving an import or an onboarding while it runs would drop its results, so the other tabs wait for it.
@@ -712,7 +713,13 @@ export default function CryptographicKeyForm({
                     noBorder
                     onTabKeyChange={setActiveTab}
                     tabs={[
-                        { tabKey: GENERATE_TAB, title: 'Generate new', content: generateNewForm, disabled: isTransferring },
+                        {
+                            tabKey: GENERATE_TAB,
+                            title: 'Generate new',
+                            hidden: !offersGenerate,
+                            content: generateNewForm,
+                            disabled: isTransferring,
+                        },
                         {
                             title: 'Import material',
                             hidden: !offersImport,
