@@ -133,6 +133,67 @@ describe('listObjectAllowedActions epic', () => {
         ]);
     });
 
+    test('keeps a newer answer when an older, overlapping request fails later', async () => {
+        const older = new Subject<AllowedActionsResponse>();
+        const newer = new Subject<AllowedActionsResponse>();
+        const request = vi.fn().mockReturnValueOnce(older).mockReturnValueOnce(newer);
+
+        const emitted = await startListObjectAllowedActions(request, [
+            actions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: ['uuid-1', 'uuid-2'] }),
+            actions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: ['UUID-1'] }),
+        ]);
+        newer.next({ items: [{ uuid: 'uuid-1', allowedActions: [ResourceAction.Detail] }] });
+        older.error(new Error('boom'));
+
+        expect(emitted).toEqual([
+            success([{ uuid: 'UUID-1', allowedActions: [ResourceAction.Detail] }]),
+            actions.listObjectAllowedActionsFailure({ resource: Resource.Secrets, uuids: ['uuid-2'] }),
+        ]);
+    });
+
+    test('stores only the objects no newer request names from a late, overlapping answer', async () => {
+        const older = new Subject<AllowedActionsResponse>();
+        const newer = new Subject<AllowedActionsResponse>();
+        const request = vi.fn().mockReturnValueOnce(older).mockReturnValueOnce(newer);
+
+        const emitted = await startListObjectAllowedActions(request, [
+            actions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: ['uuid-1', 'uuid-2'] }),
+            actions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: ['uuid-1'] }),
+        ]);
+        newer.next({ items: [{ uuid: 'uuid-1', allowedActions: [ResourceAction.Detail] }] });
+        older.next({
+            items: [
+                { uuid: 'uuid-1', allowedActions: [ResourceAction.Detail, ResourceAction.Update] },
+                { uuid: 'uuid-2', allowedActions: [ResourceAction.Update] },
+            ],
+        });
+
+        expect(emitted).toEqual([
+            success([{ uuid: 'uuid-1', allowedActions: [ResourceAction.Detail] }]),
+            success([{ uuid: 'uuid-2', allowedActions: [ResourceAction.Update] }]),
+        ]);
+    });
+
+    test('emits nothing for a late answer every object of which a newer request has replaced', async () => {
+        const older = new Subject<AllowedActionsResponse>();
+        const newer = new Subject<AllowedActionsResponse>();
+        const request = vi.fn().mockReturnValueOnce(older).mockReturnValueOnce(newer);
+
+        const emitted = await startListObjectAllowedActions(request, [
+            actions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: ['uuid-1'] }),
+            actions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: ['uuid-1', 'uuid-2'] }),
+        ]);
+        newer.next({ items: [] });
+        older.error(new Error('boom'));
+
+        expect(emitted).toEqual([
+            success([
+                { uuid: 'uuid-1', allowedActions: undefined },
+                { uuid: 'uuid-2', allowedActions: undefined },
+            ]),
+        ]);
+    });
+
     test('drops an older request for the same objects once a newer one starts, in any order', async () => {
         const older = new Subject<AllowedActionsResponse>();
         const newer = new Subject<AllowedActionsResponse>();

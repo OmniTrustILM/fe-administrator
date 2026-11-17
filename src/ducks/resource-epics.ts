@@ -1,8 +1,9 @@
 import type { AppEpic } from 'ducks';
-import { from, iif, of } from 'rxjs';
+import { EMPTY, from, iif, of } from 'rxjs';
 import { catchError, filter, groupBy, map, mergeMap, switchMap } from 'rxjs/operators';
 import { extractError } from 'utils/net';
-import { objectsKey, slice } from './resource';
+import type { ObjectAllowedActionsResponseDto, Resource } from 'types/openapi';
+import { objectKey, objectsKey, slice } from './resource';
 
 const listResources: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
@@ -56,30 +57,47 @@ const inBatches = (uuids: string[]): string[][] =>
         uuids.slice(index * ALLOWED_ACTIONS_BATCH, (index + 1) * ALLOWED_ACTIONS_BATCH),
     );
 
+const answersFor = (batch: string[], response: ObjectAllowedActionsResponseDto) => {
+    const answered = new Map(response.items.map((item) => [item.uuid.toLowerCase(), item.allowedActions]));
+    return batch.map((uuid) => ({ uuid, allowedActions: answered.get(uuid.toLowerCase()) }));
+};
+
 // Failure is not reported: without an object answer the profile's resource-level grants still decide the controls.
-// A newer request for the same set of objects cancels the older one, so a late failure cannot overwrite a fresh answer.
+// Each object keeps only the answer of the newest request naming it, so a late answer or failure of an older,
+// overlapping request cannot overwrite a fresh one. A newer request for the same set also cancels the older one.
 const listObjectAllowedActions: AppEpic = (action$, state, deps) => {
+    const newestRequest = new Map<string, number>();
+    let requests = 0;
+    const isNewest = (resource: Resource, request: number) => (uuid: string) => newestRequest.get(objectKey(resource, uuid)) === request;
+
     return action$.pipe(
         filter(slice.actions.listObjectAllowedActions.match),
-        groupBy(({ payload: { resource, uuids } }) => objectsKey(resource, uuids)),
+        map(({ payload: { resource, uuids } }) => {
+            const request = ++requests;
+            for (const uuid of uuids) newestRequest.set(objectKey(resource, uuid), request);
+            return { resource, uuids, current: isNewest(resource, request) };
+        }),
+        groupBy(({ resource, uuids }) => objectsKey(resource, uuids)),
         mergeMap((sameObjects$) =>
             sameObjects$.pipe(
-                switchMap(({ payload: { resource, uuids } }) =>
+                switchMap(({ resource, uuids, current }) =>
                     from(inBatches(uuids)).pipe(
                         mergeMap((batch) =>
                             deps.apiClients.resources
                                 .listObjectAllowedActions({ resource, objectAllowedActionsRequestDto: { uuids: batch } })
                                 .pipe(
-                                    map((response) => {
-                                        const answered = new Map(
-                                            response.items.map((item) => [item.uuid.toLowerCase(), item.allowedActions]),
-                                        );
-                                        return slice.actions.listObjectAllowedActionsSuccess({
-                                            resource,
-                                            answers: batch.map((uuid) => ({ uuid, allowedActions: answered.get(uuid.toLowerCase()) })),
-                                        });
+                                    mergeMap((response) => {
+                                        const answers = answersFor(batch, response).filter(({ uuid }) => current(uuid));
+                                        return answers.length
+                                            ? of(slice.actions.listObjectAllowedActionsSuccess({ resource, answers }))
+                                            : EMPTY;
                                     }),
-                                    catchError(() => of(slice.actions.listObjectAllowedActionsFailure({ resource, uuids: batch }))),
+                                    catchError(() => {
+                                        const failed = batch.filter(current);
+                                        return failed.length
+                                            ? of(slice.actions.listObjectAllowedActionsFailure({ resource, uuids: failed }))
+                                            : EMPTY;
+                                    }),
                                 ),
                         ),
                     ),
