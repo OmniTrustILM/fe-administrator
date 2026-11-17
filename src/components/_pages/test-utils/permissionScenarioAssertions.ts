@@ -1,9 +1,11 @@
 import type { Locator } from '@playwright/test';
 import { expect } from '../../../../playwright/ct-test';
 
+const PERMISSION_DENIAL = /You need the .+ permission on .+\.|Your permissions do not allow .+ on this object\./;
+
 /**
  * Asserts a control is offered, or withheld for a missing permission. A withheld control must not be merely loading,
- * and `Button` wraps a denied control so its reason stays hoverable, which tells a denial from a state-disabled one.
+ * and its hover reason must name a permission, since `Button` shows a state-disabled control's reason the same way.
  */
 export async function expectOffered(control: Locator, offered: boolean) {
     if (offered) {
@@ -12,5 +14,10 @@ export async function expectOffered(control: Locator, offered: boolean) {
     }
     await expect(control).toBeDisabled();
     await expect(control).not.toHaveAttribute('aria-busy');
-    await expect(control.locator('xpath=..')).toHaveClass(/inline-flex/);
+
+    const trigger = control.locator('xpath=..');
+    await trigger.hover();
+    await expect(trigger).toHaveAttribute('aria-describedby', /.+/);
+    const tooltipId = await trigger.getAttribute('aria-describedby');
+    await expect(control.page().locator(`[id="${tooltipId}"]`)).toHaveText(PERMISSION_DENIAL);
 }
