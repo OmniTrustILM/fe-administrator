@@ -38,7 +38,8 @@ function RoleForm({ roleId, onCancel, onSuccess }: RoleFormProps) {
 
     const editMode = useMemo(() => !!id, [id]);
 
-    const roleSelector = useSelector(rolesSelectors.role);
+    const roleDetail = useSelector(rolesSelectors.role);
+    const editedRole = editMode && roleDetail?.uuid === id ? roleDetail : undefined;
     const isFetchingRoleDetail = useSelector(rolesSelectors.isFetchingDetail);
     const resourceCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
@@ -62,11 +63,11 @@ function RoleForm({ roleId, onCancel, onSuccess }: RoleFormProps) {
 
     const defaultValues: FormValues = useMemo(
         () => ({
-            name: editMode ? roleSelector?.name || '' : '',
-            description: editMode ? roleSelector?.description || '' : '',
-            email: editMode ? roleSelector?.email || '' : '',
+            name: editMode ? roleDetail?.name || '' : '',
+            description: editMode ? roleDetail?.description || '' : '',
+            email: editMode ? roleDetail?.email || '' : '',
         }),
-        [editMode, roleSelector],
+        [editMode, roleDetail],
     );
 
     const methods = useForm<FormValues>({
@@ -81,14 +82,14 @@ function RoleForm({ roleId, onCancel, onSuccess }: RoleFormProps) {
         reset,
     } = methods;
 
-    // Reset form values when roleSelector is loaded in edit mode
+    // Reset form values once the edited role's detail loads
     useEffect(() => {
         if (editMode && id) {
-            if (roleSelector?.uuid === id && !isFetchingRoleDetail) {
+            if (roleDetail?.uuid === id && !isFetchingRoleDetail) {
                 const newDefaultValues: FormValues = {
-                    name: roleSelector.name || '',
-                    description: roleSelector.description || '',
-                    email: roleSelector.email || '',
+                    name: roleDetail.name || '',
+                    description: roleDetail.description || '',
+                    email: roleDetail.email || '',
                 };
                 reset(newDefaultValues, { keepDefaultValues: false });
             } else if (previousIdRef.current !== id && previousIdRef.current !== undefined) {
@@ -107,7 +108,7 @@ function RoleForm({ roleId, onCancel, onSuccess }: RoleFormProps) {
                 email: '',
             });
         }
-    }, [editMode, roleSelector, id, reset, isFetchingRoleDetail]);
+    }, [editMode, roleDetail, id, reset, isFetchingRoleDetail]);
 
     const onSubmit = useCallback(
         (values: FormValues) => {
@@ -145,9 +146,9 @@ function RoleForm({ roleId, onCancel, onSuccess }: RoleFormProps) {
     const renderCustomAttributesEditor = useMemo(() => {
         if (isBusy) return <></>;
         return (
-            <AttributeEditor id="customRole" attributeDescriptors={resourceCustomAttributes} attributes={roleSelector?.customAttributes} />
+            <AttributeEditor id="customRole" attributeDescriptors={resourceCustomAttributes} attributes={editedRole?.customAttributes} />
         );
-    }, [roleSelector, resourceCustomAttributes, isBusy]);
+    }, [editedRole, resourceCustomAttributes, isBusy]);
 
     return (
         <FormProvider {...methods}>
@@ -166,7 +167,7 @@ function RoleForm({ roleId, onCancel, onSuccess }: RoleFormProps) {
                                     label="Role Name"
                                     required
                                     placeholder="Enter name of the role"
-                                    disabled={editMode || roleSelector?.systemRole}
+                                    disabled={editMode}
                                     invalid={fieldState.error && fieldState.isTouched}
                                     error={getFieldErrorMessage(fieldState)}
                                 />
@@ -184,7 +185,7 @@ function RoleForm({ roleId, onCancel, onSuccess }: RoleFormProps) {
                                     type="text"
                                     label="Description"
                                     placeholder="Enter description of the role"
-                                    disabled={roleSelector?.systemRole}
+                                    disabled={editedRole?.systemRole}
                                     invalid={fieldState.error && fieldState.isTouched}
                                     error={getFieldErrorMessage(fieldState)}
                                 />
@@ -225,7 +226,7 @@ function RoleForm({ roleId, onCancel, onSuccess }: RoleFormProps) {
                                 title={submitTitle}
                                 inProgressTitle={inProgressTitle}
                                 inProgress={isSubmitting}
-                                disabled={!isDirty || isSubmitting || roleSelector?.systemRole}
+                                disabled={!isDirty || isSubmitting || editedRole?.systemRole}
                                 type="submit"
                             />
                         </Container>

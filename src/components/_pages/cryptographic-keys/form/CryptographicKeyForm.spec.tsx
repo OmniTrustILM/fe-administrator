@@ -15,6 +15,7 @@ import { actions as connectorActions } from 'ducks/connectors';
 import { actions as certificateActions } from 'ducks/certificates';
 import { actions as tokenProfilesActions } from 'ducks/token-profiles';
 import { keyPairMeta } from 'ducks/__fixtures__/token-keys';
+import { customAttributeValue, demoNoteAttribute, teamAttribute } from 'components/_pages/test-utils/customAttributes';
 import type { UnknownAction } from '@reduxjs/toolkit';
 import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
 import type { TokenProfileResponseModel } from 'types/token-profiles';
@@ -77,6 +78,16 @@ async function selectKeyToOnboard(page: Page, profile: TokenProfileResponseModel
     await page.getByRole('option', { name: `${profile.tokenInstanceName} / ${profile.name}` }).click();
     await page.getByRole('checkbox', { name: 'Select signer' }).click();
 }
+
+const viewedKey = {
+    uuid: 'viewed-key',
+    name: 'Viewed key',
+    creationTime: '',
+    tokenProfileUuid: aTokenProfile().build().uuid,
+    customAttributes: [customAttributeValue(demoNoteAttribute, 'Browser demo check'), customAttributeValue(teamAttribute, 'Security')],
+};
+
+const customAttributeInput = (page: Page, name: string) => page.getByTestId(`text-input-__attributes__customCryptographicKey__.${name}`);
 
 const detailRequests = (actions: UnknownAction[]) =>
     actions.filter(tokenProfilesActions.getTokenProfileDetail.match).map((action) => action.payload);
@@ -240,6 +251,75 @@ test.describe('CryptographicKeyForm', () => {
         await expect(page.getByTestId('select-tokenProfileSelect-trigger')).toHaveText(profile.name);
 
         expect(actions.filter(tokenProfilesActions.getTokenProfileDetail.match)).toHaveLength(0);
+    });
+
+    for (const [where, mountedFrom] of [
+        ['the key list', { initialRoute: '/keys', routePath: '/keys' }],
+        ['a certificate request', { usesGlobalModal: true }],
+    ] as const) {
+        test(`starts a new key's custom attributes from their declared defaults, opened from ${where}`, async ({ mount, page }) => {
+            // given: the store still holds the last viewed key
+            await mount(
+                <CryptographicKeyFormWithStore
+                    {...mountedFrom}
+                    tokenProfiles={[aTokenProfile().build()]}
+                    keyDetail={viewedKey}
+                    resourceCustomAttributes={[teamAttribute, demoNoteAttribute]}
+                />,
+            );
+
+            // when
+            await page.getByRole('tab', { name: 'Custom Attributes', exact: true }).click();
+
+            // then
+            await expect(customAttributeInput(page, 'team')).toHaveValue('PKI');
+            await expect(customAttributeInput(page, 'demoNote')).toHaveCount(0);
+        });
+    }
+
+    test("creates a key without the last viewed key's custom attribute values", async ({ mount, page }) => {
+        // given
+        const profile = aTokenProfile().build();
+        const actions: UnknownAction[] = [];
+        await mount(
+            <CryptographicKeyFormWithStore
+                initialRoute="/keys"
+                routePath="/keys"
+                tokenProfiles={[profile]}
+                supportedKeyRequestTypesByProfile={{ [profile.uuid]: [KeyRequestType.KeyPair] }}
+                keyDetail={viewedKey}
+                resourceCustomAttributes={[demoNoteAttribute]}
+                onAction={(action) => actions.push(action)}
+            />,
+        );
+
+        // when: the key is created without opening its custom attributes
+        await selectTokenProfile(page, profile);
+        await selectKeyType(page, KeyRequestType.KeyPair);
+        const nameInput = page.getByTestId('text-input-name');
+        await nameInput.click();
+        await nameInput.fill('web-server-01');
+        await page.getByRole('button', { name: 'Create' }).click();
+
+        // then
+        await expect.poll(() => actions.filter(keyActions.createCryptographicKey.match)).toHaveLength(1);
+        const [created] = actions.filter(keyActions.createCryptographicKey.match);
+        expect(created.payload.cryptographicKeyAddRequest.customAttributes).toEqual([]);
+    });
+
+    test('loads the custom attribute values of the edited key', async ({ mount, page }) => {
+        await mount(
+            <CryptographicKeyFormWithStore
+                initialRoute={`/keys/detail/${viewedKey.uuid}`}
+                routePath="/keys/detail/:id"
+                tokenProfiles={[aTokenProfile().build()]}
+                keyDetail={viewedKey}
+                resourceCustomAttributes={[teamAttribute, demoNoteAttribute]}
+            />,
+        );
+
+        await expect(customAttributeInput(page, 'team')).toHaveValue('Security');
+        await expect(customAttributeInput(page, 'demoNote')).toHaveValue('Browser demo check');
     });
 
     test('offers Generate new, Import material and Onboard from token tabs in create mode', async ({ mount, page }) => {

@@ -87,6 +87,7 @@ export default function CryptographicKeyForm({
     const editMode = useMemo(() => !!id, [id]);
 
     const keyDetail = useSelector(cryptographicKeysSelectors.cryptographicKey);
+    const editedKey = editMode && keyDetail?.uuid === id ? keyDetail : undefined;
 
     const groups = useSelector(groupSelectors.certificateGroups);
     const users = useSelector(userSelectors.users);
@@ -389,20 +390,17 @@ export default function CryptographicKeyForm({
     };
 
     const attributeTabs = (tokenProfileUuid: string | undefined) => {
-        if (editMode) {
-            return [
-                {
-                    title: 'Custom Attributes',
-                    content: (
-                        <AttributeEditor
-                            id="customCryptographicKey"
-                            attributeDescriptors={resourceCustomAttributes}
-                            attributes={keyDetail?.customAttributes}
-                        />
-                    ),
-                },
-            ];
-        }
+        const customAttributesTab = {
+            title: 'Custom Attributes',
+            content: (
+                <AttributeEditor
+                    id="customCryptographicKey"
+                    attributeDescriptors={resourceCustomAttributes}
+                    attributes={editedKey?.customAttributes}
+                />
+            ),
+        };
+        if (editMode) return [customAttributesTab];
         return [
             {
                 title: 'Connector Attributes',
@@ -419,16 +417,7 @@ export default function CryptographicKeyForm({
                     <></>
                 ),
             },
-            {
-                title: 'Custom Attributes',
-                content: (
-                    <AttributeEditor
-                        id="customCryptographicKey"
-                        attributeDescriptors={resourceCustomAttributes}
-                        attributes={keyDetail?.customAttributes}
-                    />
-                ),
-            },
+            customAttributesTab,
         ];
     };
 
