@@ -2,7 +2,7 @@ import { useEffect, useMemo } from 'react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import type { UnknownAction } from '@reduxjs/toolkit';
-import { initialState as certificatesInitialState } from 'ducks/certificates';
+import { actions as certificateActions, initialState as certificatesInitialState } from 'ducks/certificates';
 import locationsReducer, { actions as locationActions, initialState as locationsInitialState } from 'ducks/locations';
 import { testInitialState, testReducers } from 'ducks/test-reducers';
 import type { CertificateDetailResponseModel } from 'types/certificate';
@@ -20,6 +20,8 @@ type Props = Readonly<{
     pushableLocations?: LocationResponseModel[];
     /** What the allowed-actions endpoint answered for each location; a location left out stays loading. */
     locationAnswers?: Record<string, ResourceAction[]>;
+    /** The locations a refresh answers with, delivered when the `refresh-locations` button is clicked. */
+    refreshedLocations?: LocationResponseModel[];
 }>;
 
 const certificate = {
@@ -40,10 +42,12 @@ const recorded = {
 
 type HarnessState = ReturnType<typeof testReducers> & { locations?: typeof locationsInitialState };
 
-// The test reducers carry no locations slice, which the page reads.
+// The test reducers carry no locations slice, which the page reads, and keep no certificate locations a refresh answers.
 const reducer = ((state: HarnessState | undefined, action: UnknownAction) => {
     const { locations, ...rest } = state ?? ({} as HarnessState);
-    return { ...testReducers(rest as ReturnType<typeof testReducers>, action), locations: locationsReducer(locations, action) };
+    const next = { ...testReducers(rest as ReturnType<typeof testReducers>, action), locations: locationsReducer(locations, action) };
+    if (!certificateActions.listCertificateLocationsSuccess.match(action)) return next;
+    return { ...next, certificates: { ...next.certificates, certificateLocations: action.payload.certificateLocations } };
 }) as unknown as typeof testReducers;
 
 /** Answers a location's push attributes with none, after the render that saw them requested, as the epic would. */
@@ -62,6 +66,7 @@ export default function CertificateDetailWithStore({
     certificateLocations,
     pushableLocations,
     locationAnswers = NO_ANSWERS,
+    refreshedLocations,
 }: Props) {
     const preloadedState = useMemo(
         () => ({
@@ -102,6 +107,17 @@ export default function CertificateDetailWithStore({
                 </Routes>
             </MemoryRouter>
             <AnswerPushAttributes />
+            {refreshedLocations && (
+                <button
+                    type="button"
+                    data-testid="refresh-locations"
+                    onClick={() =>
+                        store.dispatch(certificateActions.listCertificateLocationsSuccess({ certificateLocations: refreshedLocations }))
+                    }
+                >
+                    Answer the locations refresh
+                </button>
+            )}
             <div data-testid="dispatched">{JSON.stringify(dispatched.map((action) => action.type))}</div>
         </Provider>
     );

@@ -121,6 +121,31 @@ test.describe('CertificateDetail — permission to change each location', () => 
         });
     }
 
+    test('settles Remove once a refresh drops the checked location, and offers it for another allowed one', async ({ mount, page }) => {
+        const thirdLocation = location('loc-3', 'Third location');
+        await mount(
+            <CertificateDetailWithStore
+                allowedListings={listings}
+                allowedActions={[ResourceAction.Detail]}
+                certificateLocations={[certificateLocations[0], thirdLocation]}
+                refreshedLocations={[thirdLocation]}
+                locationAnswers={answers}
+            />,
+        );
+        await page.getByRole('tab', { name: 'Locations' }).click();
+        await checkRow(page, 'First location');
+
+        await page.getByTestId('refresh-locations').click();
+
+        const remove = page.getByTestId('trash-button');
+        await expect(page.getByRole('row', { name: /First location/ })).toHaveCount(0);
+        await expect(remove).toBeDisabled();
+        await expect(remove).not.toHaveAttribute('aria-busy');
+
+        await checkRow(page, 'Third location');
+        await expect(remove).toBeEnabled();
+    });
+
     test('asks for the allowed actions of every location of the certificate in one request', async ({ mount, page }) => {
         await mountLocations(mount);
 

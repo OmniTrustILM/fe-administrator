@@ -45,6 +45,17 @@ async function runListObjectAllowedActions(
 const success = (answers: { uuid: string; allowedActions: ResourceAction[] | undefined }[]) =>
     actions.listObjectAllowedActionsSuccess({ resource: Resource.Secrets, answers });
 
+async function startOlderThenNewer(olderUuids: string[], newerUuids: string[]) {
+    const older = new Subject<AllowedActionsResponse>();
+    const newer = new Subject<AllowedActionsResponse>();
+    const request = vi.fn().mockReturnValueOnce(older).mockReturnValueOnce(newer);
+    const emitted = await startListObjectAllowedActions(request, [
+        actions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: olderUuids }),
+        actions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: newerUuids }),
+    ]);
+    return { older, newer, emitted };
+}
+
 describe('listObjectAllowedActions epic', () => {
     test('requests the one object and stores its allowed actions', async () => {
         const request = vi.fn(() => of({ items: [{ uuid: 'uuid-1', allowedActions: [ResourceAction.Detail] }] }));
@@ -134,14 +145,7 @@ describe('listObjectAllowedActions epic', () => {
     });
 
     test('keeps a newer answer when an older, overlapping request fails later', async () => {
-        const older = new Subject<AllowedActionsResponse>();
-        const newer = new Subject<AllowedActionsResponse>();
-        const request = vi.fn().mockReturnValueOnce(older).mockReturnValueOnce(newer);
-
-        const emitted = await startListObjectAllowedActions(request, [
-            actions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: ['uuid-1', 'uuid-2'] }),
-            actions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: ['UUID-1'] }),
-        ]);
+        const { older, newer, emitted } = await startOlderThenNewer(['uuid-1', 'uuid-2'], ['UUID-1']);
         newer.next({ items: [{ uuid: 'uuid-1', allowedActions: [ResourceAction.Detail] }] });
         older.error(new Error('boom'));
 
@@ -152,14 +156,7 @@ describe('listObjectAllowedActions epic', () => {
     });
 
     test('stores only the objects no newer request names from a late, overlapping answer', async () => {
-        const older = new Subject<AllowedActionsResponse>();
-        const newer = new Subject<AllowedActionsResponse>();
-        const request = vi.fn().mockReturnValueOnce(older).mockReturnValueOnce(newer);
-
-        const emitted = await startListObjectAllowedActions(request, [
-            actions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: ['uuid-1', 'uuid-2'] }),
-            actions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: ['uuid-1'] }),
-        ]);
+        const { older, newer, emitted } = await startOlderThenNewer(['uuid-1', 'uuid-2'], ['uuid-1']);
         newer.next({ items: [{ uuid: 'uuid-1', allowedActions: [ResourceAction.Detail] }] });
         older.next({
             items: [
@@ -175,14 +172,7 @@ describe('listObjectAllowedActions epic', () => {
     });
 
     test('emits nothing for a late answer every object of which a newer request has replaced', async () => {
-        const older = new Subject<AllowedActionsResponse>();
-        const newer = new Subject<AllowedActionsResponse>();
-        const request = vi.fn().mockReturnValueOnce(older).mockReturnValueOnce(newer);
-
-        const emitted = await startListObjectAllowedActions(request, [
-            actions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: ['uuid-1'] }),
-            actions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: ['uuid-1', 'uuid-2'] }),
-        ]);
+        const { older, newer, emitted } = await startOlderThenNewer(['uuid-1'], ['uuid-1', 'uuid-2']);
         newer.next({ items: [] });
         older.error(new Error('boom'));
 
