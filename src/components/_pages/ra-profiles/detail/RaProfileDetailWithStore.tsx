@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { createObjectPermissionStore } from 'components/_pages/test-utils/objectPermissionStore';
+import { PERMISSION_SCENARIOS, scenarioState } from 'components/_pages/test-utils/permissionScenarios';
 import { slice as acmeProfilesSlice } from 'ducks/acme-profiles';
 import { slice as approvalProfilesSlice } from 'ducks/approval-profiles';
 import { slice as cmpProfilesSlice } from 'ducks/cmp-profiles';
@@ -19,6 +20,8 @@ type Props = Readonly<{
     allowedActions?: ResourceAction[];
     /** Actions the user holds on whole resources; none when omitted. */
     resourceGrants?: { resource: Resource; actions: ResourceAction[] }[];
+    /** A permission scenario by name, whose profile and answer replace the two props above. */
+    scenario?: string;
 }>;
 
 const raProfile = {
@@ -31,9 +34,15 @@ const raProfile = {
     certificateValidationSettings: { usePlatformSettings: true },
 } as unknown as RaProfileResponseModel;
 
-export default function RaProfileDetailWithStore({ allowedActions = Object.values(ResourceAction), resourceGrants }: Props) {
-    const [store] = useState(() =>
-        createObjectPermissionStore({
+export default function RaProfileDetailWithStore({ allowedActions = Object.values(ResourceAction), resourceGrants, scenario }: Props) {
+    const [store] = useState(() => {
+        const permissions = scenario
+            ? scenarioState(PERMISSION_SCENARIOS.find((candidate) => candidate.name === scenario)!, {
+                  resource: Resource.RaProfiles,
+                  uuid: raProfile.uuid,
+              })
+            : {};
+        return createObjectPermissionStore({
             resource: Resource.RaProfiles,
             uuid: raProfile.uuid,
             allowedActions,
@@ -42,9 +51,10 @@ export default function RaProfileDetailWithStore({ allowedActions = Object.value
             preloadedState: {
                 raprofiles: { ...raProfilesInitialState, ...testInitialState.raprofiles, raProfile },
                 complianceProfiles: { ...complianceProfilesInitialState, ...testInitialState.complianceProfiles },
+                ...permissions,
             },
-        }),
-    );
+        });
+    });
 
     return (
         <Provider store={store}>
