@@ -185,8 +185,18 @@ describe('resource slice', () => {
     });
 
     test('listObjectAllowedActionsFailure marks every requested object as failed', () => {
-        const state = reducer(initialState, actions.listObjectAllowedActionsFailure({ resource: Resource.Secrets, uuids: ['uuid-1'] }));
-        expect(state.objectAllowedActions[objectKey(Resource.Secrets, 'uuid-1')]).toEqual({ status: 'failed' });
+        const loading = reducer(
+            initialState,
+            actions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: ['uuid-1', 'uuid-2'] }),
+        );
+        const state = reducer(
+            loading,
+            actions.listObjectAllowedActionsFailure({ resource: Resource.Secrets, uuids: ['uuid-1', 'uuid-2'] }),
+        );
+        expect(state.objectAllowedActions).toEqual({
+            [objectKey(Resource.Secrets, 'uuid-1')]: { status: 'failed' },
+            [objectKey(Resource.Secrets, 'uuid-2')]: { status: 'failed' },
+        });
     });
 
     test('objectsKey names the same set of objects regardless of order and case', () => {

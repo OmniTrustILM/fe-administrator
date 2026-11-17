@@ -101,6 +101,25 @@ describe('listObjectAllowedActions epic', () => {
         ).toEqual([uuids.slice(0, 1000), uuids.slice(1000)]);
     });
 
+    test('stores the answer of each batch when they arrive out of order', async () => {
+        const uuids = Array.from({ length: 1001 }, (_, index) => `uuid-${index}`);
+        const batches = [new Subject<AllowedActionsResponse>(), new Subject<AllowedActionsResponse>()];
+        const request = vi.fn().mockReturnValueOnce(batches[0]).mockReturnValueOnce(batches[1]);
+
+        const emitted = await startListObjectAllowedActions(request, [
+            actions.listObjectAllowedActions({ resource: Resource.Secrets, uuids }),
+        ]);
+        batches[1].next({ items: [{ uuid: 'uuid-1000', allowedActions: [ResourceAction.Update] }] });
+        batches[0].next({ items: [{ uuid: 'uuid-0', allowedActions: [ResourceAction.Detail] }] });
+
+        expect(emitted).toEqual([
+            success([{ uuid: 'uuid-1000', allowedActions: [ResourceAction.Update] }]),
+            success(
+                uuids.slice(0, 1000).map((uuid) => ({ uuid, allowedActions: uuid === 'uuid-0' ? [ResourceAction.Detail] : undefined })),
+            ),
+        ]);
+    });
+
     test('matches the answer to a mixed-case request UUID', async () => {
         const uuid = 'AB12CD34-0000-4000-8000-00000000000F';
         const request = () => of({ items: [{ uuid: uuid.toLowerCase(), allowedActions: [ResourceAction.Update] }] });
