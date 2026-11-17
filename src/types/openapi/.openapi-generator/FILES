@@ -1,4 +1,5 @@
 .gitignore
+API_VERSION
 apis/ACMEAccountManagementApi.ts
 apis/ACMEProfileManagementApi.ts
 apis/ApprovalInventoryApi.ts

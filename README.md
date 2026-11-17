@@ -94,6 +94,19 @@ import type {
 
 The core spec publishes `info@otilm.com` as `info.contact.email`, but the ILM support address is `ilm@omnitrust.com`. `npm run generate-types` and `generate-types-local` therefore run `scripts/set-openapi-contact.mjs` after the generator, which rewrites the `Contact:` line across the generated core tree. Remove the script and its two hooks once the core spec publishes the correct address itself. The utils tree is deliberately left alone — see below.
 
+#### API version file and the header template override
+
+The generator stamps the spec's `info.version` into the header of every file it writes, so a version bump alone used to rewrite every generated file and bury the real API changes in a review. The core generator keys (`typescript-rxjs-local` and `typescript-rxjs-remote`) therefore load `openapi-generator/core.yaml`, which:
+
+- points `templateDir` at `openapi-generator/templates`, whose `licenseInfo.mustache` is the stock `typescript-rxjs` header minus the `The version of the OpenAPI document:` line;
+- renders `openapi-generator/templates/API_VERSION.mustache` as a supporting file, so the spec version lands once, in `src/types/openapi/API_VERSION`, taken from the same spec the client was generated from.
+
+A version-only regeneration now changes `API_VERSION` and nothing else; `.openapi-generator/FILES` already lists it. `.openapi-generator/VERSION` still records the generator version.
+
+`npm run check:openapi-generation` proves this: it generates the fixture in `scripts/fixtures/openapi-version-churn` with the pinned generator and the same post-processing and formatting as `generate-types-local`, and fails unless a version bump changes only `API_VERSION`, an identical rerun changes nothing, and a schema change still reaches the model. It needs Java and runs in CI whenever the generator configuration changes.
+
+Removing the version line from the existing core tree was a one-time, mechanical cleanup. An open regeneration branch cut before it should be rebased onto it and regenerated, rather than having its headers merged by hand, so its diff shrinks to the real API changes.
+
 #### Utils service types and remaining CZERTAINLY branding
 
 `npm run generate-types-utils` regenerates `src/types/openapi/utils` from the spec configured as `typescript-rxjs-utils` in `openapitools.json`. **That command does not currently work:** the utils spec is not published anywhere reachable. It used to be served from `https://api.czertainly.com/utils/main/utils-service.yaml`, which is now permanently dead, and the ILM location it will move to — `https://api.otilm.com/utils/main/utils-service.yaml`, already configured as the `inputSpec` — is not published yet. `utils-service` CI still pushes its spec to the retired `CZERTAINLY/CZERTAINLY-Interface-Documentation` repo instead of `OmniTrustILM/interface-documentation`, so both URLs return 404 until that is re-pointed.

@@ -1,0 +1,3 @@
+openapi-generator/templates/** text eol=lf
+scripts/fixtures/openapi-version-churn/** text eol=lf
+src/types/openapi/API_VERSION text eol=lf
