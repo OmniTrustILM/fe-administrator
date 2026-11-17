@@ -1,11 +1,13 @@
 import type { Locator } from '@playwright/test';
 import { test } from '../../../../../playwright/ct-test';
-import { expectOffered } from 'components/_pages/test-utils/permissionScenarioAssertions';
+import { expectOffered, expectOnlyOffered } from 'components/_pages/test-utils/permissionScenarioAssertions';
 import {
     administrator,
     createOnly,
     groupMember,
     owner,
+    type OfferedControls,
+    offeredTitle,
     type PermissionScenario,
     readOnly,
 } from 'components/_pages/test-utils/permissionScenarios';
@@ -31,7 +33,7 @@ const allControls = Object.keys(controls) as Control[];
 
 // An owner holds update and archive on the certificate it owns, but deleting, renewing, revoking and the compliance check
 // still need a grant.
-const expectations: { scenario: PermissionScenario; offered: Control[] }[] = [
+const expectations: OfferedControls<Control>[] = [
     { scenario: administrator, offered: allControls },
     { scenario: readOnly, offered: [] },
     { scenario: owner, offered: ['archive', 'Update Owner', 'Update Group', 'Update RA Profile'] },
@@ -41,12 +43,10 @@ const expectations: { scenario: PermissionScenario; offered: Control[] }[] = [
 
 test.describe('CertificateDetail actions by permission scenario', () => {
     for (const { scenario, offered } of expectations) {
-        test(`offers ${offered.join(', ') || 'no action'} to a ${scenario.name}`, async ({ mount }) => {
+        test(offeredTitle({ scenario, offered }), async ({ mount }) => {
             const component = await mount(<CertificateDetailScenarioWithStore scenario={scenario.name} />);
 
-            for (const control of allControls) {
-                await expectOffered(controls[control](component), offered.includes(control));
-            }
+            await expectOnlyOffered(component, allControls, offered, (root, control) => controls[control](root));
         });
     }
 });

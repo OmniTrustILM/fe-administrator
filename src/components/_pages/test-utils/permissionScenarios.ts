@@ -136,3 +136,9 @@ export function scenarioState(scenario: PermissionScenario, object?: { resource:
         },
     };
 }
+
+/** The controls a page offers the scenario's user, every other control being withheld for a missing permission. */
+export type OfferedControls<Control extends string> = { scenario: PermissionScenario; offered: Control[] };
+
+export const offeredTitle = ({ scenario, offered }: OfferedControls<string>): string =>
+    `offers ${offered.join(', ') || 'no action'} to a ${scenario.name}`;

@@ -21,3 +21,15 @@ export async function expectOffered(control: Locator, offered: boolean) {
     const tooltipId = await trigger.getAttribute('aria-describedby');
     await expect(control.page().locator(`[id="${tooltipId}"]`)).toHaveText(PERMISSION_DENIAL);
 }
+
+/** Asserts exactly the `offered` controls are offered and every other one is withheld for a missing permission. */
+export async function expectOnlyOffered<Control extends string>(
+    root: Locator,
+    controls: readonly Control[],
+    offered: readonly Control[],
+    locate: (root: Locator, control: Control) => Locator = (scope, control) => scope.getByTestId(`${control}-button`),
+) {
+    for (const control of controls) {
+        await expectOffered(locate(root, control), offered.includes(control));
+    }
+}

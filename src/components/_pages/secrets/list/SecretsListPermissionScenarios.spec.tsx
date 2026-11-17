@@ -1,11 +1,12 @@
 import { test } from '../../../../../playwright/ct-test';
-import { expectOffered } from 'components/_pages/test-utils/permissionScenarioAssertions';
+import { expectOnlyOffered } from 'components/_pages/test-utils/permissionScenarioAssertions';
 import {
     administrator,
     createOnly,
     groupMember,
     owner,
-    type PermissionScenario,
+    type OfferedControls,
+    offeredTitle,
     readOnly,
     scenarioState,
 } from 'components/_pages/test-utils/permissionScenarios';
@@ -15,7 +16,7 @@ import SecretsListWithStore from './SecretsListWithStore';
 const controls = ['plus', 'check', 'times', 'user-check', 'group', 'shield-check', 'delete'] as const;
 
 // Secret endpoints take plain UUIDs and check the resource, so the profile alone decides every list action.
-const expectations: { scenario: PermissionScenario; offered: (typeof controls)[number][] }[] = [
+const expectations: OfferedControls<(typeof controls)[number]>[] = [
     { scenario: administrator, offered: [...controls] },
     { scenario: readOnly, offered: [] },
     { scenario: owner, offered: [] },
@@ -25,7 +26,7 @@ const expectations: { scenario: PermissionScenario; offered: (typeof controls)[n
 
 test.describe('SecretsList actions by permission scenario', () => {
     for (const { scenario, offered } of expectations) {
-        test(`offers ${offered.join(', ') || 'no action'} to a ${scenario.name}`, async ({ mount }) => {
+        test(offeredTitle({ scenario, offered }), async ({ mount }) => {
             const component = await mount(
                 <SecretsListWithStore
                     preloadedState={scenarioState(scenario) as never}
@@ -37,9 +38,7 @@ test.describe('SecretsList actions by permission scenario', () => {
                 .getByRole('checkbox')
                 .check();
 
-            for (const control of controls) {
-                await expectOffered(component.getByTestId(`${control}-button`), offered.includes(control));
-            }
+            await expectOnlyOffered(component, controls, offered);
         });
     }
 });

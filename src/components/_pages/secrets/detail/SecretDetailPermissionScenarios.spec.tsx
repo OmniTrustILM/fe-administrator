@@ -1,7 +1,7 @@
 import type { Locator } from '@playwright/test';
 import { test } from '../../../../../playwright/ct-test';
-import { expectOffered } from 'components/_pages/test-utils/permissionScenarioAssertions';
-import { administrator, createOnly, type PermissionScenario, readOnly } from 'components/_pages/test-utils/permissionScenarios';
+import { expectOffered, expectOnlyOffered } from 'components/_pages/test-utils/permissionScenarioAssertions';
+import { administrator, createOnly, type OfferedControls, offeredTitle, readOnly } from 'components/_pages/test-utils/permissionScenarios';
 import SecretDetailWithStore from './SecretDetailWithStore';
 
 const byTestId = (id: string) => (root: Locator) => root.getByTestId(`${id}-button`);
@@ -24,7 +24,7 @@ const allControls = Object.keys(controls) as Control[];
 
 // Core checks the secret detail against the resource alone, so it never shows the page to an owner or group member
 // without a grant; the list specs cover them.
-const expectations: { scenario: PermissionScenario; offered: Control[] }[] = [
+const expectations: OfferedControls<Control>[] = [
     { scenario: administrator, offered: allControls },
     { scenario: readOnly, offered: [] },
     { scenario: createOnly, offered: [] },
@@ -32,12 +32,10 @@ const expectations: { scenario: PermissionScenario; offered: Control[] }[] = [
 
 test.describe('SecretDetail actions by permission scenario', () => {
     for (const { scenario, offered } of expectations) {
-        test(`offers ${offered.join(', ') || 'no action'} to a ${scenario.name}`, async ({ mount }) => {
+        test(offeredTitle({ scenario, offered }), async ({ mount }) => {
             const component = await mount(<SecretDetailWithStore scenario={scenario.name} />);
 
-            for (const control of allControls) {
-                await expectOffered(controls[control](component), offered.includes(control));
-            }
+            await expectOnlyOffered(component, allControls, offered, (root, control) => controls[control](root));
         });
     }
 
