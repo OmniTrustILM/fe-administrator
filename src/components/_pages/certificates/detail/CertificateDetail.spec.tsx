@@ -90,8 +90,8 @@ test.describe('CertificateDetail — permission to change each location', () => 
             />,
         );
 
-    const checkRow = (page: Page, name: string) =>
-        page
+    const checkRow = (scope: Page | Locator, name: string) =>
+        scope
             .getByRole('row', { name: new RegExp(name) })
             .getByRole('checkbox')
             .check();
@@ -115,7 +115,7 @@ test.describe('CertificateDetail — permission to change each location', () => 
             } else {
                 await expect(remove).toBeDisabled();
                 await expect(remove).not.toHaveAttribute('aria-busy');
-                await remove.hover({ force: true });
+                await remove.locator('..').hover();
                 await expect(page.getByRole('tooltip')).toContainText('You need the update permission on locations.');
             }
         });
@@ -125,6 +125,7 @@ test.describe('CertificateDetail — permission to change each location', () => 
         await mountLocations(mount);
 
         await expect.poll(() => allowedActionsRequests(page)).toBe(2);
+        expect(await allowedActionsRequests(page)).toBe(2);
     });
 
     const pushCases = [
@@ -146,7 +147,7 @@ test.describe('CertificateDetail — permission to change each location', () => 
             } else {
                 await expect(push).toBeDisabled();
                 await expect(push).not.toHaveAttribute('aria-busy');
-                await push.hover({ force: true });
+                await push.locator('..').hover();
                 await expect(page.getByRole('tooltip')).toContainText('You need the update permission on locations.');
             }
         });

@@ -64,18 +64,15 @@ export default function CryptographicKeyDetailWithStore({
     const store = useMemo(() => {
         // Resolve API requests in memory while keeping the real key/profile state transitions.
         let hasResolvedProfileRequest = false;
+        const keyAllowedActions =
+            allowedActions ?? Object.values(ResourceAction).filter((granted) => canExportKeys || granted !== ResourceAction.ExportKey);
         const apiResponses: Middleware = (api) => (next) => (action) => {
             const result = next(action);
             if (resourceActions.listObjectAllowedActions.match(action)) {
                 api.dispatch(
                     resourceActions.listObjectAllowedActionsSuccess({
                         resource: action.payload.resource,
-                        answers: action.payload.uuids.map((uuid) => ({
-                            uuid,
-                            allowedActions:
-                                allowedActions ??
-                                Object.values(ResourceAction).filter((granted) => canExportKeys || granted !== ResourceAction.ExportKey),
-                        })),
+                        answers: action.payload.uuids.map((uuid) => ({ uuid, allowedActions: keyAllowedActions })),
                     }),
                 );
             } else if (keyActions.getCryptographicKeyDetail.match(action)) {

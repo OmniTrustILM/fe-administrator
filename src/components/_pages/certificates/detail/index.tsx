@@ -237,7 +237,7 @@ export default function CertificateDetail() {
     const deviceType = useDeviceType();
     const [currentInfoId, setCurrentInfoId] = useState('');
 
-    const [checkedLocationRows, setLocationsCheckedRows] = useState<string[]>([]);
+    const [checkedLocationRows, setCheckedLocationRows] = useState<string[]>([]);
     // The table drops a removed location from its own selection without reporting it, so the page filters here.
     const locationsCheckedRows = useMemo(
         () => checkedLocationRows.filter((uuid) => certLocationUuids.includes(uuid)),
@@ -1376,7 +1376,7 @@ export default function CertificateDetail() {
                                         headers={locationsHeaders}
                                         data={locationsData}
                                         hasCheckboxes
-                                        onCheckedRowsChanged={(rows) => setLocationsCheckedRows(rows as string[])}
+                                        onCheckedRowsChanged={(rows) => setCheckedLocationRows(rows as string[])}
                                     />
                                 </Widget>
                             ),
