@@ -7,6 +7,7 @@
 
 import { execFileSync } from 'node:child_process';
 import { cpSync, mkdirSync, mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { createRequire } from 'node:module';
 import os from 'node:os';
 import path from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
@@ -16,6 +17,7 @@ import { setContactInTree } from './set-openapi-contact.mjs';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const coreDir = path.join(root, 'src', 'types', 'openapi');
 const fixture = readFileSync(path.join(root, 'scripts', 'fixtures', 'openapi-version-churn', 'spec.yaml'), 'utf8');
+const require = createRequire(import.meta.url);
 const GENERATOR_KEY = 'typescript-rxjs-local';
 const VERSION_FILE = 'API_VERSION';
 const MANIFEST = '.openapi-generator/FILES';
@@ -33,6 +35,12 @@ function withExtraProperty(spec) {
         anchor,
         `        serialNumber:\n          type: string\n          description: Serial number of the widget\n${anchor}`,
     );
+}
+
+// Launch the package's JS entrypoint through node: the extensionless .bin shims do not run on Windows.
+function cliEntry(pkg, bin) {
+    const manifestPath = require.resolve(`${pkg}/package.json`);
+    return path.join(path.dirname(manifestPath), JSON.parse(readFileSync(manifestPath, 'utf8')).bin[bin]);
 }
 
 function readTree(dir, base = dir, files = new Map()) {
@@ -59,14 +67,17 @@ function generate(exec, workDir, name, spec) {
     const toolsPath = path.join(workDir, `${name}.openapitools.json`);
     writeFileSync(toolsPath, JSON.stringify(tools, null, 4));
 
-    const bin = (tool) => path.join(root, 'node_modules', '.bin', tool);
-    exec(bin('openapi-generator-cli'), ['--openapitools', toolsPath, 'generate', '--generator-key', GENERATOR_KEY], {
+    const generatorCli = cliEntry('@openapitools/openapi-generator-cli', 'openapi-generator-cli');
+    exec(process.execPath, [generatorCli, '--openapitools', toolsPath, 'generate', '--generator-key', GENERATOR_KEY], {
         cwd: root,
         stdio: 'inherit',
     });
     setContactInTree(output);
     patchTree(output);
-    exec(bin('biome'), ['format', '--write', '--vcs-use-ignore-file=false', output], { cwd: root, stdio: 'inherit' });
+    exec(process.execPath, [cliEntry('@biomejs/biome', 'biome'), 'format', '--write', '--vcs-use-ignore-file=false', output], {
+        cwd: root,
+        stdio: 'inherit',
+    });
     return readTree(output);
 }
 
@@ -85,13 +96,14 @@ function assert(condition, message) {
     if (!condition) throw new Error(message);
 }
 
-export function run(exec = execFileSync) {
+export function run(exec = execFileSync, spec = fixture) {
+    const source = spec.replaceAll('\r\n', '\n');
     const workDir = mkdtempSync(path.join(os.tmpdir(), 'openapi-version-churn-'));
     try {
-        const first = generate(exec, workDir, 'first', withVersion(fixture, '1.0.0-SNAPSHOT'));
-        const bumped = generate(exec, workDir, 'bumped', withVersion(fixture, '1.1.0'));
-        const repeated = generate(exec, workDir, 'repeated', withVersion(fixture, '1.0.0-SNAPSHOT'));
-        const changed = generate(exec, workDir, 'changed', withExtraProperty(withVersion(fixture, '1.0.0-SNAPSHOT')));
+        const first = generate(exec, workDir, 'first', withVersion(source, '1.0.0-SNAPSHOT'));
+        const bumped = generate(exec, workDir, 'bumped', withVersion(source, '1.1.0'));
+        const repeated = generate(exec, workDir, 'repeated', withVersion(source, '1.0.0-SNAPSHOT'));
+        const changed = generate(exec, workDir, 'changed', withExtraProperty(withVersion(source, '1.0.0-SNAPSHOT')));
 
         assertEqual(first.get(VERSION_FILE), '1.0.0-SNAPSHOT\n', `${VERSION_FILE} must hold info.version with a trailing newline`);
         assert(first.get(MANIFEST)?.split('\n').includes(VERSION_FILE), `${MANIFEST} must register ${VERSION_FILE}`);

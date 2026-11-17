@@ -8,8 +8,8 @@ import { run } from './check-openapi-version-churn.mjs';
 type FakeGenerator = { versionInHeader?: boolean; versionInModel?: boolean; ignoresSchema?: boolean };
 
 function fakeExec({ versionInHeader = false, versionInModel = false, ignoresSchema = false }: FakeGenerator = {}) {
-    return vi.fn((command: string, args: string[]) => {
-        if (path.basename(command) !== 'openapi-generator-cli') return;
+    return vi.fn((_command: string, args: string[]) => {
+        if (!args.includes('--openapitools')) return;
         const tools = JSON.parse(readFileSync(args[args.indexOf('--openapitools') + 1], 'utf8'));
         const { inputSpec, output } = tools['generator-cli'].generators['typescript-rxjs-local'];
         const spec = readFileSync(inputSpec, 'utf8');
@@ -58,10 +58,20 @@ describe('check-openapi-version-churn run', () => {
         const exec = fakeExec();
         expect(() => run(exec)).not.toThrow();
         expect(exec).toHaveBeenCalledWith(
-            expect.stringMatching(/biome$/),
-            expect.arrayContaining(['format', '--write']),
+            process.execPath,
+            expect.arrayContaining([expect.stringMatching(/main\.js$/), '--openapitools']),
             expect.anything(),
         );
+        expect(exec).toHaveBeenCalledWith(
+            process.execPath,
+            expect.arrayContaining([expect.stringMatching(/biome$/), 'format', '--write']),
+            expect.anything(),
+        );
+    });
+
+    it('passes when the fixture is checked out with CRLF line endings', () => {
+        const fixture = readFileSync(path.join(__dirname, 'fixtures', 'openapi-version-churn', 'spec.yaml'), 'utf8');
+        expect(() => run(fakeExec(), fixture.replaceAll('\n', '\r\n'))).not.toThrow();
     });
 
     it('fails when the generated header still carries the API version', () => {
