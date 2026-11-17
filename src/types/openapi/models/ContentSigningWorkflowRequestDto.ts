@@ -10,7 +10,15 @@
  * Do not edit the class manually.
  */
 
-import type { RequestAttribute, SignatureFamily, SignatureLevel, SigningWorkflowType, TimestampSourceRequestDto } from './';
+import type {
+    RequestAttribute,
+    SignatureFamily,
+    SignatureLevel,
+    SignatureParameterGroup,
+    SignatureParameters,
+    SigningWorkflowType,
+    TimestampSourceRequestDto,
+} from './';
 
 /**
  * Content signing workflow configuration request. The validation material that LONG_TERM and ARCHIVAL embed is fetched by the Signature Formatting Provider and needs no configuration here.
@@ -31,7 +39,7 @@ export interface ContentSigningWorkflowRequestDto {
      */
     signatureFormattingConnectorUuid?: string;
     /**
-     * Attributes for the Signature Formatting Provider that control DTBS construction for the content signing workflow. Must be omitted for delegated signing.
+     * Attributes for the Signature Formatting Provider that control DTBS construction for the content signing workflow. Must be omitted for delegated signing. These attributes carry operator-only settings; a request supplies signature parameters only in the groups that allowedRequestParameterGroups lists.
      * @type {Array<RequestAttribute>}
      * @memberof ContentSigningWorkflowRequestDto
      */
@@ -72,4 +80,16 @@ export interface ContentSigningWorkflowRequestDto {
      * @memberof ContentSigningWorkflowRequestDto
      */
     requiredExtendedKeyUsageOids?: Array<string>;
+    /**
+     * Signature parameter groups a signing request may supply; every group must apply to the profile\'s family. Must be omitted for delegated signing. Membership is the only permission mechanism. A request carrying any field of a group absent from this list is rejected, even when the value matches the profile\'s own. Omitted or empty means no request-supplied group is accepted. Allowing a group and defaulting it are separate decisions.
+     * @type {Array<SignatureParameterGroup>}
+     * @memberof ContentSigningWorkflowRequestDto
+     */
+    allowedRequestParameterGroups?: Array<SignatureParameterGroup>;
+    /**
+     * Signature parameters this profile applies when a request does not override them; their family must match the profile\'s family. Must be omitted for delegated signing. Merged field by field with the request winning; list-typed fields, and a placement in a different addressing mode, replace the default wholesale.
+     * @type {SignatureParameters}
+     * @memberof ContentSigningWorkflowRequestDto
+     */
+    defaultSignatureParameters?: SignatureParameters;
 }

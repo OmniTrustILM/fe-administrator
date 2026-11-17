@@ -18,9 +18,12 @@ import StatusBadge from 'components/StatusBadge';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import type { SearchRequestModel } from 'types/certificate';
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 function LocationList() {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.Locations);
 
     const locations = useSelector(selectors.locations);
 
@@ -56,6 +59,7 @@ function LocationList() {
                 icon: 'check',
                 disabled: isBusy || checkedRows.length === 0,
                 tooltip: 'Enable',
+                requires: can(ResourceAction.Enable, { onObjects: true }),
                 onClick: () => {
                     onEnableClick();
                 },
@@ -64,12 +68,13 @@ function LocationList() {
                 icon: 'times',
                 disabled: isBusy || checkedRows.length === 0,
                 tooltip: 'Disable',
+                requires: can(ResourceAction.Enable, { onObjects: true }),
                 onClick: () => {
                     onDisableClick();
                 },
             },
         ],
-        [isBusy, checkedRows.length, onDisableClick, onEnableClick],
+        [isBusy, checkedRows.length, onDisableClick, onEnableClick, can],
     );
 
     const locationsRowHeaders: TableHeader[] = useMemo(
@@ -185,9 +190,10 @@ function LocationList() {
             icon: 'plus',
             disabled: isBusy,
             tooltip: 'Create',
+            requires: can(ResourceAction.Create),
             onClick: handleOpenAddModal,
         }),
-        [isBusy, handleOpenAddModal],
+        [isBusy, handleOpenAddModal, can],
     );
 
     const allButtons: WidgetButtonProps[] = useMemo(() => [createButton, ...buttons], [createButton, buttons]);
@@ -197,6 +203,7 @@ function LocationList() {
             <PagedList
                 entity={EntityType.LOCATION}
                 onListCallback={onListCallback}
+                deleteRequires={can(ResourceAction.Delete, { onObjects: true })}
                 onDeleteCallback={(uuids) =>
                     dispatch(
                         actions.bulkDeleteLocations({

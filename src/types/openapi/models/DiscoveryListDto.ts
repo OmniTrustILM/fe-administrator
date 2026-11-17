@@ -30,7 +30,7 @@ export interface DiscoveryListDto {
      */
     name: string;
     /**
-     * Discovery Kind. Absent for a run against a v2 Discovery Provider, which has no kinds.
+     * Discovery kind. Absent for a v2 run, which has none.
      * @type {string}
      * @memberof DiscoveryListDto
      */
@@ -41,19 +41,19 @@ export interface DiscoveryListDto {
      */
     status: DiscoveryStatus;
     /**
-     * Date and time when Discovery started
+     * When the discovery started
      * @type {string}
      * @memberof DiscoveryListDto
      */
     startTime?: string | null;
     /**
-     * Date and time when Discovery finished
+     * When the discovery finished
      * @type {string}
      * @memberof DiscoveryListDto
      */
     endTime?: string | null;
     /**
-     * Number of certificates that are discovered
+     * Certificates this discovery found and saved
      * @type {number}
      * @memberof DiscoveryListDto
      */
@@ -83,7 +83,7 @@ export interface DiscoveryListDto {
      */
     connectorName: string;
     /**
-     * The connector interface this run is driven through, and so which generation drives it. Absent for a run against a legacy v1 connector, which declares no connector interface.
+     * The connector interface the run is driven through. Absent for a v1 run, and for an ended run whose connector was deleted.
      * @type {ConnectorInterfaceDto}
      * @memberof DiscoveryListDto
      */

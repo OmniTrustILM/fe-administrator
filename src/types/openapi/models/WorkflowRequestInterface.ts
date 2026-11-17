@@ -17,6 +17,8 @@ import type {
     RequestAttribute,
     SignatureFamily,
     SignatureLevel,
+    SignatureParameterGroup,
+    SignatureParameters,
     SigningWorkflowType,
     TimestampSourceRequestDto,
     TimestampingWorkflowRequestDto,

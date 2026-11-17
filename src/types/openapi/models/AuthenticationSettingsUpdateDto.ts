@@ -24,6 +24,7 @@ export interface AuthenticationSettingsUpdateDto {
      */
     disableLocalhostUser: boolean;
     /**
+     * List of OAuth2 providers settings to be registered. If null, keep providers as they are, otherwise replace with providers from list
      * @type {Array<OAuth2ProviderSettingsDto>}
      * @memberof AuthenticationSettingsUpdateDto
      */

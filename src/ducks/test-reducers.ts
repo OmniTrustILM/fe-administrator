@@ -359,6 +359,22 @@ function authTestReducer(state: AuthTestState | undefined, _action: UnknownActio
     return state ?? authTestInitialState;
 }
 
+export type ResourceTestState = {
+    resourcesList: Array<{ resource: string; hasObjectAccess: boolean; hasOwner: boolean }>;
+    isFetchingResourcesList: boolean;
+    objectAllowedActions: Record<string, { status: 'loading' | 'failed' } | { status: 'loaded'; allowedActions?: string[] }>;
+};
+
+const resourceTestInitialState: ResourceTestState = {
+    resourcesList: [],
+    isFetchingResourcesList: false,
+    objectAllowedActions: {},
+};
+
+function resourceTestReducer(state: ResourceTestState | undefined, _action: UnknownAction): ResourceTestState {
+    return state ?? resourceTestInitialState;
+}
+
 export type LoginTestState = {
     loginMethods?: Array<{ name: string; loginUrl: string }>;
     isFetching: boolean;
@@ -1739,6 +1755,7 @@ export const testReducers = combineReducers({
     listViews: listViewsTestReducer,
     branding: brandingTestReducer,
     login: loginTestReducer,
+    resource: resourceTestReducer,
 });
 
 export const testInitialState = {
@@ -1784,4 +1801,5 @@ export const testInitialState = {
     listViews: listViewsTestInitialState,
     branding: brandingTestInitialState,
     login: loginTestInitialState,
+    resource: resourceTestInitialState,
 };

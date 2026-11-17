@@ -7,6 +7,7 @@ type MockButton = {
     icon?: string;
     onClick?: () => void;
     disabled?: boolean;
+    requires?: { available: boolean };
 };
 
 type MockDialogButton = {
@@ -64,7 +65,7 @@ export const widgetMockModule = () => ({
                     key={button.tooltip ?? button.icon}
                     title={button.tooltip}
                     onClick={button.onClick}
-                    disabled={button.disabled}
+                    disabled={button.disabled || button.requires?.available === false}
                 >
                     {button.icon}
                 </button>
@@ -197,4 +198,9 @@ export const optionListSelectMockModule = () => ({
             select
         </button>
     ),
+});
+
+/** Offers every action, for a page test about something other than permissions. */
+export const actionAvailabilityMockModule = () => ({
+    useActionAvailability: () => () => ({ available: true, hidden: false, loading: false }),
 });

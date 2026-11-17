@@ -10,6 +10,16 @@ import { useDispatchMock, useSelectorMock } from '../../test-utils/reactReduxMoc
 
 setupReactActEnvironment();
 
+const AVAILABLE = { available: true, hidden: false, loading: false };
+const availability = vi.hoisted(() => ({ onlyOnObjects: false }));
+
+vi.mock('utils/useActionAvailability', () => ({
+    useActionAvailability: () => (_action: string, options?: { onObjects?: boolean }) =>
+        !availability.onlyOnObjects || options?.onObjects
+            ? AVAILABLE
+            : { available: false, hidden: false, loading: false, reason: 'denied' },
+}));
+
 vi.mock('react-redux', async () => {
     return await import('../../test-utils/reactReduxMockModule');
 });
@@ -20,10 +30,16 @@ vi.mock('react-router', () => ({
 }));
 
 vi.mock('components/PagedList/PagedList', () => ({
-    default: ({ additionalButtons, refreshToken }: any) => (
+    default: ({ additionalButtons, refreshToken, deleteRequires }: any) => (
         <div data-testid="paged-list" data-refresh-token={refreshToken}>
-            {(additionalButtons || []).map((button: any) => (
-                <button key={button.tooltip ?? button.icon} type="button" title={button.tooltip} onClick={button.onClick}>
+            {[...(additionalButtons || []), { tooltip: 'Delete', icon: 'trash', requires: deleteRequires }].map((button: any) => (
+                <button
+                    key={button.tooltip ?? button.icon}
+                    type="button"
+                    title={button.tooltip}
+                    aria-disabled={button.requires ? !button.requires.available : undefined}
+                    onClick={button.onClick}
+                >
                     {button.icon}
                 </button>
             ))}
@@ -59,6 +75,7 @@ describe('CertificateList', () => {
     const listRefreshToken = () => container.querySelector('[data-testid="paged-list"]')?.getAttribute('data-refresh-token');
 
     beforeEach(() => {
+        availability.onlyOnObjects = false;
         state = {
             certificates: certificatesInitialState,
             pagings: { pagings: [] },
@@ -107,4 +124,14 @@ describe('CertificateList', () => {
 
         expect(importDialog()).not.toBeNull();
     });
+
+    it.each(['Override Groups', 'Override Owner', 'Override RA Profile', 'Archive', 'Unarchive', 'Delete'])(
+        'offers %s on the selection when only object access, such as ownership, allows it',
+        async (tooltip) => {
+            availability.onlyOnObjects = true;
+            await renderList();
+
+            expect(container.querySelector(`button[title="${tooltip}"]`)?.getAttribute('aria-disabled')).toBe('false');
+        },
+    );
 });

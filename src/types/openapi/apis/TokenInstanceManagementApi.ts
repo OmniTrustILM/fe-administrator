@@ -51,7 +51,7 @@ export interface GetTokenInstanceRequest {
 
 export interface ListTokenAttributesRequest {
     connectorUuid: string;
-    kind?: string | null;
+    kind?: string;
 }
 
 export interface ListTokenInstanceActivationAttributesRequest {

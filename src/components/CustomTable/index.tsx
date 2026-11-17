@@ -1025,6 +1025,7 @@ function CustomTable({
                     isBusy={newRowWidgetProps.isBusy}
                     newItemsList={newRowWidgetProps.newItemsList}
                     onAddClick={newRowWidgetProps.onAddClick}
+                    requires={newRowWidgetProps.requires}
                 />
             )}
         </div>

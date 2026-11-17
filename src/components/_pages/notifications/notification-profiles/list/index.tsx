@@ -15,11 +15,13 @@ import Badge from 'components/Badge';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { EntityType } from 'ducks/filters';
 import type { SearchRequestModel } from 'types/certificate';
-import { PlatformEnum } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 const NotificationProfilesList = () => {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.NotificationProfiles);
 
     const notificationProfiles = useSelector(selectors.notificationProfiles);
     const isCreating = useSelector(selectors.isCreating);
@@ -64,10 +66,11 @@ const NotificationProfilesList = () => {
                 icon: 'plus',
                 disabled: false,
                 tooltip: 'Create',
+                requires: can(ResourceAction.Create),
                 onClick: handleOpenAddModal,
             },
         ],
-        [handleOpenAddModal],
+        [handleOpenAddModal, can],
     );
 
     const headers: TableHeader[] = useMemo(

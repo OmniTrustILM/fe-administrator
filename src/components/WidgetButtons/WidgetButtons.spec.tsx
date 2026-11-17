@@ -100,4 +100,28 @@ test.describe('WidgetButtons', () => {
         const buttonElements = component.locator('button');
         await expect(buttonElements).toHaveCount(3);
     });
+
+    test('should disable a widget button its requirement denies', async ({ mount }) => {
+        const buttons: WidgetButtonProps[] = [
+            {
+                ...defaultButtonProps,
+                id: 'edit',
+                'aria-label': 'Edit',
+                requires: { available: false, hidden: false, loading: false, reason: 'You need the Update permission on Secrets.' },
+            },
+        ];
+        const component = await renderWidgetButtons(mount, { buttons });
+
+        await expect(component.getByRole('button', { name: 'Edit' })).toBeDisabled();
+    });
+
+    test('should leave out a widget button its requirement hides', async ({ mount }) => {
+        const buttons: WidgetButtonProps[] = [
+            { ...defaultButtonProps, id: 'kept' },
+            { ...defaultButtonProps, id: 'hidden', icon: 'trash', requires: { available: false, hidden: true, loading: false } },
+        ];
+        const component = await renderWidgetButtons(mount, { buttons });
+
+        await expect(component.locator('button')).toHaveCount(1);
+    });
 });

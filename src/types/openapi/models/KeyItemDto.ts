@@ -120,11 +120,11 @@ export interface KeyItemDto {
      */
     format: KeyFormat;
     /**
-     * Key Length
+     * Key length in bits. Required for RSA, ECDSA and AES; optional otherwise.
      * @type {number}
      * @memberof KeyItemDto
      */
-    length: number;
+    length?: number | null;
     /**
      * Key Usages
      * @type {Array<KeyUsage>}

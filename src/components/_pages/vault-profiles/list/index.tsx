@@ -12,13 +12,15 @@ import { EntityType } from 'ducks/filters';
 
 import type { SearchRequestModel } from 'types/certificate';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { Resource } from 'types/openapi';
+import { Resource, ResourceAction } from 'types/openapi';
 import Badge from 'components/Badge';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import VaultProfileForm from '../form';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 export default function VaultProfilesList() {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.VaultProfiles);
 
     const vaultProfiles = useSelector(vaultProfileSelectors.vaultProfiles);
 
@@ -102,10 +104,11 @@ export default function VaultProfilesList() {
                 icon: 'plus',
                 disabled: false,
                 tooltip: 'Create Vault Profile',
+                requires: can(ResourceAction.Create),
                 onClick: () => setIsAddOpen(true),
             },
         ],
-        [],
+        [can],
     );
 
     return (
@@ -113,6 +116,7 @@ export default function VaultProfilesList() {
             <PagedList
                 entity={EntityType.VAULT_PROFILE}
                 onListCallback={onListCallback}
+                deleteRequires={can(ResourceAction.Delete, { onObjects: true })}
                 onDeleteCallback={(uuids) =>
                     uuids.forEach((uuid) => {
                         const profile = vaultProfiles.find((p) => p.uuid === uuid);

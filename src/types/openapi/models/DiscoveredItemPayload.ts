@@ -14,7 +14,7 @@ import type { DiscoveredCertificateDto, DiscoveredKeyDto, KeyAlgorithm, KeyForma
 
 /**
  * @type DiscoveredItemPayload
- * Resource-specific payload of a discovered item. The required resource property is the discriminator: it carries the resource\'s wire code and selects which concrete payload shape this object is. Each concrete shape fixes it to its own value.
+ * Resource-specific payload of a discovered item. Its required resource property is the discriminator: the resource code selects the payload shape.
  * @export
  */
 export type DiscoveredItemPayload = DiscoveredCertificateDto | DiscoveredKeyDto;

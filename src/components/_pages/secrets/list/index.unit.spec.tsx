@@ -15,6 +15,11 @@ import {
 
 setupReactActEnvironment();
 
+vi.mock('utils/useActionAvailability', async () => {
+    const { actionAvailabilityMockModule } = await import('../../test-utils/mockModules');
+    return actionAvailabilityMockModule();
+});
+
 vi.mock('react-redux', async () => {
     return await import('../../test-utils/reactReduxMockModule');
 });

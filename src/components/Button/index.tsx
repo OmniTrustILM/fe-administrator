@@ -1,5 +1,6 @@
 import cn from 'classnames';
 import Tooltip from 'components/Tooltip';
+import type { Availability } from 'utils/availability';
 
 export type ButtonVariant = 'solid' | 'outline' | 'transparent';
 
@@ -14,6 +15,7 @@ export type Props = {
     className?: string;
     title?: string;
     disabledTooltip?: string;
+    requires?: Availability;
     type?: 'submit' | 'reset' | 'button';
     'data-testid'?: string;
     'aria-label'?: string;
@@ -22,7 +24,7 @@ export type Props = {
 };
 
 const baseButton =
-    'inline-flex items-center gap-x-2 text-sm font-medium rounded-lg disabled:opacity-35 disabled:pointer-events-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 border';
+    'inline-flex items-center gap-x-2 text-sm font-medium rounded-lg disabled:pointer-events-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 border';
 
 const buttonClasses = {
     solid: 'py-2.5 px-3.5',
@@ -64,19 +66,29 @@ function Button({
     color = 'primary',
     title,
     disabledTooltip,
+    requires,
     type = 'button',
     'data-testid': dataTestId,
     'aria-label': ariaLabel,
     'aria-expanded': ariaExpanded,
     'aria-controls': ariaControls,
 }: Readonly<Props>) {
+    if (requires?.hidden) return null;
+
+    const denied = !!requires && !requires.available;
+    const isDisabled = disabled || denied;
+    const disabledReason = (denied ? requires?.reason : undefined) ?? (disabled ? disabledTooltip : undefined);
+    // A requirement still loading must not dim the button, or a permitted action flashes disabled before it settles.
+    const settling = !!requires?.loading && !disabled;
+
     const buttonElement = (
         <button
             type={type}
             id={id}
-            className={cn(baseButton, buttonClasses[variant], colorClasses[variant][color], className)}
+            className={cn(baseButton, !settling && 'disabled:opacity-35', buttonClasses[variant], colorClasses[variant][color], className)}
             onClick={onClick}
-            disabled={disabled}
+            disabled={isDisabled}
+            aria-busy={settling || undefined}
             data-testid={dataTestId}
             aria-label={ariaLabel}
             aria-expanded={ariaExpanded}
@@ -86,13 +98,13 @@ function Button({
         </button>
     );
 
-    const tooltipContent = disabled && disabledTooltip ? disabledTooltip : title;
+    const tooltipContent = isDisabled && disabledReason ? disabledReason : title;
     if (tooltipContent) {
         // `Tooltip` hands its Radix trigger to the child it is given. Merged onto a disabled button that trigger can
         // never fire: `disabled:pointer-events-none` swallows the hover and the disabled attribute takes the button
         // out of the focus order, so the reason for the disabled state would be unreachable. A wrapper is the trigger
         // instead, and it does receive the hover -- the pointer passes through the button onto it.
-        if (disabled && disabledTooltip) {
+        if (isDisabled && disabledReason) {
             return (
                 <Tooltip content={tooltipContent}>
                     <span className="inline-flex">{buttonElement}</span>

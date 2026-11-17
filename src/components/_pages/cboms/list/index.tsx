@@ -10,7 +10,7 @@ import { actions as alertActions } from 'ducks/alerts';
 import { actions, selectors } from 'ducks/cbom';
 import PagedList from 'components/PagedList/PagedList';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { type CbomDto, PlatformEnum, Resource } from 'types/openapi';
+import { type CbomDto, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { dateFormatter } from 'utils/dateUtil';
 import { buildCbomCellRegistry, CBOM_COLUMNS } from '../cbomTableHelpers';
@@ -18,9 +18,11 @@ import type { SearchRequestModel } from 'types/certificate';
 import { type ApiClients, backendClient } from 'src/api';
 import { EntityType, actions as filterActions } from 'ducks/filters';
 import { actions as pagingActions } from 'ducks/paging';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 function CbomsList() {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.Cboms);
     const navigate = useNavigate();
 
     const cboms = useSelector(selectors.selectCbomList);
@@ -42,6 +44,7 @@ function CbomsList() {
                 icon: 'upload',
                 disabled: false,
                 tooltip: 'Upload CBOM',
+                requires: can(ResourceAction.Create),
                 onClick: () => setIsUploadOpen(true),
             },
             {
@@ -49,6 +52,7 @@ function CbomsList() {
                 icon: 'repeat',
                 disabled: isSyncing,
                 tooltip: 'Sync CBOMs',
+                requires: can(ResourceAction.Create),
                 onClick: () => dispatch(actions.syncCboms()),
             },
             {
@@ -60,7 +64,7 @@ function CbomsList() {
                 onClick: () => navigate('./sync-skips'),
             },
         ],
-        [dispatch, isSyncing, navigate],
+        [dispatch, isSyncing, navigate, can],
     );
 
     const getCbomJson = useCallback(async (uuid: string): Promise<string> => {
@@ -110,6 +114,7 @@ function CbomsList() {
                             icon: 'copy',
                             disabled: false,
                             tooltip: 'Copy JSON',
+                            requires: can(ResourceAction.Detail),
                             onClick: (e) => {
                                 e.stopPropagation();
                                 void handleCopyCbomJson(cbom.uuid, e.currentTarget);
@@ -120,6 +125,7 @@ function CbomsList() {
                             icon: 'download',
                             disabled: false,
                             tooltip: 'Download JSON',
+                            requires: can(ResourceAction.Detail),
                             onClick: (e) => {
                                 e.stopPropagation();
                                 void handleDownloadCbomJson(cbom.uuid, cbom.serialNumber, cbom.version);
@@ -129,7 +135,7 @@ function CbomsList() {
                 }
             />
         ),
-        [handleCopyCbomJson, handleDownloadCbomJson],
+        [handleCopyCbomJson, handleDownloadCbomJson, can],
     );
 
     const registry = useMemo(
@@ -196,6 +202,7 @@ function CbomsList() {
             <PagedList
                 entity={EntityType.CBOM}
                 onListCallback={onList}
+                deleteRequires={can(ResourceAction.Delete)}
                 onDeleteCallback={(uuids) => {
                     if (uuids.length === 1) {
                         dispatch(actions.deleteCbom({ uuid: uuids[0] }));

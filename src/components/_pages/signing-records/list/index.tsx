@@ -9,14 +9,16 @@ import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EntityType } from 'ducks/filters';
 import { selectors as pagingSelectors } from 'ducks/paging';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { PlatformEnum, Resource, type SigningRecordListDto } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction, type SigningRecordListDto } from 'types/openapi';
 import type { SearchRequestModel } from 'types/certificate';
 import type { ApiClients } from 'src/api';
 import { dateFormatter } from 'utils/dateUtil';
 import { buildSigningRecordCellRegistry, SIGNING_RECORD_COLUMNS } from '../signingRecordTableHelpers';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 function SigningRecordsList() {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.SigningRecords);
 
     const signingRecords = useSelector(selectors.selectSigningRecordsList);
     const isFetching = useSelector(selectors.selectIsFetchingList);
@@ -75,6 +77,7 @@ function SigningRecordsList() {
             <PagedList
                 entity={EntityType.SIGNING_RECORD}
                 onListCallback={onList}
+                deleteRequires={can(ResourceAction.Delete)}
                 onDeleteCallback={(uuids) => {
                     if (uuids.length === 1) {
                         dispatch(actions.deleteSigningRecord({ uuid: uuids[0] }));

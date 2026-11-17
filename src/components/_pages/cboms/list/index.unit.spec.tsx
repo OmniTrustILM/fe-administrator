@@ -15,6 +15,11 @@ import CbomsList from './index';
 
 setupReactActEnvironment();
 
+vi.mock('utils/useActionAvailability', async () => {
+    const { actionAvailabilityMockModule } = await import('../../test-utils/mockModules');
+    return actionAvailabilityMockModule();
+});
+
 const cbom = { bomFormat: 'CycloneDX', specVersion: '1.6', metadata: { component: { name: 'CBOM-Lens' } } };
 
 describe('CBOM list upload', () => {

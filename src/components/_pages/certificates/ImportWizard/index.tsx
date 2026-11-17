@@ -7,7 +7,6 @@ import FileUpload from 'components/Input/FileUpload/FileUpload';
 import ProgressButton from 'components/ProgressButton';
 import RetryCallout from 'components/RetryCallout';
 import Widget from 'components/Widget';
-import { selectors as authSelectors } from 'ducks/auth';
 import { actions as certificatesActions, selectors as certificatesSelectors } from 'ducks/certificates';
 import {
     actions as keysActions,
@@ -34,7 +33,7 @@ import {
     type TokenProfileDto,
 } from 'types/openapi';
 import { collectFormAttributes } from 'utils/attributes/attributes';
-import { hasResourceAction } from 'utils/permissions';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import DetectedContent, { entryCount } from './DetectedContent';
 import FilePassword, { type FilePasswordValues } from './FilePassword';
 import ImportResults from './ImportResults';
@@ -134,8 +133,7 @@ export default function ImportWizard({ presetTokenProfileUuid, onCancel, onDone 
     const keyCustomAttributesError = useSelector(customAttributesSelectors.resourceCustomAttributesError);
     const importResults = useSelector(certificatesSelectors.importResults);
     const isImporting = useSelector(certificatesSelectors.isImporting);
-    const auth = useSelector(authSelectors.profile);
-    const mayImportKeys = hasResourceAction(auth, Resource.Keys, ResourceAction.ImportKey);
+    const mayImportKeys = useActionAvailability(Resource.Keys)(ResourceAction.ImportKey).available;
 
     const methods = useForm<FormValues>({ defaultValues: DEFAULT_VALUES, mode: 'onChange' });
     const { control, getValues, handleSubmit, setValue } = methods;

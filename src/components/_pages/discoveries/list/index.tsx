@@ -11,16 +11,18 @@ import type { ApiClients } from '../../../../api';
 import PagedList from 'components/PagedList/PagedList';
 import type { SearchRequestModel } from 'types/certificate';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { PlatformEnum, Resource } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
 import type { DiscoveryResponseModel } from 'types/discoveries';
 import { buildDiscoveryCellRegistry, DISCOVERY_COLUMNS, DISCOVERY_DEFAULT_SORT } from '../discoveryTableHelpers';
 import Dialog from 'components/Dialog';
 import DiscoveryForm from '../form';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 function DiscoveryList() {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.Discoveries);
     const [isAddModalOpen, setIsAddModalOpen] = useState(false);
     const isCreating = useSelector(selectors.isCreating);
     const createDiscoverySucceeded = useSelector(selectors.createDiscoverySucceeded);
@@ -87,10 +89,11 @@ function DiscoveryList() {
                 icon: 'plus',
                 disabled: false,
                 tooltip: 'Create',
+                requires: can(ResourceAction.Create),
                 onClick: handleOpenAddModal,
             },
         ],
-        [handleOpenAddModal],
+        [handleOpenAddModal, can],
     );
 
     return (
@@ -98,6 +101,7 @@ function DiscoveryList() {
             <PagedList
                 entity={EntityType.DISCOVERY}
                 onListCallback={onListCallback}
+                deleteRequires={can(ResourceAction.Delete)}
                 onDeleteCallback={(uuids) => dispatch(actions.bulkDeleteDiscovery({ uuids }))}
                 getAvailableFiltersApi={useCallback((apiClients: ApiClients) => apiClients.discoveries.getDiscoverySearchableFields(), [])}
                 configurableColumns={configurableColumns}

@@ -4,16 +4,19 @@ import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { useMemo } from 'react';
 import type { AttributeResponseModel, CustomAttributeModel } from 'types/attributes';
 import type { CertificateGroupResponseModel } from 'types/certificateGroups';
-import type { Resource, UserDto } from 'types/openapi';
+import { type Resource, ResourceAction, type UserDto } from 'types/openapi';
+import type { ActionAvailability } from 'utils/useActionAvailability';
 
 export function getEditAndDeleteWidgetButtons(
     onEditClick: (event: React.MouseEvent) => void,
     setConfirmDelete: (value: boolean) => void,
+    can?: ActionAvailability,
 ): WidgetButtonProps[] {
     return [
         {
             icon: 'pencil',
             disabled: false,
+            requires: can?.(ResourceAction.Update),
             tooltip: 'Edit',
             onClick: (event) => {
                 onEditClick(event);
@@ -22,6 +25,7 @@ export function getEditAndDeleteWidgetButtons(
         {
             icon: 'trash',
             disabled: false,
+            requires: can?.(ResourceAction.Delete),
             tooltip: 'Delete',
             onClick: () => {
                 setConfirmDelete(true);

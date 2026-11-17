@@ -6,6 +6,7 @@ import { LockWidgetNameEnum } from 'types/user-interface';
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from '../../../ducks/customAttributes';
 import type { AttributeResponseModel, BaseAttributeContentModel } from '../../../types/attributes';
 import type { Resource } from '../../../types/openapi';
+import type { Availability } from 'utils/availability';
 import ContentValueField from '../../Input/DynamicContent/ContentValueField';
 import Widget from '../../Widget';
 import AttributeViewer, { ATTRIBUTE_VIEWER_TYPE } from '../AttributeViewer';
@@ -16,9 +17,12 @@ export type Props = {
     attributes: AttributeResponseModel[] | undefined;
     className?: string;
     noBorder?: boolean;
+    /** Whether the user may change the object's custom attributes; without it they stay editable. */
+    requires?: Availability;
 };
 
-export default function CustomAttributeWidget({ resource, resourceUuid, attributes, className, noBorder }: Readonly<Props>) {
+export default function CustomAttributeWidget({ resource, resourceUuid, attributes, className, noBorder, requires }: Readonly<Props>) {
+    const editable = !requires || requires.available;
     const dispatch = useDispatch();
     const [isAttributeContentLoaded, setIsAttributeContentLoaded] = useState<boolean>(false);
 
@@ -124,11 +128,12 @@ export default function CustomAttributeWidget({ resource, resourceUuid, attribut
             <AttributeViewer
                 attributes={loadedAttributes}
                 descriptors={resourceCustomAttributes}
-                viewerType={ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE_EDIT}
+                viewerType={editable ? ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE_EDIT : ATTRIBUTE_VIEWER_TYPE.ATTRIBUTE}
                 onSubmit={addCustomAttribute}
                 onRemove={removeCustomAttribute}
             />
-            {options && options.length > 0 && (
+            {!editable && requires?.reason && <p className="mt-4 text-sm text-content-muted">{requires.reason}</p>}
+            {editable && options && options.length > 0 && (
                 <div className="mt-4">
                     <div className="mb-2">Add custom attribute</div>
                     <FormProvider {...methods}>

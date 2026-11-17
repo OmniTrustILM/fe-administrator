@@ -15,7 +15,7 @@ import { EntityType } from 'ducks/filters';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { selectors as pagingSelectors } from 'ducks/paging';
 import type { SearchRequestModel } from 'types/certificate';
-import { PlatformEnum, Resource } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
 import type { ConnectorResponseModel } from 'types/connectors';
 import { buildConnectorCellRegistry, buildConnectorColumns, CONNECTOR_DEFAULT_SORT } from '../connectorTableHelpers';
 import { LockWidgetNameEnum } from 'types/user-interface';
@@ -23,9 +23,11 @@ import { getConnectorCapabilities } from 'utils/connector';
 import { featureFlags } from 'utils/feature-flags';
 
 import type { ApiClients } from '../../../../api';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 export default function ConnectorList() {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.Connectors);
 
     const checkedRows = useSelector(pagingSelectors.checkedRows(EntityType.CONNECTOR));
     const connectors = useSelector(selectors.connectors);
@@ -113,12 +115,14 @@ export default function ConnectorList() {
                 icon: 'plus',
                 disabled: false,
                 tooltip: 'Create',
+                requires: can(ResourceAction.Create),
                 onClick: handleOpenAddModal,
             },
             {
                 icon: 'trash',
                 disabled: checkedRows.length === 0,
                 tooltip: 'Delete',
+                requires: can(ResourceAction.Delete, { onObjects: true }),
                 onClick: () => {
                     setConfirmDelete(true);
                 },
@@ -127,6 +131,7 @@ export default function ConnectorList() {
                 icon: 'unplug',
                 disabled: checkedRows.length === 0,
                 tooltip: 'Reconnect',
+                requires: can(ResourceAction.Connect, { onObjects: true }),
                 onClick: () => {
                     onReconnectClick();
                 },
@@ -135,12 +140,13 @@ export default function ConnectorList() {
                 icon: 'check',
                 disabled: checkedRows.length === 0,
                 tooltip: 'Approve',
+                requires: can(ResourceAction.Approve, { onObjects: true }),
                 onClick: () => {
                     setConfirmAuthorize(true);
                 },
             },
         ],
-        [checkedRows, handleOpenAddModal, onReconnectClick],
+        [checkedRows, handleOpenAddModal, onReconnectClick, can],
     );
 
     const forceDeleteBody = (

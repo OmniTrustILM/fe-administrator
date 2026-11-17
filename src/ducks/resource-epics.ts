@@ -1,8 +1,8 @@
 import type { AppEpic } from 'ducks';
 import { iif, of } from 'rxjs';
-import { catchError, filter, map, switchMap } from 'rxjs/operators';
+import { catchError, filter, groupBy, map, mergeMap, switchMap } from 'rxjs/operators';
 import { extractError } from 'utils/net';
-import { slice } from './resource';
+import { objectKey, slice } from './resource';
 
 const listResources: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
@@ -48,6 +48,34 @@ const listAllResourceEvents: AppEpic = (action$, state, deps) => {
     );
 };
 
-const epics = [listResources, listResourceEvents, listAllResourceEvents];
+// Failure is not reported: without an object answer the profile's resource-level grants still decide the controls.
+// A newer request for the same object cancels the older one, so a late failure cannot overwrite a fresh answer.
+const listObjectAllowedActions: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.listObjectAllowedActions.match),
+        groupBy(({ payload: { resource, uuid } }) => objectKey(resource, uuid)),
+        mergeMap((sameObject$) =>
+            sameObject$.pipe(
+                switchMap(({ payload: { resource, uuid } }) =>
+                    deps.apiClients.resources
+                        .listObjectAllowedActions({ resource, objectAllowedActionsRequestDto: { uuids: [uuid] } })
+                        .pipe(
+                            map((response) =>
+                                slice.actions.listObjectAllowedActionsSuccess({
+                                    resource,
+                                    uuid,
+                                    allowedActions: response.items.find((item) => item.uuid.toLowerCase() === uuid.toLowerCase())
+                                        ?.allowedActions,
+                                }),
+                            ),
+                            catchError(() => of(slice.actions.listObjectAllowedActionsFailure({ resource, uuid }))),
+                        ),
+                ),
+            ),
+        ),
+    );
+};
+
+const epics = [listResources, listResourceEvents, listAllResourceEvents, listObjectAllowedActions];
 
 export default epics;
