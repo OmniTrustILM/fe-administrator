@@ -29,7 +29,9 @@ export async function expectOnlyOffered<Control extends string>(
     offered: readonly Control[],
     locate: (root: Locator, control: Control) => Locator = (scope, control) => scope.getByTestId(`${control}-button`),
 ) {
-    for (const control of controls) {
-        await expectOffered(locate(root, control), offered.includes(control));
-    }
+    // Hovering for each denial reason must not overlap, so the checks run one after another.
+    await controls.reduce<Promise<void>>(
+        (previous, control) => previous.then(() => expectOffered(locate(root, control), offered.includes(control))),
+        Promise.resolve(),
+    );
 }

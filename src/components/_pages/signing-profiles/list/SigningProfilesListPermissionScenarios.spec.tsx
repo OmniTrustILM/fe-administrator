@@ -10,12 +10,12 @@ import {
 } from 'components/_pages/test-utils/permissionScenarios';
 import SigningProfilesListWithStore from './SigningProfilesListWithStore';
 
-const controls = ['create', 'delete', 'check', 'times'] as const;
 const onSelection = ['delete', 'check', 'times'] as const;
+const controls = ['create', ...onSelection] as const;
 
 // Signing profiles take grants per object, so the server decides every action on the selection and only creating
 // follows the profile.
-const expectations: OfferedControls<(typeof controls)[number]>[] = [
+const signingProfileListOffers: OfferedControls<(typeof controls)[number]>[] = [
     { scenario: administrator, offered: [...controls] },
     { scenario: readOnly, offered: [...onSelection] },
     { scenario: createOnly, offered: ['create', ...onSelection] },
@@ -23,7 +23,7 @@ const expectations: OfferedControls<(typeof controls)[number]>[] = [
 ];
 
 test.describe('SigningProfilesList actions by permission scenario', () => {
-    for (const { scenario, offered } of expectations) {
+    for (const { scenario, offered } of signingProfileListOffers) {
         test(offeredTitle({ scenario, offered }), async ({ mount }) => {
             const component = await mount(<SigningProfilesListWithStore scenario={scenario.name} />);
             await component
