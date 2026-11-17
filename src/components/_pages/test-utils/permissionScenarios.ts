@@ -84,11 +84,14 @@ export const createOnly: PermissionScenario = {
     objectActions: {},
 };
 
-/** Holds members on a group the owned resources' objects are assigned to, which admits listing and viewing them. */
+/**
+ * Holds members on one group the owned resources' objects are assigned to, which admits listing and viewing them. The
+ * grant names the group, and Core leaves object-scoped grants out of the login profile's resource grants.
+ */
 export const groupMember: PermissionScenario = {
     name: 'group access through the members permission',
     allowedListings: OWNED_RESOURCES,
-    grants: [{ resource: Resource.Groups, actions: [ResourceAction.Members] }],
+    grants: [],
     objectActions: {
         [Resource.Certificates]: [ResourceAction.List, ResourceAction.Detail],
         [Resource.Keys]: [ResourceAction.List],
@@ -96,10 +99,13 @@ export const groupMember: PermissionScenario = {
     },
 };
 
-/** Holds a grant on one object of each resource with object access, and no resource-level grant. */
+/**
+ * Holds a grant on one object of each resource with object access, and no resource-level grant. Core lists an RA profile
+ * and checks its changes against the parent authority too, so the user also holds list and detail on that authority.
+ */
 export const objectGrant: PermissionScenario = {
     name: 'object-level grant',
-    allowedListings: [Resource.RaProfiles, Resource.SigningProfiles],
+    allowedListings: [Resource.RaProfiles, Resource.SigningProfiles, Resource.Authorities],
     grants: [],
     objectActions: {
         [Resource.RaProfiles]: [ResourceAction.List, ResourceAction.Detail, ResourceAction.Update, ResourceAction.Enable],
