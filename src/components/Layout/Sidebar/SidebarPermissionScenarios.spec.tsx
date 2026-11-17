@@ -11,26 +11,36 @@ import {
 import { createMockStore, withProviders } from 'utils/test-helpers';
 import Sidebar from './index';
 
-const sections = ['certificates', 'keys', 'secrets'] as const;
+const entries = {
+    certificates: 'sidebar-certificates',
+    keys: 'sidebar-keys',
+    secrets: 'sidebar-secrets',
+    'RA profiles': 'sidebar-profiles-raprofiles',
+    'signing profiles': 'sidebar-profiles-signingprofiles',
+} as const;
 
-const expectations: { scenario: PermissionScenario; shown: (typeof sections)[number][] }[] = [
-    { scenario: administrator, shown: ['certificates', 'keys', 'secrets'] },
-    { scenario: readOnly, shown: ['certificates', 'keys', 'secrets'] },
-    { scenario: owner, shown: ['certificates', 'keys', 'secrets'] },
-    { scenario: createOnly, shown: ['certificates', 'keys', 'secrets'] },
-    { scenario: groupMember, shown: ['certificates', 'keys', 'secrets'] },
-    { scenario: objectGrant, shown: [] },
+type Entry = keyof typeof entries;
+const owned: Entry[] = ['certificates', 'keys', 'secrets'];
+const profiles: Entry[] = ['RA profiles', 'signing profiles'];
+
+const expectations: { scenario: PermissionScenario; shown: Entry[] }[] = [
+    { scenario: administrator, shown: [...owned, ...profiles] },
+    { scenario: readOnly, shown: [...owned, ...profiles] },
+    { scenario: owner, shown: owned },
+    { scenario: createOnly, shown: owned },
+    { scenario: groupMember, shown: owned },
+    { scenario: objectGrant, shown: profiles },
 ];
 
 test.describe('Sidebar sections by permission scenario', () => {
     for (const { scenario, shown } of expectations) {
-        test(`shows ${shown.join(', ') || 'none of certificates, keys and secrets'} to a ${scenario.name}`, async ({ mount }) => {
+        test(`shows ${shown.join(', ')} to a ${scenario.name}`, async ({ mount }) => {
             const component = await mount(
                 withProviders(<Sidebar allowedResources={scenario.allowedListings} />, { store: createMockStore(), initialRoute: '/' }),
             );
 
-            for (const section of sections) {
-                await expect(component.getByTestId(`sidebar-${section}`)).toHaveCount(shown.includes(section) ? 1 : 0);
+            for (const [entry, testId] of Object.entries(entries) as [Entry, string][]) {
+                await expect(component.getByTestId(testId)).toHaveCount(shown.includes(entry) ? 1 : 0);
             }
         });
     }

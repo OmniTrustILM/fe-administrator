@@ -9,7 +9,7 @@ import { initialState as tspProfilesInitialState } from 'ducks/tsp-profiles';
 import { Resource, SigningScheme, SigningWorkflowType } from 'types/openapi';
 import SigningProfileDetail from './SigningProfileDetail';
 
-const signingProfile = {
+const enabledProfile = {
     uuid: 'signing-profile-1',
     name: 'Signing profile one',
     version: 1,
@@ -18,12 +18,17 @@ const signingProfile = {
     signingScheme: { signingScheme: SigningScheme.Delegated },
     customAttributes: [],
 };
+const signingProfiles = { enabled: enabledProfile, disabled: { ...enabledProfile, enabled: false } };
 
 // The test reducers carry neither slice, and a real reducer would put the page's own fetch over the preloaded profile.
 const heldSlice = (name: string, state: unknown) => ({ name, reducer: (held: unknown = state) => held }) as unknown as Slice;
 
 /** The signing profile detail page as the named permission scenario sees it. */
-export default function SigningProfileDetailWithStore({ scenario }: Readonly<{ scenario: string }>) {
+export default function SigningProfileDetailWithStore({
+    scenario,
+    variant = 'enabled',
+}: Readonly<{ scenario: string; variant?: keyof typeof signingProfiles }>) {
+    const signingProfile = signingProfiles[variant];
     const [store] = useState(() =>
         createObjectPermissionStore({
             resource: Resource.SigningProfiles,

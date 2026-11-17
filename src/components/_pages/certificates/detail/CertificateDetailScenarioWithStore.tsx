@@ -10,8 +10,7 @@ import type { CertificateDetailResponseModel } from 'types/certificate';
 import { CertificateState, Resource } from 'types/openapi';
 import CertificateDetail from './index';
 
-// Issued, unarchived and under an RA profile, so state leaves every certificate action but Issue, Complete and Unarchive enabled.
-const certificate = {
+const issued = {
     uuid: 'cert-1',
     commonName: 'app.example',
     subjectDn: 'CN=app.example',
@@ -20,8 +19,23 @@ const certificate = {
     raProfile: { uuid: 'ra-profile-1', name: 'RA profile', authorityInstanceUuid: 'authority-1' },
 } as unknown as CertificateDetailResponseModel;
 
+// Each variant leaves state enabling the actions it is named for: an issued certificate every action but Issue,
+// Complete and Unarchive, a requested one Issue, a registered one Complete and an archived one Unarchive.
+const certificates = {
+    issued,
+    requested: { ...issued, state: CertificateState.Requested },
+    registered: { ...issued, state: CertificateState.Registered },
+    archived: { ...issued, archived: true },
+} satisfies Record<string, CertificateDetailResponseModel>;
+
+export type CertificateVariant = keyof typeof certificates;
+
 /** The certificate detail page as the named permission scenario sees it. */
-export default function CertificateDetailScenarioWithStore({ scenario }: Readonly<{ scenario: string }>) {
+export default function CertificateDetailScenarioWithStore({
+    scenario,
+    variant = 'issued',
+}: Readonly<{ scenario: string; variant?: CertificateVariant }>) {
+    const certificate = certificates[variant];
     const [store] = useState(() =>
         createObjectPermissionStore({
             resource: Resource.Certificates,

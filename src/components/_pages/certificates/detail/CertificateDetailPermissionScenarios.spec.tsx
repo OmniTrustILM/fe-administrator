@@ -50,3 +50,23 @@ test.describe('CertificateDetail actions by permission scenario', () => {
         });
     }
 });
+
+// An owner holds archive but not issue, so it may unarchive its certificate but neither issue nor complete it.
+const stateGated = [
+    { variant: 'requested', control: 'cubes', permitted: [administrator] },
+    { variant: 'registered', control: 'check', permitted: [administrator] },
+    { variant: 'archived', control: 'unarchive', permitted: [administrator, owner] },
+] as const;
+
+test.describe('CertificateDetail state-gated actions by permission scenario', () => {
+    for (const { variant, control, permitted } of stateGated) {
+        for (const scenario of [administrator, readOnly, owner]) {
+            const offered = (permitted as readonly PermissionScenario[]).includes(scenario);
+            test(`${offered ? 'offers' : 'withholds'} ${control} on a ${variant} certificate to a ${scenario.name}`, async ({ mount }) => {
+                const component = await mount(<CertificateDetailScenarioWithStore scenario={scenario.name} variant={variant} />);
+
+                await expectOffered(component.getByTestId(`${control}-button`), offered);
+            });
+        }
+    }
+});

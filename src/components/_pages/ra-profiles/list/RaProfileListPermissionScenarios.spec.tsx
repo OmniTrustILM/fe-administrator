@@ -1,6 +1,12 @@
 import { test } from '../../../../../playwright/ct-test';
 import { expectOffered } from 'components/_pages/test-utils/permissionScenarioAssertions';
-import { administrator, objectGrant, type PermissionScenario, readOnly } from 'components/_pages/test-utils/permissionScenarios';
+import {
+    administrator,
+    createOnly,
+    objectGrant,
+    type PermissionScenario,
+    readOnly,
+} from 'components/_pages/test-utils/permissionScenarios';
 import RaProfileListWithStore from './RaProfileListWithStore';
 
 const controls = ['plus', 'trash', 'check', 'times', 'gavel'] as const;
@@ -11,6 +17,7 @@ const onSelection = ['trash', 'check', 'times'] as const;
 const expectations: { scenario: PermissionScenario; offered: (typeof controls)[number][] }[] = [
     { scenario: administrator, offered: [...controls] },
     { scenario: readOnly, offered: [...onSelection] },
+    { scenario: createOnly, offered: ['plus', ...onSelection] },
     { scenario: objectGrant, offered: [...onSelection] },
 ];
 

@@ -7,10 +7,15 @@ import { slice as secretsSlice } from 'ducks/secrets';
 import { Resource, SecretState } from 'types/openapi';
 import SecretDetail from './index';
 
-const secret = { uuid: 'secret-1', name: 'Secret one', enabled: true, state: SecretState.Active, version: 1 };
+const enabledSecret = { uuid: 'secret-1', name: 'Secret one', enabled: true, state: SecretState.Active, version: 1 };
+const secrets = { enabled: enabledSecret, disabled: { ...enabledSecret, enabled: false } };
 
 /** The secret detail page as the named permission scenario sees it. */
-export default function SecretDetailWithStore({ scenario }: Readonly<{ scenario: string }>) {
+export default function SecretDetailWithStore({
+    scenario,
+    variant = 'enabled',
+}: Readonly<{ scenario: string; variant?: keyof typeof secrets }>) {
+    const secret = secrets[variant];
     const [store] = useState(() => {
         const permissions = scenarioState(PERMISSION_SCENARIOS.find((candidate) => candidate.name === scenario)!, {
             resource: Resource.Secrets,

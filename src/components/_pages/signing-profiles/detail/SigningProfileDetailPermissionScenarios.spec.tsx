@@ -22,3 +22,24 @@ test.describe('SigningProfileDetail actions by permission scenario', () => {
         });
     }
 });
+
+const permitted = [administrator, objectGrant];
+
+test.describe('SigningProfileDetail state-gated actions by permission scenario', () => {
+    for (const scenario of expectations.map(({ scenario }) => scenario)) {
+        const offered = permitted.includes(scenario);
+
+        test(`${offered ? 'offers' : 'withholds'} enabling a disabled profile to a ${scenario.name}`, async ({ mount }) => {
+            const component = await mount(<SigningProfileDetailWithStore scenario={scenario.name} variant="disabled" />);
+
+            await expectOffered(component.getByTestId('enable-button'), offered);
+        });
+
+        test(`${offered ? 'offers' : 'withholds'} activating a protocol to a ${scenario.name}`, async ({ mount, page }) => {
+            const component = await mount(<SigningProfileDetailWithStore scenario={scenario.name} />);
+            await page.getByRole('tab', { name: 'Protocols' }).click();
+
+            await expectOffered(component.getByRole('button', { name: 'Activate', exact: true }), offered);
+        });
+    }
+});
