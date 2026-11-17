@@ -6,6 +6,7 @@ import { slice as acmeProfilesSlice } from 'ducks/acme-profiles';
 import { slice as approvalProfilesSlice } from 'ducks/approval-profiles';
 import { slice as cmpProfilesSlice } from 'ducks/cmp-profiles';
 import { initialState as complianceProfilesInitialState } from 'ducks/compliance-profiles';
+import { slice as estProfilesSlice } from 'ducks/est-profiles';
 import { initialState as raProfilesInitialState } from 'ducks/ra-profiles';
 import { slice as scepProfilesSlice } from 'ducks/scep-profiles';
 import { testInitialState } from 'ducks/test-reducers';
@@ -37,7 +38,7 @@ export default function RaProfileDetailWithStore({ allowedActions = Object.value
             uuid: raProfile.uuid,
             allowedActions,
             resourceGrants,
-            realSlices: [acmeProfilesSlice, approvalProfilesSlice, cmpProfilesSlice, scepProfilesSlice],
+            realSlices: [acmeProfilesSlice, approvalProfilesSlice, cmpProfilesSlice, estProfilesSlice, scepProfilesSlice],
             preloadedState: {
                 raprofiles: { ...raProfilesInitialState, ...testInitialState.raprofiles, raProfile },
                 complianceProfiles: { ...complianceProfilesInitialState, ...testInitialState.complianceProfiles },
