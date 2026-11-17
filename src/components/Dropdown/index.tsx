@@ -83,6 +83,7 @@ function Dropdown({
                     <DropdownMenu.Content
                         className={cn(
                             'min-w-60 z-[100] bg-surface-raised border-divider dark:border shadow-md rounded-lg mt-2',
+                            'max-h-[calc(var(--radix-dropdown-menu-content-available-height)-0.5rem)] overflow-y-auto',
                             menuClassName,
                         )}
                         sideOffset={4}

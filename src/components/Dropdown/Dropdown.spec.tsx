@@ -20,6 +20,20 @@ test.describe('Dropdown', () => {
         await expect(page.getByRole('menuitem', { name: 'Item 2' })).toBeVisible();
     });
 
+    test('keeps a long menu within a short viewport and scrolls to its last item', async ({ mount, page }) => {
+        await page.setViewportSize({ width: 800, height: 240 });
+        const items = Array.from({ length: 20 }, (_, index) => ({ title: `Item ${index + 1}`, onClick: () => {} }));
+        await mount(<Dropdown title="Dropdown" items={items} />);
+        await page.getByRole('button', { name: 'Dropdown' }).click();
+
+        const menu = page.getByRole('menu');
+        const box = await menu.boundingBox();
+        expect(box!.y + box!.height).toBeLessThanOrEqual(240);
+        const last = page.getByRole('menuitem', { name: 'Item 20' });
+        await last.scrollIntoViewIfNeeded();
+        await expect(last).toBeInViewport();
+    });
+
     test('calls item onClick when selected', async ({ mount, page }) => {
         let item1Clicked = false;
         const items = [
