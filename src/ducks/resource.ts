@@ -23,7 +23,8 @@ export const initialState: State = {
     objectAllowedActions: {},
 };
 
-export const objectKey = (resource: Resource, uuid: string): string => `${resource}/${uuid}`;
+// Route UUIDs and server-returned UUIDs can differ in case, and both must address the same entry.
+export const objectKey = (resource: Resource, uuid: string): string => `${resource}/${uuid.toLowerCase()}`;
 
 export const slice = createSlice({
     name: 'resource',

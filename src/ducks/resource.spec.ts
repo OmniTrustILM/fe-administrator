@@ -165,6 +165,17 @@ describe('resource slice', () => {
         });
     });
 
+    test('a refresh under a differently cased uuid replaces the same object answer', () => {
+        const loading = reducer(initialState, actions.listObjectAllowedActions({ resource: Resource.Secrets, uuid: 'ABC-1' }));
+        const state = reducer(
+            loading,
+            actions.listObjectAllowedActionsSuccess({ resource: Resource.Secrets, uuid: 'abc-1', allowedActions: [ResourceAction.Update] }),
+        );
+        expect(state.objectAllowedActions).toEqual({
+            [objectKey(Resource.Secrets, 'ABC-1')]: { status: 'loaded', allowedActions: [ResourceAction.Update] },
+        });
+    });
+
     test('listObjectAllowedActionsFailure marks the object as failed', () => {
         const state = reducer(initialState, actions.listObjectAllowedActionsFailure({ resource: Resource.Secrets, uuid: 'uuid-1' }));
         expect(state.objectAllowedActions[objectKey(Resource.Secrets, 'uuid-1')]).toEqual({ status: 'failed' });

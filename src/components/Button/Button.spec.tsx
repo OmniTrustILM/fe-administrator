@@ -156,6 +156,32 @@ test.describe('Button', () => {
         await expect(component).toBeDisabled();
     });
 
+    test('should not dim a button while its requirement loads, so a permitted action does not flash disabled', async ({ mount }) => {
+        const component = await mount(<Button requires={{ available: false, hidden: false, loading: true }}>Edit</Button>);
+
+        await expect(component).toHaveAttribute('aria-busy', 'true');
+        await expect(component).toHaveCSS('opacity', '1');
+    });
+
+    test('should dim a button its requirement denies', async ({ mount }) => {
+        const component = await mount(
+            <Button requires={{ available: false, hidden: false, loading: false, reason: 'Denied' }}>Edit</Button>,
+        );
+
+        await expect(component.getByRole('button', { name: 'Edit' })).toHaveCSS('opacity', '0.35');
+    });
+
+    test('should dim a disabled button even while its requirement loads', async ({ mount }) => {
+        const component = await mount(
+            <Button disabled requires={{ available: false, hidden: false, loading: true }}>
+                Edit
+            </Button>,
+        );
+
+        await expect(component).toHaveCSS('opacity', '0.35');
+        await expect(component).not.toHaveAttribute('aria-busy');
+    });
+
     test('should not show its own disabled reason when only a loading requirement disables it', async ({ mount, page }) => {
         await page.clock.install();
         const component = await mount(

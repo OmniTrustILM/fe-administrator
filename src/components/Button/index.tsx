@@ -24,7 +24,7 @@ export type Props = {
 };
 
 const baseButton =
-    'inline-flex items-center gap-x-2 text-sm font-medium rounded-lg disabled:opacity-35 disabled:pointer-events-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 border';
+    'inline-flex items-center gap-x-2 text-sm font-medium rounded-lg disabled:pointer-events-none focus:outline-hidden focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-offset-1 border';
 
 const buttonClasses = {
     solid: 'py-2.5 px-3.5',
@@ -78,14 +78,17 @@ function Button({
     const denied = !!requires && !requires.available;
     const isDisabled = disabled || denied;
     const disabledReason = (denied ? requires?.reason : undefined) ?? (disabled ? disabledTooltip : undefined);
+    // A requirement still loading must not dim the button, or a permitted action flashes disabled before it settles.
+    const settling = !!requires?.loading && !disabled;
 
     const buttonElement = (
         <button
             type={type}
             id={id}
-            className={cn(baseButton, buttonClasses[variant], colorClasses[variant][color], className)}
+            className={cn(baseButton, !settling && 'disabled:opacity-35', buttonClasses[variant], colorClasses[variant][color], className)}
             onClick={onClick}
             disabled={isDisabled}
+            aria-busy={settling || undefined}
             data-testid={dataTestId}
             aria-label={ariaLabel}
             aria-expanded={ariaExpanded}
