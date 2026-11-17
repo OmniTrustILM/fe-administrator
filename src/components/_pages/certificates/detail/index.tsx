@@ -237,7 +237,12 @@ export default function CertificateDetail() {
     const deviceType = useDeviceType();
     const [currentInfoId, setCurrentInfoId] = useState('');
 
-    const [locationsCheckedRows, setLocationsCheckedRows] = useState<string[]>([]);
+    const [checkedLocationRows, setLocationsCheckedRows] = useState<string[]>([]);
+    // The table drops a removed location from its own selection without reporting it, so the page filters here.
+    const locationsCheckedRows = useMemo(
+        () => checkedLocationRows.filter((uuid) => certLocationUuids.includes(uuid)),
+        [checkedLocationRows, certLocationUuids],
+    );
     const [selectLocationsCheckedRows, setSelectLocationsCheckedRows] = useState<string[]>([]);
 
     const [locationToEntityMap, setLocationToEntityMap] = useState<{ [key: string]: string }>({});

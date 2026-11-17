@@ -110,8 +110,14 @@ test.describe('CertificateDetail — permission to change each location', () => 
             for (const row of checked) await checkRow(page, row);
 
             const remove = page.getByTestId('trash-button');
-            if (enabled) await expect(remove).toBeEnabled();
-            else await expect(remove).toBeDisabled();
+            if (enabled) {
+                await expect(remove).toBeEnabled();
+            } else {
+                await expect(remove).toBeDisabled();
+                await expect(remove).not.toHaveAttribute('aria-busy');
+                await remove.hover({ force: true });
+                await expect(page.getByRole('tooltip')).toContainText('You need the update permission on locations.');
+            }
         });
     }
 
@@ -135,8 +141,14 @@ test.describe('CertificateDetail — permission to change each location', () => 
             await checkRow(page.getByRole('dialog'), row);
 
             const push = page.getByRole('dialog').getByRole('button', { name: 'Push' });
-            if (enabled) await expect(push).toBeEnabled();
-            else await expect(push).toBeDisabled();
+            if (enabled) {
+                await expect(push).toBeEnabled();
+            } else {
+                await expect(push).toBeDisabled();
+                await expect(push).not.toHaveAttribute('aria-busy');
+                await push.hover({ force: true });
+                await expect(page.getByRole('tooltip')).toContainText('You need the update permission on locations.');
+            }
         });
     }
 });

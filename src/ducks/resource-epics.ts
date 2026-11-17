@@ -57,7 +57,7 @@ const inBatches = (uuids: string[]): string[][] =>
     );
 
 // Failure is not reported: without an object answer the profile's resource-level grants still decide the controls.
-// A newer request for the same objects cancels the older one, so a late failure cannot overwrite a fresh answer.
+// A newer request for the same set of objects cancels the older one, so a late failure cannot overwrite a fresh answer.
 const listObjectAllowedActions: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.listObjectAllowedActions.match),
