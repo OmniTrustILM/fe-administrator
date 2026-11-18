@@ -569,7 +569,8 @@ test.describe('OnboardFromToken', () => {
     });
 
     test('keeps a key pair whose name is taken selected and flags its name with the reason', async ({ mount, page: browser }) => {
-        const nameTakenReason = "A key 'signer' already exists.";
+        const takenName = 'Payments signer';
+        const nameTakenReason = `A key '${takenName}' already exists.`;
         const dispatched: UnknownAction[] = [];
         await mount(
             <OnboardFromTokenWithStore
@@ -584,11 +585,13 @@ test.describe('OnboardFromToken', () => {
         await chooseProfile(browser);
 
         await browser.getByRole('checkbox', { name: 'Select signer' }).click();
+        const name = browser.getByRole('textbox', { name: 'Name for signer' });
+        await enterText(name, takenName);
         await browser.getByRole('button', { name: 'Onboard', exact: true }).click();
 
         await expect.poll(() => dispatched.filter(tokenKeyActions.listTokenKeysSuccess.match).length).toBe(2);
+        expect(sentKeys(dispatched)).toEqual([[{ keyPairMeta: keyPairMeta('onboardable'), name: takenName }]]);
         await expect(browser.getByRole('checkbox', { name: 'Select signer' })).toBeChecked();
-        const name = browser.getByRole('textbox', { name: 'Name for signer' });
         await expect(name).toHaveAttribute('aria-invalid', 'true');
         await expect(name).toHaveAccessibleDescription(nameTakenReason);
         await expect(browser.getByRole('button', { name: 'Done' })).toHaveCount(0);
