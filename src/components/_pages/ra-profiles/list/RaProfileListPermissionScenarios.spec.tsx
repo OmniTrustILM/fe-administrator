@@ -15,12 +15,22 @@ import RaProfileListWithStore from './RaProfileListWithStore';
 const onSelection = ['trash', 'check', 'times'] as const;
 const controls = ['plus', ...onSelection, 'gavel'] as const;
 
+const readGrant = [ResourceAction.List, ResourceAction.Detail];
+
 // RA profiles take grants per object, so the server decides delete, enable and disable on the selection, while creating
-// follows the profile and the compliance check follows the compliance profile grant, as on the detail page.
+// follows the profile and the compliance check follows the compliance profile grant, as on the detail page. Core lists an
+// RA profile only to a user who may read it and its authority, so both users hold that besides their compliance grant.
 const complianceGrantOn = (resource: Resource): PermissionScenario => ({
-    name: `user allowed to check compliance on ${resource} only`,
-    allowedListings: [Resource.RaProfiles],
-    grants: [{ resource, actions: [ResourceAction.CheckCompliance] }],
+    name: `reader of RA profiles allowed to check compliance on ${resource}`,
+    allowedListings: [Resource.RaProfiles, Resource.Authorities],
+    grants: [
+        {
+            resource: Resource.RaProfiles,
+            actions: resource === Resource.RaProfiles ? [...readGrant, ResourceAction.CheckCompliance] : readGrant,
+        },
+        { resource: Resource.Authorities, actions: readGrant },
+        ...(resource === Resource.RaProfiles ? [] : [{ resource, actions: [ResourceAction.CheckCompliance] }]),
+    ],
     objectActions: {},
 });
 
