@@ -431,6 +431,7 @@ export * from './NotificationProfileRequestDto';
 export * from './NotificationProfileResponseDto';
 export * from './NotificationProfileUpdateRequestDto';
 export * from './NotificationResponseDto';
+export * from './OAuth2ApplicationSettingsDto';
 export * from './OAuth2ProviderSettingsDto';
 export * from './OAuth2ProviderSettingsResponseDto';
 export * from './OAuth2ProviderSettingsUpdateDto';

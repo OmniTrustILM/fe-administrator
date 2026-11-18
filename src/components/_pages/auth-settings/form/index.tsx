@@ -1,7 +1,7 @@
 import ProgressButton from 'components/ProgressButton';
 import Widget from 'components/Widget';
 import { actions, selectors } from 'ducks/auth-settings';
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import Select from 'components/Select';
@@ -12,8 +12,15 @@ import MultipleValueTextInput from 'components/Input/MultipleValueTextInput';
 import TextInput from 'components/TextInput';
 import TextArea from 'components/TextArea';
 import Label from 'components/Label';
+import Switch from 'components/Switch';
 import { useAreDefaultValuesSame } from 'utils/common-hooks';
-import { validateAlphaNumericWithSpecialChars, validateRequired, validateUrlWithRoute, validatePositiveInteger } from 'utils/validators';
+import {
+    validateAlphaNumericWithSpecialChars,
+    validateRequired,
+    validateUrlWithRoute,
+    validatePositiveInteger,
+    validateResourceIndicator,
+} from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import type { OAuth2ProviderSettingsUpdateDto } from 'types/auth-settings';
 import { isValidJWTBearerProvider, isValidOAuth2FlowProvider } from 'utils/oauth2Providers';
@@ -66,6 +73,11 @@ interface FormValues {
     delegateClaim: string;
     skew: string;
     sessionMaxInactiveInterval: string;
+    applicationsEnabled: boolean;
+    applicationsName: string;
+    applicationsClientId: string;
+    applicationsScopes: string[];
+    applicationsResource: string;
 }
 
 export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }: Readonly<OAuth2ProviderFormProps>) {
@@ -74,6 +86,8 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
     const dispatch = useDispatch();
 
     const oauth2Provider = useSelector(selectors.oauth2Provider);
+    const oauth2ProviderETag = useSelector(selectors.oauth2ProviderETag);
+    const updateProviderConflict = useSelector(selectors.updateProviderConflict);
     const isFetchingProvider = useSelector(selectors.isFetchingProvider);
     const isUpdatingProvider = useSelector(selectors.isUpdatingProvider);
     const isCreatingProvider = useSelector(selectors.isCreatingProvider);
@@ -117,6 +131,11 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                 delegateClaim: oauth2Provider.delegateClaim || '',
                 skew: oauth2Provider.skew?.toString() || '',
                 sessionMaxInactiveInterval: oauth2Provider.sessionMaxInactiveInterval?.toString() || '',
+                applicationsEnabled: oauth2Provider.applications?.enabled ?? false,
+                applicationsName: oauth2Provider.applications?.name || '',
+                applicationsClientId: oauth2Provider.applications?.clientId || '',
+                applicationsScopes: oauth2Provider.applications?.scopes || [],
+                applicationsResource: oauth2Provider.applications?.resource || '',
             };
         } else {
             return {
@@ -139,6 +158,11 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                 delegateClaim: '',
                 skew: '',
                 sessionMaxInactiveInterval: '',
+                applicationsEnabled: false,
+                applicationsName: '',
+                applicationsClientId: '',
+                applicationsScopes: [],
+                applicationsResource: '',
             };
         }
     }, [editMode, oauth2Provider]);
@@ -151,8 +175,27 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
     const {
         handleSubmit,
         control,
+        getValues,
+        reset,
         formState: { isSubmitting, isValid, isDirty },
     } = methods;
+
+    // The values the form shows were read together with this tag; a save sends it so Core refuses it when the provider changed since.
+    const [loadedETag, setLoadedETag] = useState(oauth2ProviderETag);
+    const [providerBeforeReload, setProviderBeforeReload] = useState<typeof oauth2Provider>();
+
+    const reloadProvider = useCallback(() => {
+        if (!providerName) return;
+        setProviderBeforeReload(oauth2Provider);
+        dispatch(actions.getOAuth2ProviderSettings({ providerName }));
+    }, [dispatch, oauth2Provider, providerName]);
+
+    useEffect(() => {
+        if (!providerBeforeReload || isFetchingProvider || oauth2Provider === providerBeforeReload) return;
+        reset(defaultValues);
+        setLoadedETag(oauth2ProviderETag);
+        setProviderBeforeReload(undefined);
+    }, [defaultValues, isFetchingProvider, oauth2Provider, oauth2ProviderETag, providerBeforeReload, reset]);
 
     const formValues = useWatch({ control });
     const watchedScheme = useWatch({
@@ -173,6 +216,11 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
     const watchedUsernameClaim = useWatch({
         control,
         name: 'usernameClaim',
+    });
+
+    const watchedApplicationsEnabled = useWatch({
+        control,
+        name: 'applicationsEnabled',
     });
 
     const isUsernameClaimChanged =
@@ -201,6 +249,13 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                 sessionMaxInactiveInterval: values.sessionMaxInactiveInterval
                     ? Number.parseInt(values.sessionMaxInactiveInterval, 10)
                     : undefined,
+                applications: {
+                    enabled: values.applicationsEnabled,
+                    name: values.applicationsName.trim() || undefined,
+                    clientId: values.applicationsClientId.trim() || undefined,
+                    scopes: values.applicationsScopes,
+                    resource: values.applicationsResource.trim() || undefined,
+                },
             };
 
             Object.assign(updateModel, { clientSecret: values.clientSecret || undefined });
@@ -211,6 +266,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                     actions.updateOAuth2Provider({
                         providerName,
                         oauth2ProviderSettingsUpdateModel: updateModel,
+                        ifMatch: loadedETag,
                     }),
                 );
             } else {
@@ -222,7 +278,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                 );
             }
         },
-        [dispatch, providerName, editMode],
+        [dispatch, providerName, editMode, loadedETag],
     );
 
     const areDefaultValuesSame = useAreDefaultValuesSame(defaultValues as unknown as Record<string, unknown>);
@@ -243,7 +299,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
 
     const requiredFields = useMemo(() => {
         const fields: Partial<Record<keyof FormValues, boolean>> = {};
-        if (watchedScheme === AuthenticationScheme.JwtBearer) {
+        if (watchedScheme === AuthenticationScheme.JwtBearer || watchedApplicationsEnabled) {
             fields.issuerUrl = true;
         }
         if (watchedScheme === AuthenticationScheme.OAuth2Flow) {
@@ -255,7 +311,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
             fields.postLogoutUrl = true;
         }
         return fields;
-    }, [watchedScheme]);
+    }, [watchedScheme, watchedApplicationsEnabled]);
 
     return (
         <FormProvider {...methods}>
@@ -381,7 +437,10 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                                     <Controller
                                         name="clientId"
                                         control={control}
-                                        rules={requiredFields.clientId ? buildValidationRules([validateRequired()]) : {}}
+                                        rules={{
+                                            ...(requiredFields.clientId ? buildValidationRules([validateRequired()]) : {}),
+                                            deps: ['applicationsClientId'],
+                                        }}
                                         render={({ field, fieldState }) => (
                                             <TextInput
                                                 {...field}
@@ -730,7 +789,107 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
                                         </p>
                                     </div>
                                 </div>
+
+                                <fieldset className="space-y-4">
+                                    <legend className="text-sm font-medium">Sign-in for applications</legend>
+                                    <p className="text-sm text-content-subtle">
+                                        Applications discover this provider from the API's OAuth protected resource metadata and sign users
+                                        in with a public client and PKCE. Requires the Issuer Url.
+                                    </p>
+                                    <Controller
+                                        name="applicationsEnabled"
+                                        control={control}
+                                        rules={{ deps: ['issuerUrl'] }}
+                                        render={({ field }) => (
+                                            <Switch
+                                                id="applicationsEnabled"
+                                                label="Advertise to applications"
+                                                checked={field.value}
+                                                onChange={field.onChange}
+                                            />
+                                        )}
+                                    />
+                                    <Controller
+                                        name="applicationsName"
+                                        control={control}
+                                        render={({ field }) => (
+                                            <TextInput
+                                                {...field}
+                                                id="applicationsName"
+                                                label="Display name"
+                                                placeholder={editMode ? providerName : 'Provider name'}
+                                            />
+                                        )}
+                                    />
+                                    <Controller
+                                        name="applicationsClientId"
+                                        control={control}
+                                        rules={{
+                                            validate: (value) =>
+                                                value.trim() && value.trim() === getValues('clientId').trim()
+                                                    ? "Must differ from the provider's Client Id"
+                                                    : undefined,
+                                        }}
+                                        render={({ field, fieldState }) => (
+                                            <TextInput
+                                                {...field}
+                                                id="applicationsClientId"
+                                                label="Public client Id"
+                                                invalid={fieldState.error && fieldState.isTouched}
+                                                error={getFieldErrorMessage(fieldState)}
+                                            />
+                                        )}
+                                    />
+                                    <div>
+                                        <Label htmlFor="applicationsScopes">Application scopes</Label>
+                                        <Controller
+                                            name="applicationsScopes"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <MultipleValueTextInput
+                                                    id="applicationsScopes"
+                                                    selectedValues={field.value || []}
+                                                    onValuesChange={field.onChange}
+                                                    placeholder="Select or add scopes"
+                                                    addPlaceholder="Add application scope"
+                                                    initialOptions={
+                                                        oauth2Provider?.applications?.scopes?.map((value) => ({ label: value, value })) ||
+                                                        []
+                                                    }
+                                                />
+                                            )}
+                                        />
+                                    </div>
+                                    <Controller
+                                        name="applicationsResource"
+                                        control={control}
+                                        rules={buildValidationRules([validateResourceIndicator()])}
+                                        render={({ field, fieldState }) => (
+                                            <TextInput
+                                                {...field}
+                                                id="applicationsResource"
+                                                type="text"
+                                                label="Resource"
+                                                placeholder="https://ilm.example.com/api"
+                                                invalid={fieldState.error && fieldState.isTouched}
+                                                error={getFieldErrorMessage(fieldState)}
+                                            />
+                                        )}
+                                    />
+                                </fieldset>
                             </>
+                        )}
+
+                        {editMode && updateProviderConflict && (
+                            <Callout severity="danger" role="alert" dataTestId="provider-changed-conflict">
+                                <p>
+                                    Someone else changed this provider since you opened it, so your changes were not saved. Reload to see
+                                    the current settings; your unsaved changes will be discarded.
+                                </p>
+                                <Button variant="outline" type="button" className="mt-2" onClick={reloadProvider} disabled={isBusy}>
+                                    Reload
+                                </Button>
+                            </Callout>
                         )}
 
                         <Container className="flex-row justify-end modal-footer" gap={4}>

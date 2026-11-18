@@ -10,6 +10,8 @@
  * Do not edit the class manually.
  */
 
+import type { OAuth2ApplicationSettingsDto } from './';
+
 /**
  * @export
  * @interface OAuth2ProviderSettingsUpdateDto
@@ -117,4 +119,10 @@ export interface OAuth2ProviderSettingsUpdateDto {
      * @memberof OAuth2ProviderSettingsUpdateDto
      */
     delegateClaim?: string;
+    /**
+     * Sign-in for applications through this provider. Not set means disabled.
+     * @type {OAuth2ApplicationSettingsDto}
+     * @memberof OAuth2ProviderSettingsUpdateDto
+     */
+    applications?: OAuth2ApplicationSettingsDto;
 }

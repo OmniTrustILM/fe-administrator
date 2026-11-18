@@ -27,6 +27,7 @@ import {
     validateNtpServer,
     validateNtpServers,
     validateRegistrationChallenge,
+    validateResourceIndicator,
 } from './validators';
 
 const REQUIRED_FIELD_MSG = 'Required Field';
@@ -422,6 +423,74 @@ describe('validators', () => {
 
         test('should reject invalid urls', () => {
             expect(validateRoutelessUrl()('https://example.com/path')).toBeTruthy();
+        });
+    });
+
+    describe('validateResourceIndicator', () => {
+        test.each([
+            '',
+            '   ',
+            undefined,
+            'https://ilm.example.com/api',
+            'http://localhost:8080/api?tenant=a',
+            'https://ilm.example.com',
+            'https://10.0.0.1/api',
+            'https://[2001:db8::1]/api',
+            'https://ilm.example.com/a%20b',
+            'HTTPS://ILM.example.com/api',
+            'https://ilm.example.com/api?x=1&y=%2F',
+            'https://xn--ilm-9na.example/api',
+            'https://ilm.example.com:99999/api',
+        ])('accepts %s', (value) => {
+            // when
+            const error = validateResourceIndicator()(value);
+
+            // then
+            expect(error).toBeUndefined();
+        });
+
+        test.each([
+            'ilm.example.com/api',
+            'ftp://ilm.example.com/api',
+            'https://ilm.example.com/api#part',
+            'https://ilm.example.com/api#',
+            'https://user:secret@ilm.example.com/api',
+            'https://user@ilm.example.com/api',
+            'https://@ilm.example.com/api',
+            'https://ilm.example.com/a b',
+            'https://ilm.example.com/a%zz',
+            'https://exa_mple.com/api',
+            'https:///api',
+            'https://[bad',
+            'https://ilm.example.com/a|b',
+            'https://-ilm.example.com/api',
+        ])('rejects %s', (value) => {
+            // when
+            const error = validateResourceIndicator()(value);
+
+            // then
+            expect(error).toBe('Value must be an absolute http or https URL without credentials or a fragment');
+        });
+
+        test.each([
+            { value: 'https://[::ffff:10.0.0.1]/api', expected: undefined },
+            { value: 'https://[2001:db8:0:0:0:0:0:1]/api', expected: undefined },
+            {
+                value: 'https://[::ffff:999.0.0.1]/api',
+                expected: 'Value must be an absolute http or https URL without credentials or a fragment',
+            },
+            { value: 'https://[1::2::3]/api', expected: 'Value must be an absolute http or https URL without credentials or a fragment' },
+            { value: 'https://[12345::1]/api', expected: 'Value must be an absolute http or https URL without credentials or a fragment' },
+            {
+                value: 'https://ilm.example.com:80a/api',
+                expected: 'Value must be an absolute http or https URL without credentials or a fragment',
+            },
+        ])('reads the host and port of $value as java.net.URI does', ({ value, expected }) => {
+            // when
+            const error = validateResourceIndicator()(value);
+
+            // then
+            expect(error).toBe(expected);
         });
     });
 

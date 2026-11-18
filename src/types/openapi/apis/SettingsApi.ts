@@ -61,6 +61,7 @@ export interface UpdateLoggingSettingsRequest {
 export interface UpdateOAuth2ProviderSettingsRequest {
     providerName: string;
     oAuth2ProviderSettingsUpdateDto: OAuth2ProviderSettingsUpdateDto;
+    ifMatch?: string;
 }
 
 export interface UpdatePlatformSettingsRequest {
@@ -322,15 +323,20 @@ export class SettingsApi extends BaseAPI {
     }
 
     /**
+     * With `If-Match`, the update is refused with 412 when the tag no longer matches the stored provider settings; `*` matches any existing provider. Without the header the update applies unconditionally.
      * Update OAuth2 Provider settings
      */
-    updateOAuth2ProviderSettings({ providerName, oAuth2ProviderSettingsUpdateDto }: UpdateOAuth2ProviderSettingsRequest): Observable<void>;
+    updateOAuth2ProviderSettings({
+        providerName,
+        oAuth2ProviderSettingsUpdateDto,
+        ifMatch,
+    }: UpdateOAuth2ProviderSettingsRequest): Observable<void>;
     updateOAuth2ProviderSettings(
-        { providerName, oAuth2ProviderSettingsUpdateDto }: UpdateOAuth2ProviderSettingsRequest,
+        { providerName, oAuth2ProviderSettingsUpdateDto, ifMatch }: UpdateOAuth2ProviderSettingsRequest,
         opts?: OperationOpts,
     ): Observable<void | AjaxResponse<void>>;
     updateOAuth2ProviderSettings(
-        { providerName, oAuth2ProviderSettingsUpdateDto }: UpdateOAuth2ProviderSettingsRequest,
+        { providerName, oAuth2ProviderSettingsUpdateDto, ifMatch }: UpdateOAuth2ProviderSettingsRequest,
         opts?: OperationOpts,
     ): Observable<void | AjaxResponse<void>> {
         throwIfNullOrUndefined(providerName, 'providerName', 'updateOAuth2ProviderSettings');
@@ -338,6 +344,7 @@ export class SettingsApi extends BaseAPI {
 
         const headers: HttpHeaders = {
             'Content-Type': 'application/json',
+            ...(ifMatch != null ? { 'If-Match': String(ifMatch) } : undefined),
         };
 
         return this.request<void>(
