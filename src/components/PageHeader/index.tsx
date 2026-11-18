@@ -21,6 +21,7 @@ function PrimaryActionButton({ action }: Readonly<{ action: PageAction }>) {
             color="primary"
             disabled={action.disabled}
             disabledTooltip={action.disabledReason}
+            requires={action.requires}
             onClick={(event) => action.onClick(event.currentTarget as HTMLElement)}
             data-testid={`page-action-${action.id}`}
         >
@@ -35,8 +36,9 @@ function PrimaryActionButton({ action }: Readonly<{ action: PageAction }>) {
 function PageHeader({ breadcrumbs, title, primaryAction, actions = [], widgetLockName }: PageHeaderProps) {
     const lock = useWidgetLock(widgetLockName);
     const applyLock = (action: PageAction): PageAction => (lock ? { ...action, disabled: true, disabledReason: lock.lockTitle } : action);
-    const primary = primaryAction && applyLock(primaryAction);
-    const menu = actions.map(applyLock);
+    const isOffered = (action: PageAction | undefined): action is PageAction => !!action && !action.requires?.hidden;
+    const primary = isOffered(primaryAction) ? applyLock(primaryAction) : undefined;
+    const menu = actions.filter(isOffered).map(applyLock);
     const hasActions = !!primary || menu.length > 0;
 
     return (

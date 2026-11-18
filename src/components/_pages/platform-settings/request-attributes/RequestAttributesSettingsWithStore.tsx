@@ -1,6 +1,7 @@
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import type { OidsTestState } from 'ducks/test-reducers';
+import type { Availability } from 'utils/availability';
 import { createMockStore } from 'utils/test-helpers';
 import RequestAttributesSettings from './RequestAttributesSettings';
 
@@ -13,7 +14,8 @@ import RequestAttributesSettings from './RequestAttributesSettings';
 export default function RequestAttributesSettingsWithStore({
     strict,
     oids,
-}: Readonly<{ strict?: boolean; oids?: Partial<OidsTestState> }>) {
+    requires,
+}: Readonly<{ strict?: boolean; oids?: Partial<OidsTestState>; requires?: Availability }>) {
     const store = createMockStore({
         raProfileRequestAttributes: {
             defaultSet: { requestAttributes: [], externalCsrValidationStrict: strict },
@@ -23,7 +25,7 @@ export default function RequestAttributesSettingsWithStore({
     return (
         <Provider store={store}>
             <MemoryRouter initialEntries={['/platformsettings/request-attributes']}>
-                <RequestAttributesSettings />
+                <RequestAttributesSettings requires={requires} />
                 {/* Stand-in for the epic's rejection path (CT runs no epics): flips the pending flag
                     back with no success, which is what the editor rolls back on. */}
                 <button

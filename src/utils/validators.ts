@@ -46,6 +46,8 @@ export const validateInteger = () => validatePattern(/^[+-]?(\d*)$/, 'Value must
 
 export const validatePositiveInteger = () => validatePattern(/^\d+$/, 'Value must be a positive integer');
 
+export const validateWholeNumber = () => validatePattern(/^\d+$/, 'Value must be a whole number');
+
 export const validateNonZeroInteger = () => validatePattern(/^[+-]?([1-9]\d*)$/, 'Value must be a non-zero integer');
 
 export const validateFloat = () => validatePattern(/^[+-]?(\d*[.])?\d+$/, 'Value must be a float without an exponent.');
@@ -74,25 +76,100 @@ export const validateUrlWithRoute = (value: string) => {
 const IP_OCTET = String.raw`(?:25[0-5]|2[0-4]\d|[01]?\d\d?)`;
 const IP_REGEX = new RegExp(String.raw`^${IP_OCTET}\.${IP_OCTET}\.${IP_OCTET}\.${IP_OCTET}$`);
 
+const RESOURCE_INDICATOR_ERROR = 'Value must be an absolute http or https URL without credentials or a fragment';
+const URI_PATH_CHAR = String.raw`[A-Za-z0-9\-_.!~*'():@&=+$,;/]|%[0-9A-Fa-f]{2}|[^\u0000-   -     　]`;
+const URI_PATH_AND_QUERY_REGEX = new RegExp(String.raw`^(?:${URI_PATH_CHAR})*(?:\?(?:${URI_PATH_CHAR}|[?[\]])*)?$`);
+const HOSTNAME_LABEL_REGEX = /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/;
+const IPV6_GROUP_REGEX = /^[0-9A-Fa-f]{1,4}$/;
+const IPV6_REFERENCE_REGEX = /^\[([0-9A-Fa-f:.]+)(?:%[A-Za-z0-9_.]+)?\]$/;
+const PORT_REGEX = /^\d*$/;
+
+/** A hostname as `java.net.URI` reads one: dot-separated labels, of which the rightmost starts with a letter when there are several. */
+function isUriHostname(host: string): boolean {
+    const labels = host.endsWith('.') ? host.slice(0, -1).split('.') : host.split('.');
+    if (!labels.every((label) => HOSTNAME_LABEL_REGEX.test(label))) return false;
+    const [lastLabel] = labels.slice(-1);
+    return labels.length === 1 || /^[A-Za-z]/.test(lastLabel);
+}
+
+function isIpv6Address(address: string): boolean {
+    const halves = address.split('::');
+    if (halves.length > 2) return false;
+    const groups = halves.flatMap((half) => (half === '' ? [] : half.split(':')));
+    let groupCount = groups.length;
+    const lastGroup = groups.at(-1);
+    if (lastGroup?.includes('.')) {
+        if (!IP_REGEX.test(lastGroup)) return false;
+        groups.pop();
+        groupCount += 1;
+    }
+    if (!groups.every((group) => IPV6_GROUP_REGEX.test(group))) return false;
+    return halves.length === 2 ? groupCount < 8 : groupCount === 8;
+}
+
+/** A server-based authority without userinfo, as `java.net.URI` parses it: a hostname, IPv4 or bracketed IPv6 host and an optional port. */
+function isUriServerAuthority(authority: string): boolean {
+    if (authority.includes('@')) return false;
+    const ipv6End = authority.startsWith('[') ? authority.indexOf(']') + 1 : 0;
+    const portStart = authority.indexOf(':', ipv6End);
+    const host = portStart < 0 ? authority : authority.slice(0, portStart);
+    const port = portStart < 0 ? '' : authority.slice(portStart + 1);
+    if (!PORT_REGEX.test(port)) return false;
+    const ipv6Address = IPV6_REFERENCE_REGEX.exec(host)?.[1];
+    if (ipv6Address !== undefined) return isIpv6Address(ipv6Address);
+    return IP_REGEX.test(host) || isUriHostname(host);
+}
+
+/** Splits an absolute URI at its `://`, then at the first `/` or `?` after the authority. */
+function splitAbsoluteUri(value: string): { scheme: string; authority: string; pathAndQuery: string } | undefined {
+    const separator = value.indexOf('://');
+    if (separator < 0) return undefined;
+    const rest = value.slice(separator + 3);
+    const pathStart = rest.search(/[/?]/);
+    const authorityEnd = pathStart < 0 ? rest.length : pathStart;
+    return { scheme: value.slice(0, separator), authority: rest.slice(0, authorityEnd), pathAndQuery: rest.slice(authorityEnd) };
+}
+
+/** An RFC 8707 resource indicator as Core accepts it: an absolute http or https URI without credentials or a fragment. A blank value is unset. */
+export const validateResourceIndicator = () => (value: string | undefined) => {
+    const trimmed = value?.trim();
+    if (!trimmed) return undefined;
+    const uri = splitAbsoluteUri(trimmed);
+    const isValid =
+        uri !== undefined &&
+        ['http', 'https'].includes(uri.scheme.toLowerCase()) &&
+        isUriServerAuthority(uri.authority) &&
+        URI_PATH_AND_QUERY_REGEX.test(uri.pathAndQuery);
+    return isValid ? undefined : RESOURCE_INDICATOR_ERROR;
+};
+
 export const validateCustomIp = (value: string) => {
     return !value || IP_REGEX.test(value) ? undefined : 'Value must be a valid ip address';
 };
 
-/** A numeric floor; leaves non-numbers to the pattern validator composed before it. `'0'` is a value, not empty. */
-export const validateMinimum = (min: number) => (value: unknown) => {
-    const validationInput = getValueFromObject(value);
-    if (validationInput === undefined || validationInput === null || validationInput === '') return undefined;
-    const number = Number(validationInput);
-    return Number.isNaN(number) || number >= min ? undefined : `Value must be at least ${min}`;
+const rangeMessage = (from?: number, to?: number) => {
+    if (from !== undefined && to !== undefined) return `Value must be between ${from} and ${to}`;
+    return from === undefined ? `Value must not exceed ${to}` : `Value must be at least ${from}`;
 };
 
-/** A numeric ceiling; leaves non-numbers to the pattern validator composed before it. */
-export const validateMaximum = (max: number) => (value: unknown) => {
-    const validationInput = getValueFromObject(value);
-    if (!validationInput) return undefined;
-    const number = Number(validationInput);
-    return Number.isNaN(number) || number <= max ? undefined : `Value must not exceed ${max}`;
+/** Inclusive bounds, each optional; checks every item of a multi-value field and leaves blanks and non-numbers to the validators composed before it. */
+export const validateRange = (from?: number, to?: number, message?: string) => (value: unknown) => {
+    const isInRange = (item: unknown) => {
+        const validationInput = getValueFromObject(item);
+        if (validationInput === undefined || validationInput === null || String(validationInput).trim() === '') return true;
+        const number = Number(validationInput);
+        if (Number.isNaN(number)) return true;
+        return (from === undefined || number >= from) && (to === undefined || number <= to);
+    };
+    const isValid = Array.isArray(value) ? value.every(isInRange) : isInRange(value);
+    return isValid ? undefined : message || rangeMessage(from, to);
 };
+
+/** A numeric floor: `validateRange` with only the lower bound. `'0'` is a value, not empty. */
+export const validateMinimum = (min: number) => validateRange(min);
+
+/** A numeric ceiling: `validateRange` with only the upper bound. */
+export const validateMaximum = (max: number) => validateRange(undefined, max);
 
 export const validateLength = (min: number, max: number) => (value: unknown) => {
     const validationInput = getValueFromObject(value);

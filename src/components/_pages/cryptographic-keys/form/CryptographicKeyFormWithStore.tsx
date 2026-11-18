@@ -66,8 +66,10 @@ export type CryptographicKeyFormWithStoreProps = Readonly<{
     keyTransferByProfile?: Record<string, KeyTransferCapabilityDto>;
     /** The answers to `getTokenProfileDetail`, taken in order; each is `loaded` unless given. */
     tokenProfileDetailAnswers?: TokenProfileDetailAnswer[];
+    /** Key held in the store, such as the last viewed one. A detail request for its uuid answers with it. */
     keyDetail?: NonNullable<KeyState['cryptographicKey']>;
     attributeDescriptors?: AttributeDescriptorModel[];
+    resourceCustomAttributes?: CustomAttributeModel[];
     /** Whether the signed-in user holds the key import permission. */
     canImportKeys?: boolean;
     /** Whether the signed-in user holds the key create permission. */
@@ -100,6 +102,7 @@ export function CryptographicKeyFormWithStore({
     tokenProfileDetailAnswers,
     keyDetail,
     attributeDescriptors,
+    resourceCustomAttributes,
     canImportKeys = true,
     canCreateKeys = true,
     onAction,
@@ -142,8 +145,10 @@ export function CryptographicKeyFormWithStore({
                 );
             } else if (connectorActions.callbackResource.match(action) || connectorActions.callbackConnector.match(action)) {
                 api.dispatch(connectorActions.callbackSuccess({ callbackId: action.payload.callbackId, data: [] }));
+            } else if (keyActions.getCryptographicKeyDetail.match(action) && action.payload.uuid === keyDetail?.uuid) {
+                api.dispatch(keyActions.getCryptographicKeyDetailSuccess({ cryptographicKey: keyDetail }));
             } else if (customAttributeActions.listResourceCustomAttributes.match(action)) {
-                api.dispatch(customAttributeActions.listResourceCustomAttributesSuccess([]));
+                api.dispatch(customAttributeActions.listResourceCustomAttributesSuccess(resourceCustomAttributes ?? []));
             } else if (tokenProfileActions.getTokenProfileDetail.match(action)) {
                 const answer = nth(tokenProfileDetailAnswers, detailRequestsAnswered++) ?? 'loaded';
                 const summary = summaries.get(action.payload.uuid);
@@ -207,6 +212,7 @@ export function CryptographicKeyFormWithStore({
         tokenProfileDetailAnswers,
         keyDetail,
         attributeDescriptors,
+        resourceCustomAttributes,
         canImportKeys,
         canCreateKeys,
         onAction,

@@ -11,6 +11,16 @@ import { useDispatchMock, useSelectorMock } from '../../test-utils/reactReduxMoc
 
 setupReactActEnvironment();
 
+const AVAILABLE = { available: true, hidden: false, loading: false };
+const availability = vi.hoisted(() => ({ onlyOnObjects: false }));
+
+vi.mock('utils/useActionAvailability', () => ({
+    useActionAvailability: () => (_action: string, options?: { onObjects?: boolean }) =>
+        !availability.onlyOnObjects || options?.onObjects
+            ? AVAILABLE
+            : { available: false, hidden: false, loading: false, reason: 'denied' },
+}));
+
 vi.mock('react-redux', async () => {
     return await import('../../test-utils/reactReduxMockModule');
 });
@@ -21,21 +31,28 @@ vi.mock('react-router', () => ({
 }));
 
 vi.mock('components/PagedList/PagedList', () => ({
-    default: ({ pageHeader, refreshToken }: any) => (
+    default: ({ pageHeader, refreshToken, deleteRequires }: any) => (
         <div data-testid="paged-list" data-refresh-token={refreshToken}>
-            {[pageHeader?.primaryAction, ...(pageHeader?.actions ?? [])].filter(Boolean).map((action: any) => (
-                <button
-                    key={action.id}
-                    type="button"
-                    title={action.label}
-                    data-primary={action === pageHeader.primaryAction || undefined}
-                    data-disabled-reason={action.disabled ? action.disabledReason : undefined}
-                    disabled={action.disabled}
-                    onClick={() => action.onClick(null)}
-                >
-                    {action.icon}
-                </button>
-            ))}
+            {[
+                pageHeader?.primaryAction,
+                ...(pageHeader?.actions ?? []),
+                pageHeader && { id: 'delete', label: 'Delete', icon: 'trash', requires: deleteRequires },
+            ]
+                .filter(Boolean)
+                .map((action: any) => (
+                    <button
+                        key={action.id}
+                        type="button"
+                        title={action.label}
+                        data-primary={action === pageHeader.primaryAction || undefined}
+                        data-disabled-reason={action.disabled ? action.disabledReason : undefined}
+                        data-denied-reason={action.requires && !action.requires.available ? action.requires.reason : undefined}
+                        disabled={action.disabled}
+                        onClick={() => action.onClick(null)}
+                    >
+                        {action.icon}
+                    </button>
+                ))}
         </div>
     ),
 }));
@@ -68,6 +85,7 @@ describe('CertificateList', () => {
     const listRefreshToken = () => container.querySelector('[data-testid="paged-list"]')?.getAttribute('data-refresh-token');
 
     beforeEach(() => {
+        availability.onlyOnObjects = false;
         state = {
             certificates: certificatesInitialState,
             pagings: { pagings: [] },
@@ -143,5 +161,22 @@ describe('CertificateList', () => {
         await clickByText(container, 'toggle');
 
         expect(importDialog()).not.toBeNull();
+    });
+
+    it.each(['Override groups', 'Override owner', 'Override RA profile', 'Archive', 'Unarchive', 'Delete'])(
+        'offers %s on the selection when only object access, such as ownership, allows it',
+        async (label) => {
+            availability.onlyOnObjects = true;
+            await renderList();
+
+            expect(container.querySelector(`button[title="${label}"]`)?.hasAttribute('data-denied-reason')).toBe(false);
+        },
+    );
+
+    it.each(['Create', IMPORT_ACTION])('denies %s, with the permission reason, without a grant on the resource', async (label) => {
+        availability.onlyOnObjects = true;
+        await renderList();
+
+        expect(container.querySelector(`button[title="${label}"]`)?.getAttribute('data-denied-reason')).toBe('denied');
     });
 });

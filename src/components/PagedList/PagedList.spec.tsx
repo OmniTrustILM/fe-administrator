@@ -111,6 +111,13 @@ test.describe('PagedList', () => {
         await expect(page.getByTestId('add-column-menu-trigger')).toHaveCount(0);
     });
 
+    test('reserves no room for a view strip when the page is not column driven', async ({ mount, page }) => {
+        const component = await mount(renderPagedList({ hasCheckboxes: false }));
+
+        await expect(component.getByText('First row')).toBeVisible();
+        await expect(page.locator('[data-testid^="view-tabs"]')).toHaveCount(0);
+    });
+
     test('renders no column header menu when the page is not column driven', async ({ mount, page }) => {
         const component = await mount(renderPagedList({ hasCheckboxes: false }));
 

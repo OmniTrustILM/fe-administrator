@@ -28,6 +28,7 @@ import CertificateStatus from './CertificateStatus';
 import { validationPanelMessages } from './validationPanel';
 import PendingActionButtons from './PendingActionButtons';
 import type { PendingAction } from './PendingActionButtons/types';
+import type { ActionAvailability } from 'utils/useActionAvailability';
 
 type PlatformEnumMap = { [key: string]: EnumItemModel } | undefined;
 
@@ -311,6 +312,7 @@ export function buildCertificateDetailBaseRows(
     dateFormatter: (d: Date) => string,
     getEnumLabel: (e: PlatformEnumMap, key: string) => string,
     onPendingAction: (action: PendingAction) => void,
+    can?: ActionAvailability,
 ): TableDataRow[] {
     const rows: TableDataRow[] = [
         {
@@ -393,7 +395,7 @@ export function buildCertificateDetailBaseRows(
                         <CertificateStatus status={certificate.state} />
                         <EnumValueDescription platformEnum={PlatformEnum.CertificateState} value={certificate.state} />
                     </span>
-                    <PendingActionButtons certificate={certificate} onAction={onPendingAction} />
+                    <PendingActionButtons certificate={certificate} onAction={onPendingAction} can={can} />
                 </React.Fragment>,
             ],
         },
@@ -491,6 +493,8 @@ function getProtocolProfileLink(protocolInfo: CertificateProtocolDto): string | 
             return `../cmpprofiles/detail/${protocolInfo.protocolProfileUuid}`;
         case CertificateProtocol.Scep:
             return `../scepprofiles/detail/${protocolInfo.protocolProfileUuid}`;
+        case CertificateProtocol.Est:
+            return `../estprofiles/detail/${protocolInfo.protocolProfileUuid}`;
         default:
             // A protocol the backend added before these types were regenerated has no known profile route here.
             return undefined;

@@ -19,7 +19,8 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link, useParams } from 'react-router';
 import RaProfileForm from '../form';
 import RaProfileRequestAttributesWidget from '../RaProfileRequestAttributesWidget';
-import { Resource } from 'types/openapi';
+import { Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { renderProtocolDetail } from './renderProtocolDetail';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 
@@ -39,6 +40,7 @@ import {
 import EventsTable from 'components/_pages/notifications/events-settings/EventsTable';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import Breadcrumb from 'components/Breadcrumb';
+import CopyUrlCell from 'components/CopyUrlCell';
 import Container from 'components/Container';
 import CommentPanel from 'components/CommentPanel';
 import Switch from 'components/Switch';
@@ -53,6 +55,9 @@ export default function RaProfileDetail() {
     const dispatch = useDispatch();
 
     const { id, authorityId } = useParams();
+    const can = useActionAvailability(Resource.RaProfiles, id);
+    const canOnComplianceProfiles = useActionAvailability(Resource.ComplianceProfiles);
+    const canOnApprovalProfiles = useActionAvailability(Resource.ApprovalProfiles);
 
     const raProfile = useSelector(raProfilesSelectors.raProfile);
 
@@ -61,6 +66,7 @@ export default function RaProfileDetail() {
     const acmeDetails = useSelector(raProfilesSelectors.acmeDetails);
     const scepDetails = useSelector(raProfilesSelectors.scepDetails);
     const cmpDetails = useSelector(raProfilesSelectors.cmpDetails);
+    const estDetails = useSelector(raProfilesSelectors.estDetails);
     const associatedComplianceProfiles = useSelector(complianceProfileSelectors.associatedComplianceProfiles);
     const associatedApprovalProfiles = useSelector(raProfilesSelectors.associatedApprovalProfiles);
     const isDissociatingApprovalProfile = useSelector(raProfilesSelectors.isDissociatingApprovalProfile);
@@ -69,6 +75,7 @@ export default function RaProfileDetail() {
     const isFetchingAcmeDetails = useSelector(raProfilesSelectors.isFetchingAcmeDetails);
     const isFetchingScepDetails = useSelector(raProfilesSelectors.isFetchingScepDetails);
     const isFetchingCmpDetails = useSelector(raProfilesSelectors.isFetchingCmpDetails);
+    const isFetchingEstDetails = useSelector(raProfilesSelectors.isFetchingEstDetails);
 
     const isDeleting = useSelector(raProfilesSelectors.isDeleting);
     const isEnabling = useSelector(raProfilesSelectors.isEnabling);
@@ -81,6 +88,8 @@ export default function RaProfileDetail() {
     const isDeactivatingCmp = useSelector(raProfilesSelectors.isDeactivatingCmp);
     const isActivatingScep = useSelector(raProfilesSelectors.isActivatingScep);
     const isDeactivatingScep = useSelector(raProfilesSelectors.isDeactivatingScep);
+    const isActivatingEst = useSelector(raProfilesSelectors.isActivatingEst);
+    const isDeactivatingEst = useSelector(raProfilesSelectors.isDeactivatingEst);
     const isFetchingAssociatedComplianceProfiles = useSelector(complianceProfileSelectors.isFetchingAssociatedComplianceProfiles);
 
     const platformSettings = useSelector(settingsSelectors.platformSettings);
@@ -90,10 +99,12 @@ export default function RaProfileDetail() {
     const [activateAcmeDialog, setActivateAcmeDialog] = useState(false);
     const [activateScepDialog, setActivateScepDialog] = useState(false);
     const [activateCmpDialog, setActivateCmpDialog] = useState(false);
+    const [activateEstDialog, setActivateEstDialog] = useState(false);
 
     const [confirmDeactivateAcme, setConfirmDeactivateAcme] = useState<boolean>(false);
     const [confirmDeactivateScep, setConfirmDeactivateScep] = useState<boolean>(false);
     const [confirmDeactivateCmp, setConfirmDeactivateCmp] = useState<boolean>(false);
+    const [confirmDeactivateEst, setConfirmDeactivateEst] = useState<boolean>(false);
 
     const [complianceCheck, setComplianceCheck] = useState<boolean>(false);
 
@@ -135,7 +146,10 @@ export default function RaProfileDetail() {
             isActivatingScep ||
             isDeactivatingScep ||
             isFetchingScepDetails ||
-            isFetchingCmpDetails,
+            isFetchingCmpDetails ||
+            isActivatingEst ||
+            isDeactivatingEst ||
+            isFetchingEstDetails,
         [
             isActivatingAcme,
             isDeactivatingAcme,
@@ -144,6 +158,9 @@ export default function RaProfileDetail() {
             isDeactivatingScep,
             isFetchingScepDetails,
             isFetchingCmpDetails,
+            isActivatingEst,
+            isDeactivatingEst,
+            isFetchingEstDetails,
         ],
     );
 
@@ -170,6 +187,7 @@ export default function RaProfileDetail() {
         dispatch(raProfilesActions.getAcmeDetails({ authorityUuid: authorityId, uuid: id }));
         dispatch(raProfilesActions.getScepDetails({ authorityUuid: authorityId, uuid: id }));
         dispatch(raProfilesActions.getCmpDetails({ authorityUuid: authorityId, uuid: id }));
+        dispatch(raProfilesActions.getEstDetails({ authorityUuid: authorityId, uuid: id }));
     }, [id, dispatch, authorityId]);
 
     const getFreshAssociatedApprovalProfiles = useCallback(() => {
@@ -295,6 +313,16 @@ export default function RaProfileDetail() {
         setConfirmDeactivateScep(false);
     }, [dispatch, raProfile]);
 
+    const onDeactivateEstConfirmed = useCallback(() => {
+        if (!raProfile) return;
+        dispatch(raProfilesActions.deactivateEst({ authorityUuid: raProfile.authorityInstanceUuid ?? 'unknown', uuid: raProfile.uuid }));
+        setConfirmDeactivateEst(false);
+    }, [dispatch, raProfile]);
+
+    const openEstActivationDialog = useCallback(() => {
+        setActivateEstDialog(true);
+    }, []);
+
     const onDissociateApprovalProfile = useCallback(
         (approvalProfileUuid: string) => {
             if (!raProfile || !authorityId) return;
@@ -343,6 +371,7 @@ export default function RaProfileDetail() {
                 id: 'edit',
                 icon: 'pencil',
                 disabled: authorityId === 'unknown',
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: () => {
                     onEditClick();
@@ -352,6 +381,7 @@ export default function RaProfileDetail() {
                 id: 'delete',
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => {
                     setConfirmDelete(true);
@@ -361,6 +391,7 @@ export default function RaProfileDetail() {
                 id: 'enable',
                 icon: 'check',
                 disabled: Boolean(raProfile?.enabled),
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Enable',
                 onClick: () => {
                     onEnableClick();
@@ -370,6 +401,7 @@ export default function RaProfileDetail() {
                 id: 'disable',
                 icon: 'times',
                 disabled: !raProfile?.enabled,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Disable',
                 onClick: () => {
                     onDisableClick();
@@ -379,13 +411,14 @@ export default function RaProfileDetail() {
                 id: 'check-compliance',
                 icon: 'gavel',
                 disabled: !raProfile?.authorityInstanceUuid || false,
+                requires: canOnComplianceProfiles(ResourceAction.CheckCompliance),
                 tooltip: 'Check Compliance',
                 onClick: () => {
                     setComplianceCheck(true);
                 },
             },
         ],
-        [raProfile, onEditClick, onDisableClick, onEnableClick, authorityId],
+        [raProfile, onEditClick, onDisableClick, onEnableClick, authorityId, can, canOnComplianceProfiles],
     );
 
     const complianceProfileButtons: WidgetButtonProps[] = useMemo(
@@ -393,6 +426,7 @@ export default function RaProfileDetail() {
             {
                 icon: 'plus',
                 disabled: false,
+                requires: canOnComplianceProfiles(ResourceAction.Update, { onObjects: true }),
                 tooltip: 'Associate Compliance Profile',
                 onClick: () => {
                     setAssociateComplianceProfile(true);
@@ -400,7 +434,7 @@ export default function RaProfileDetail() {
                 id: 'associate-compliance-profile',
             },
         ],
-        [],
+        [canOnComplianceProfiles],
     );
 
     const approvalProfilesButtons: WidgetButtonProps[] = useMemo(
@@ -409,6 +443,7 @@ export default function RaProfileDetail() {
                 id: 'add',
                 icon: 'plus',
                 disabled: false,
+                requires: canOnApprovalProfiles(ResourceAction.Update, { onObjects: true }),
                 tooltip: 'Associate Approval Profile',
                 onClick: () => {
                     setAssociateApprovalProfileDialog(true);
@@ -416,7 +451,7 @@ export default function RaProfileDetail() {
                 },
             },
         ],
-        [getFreshAllApprovalProfiles],
+        [getFreshAllApprovalProfiles, canOnApprovalProfiles],
     );
 
     const certificateValidationButtons: WidgetButtonProps[] = useMemo(
@@ -425,13 +460,14 @@ export default function RaProfileDetail() {
                 id: 'edit',
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit Validation Settings',
                 onClick: () => {
                     setCertificateValidationDialog(true);
                 },
             },
         ],
-        [],
+        [can],
     );
 
     const requestValidationButtons: WidgetButtonProps[] = useMemo(
@@ -440,13 +476,14 @@ export default function RaProfileDetail() {
                 id: 'edit',
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit Request Validation Settings',
                 onClick: () => {
                     setRequestValidationDialog(true);
                 },
             },
         ],
-        [],
+        [can],
     );
 
     const approvalProfilesHeaders: TableHeader[] = useMemo(
@@ -492,6 +529,7 @@ export default function RaProfileDetail() {
                                       id: 'remove',
                                       icon: 'minus-square',
                                       disabled: false,
+                                      requires: canOnApprovalProfiles(ResourceAction.Update, { onObjects: true }),
                                       tooltip: 'Remove',
                                       onClick: () => {
                                           setConfirmDeassociateApprovalProfileDialog({
@@ -506,7 +544,7 @@ export default function RaProfileDetail() {
                       ],
                   }))
                 : [],
-        [associatedApprovalProfiles],
+        [associatedApprovalProfiles, canOnApprovalProfiles],
     );
 
     const complianceProfileHeaders: TableHeader[] = useMemo(
@@ -546,6 +584,7 @@ export default function RaProfileDetail() {
                                       id: 'ra' + profile.uuid,
                                       icon: 'minus-square',
                                       disabled: false,
+                                      requires: canOnComplianceProfiles(ResourceAction.Update, { onObjects: true }),
                                       tooltip: 'Remove',
                                       onClick: () => {
                                           onDissociateComplianceProfile(profile.uuid);
@@ -556,7 +595,7 @@ export default function RaProfileDetail() {
                       ],
                   }))
                 : [],
-        [associatedComplianceProfiles, onDissociateComplianceProfile],
+        [associatedComplianceProfiles, onDissociateComplianceProfile, canOnComplianceProfiles],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -676,6 +715,36 @@ export default function RaProfileDetail() {
         [scepDetails],
     );
 
+    const estProfileData: TableDataRow[] = useMemo(
+        () =>
+            estDetails
+                ? [
+                      {
+                          id: 'uuid',
+                          columns: ['UUID', estDetails.uuid || ''],
+                      },
+                      {
+                          id: 'name',
+                          columns: ['Name', estDetails.name || ''],
+                      },
+                      {
+                          id: 'label',
+                          columns: ['Label', estDetails.label || ''],
+                      },
+                      {
+                          id: 'URL',
+                          columns: [
+                              'EST URL',
+                              <CopyUrlCell key="estUrl" label="EST URL">
+                                  {estDetails.estUrl}
+                              </CopyUrlCell>,
+                          ],
+                      },
+                  ]
+                : [],
+        [estDetails],
+    );
+
     const availableProtocolsHeaders: TableHeader[] = useMemo(
         () => [
             {
@@ -712,6 +781,7 @@ export default function RaProfileDetail() {
                     <ProgressButton
                         key="action"
                         type="button"
+                        requires={can(ResourceAction.Update)}
                         title={acmeDetails?.acmeAvailable ? 'Deactivate' : 'Activate'}
                         inProgressTitle={acmeDetails?.acmeAvailable ? 'Deactivating...' : 'Activating...'}
                         inProgress={isActivatingAcme || isDeactivatingAcme}
@@ -740,6 +810,7 @@ export default function RaProfileDetail() {
                     <ProgressButton
                         key="action"
                         type="button"
+                        requires={can(ResourceAction.Update)}
                         title={scepDetails?.scepAvailable ? 'Deactivate' : 'Activate'}
                         inProgressTitle={scepDetails?.scepAvailable ? 'Deactivating...' : 'Activating...'}
                         inProgress={isActivatingScep || isDeactivatingScep}
@@ -767,6 +838,7 @@ export default function RaProfileDetail() {
                     <ProgressButton
                         key="action"
                         type="button"
+                        requires={can(ResourceAction.Update)}
                         title={cmpDetails?.cmpAvailable ? 'Deactivate' : 'Activate'}
                         inProgressTitle={cmpDetails?.cmpAvailable ? 'Deactivating...' : 'Activating...'}
                         inProgress={isActivatingCmp || isDeactivatingCmp}
@@ -787,24 +859,58 @@ export default function RaProfileDetail() {
                     ),
                 ],
             },
+            {
+                id: 'est',
+                columns: [
+                    'EST',
+                    <StatusBadge key="status" enabled={estDetails ? estDetails.estAvailable : false} />,
+                    <ProgressButton
+                        key="action"
+                        type="button"
+                        requires={can(ResourceAction.Update)}
+                        title={estDetails?.estAvailable ? 'Deactivate' : 'Activate'}
+                        inProgressTitle={estDetails?.estAvailable ? 'Deactivating...' : 'Activating...'}
+                        inProgress={isActivatingEst || isDeactivatingEst}
+                        onClick={() => (estDetails?.estAvailable ? setConfirmDeactivateEst(true) : openEstActivationDialog())}
+                    />,
+                ],
+                detailColumns: [
+                    <></>,
+                    <></>,
+                    <></>,
+                    renderProtocolDetail(
+                        estDetails?.estAvailable,
+                        'EST is not active',
+                        protocolProfileHeaders,
+                        estProfileData,
+                        estDetails?.issueCertificateAttributes,
+                    ),
+                ],
+            },
         ],
         [
             acmeDetails,
             scepDetails,
             cmpDetails,
+            estDetails,
             isActivatingAcme,
             isDeactivatingAcme,
             isActivatingCmp,
             isDeactivatingCmp,
             isActivatingScep,
             isDeactivatingScep,
+            isActivatingEst,
+            isDeactivatingEst,
             protocolProfileHeaders,
             acmeProfileData,
             scepProfileData,
             cmpProfileData,
+            estProfileData,
             openAcmeActivationDialog,
             openScepActivationDialog,
             openCmpActivationDialog,
+            openEstActivationDialog,
+            can,
         ],
     );
 
@@ -1032,6 +1138,7 @@ export default function RaProfileDetail() {
                                                         resource={Resource.RaProfiles}
                                                         resourceUuid={raProfile.uuid}
                                                         attributes={raProfile.customAttributes}
+                                                        requires={can(ResourceAction.Update)}
                                                         className="w-full md:w-1/2"
                                                     />
                                                 )}
@@ -1049,7 +1156,13 @@ export default function RaProfileDetail() {
                                                         authorityUuid={requestAttributesAuthorityUuid}
                                                         raProfileUuid={raProfile.uuid}
                                                         certificateRequestAttributes={raProfile.certificateRequestAttributes}
+                                                        disabled={!can(ResourceAction.Update).available}
                                                     />
+                                                    {can(ResourceAction.Update).reason && (
+                                                        <p className="mt-4 text-sm text-content-muted">
+                                                            {can(ResourceAction.Update).reason}
+                                                        </p>
+                                                    )}
                                                 </Widget>
                                             )}
                                         </Container>
@@ -1169,6 +1282,17 @@ export default function RaProfileDetail() {
             />
 
             <Dialog
+                isOpen={confirmDeactivateEst}
+                caption="Deactivate EST"
+                body="You are about to deactivate EST protocol for the RA profile. Is this what you want to do?"
+                toggle={() => setConfirmDeactivateEst(false)}
+                buttons={[
+                    { color: 'secondary', variant: 'outline', onClick: () => setConfirmDeactivateEst(false), body: 'Cancel' },
+                    { color: 'danger', onClick: onDeactivateEstConfirmed, body: 'Yes, deactivate' },
+                ]}
+            />
+
+            <Dialog
                 isOpen={activateAcmeDialog}
                 caption="Activate ACME protocol"
                 body={ProtocolActivationDialogBody({
@@ -1209,6 +1333,21 @@ export default function RaProfileDetail() {
                     authorityInstanceUuid: raProfile?.authorityInstanceUuid,
                 })}
                 toggle={() => setActivateScepDialog(false)}
+                buttons={[]}
+                size="xl"
+            />
+
+            <Dialog
+                isOpen={activateEstDialog}
+                caption="Activate EST protocol"
+                body={ProtocolActivationDialogBody({
+                    protocol: Protocol.EST,
+                    visible: activateEstDialog,
+                    onClose: () => setActivateEstDialog(false),
+                    raProfileUuid: raProfile?.uuid,
+                    authorityInstanceUuid: raProfile?.authorityInstanceUuid,
+                })}
+                toggle={() => setActivateEstDialog(false)}
                 buttons={[]}
                 size="xl"
             />

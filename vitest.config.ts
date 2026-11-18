@@ -49,6 +49,7 @@ export default defineConfig({
                 // Build hooks with their own unit tests; report them so Sonar sees the coverage.
                 'scripts/set-openapi-contact.mjs',
                 'scripts/patch-openapi-runtime.mjs',
+                'scripts/check-openapi-version-churn.mjs',
             ],
             exclude: [
                 'node_modules',

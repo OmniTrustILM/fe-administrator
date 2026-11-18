@@ -55,4 +55,25 @@ test.describe('Certificates toolbar', () => {
         await expect(page.getByTestId('page-header-actions')).toHaveCount(0);
         await expect(page.getByRole('button', { name: 'More actions' })).toHaveCount(0);
     });
+
+    test('disables the actions the user lacks the permission for, naming it', async ({ mount, page }) => {
+        await mount(<CertificateListWithStore allowedActions={[]} />);
+
+        const header = page.getByTestId('page-header-actions');
+        await expect(header.getByRole('button', { name: 'Create' })).toBeDisabled();
+
+        await page.getByTestId('select-certificate').click();
+        await header.getByRole('button', { name: 'More actions' }).click();
+        for (const [label, action] of [
+            ['Import certificates and keys', 'create'],
+            ['Override groups', 'update'],
+            ['Archive', 'archive'],
+            ['Delete', 'delete'],
+        ]) {
+            const entry = page.getByRole('menuitem', { name: label, exact: true });
+            await expect(entry).toHaveAttribute('aria-disabled', 'true');
+            await expect(entry).toHaveAccessibleDescription(new RegExp(`^You need the ${action} permission on `));
+        }
+        await expect(page.getByRole('menuitem', { name: 'Download PEM (.pem)', exact: true })).not.toHaveAttribute('aria-disabled', 'true');
+    });
 });

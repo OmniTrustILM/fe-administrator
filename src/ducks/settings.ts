@@ -7,11 +7,15 @@ import type {
     EventsSettingsDto,
     EventSettingsDto,
 } from '../types/settings';
+import type { PlatformSettingsFieldErrors } from '../utils/platform-settings';
 
 export type State = {
     platformSettings?: SettingsPlatformModel;
     isFetchingPlatform: boolean;
     isUpdatingPlatform: boolean;
+    updatePlatformSettingsSucceeded: boolean;
+    platformSettingsFieldErrors?: PlatformSettingsFieldErrors;
+    platformSettingsUpdateError?: string;
 
     eventsSettings?: EventsSettingsDto;
     isFetchingEventsSetting: boolean;
@@ -26,6 +30,7 @@ export type State = {
 export const initialState: State = {
     isFetchingPlatform: false,
     isUpdatingPlatform: false,
+    updatePlatformSettingsSucceeded: false,
     isFetchingEventsSetting: false,
     isUpdatingEventsSetting: false,
     updateEventSettingsSucceeded: false,
@@ -52,15 +57,37 @@ export const slice = createSlice({
 
         updatePlatformSettings: (state, action: PayloadAction<SettingsPlatformUpdateModel>) => {
             state.isUpdatingPlatform = true;
+            state.updatePlatformSettingsSucceeded = false;
+            state.platformSettingsFieldErrors = undefined;
+            state.platformSettingsUpdateError = undefined;
         },
 
         updatePlatformSettingsSuccess: (state, action: PayloadAction<SettingsPlatformUpdateModel>) => {
             state.isUpdatingPlatform = false;
-            state.platformSettings = { ...state.platformSettings, ...action.payload };
+            state.updatePlatformSettingsSucceeded = true;
+            const { certificates, ...otherSections } = action.payload;
+            state.platformSettings = {
+                ...state.platformSettings,
+                ...otherSections,
+                ...(certificates && {
+                    certificates: {
+                        ...certificates,
+                        // Core stores an upload group sent without the flag as off, and leaves the stored group alone when none is sent.
+                        upload: certificates.upload
+                            ? { automaticOwnership: certificates.upload.automaticOwnership ?? false }
+                            : state.platformSettings?.certificates?.upload,
+                    },
+                }),
+            };
         },
 
-        updatePlatformSettingsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+        updatePlatformSettingsFailure: (
+            state,
+            action: PayloadAction<{ error: string | undefined; fieldErrors?: PlatformSettingsFieldErrors }>,
+        ) => {
             state.isUpdatingPlatform = false;
+            state.platformSettingsFieldErrors = action.payload.fieldErrors;
+            state.platformSettingsUpdateError = action.payload.error;
         },
 
         getEventsSettings: (state, action: PayloadAction<void>) => {
@@ -133,6 +160,9 @@ const state = (reduxStore: AppState): State => reduxStore?.[slice.name];
 const platformSettings = createSelector(state, (state: State) => state.platformSettings);
 const isFetchingPlatform = createSelector(state, (state: State) => state.isFetchingPlatform);
 const isUpdatingPlatform = createSelector(state, (state: State) => state.isUpdatingPlatform);
+const updatePlatformSettingsSucceeded = createSelector(state, (state: State) => state.updatePlatformSettingsSucceeded);
+const platformSettingsFieldErrors = createSelector(state, (state: State) => state.platformSettingsFieldErrors);
+const platformSettingsUpdateError = createSelector(state, (state: State) => state.platformSettingsUpdateError);
 
 const eventsSettings = createSelector(state, (state: State) => state.eventsSettings);
 const isFetchingEventsSetting = createSelector(state, (state: State) => state.isFetchingEventsSetting);
@@ -148,6 +178,9 @@ export const selectors = {
     platformSettings,
     isFetchingPlatform,
     isUpdatingPlatform,
+    updatePlatformSettingsSucceeded,
+    platformSettingsFieldErrors,
+    platformSettingsUpdateError,
 
     eventsSettings,
     isFetchingEventsSetting,

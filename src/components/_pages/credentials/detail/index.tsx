@@ -13,7 +13,8 @@ import { useParams } from 'react-router';
 import ConnectorLink from 'components/ConnectorLink';
 import CredentialForm from '../form';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { PlatformEnum, Resource } from '../../../../types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from '../../../../types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
@@ -25,6 +26,7 @@ function CredentialDetail() {
     const dispatch = useDispatch();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Credentials, id);
 
     const credential = useSelector(selectors.credential);
 
@@ -83,6 +85,7 @@ function CredentialDetail() {
             {
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: () => {
                     onEditClick();
@@ -91,13 +94,14 @@ function CredentialDetail() {
             {
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => {
                     setConfirmDelete(true);
                 },
             },
         ],
-        [onEditClick, setConfirmDelete],
+        [onEditClick, setConfirmDelete, can],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -168,6 +172,7 @@ function CredentialDetail() {
                             resource={Resource.Credentials}
                             resourceUuid={credential.uuid}
                             attributes={credential.customAttributes}
+                            requires={can(ResourceAction.Update)}
                         />
                     )}
                 </Container>

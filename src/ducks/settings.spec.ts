@@ -33,6 +33,68 @@ describe('settings slice', () => {
         expect(next.isUpdatingPlatform).toBe(false);
     });
 
+    test('updatePlatformSettings clears the outcome of the previous update', () => {
+        const settled = {
+            ...initialState,
+            updatePlatformSettingsSucceeded: true,
+            platformSettingsFieldErrors: { 'signing.maxItemsPerRequest': 'old' },
+            platformSettingsUpdateError: 'old',
+        };
+
+        const next = reducer(settled, actions.updatePlatformSettings({ signing: {} }));
+
+        expect(next.updatePlatformSettingsSucceeded).toBe(false);
+        expect(next.platformSettingsFieldErrors).toBeUndefined();
+        expect(next.platformSettingsUpdateError).toBeUndefined();
+    });
+
+    test('updatePlatformSettingsSuccess marks the update as succeeded', () => {
+        const next = reducer({ ...initialState, isUpdatingPlatform: true }, actions.updatePlatformSettingsSuccess({ signing: {} }));
+
+        expect(next.updatePlatformSettingsSucceeded).toBe(true);
+    });
+
+    test('updatePlatformSettingsFailure keeps the error and the refused fields, and leaves the update unsucceeded', () => {
+        const error = 'Failed to update platform settings (422): signing.maxItemsPerRequest must not exceed 1000';
+        const fieldErrors = { 'signing.maxItemsPerRequest': 'must not exceed 1000' };
+
+        const next = reducer({ ...initialState, isUpdatingPlatform: true }, actions.updatePlatformSettingsFailure({ error, fieldErrors }));
+
+        expect(next.updatePlatformSettingsSucceeded).toBe(false);
+        expect(next.platformSettingsUpdateError).toBe(error);
+        expect(next.platformSettingsFieldErrors).toStrictEqual(fieldErrors);
+    });
+
+    test('updatePlatformSettingsSuccess keeps the upload group the update sent', () => {
+        const next = reducer(
+            { ...initialState, platformSettings: { utils: {} } as any },
+            actions.updatePlatformSettingsSuccess({ certificates: { upload: { automaticOwnership: true } } }),
+        );
+
+        expect(next.platformSettings?.certificates?.upload).toEqual({ automaticOwnership: true });
+        expect(next.platformSettings?.utils).toEqual({});
+    });
+
+    test('updatePlatformSettingsSuccess stores an upload group sent without the flag as off', () => {
+        const next = reducer(initialState, actions.updatePlatformSettingsSuccess({ certificates: { upload: {} } }));
+
+        expect(next.platformSettings?.certificates?.upload).toEqual({ automaticOwnership: false });
+    });
+
+    test('updatePlatformSettingsSuccess keeps the stored upload group when the update sent none', () => {
+        const stored = { ...initialState, platformSettings: { certificates: { upload: { automaticOwnership: true } } } };
+
+        const next = reducer(stored, actions.updatePlatformSettingsSuccess({ certificates: { validation: { enabled: true } } }));
+
+        expect(next.platformSettings?.certificates?.upload).toEqual({ automaticOwnership: true });
+    });
+
+    test('updatePlatformSettingsSuccess leaves no upload group when none is stored and the update sent none', () => {
+        const next = reducer(initialState, actions.updatePlatformSettingsSuccess({ certificates: { validation: { enabled: true } } }));
+
+        expect(next.platformSettings?.certificates?.upload).toBeUndefined();
+    });
+
     test('getEventsSettings / success / failure', () => {
         let next = reducer({ ...initialState, updateEventSettingsSucceeded: true }, actions.getEventsSettings());
         expect(next.isFetchingEventsSetting).toBe(true);

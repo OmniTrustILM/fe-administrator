@@ -12,6 +12,10 @@ setupReactActEnvironment();
 let routeParams: Record<string, string> = {};
 
 vi.mock('react-redux', async () => await import('../../test-utils/reactReduxMockModule'));
+vi.mock('utils/useActionAvailability', async () => {
+    const { actionAvailabilityMockModule } = await import('../../test-utils/mockModules');
+    return actionAvailabilityMockModule();
+});
 vi.mock('react-router', () => ({ useParams: () => routeParams }));
 vi.mock('components/CustomTable', async () => {
     const { customTableMockModule } = await import('../../test-utils/mockModules');

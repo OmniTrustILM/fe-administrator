@@ -1,0 +1,5 @@
+templateDir: ./openapi-generator/templates
+files:
+  API_VERSION.mustache:
+    templateType: SupportingFiles
+    destinationFilename: API_VERSION

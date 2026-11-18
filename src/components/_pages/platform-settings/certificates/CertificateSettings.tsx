@@ -73,6 +73,31 @@ const CertificateSettings = ({ platformSettings }: Props) => {
         return rows;
     }, [platformSettings]);
 
+    const uploadData: TableDataRow[] = useMemo(() => {
+        const upload = platformSettings?.certificates?.upload;
+        const rows: TableDataRow[] = [];
+
+        if (upload) {
+            rows.push({
+                id: 'automaticOwnership',
+                columns: [
+                    'Automatic Ownership',
+                    <Switch
+                        key="automaticOwnership"
+                        id="uploadAutomaticOwnership"
+                        label="Automatic Ownership"
+                        labelClassName="sr-only"
+                        disabled
+                        checked={upload.automaticOwnership}
+                        onChange={() => {}}
+                    />,
+                ],
+            });
+        }
+
+        return rows;
+    }, [platformSettings]);
+
     return (
         <div style={{ paddingTop: '1.5em', paddingBottom: '1.5em' }} className="space-y-6">
             <div className="space-y-2">
@@ -82,6 +107,10 @@ const CertificateSettings = ({ platformSettings }: Props) => {
             <div className="space-y-2">
                 <h3 className="text-lg font-bold text-content">Registration</h3>
                 <CustomTable headers={headers} data={registrationData} />
+            </div>
+            <div className="space-y-2">
+                <h3 className="text-lg font-bold text-content">Upload</h3>
+                <CustomTable headers={headers} data={uploadData} />
             </div>
         </div>
     );

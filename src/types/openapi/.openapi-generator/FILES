@@ -1,4 +1,5 @@
 .gitignore
+API_VERSION
 apis/ACMEAccountManagementApi.ts
 apis/ACMEProfileManagementApi.ts
 apis/ApprovalInventoryApi.ts
@@ -27,6 +28,7 @@ apis/CryptographicOperationsControllerApi.ts
 apis/CustomAttributesApi.ts
 apis/CustomOIDManagementApi.ts
 apis/DiscoveryManagementApi.ts
+apis/ESTProfileManagementApi.ts
 apis/EntityManagementApi.ts
 apis/EnumsApi.ts
 apis/ExternalNotificationManagementApi.ts
@@ -48,6 +50,7 @@ apis/SCEPProfileManagementApi.ts
 apis/ScheduledJobsManagementApi.ts
 apis/SecretManagementApi.ts
 apis/SettingsApi.ts
+apis/SignatureParametersApi.ts
 apis/SigningProfileManagementApi.ts
 apis/SigningRecordManagementApi.ts
 apis/StatisticsDashboardApi.ts
@@ -84,6 +87,7 @@ models/ActionRequestDto.ts
 models/ActivateAcmeForRaProfileRequestDto.ts
 models/ActivateCmpForRaProfileRequestDto.ts
 models/ActivateScepForRaProfileRequestDto.ts
+models/ActivateEstForRaProfileRequestDto.ts
 models/ActorRecord.ts
 models/ActorType.ts
 models/ActuatorHealthDto.ts
@@ -204,6 +208,8 @@ models/CertificateState.ts
 models/CertificateSubjectType.ts
 models/CertificateType.ts
 models/CertificateUpdateObjectsDto.ts
+models/CertificateUploadSettingsDto.ts
+models/CertificateUploadSettingsUpdateDto.ts
 models/CertificateValidationCheck.ts
 models/CertificateValidationCheckDto.ts
 models/CertificateValidationResultDto.ts
@@ -348,6 +354,7 @@ models/DiscoveredItemPayload.ts
 models/DiscoveredKeyDto.ts
 models/DiscoveryCertificateDto.ts
 models/DiscoveryCertificateResponseDto.ts
+models/DiscoveryDeliveryMode.ts
 models/DiscoveryDetailDto.ts
 models/DiscoveryDto.ts
 models/DiscoveryItemDto.ts
@@ -376,6 +383,11 @@ models/EventHistoryDto.ts
 models/EventHistoryRequestDto.ts
 models/EventSettingsDto.ts
 models/EventStatus.ts
+models/EstAuthenticationPolicy.ts
+models/EstProfileDetailDto.ts
+models/EstProfileDto.ts
+models/EstProfileEditRequestDto.ts
+models/EstProfileRequestDto.ts
 models/EventsSettingsDto.ts
 models/ExecutionDto.ts
 models/ExecutionItemDto.ts
@@ -490,9 +502,13 @@ models/NotificationProfileRequestDto.ts
 models/NotificationProfileResponseDto.ts
 models/NotificationProfileUpdateRequestDto.ts
 models/NotificationResponseDto.ts
+models/OAuth2ApplicationSettingsDto.ts
 models/OAuth2ProviderSettingsDto.ts
 models/OAuth2ProviderSettingsResponseDto.ts
 models/OAuth2ProviderSettingsUpdateDto.ts
+models/ObjectAllowedActionsDto.ts
+models/ObjectAllowedActionsRequestDto.ts
+models/ObjectAllowedActionsResponseDto.ts
 models/ObjectAttributeContentV2.ts
 models/ObjectAttributeContentV3.ts
 models/ObjectEventHistoryDto.ts
@@ -507,6 +523,19 @@ models/OneTimeKeyManagedSigningRequestDto.ts
 models/Operation.ts
 models/OperationResult.ts
 models/OperationSupport.ts
+models/PadesAnchorHorizontalAlignment.ts
+models/PadesAnchorVerticalAlignment.ts
+models/PadesCommitmentType.ts
+models/PadesImageScaling.ts
+models/PadesSignatureParameters.ts
+models/PadesSignatureScope.ts
+models/PadesTextHorizontalAlignment.ts
+models/PadesTextPosition.ts
+models/PadesTextVerticalAlignment.ts
+models/PadesTextWrapping.ts
+models/PadesVisibleSignature.ts
+models/PadesVisibleSignaturePlacement.ts
+models/PadesVisibleSignatureStyle.ts
 models/PaginationRequestDto.ts
 models/PaginationResponseDtoCbomContributedAssetDto.ts
 models/PaginationResponseDtoCbomDto.ts
@@ -579,6 +608,7 @@ models/ResourceAction.ts
 models/ResourceActionsDto.ts
 models/ResourceCertificateContentData.ts
 models/ResourceDto.ts
+models/RaProfileEstDetailResponseDto.ts
 models/ResourceEvent.ts
 models/ResourceEventDto.ts
 models/ResourceLoggingSettingsDto.ts
@@ -638,7 +668,11 @@ models/SecretVersionDto.ts
 models/SignDataRequestDto.ts
 models/SignDataResponseDto.ts
 models/SignatureFamily.ts
+models/SignatureFamilyParameterGroups.ts
 models/SignatureLevel.ts
+models/SignatureParameterGroup.ts
+models/SignatureParameterGroupFields.ts
+models/SignatureParameters.ts
 models/SignatureRequestData.ts
 models/SignatureResponseData.ts
 models/SigningProfileDto.ts
@@ -655,6 +689,7 @@ models/SigningRecordStatisticsPeriod.ts
 models/SigningScheme.ts
 models/SigningSchemeInterface.ts
 models/SigningSchemeRequestInterface.ts
+models/SigningSettingsDto.ts
 models/SigningWorkflowType.ts
 models/SimplifiedComplianceProfileDto.ts
 models/SimplifiedRaProfileDto.ts

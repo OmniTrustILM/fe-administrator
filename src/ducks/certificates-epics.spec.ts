@@ -44,7 +44,7 @@ vi.mock('./transform/certificates', () => ({
 }));
 
 import { AjaxError } from 'rxjs/ajax';
-import { InspectedEntryKind } from 'types/openapi';
+import { InspectedEntryKind, Resource } from 'types/openapi';
 import { triggerBlobDownload } from 'utils/download';
 import { extractError } from 'utils/net';
 import { actions as certificatesActions } from './certificates';
@@ -52,6 +52,7 @@ import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { EntityType } from './filters';
 import { actions as pagingActions } from './paging';
+import { actions as resourceActions } from './resource';
 import certificatesEpics from './certificates-epics';
 
 // Resolve epics by function name rather than by position — inserting an epic anywhere in the array
@@ -1206,6 +1207,7 @@ describe('certificates epics', () => {
                 certificatesActions.updateRaProfileSuccess.type,
                 certificatesActions.getCertificateHistory.type,
                 certificatesActions.getCertificateDetail.type,
+                resourceActions.listObjectAllowedActions.type,
             ]);
             expect(emitted[2]).toEqual(certificatesActions.getCertificateDetail({ uuid: 'cert-1' }));
         });
@@ -1217,7 +1219,26 @@ describe('certificates epics', () => {
                 certificatesActions.updateRaProfileFailure.type,
                 appRedirectActions.fetchError.type,
                 certificatesActions.getCertificateDetail.type,
+                resourceActions.listObjectAllowedActions.type,
             ]);
+        });
+    });
+
+    describe('certificate object changes re-request the allowed actions', () => {
+        const owner = { uuid: 'user-1', username: 'owner' } as never;
+        test.each([
+            ['updateGroup', certificatesActions.updateGroup({ uuid: 'cert-1', updateGroupRequest: { groupUuids: ['group-1'] } })],
+            ['deleteGroups', certificatesActions.deleteGroups({ uuid: 'cert-1' })],
+            ['deleteRaProfile', certificatesActions.deleteRaProfile({ uuid: 'cert-1' })],
+            ['updateOwner', certificatesActions.updateOwner({ uuid: 'cert-1', user: owner, updateOwnerRequest: { ownerUuid: 'user-1' } })],
+            ['deleteOwner', certificatesActions.deleteOwner({ uuid: 'cert-1' })],
+        ])('%s', async (epicName, action) => {
+            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+            const deps = { apiClients: { certificates: { updateCertificateObjects: () => of(undefined) } } };
+
+            const emitted = await firstValueFrom(epics[findEpicIndex(epicName)](of(action), of({}) as any, deps as any).pipe(toArray()));
+
+            expect(emitted).toContainEqual(resourceActions.listObjectAllowedActions({ resource: Resource.Certificates, uuid: 'cert-1' }));
         });
     });
 

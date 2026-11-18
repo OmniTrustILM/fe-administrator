@@ -85,6 +85,8 @@ export default function TokenProfileForm({
         () => isFetchingDetail || isCreating || isUpdating || isFetchingTokenProfileAttributes || isFetchingResourceCustomAttributes,
         [isCreating, isFetchingDetail, isUpdating, isFetchingTokenProfileAttributes, isFetchingResourceCustomAttributes],
     );
+    // The custom attribute editor resets its fields when it mounts, so it hides only while its own inputs load.
+    const customAttributesLoading = isFetchingDetail || isFetchingResourceCustomAttributes;
 
     const previousIdRef = useRef<string | undefined>(undefined);
 
@@ -272,7 +274,7 @@ export default function TokenProfileForm({
     );
 
     const renderCustomAttributesEditor = useMemo(() => {
-        if (isBusy) return <></>;
+        if (customAttributesLoading) return <></>;
         return (
             <AttributeEditor
                 id="customTokenProfile"
@@ -280,7 +282,7 @@ export default function TokenProfileForm({
                 attributes={tokenProfile?.customAttributes}
             />
         );
-    }, [isBusy, resourceCustomAttributes, tokenProfile]);
+    }, [customAttributesLoading, resourceCustomAttributes, tokenProfile]);
 
     const keyUsageOptions = useMemo(() => getKeyUsageOptions(Object.values(KeyUsage), keyUsageEnum), [keyUsageEnum]);
 

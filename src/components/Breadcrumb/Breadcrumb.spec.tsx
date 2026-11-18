@@ -52,6 +52,7 @@ test.describe('Breadcrumb', () => {
     });
 
     test('does not underline a text link focused by a mouse click once the pointer leaves', async ({ mount, page, browserName }) => {
+        // A click leaves no focus to clear on WebKit, so the test has nothing to prove there.
         test.skip(browserName === 'webkit', 'WebKit does not focus a link on mouse click');
         const component = await mountBreadcrumb(mount, [
             { label: 'Home', href: '/' },

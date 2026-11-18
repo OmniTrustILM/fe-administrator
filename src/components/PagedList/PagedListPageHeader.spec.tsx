@@ -53,4 +53,32 @@ test.describe('PagedList page header', () => {
 
         await expect(page.getByRole('dialog')).toContainText('Is this what you want to do?');
     });
+
+    test('gates Create and Delete on the permissions the page names, giving the denial as the reason', async ({ mount, page }) => {
+        const denied = (action: string) => ({
+            available: false,
+            hidden: false,
+            loading: false,
+            reason: `You need the ${action} permission on Certificates.`,
+        });
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                withPageHeader
+                createRequires={denied('create')}
+                deleteRequires={denied('delete')}
+            />,
+        );
+        await expect(page.getByText('acme.example')).toBeVisible();
+
+        await expect(page.getByTestId('page-header-actions').getByRole('button', { name: 'Create' })).toBeDisabled();
+
+        await page.locator('tbody input[type="checkbox"]').first().check();
+        await page.getByRole('button', { name: 'More actions' }).click();
+        const deleteEntry = page.getByRole('menuitem', { name: 'Delete', exact: true });
+        await expect(deleteEntry).toHaveAttribute('aria-disabled', 'true');
+        await expect(deleteEntry).toHaveAccessibleDescription('You need the delete permission on Certificates.');
+    });
 });

@@ -14,14 +14,16 @@ import type { TableDataRow, TableHeader } from 'components/CustomTable';
 import PagedList from 'components/PagedList/PagedList';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import type { SearchRequestModel } from 'types/certificate';
-import { PlatformEnum } from 'types/openapi';
+import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { describeCronSchedule } from 'utils/cronSchedule';
 import { dateFormatter } from 'utils/dateUtil';
 import { getExecutionStatusBadgeColor, getScheduleStateBadgeColor } from 'utils/scheduler';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 function SchedulerJobsList() {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.Jobs);
 
     const schedulerJobs = useSelector(selectors.schedulerJobs);
     const isDeleting = useSelector(selectors.isDeleting);
@@ -48,6 +50,7 @@ function SchedulerJobsList() {
                 icon: 'check',
                 disabled: isBusy || checkedRows.length === 0,
                 tooltip: 'Enable',
+                requires: can(ResourceAction.Enable),
                 onClick: () => {
                     onEnableClick();
                 },
@@ -56,12 +59,13 @@ function SchedulerJobsList() {
                 icon: 'times',
                 disabled: isBusy || checkedRows.length === 0,
                 tooltip: 'Disable',
+                requires: can(ResourceAction.Enable),
                 onClick: () => {
                     onDisableClick();
                 },
             },
         ],
-        [isBusy, checkedRows.length, onDisableClick, onEnableClick],
+        [isBusy, checkedRows.length, onDisableClick, onEnableClick, can],
     );
 
     const schedulerJobsRowHeaders: TableHeader[] = useMemo(
@@ -162,6 +166,7 @@ function SchedulerJobsList() {
         <PagedList
             entity={EntityType.SCHEDULER}
             onListCallback={onListCallback}
+            deleteRequires={can(ResourceAction.Delete)}
             onDeleteCallback={(uuids) => dispatch(actions.bulkDeleteSchedulerJobs({ uuids }))}
             headers={schedulerJobsRowHeaders}
             data={schedulerJobList}

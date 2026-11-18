@@ -76,11 +76,24 @@ export interface BuildColumnHeadersOptions {
 }
 
 /**
- * The heading a view shows for a column. An absent or empty override means the column follows the
- * catalogue, so a field relabelled later carries through.
+ * The heading a view shows for a column. An absent override means the column follows the catalogue, so
+ * a field relabelled later carries through; an empty one is a heading the operator cleared, and stays empty.
  */
 export function getColumnHeading(column: ColumnDefinition): string {
-    return column.label ? column.label : column.catalogueLabel;
+    return column.label ?? column.catalogueLabel;
+}
+
+/** Whether the column's heading was cleared, so its header shows nothing. */
+export function isHeadingBlank(column: ColumnDefinition): boolean {
+    return getColumnHeading(column).trim() === '';
+}
+
+/**
+ * The name prose and accessible names use for a column: its heading, or the catalogue label where the
+ * heading was cleared, so neither a sentence nor a screen reader names a column with nothing.
+ */
+export function getColumnName(column: ColumnDefinition): string {
+    return isHeadingBlank(column) ? column.catalogueLabel : getColumnHeading(column);
 }
 
 /**
@@ -92,6 +105,17 @@ export function getColumnHeading(column: ColumnDefinition): string {
  * source the add-column menu does.
  */
 export function renderColumnHeading(column: ColumnDefinition): ReactNode {
+    if (isHeadingBlank(column)) {
+        // Painted as nothing yet still read out, source included, so the header cell and its sort button keep a name.
+        const name = getColumnName(column);
+        if (column.fieldSource === FilterFieldSource.Property) return <span className="sr-only">{name}</span>;
+        return (
+            <span className="sr-only">
+                <SourceBadge source={column.fieldSource} /> {name}
+            </span>
+        );
+    }
+
     const heading = getColumnHeading(column);
     if (column.fieldSource === FilterFieldSource.Property) return heading;
 

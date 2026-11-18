@@ -8,9 +8,10 @@ import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EntityType } from 'ducks/filters';
 import type { ApiClients } from 'src/api';
 import type { SearchRequestModel } from 'types/certificate';
-import { type CbomSyncSkipDto, PlatformEnum } from 'types/openapi';
+import { type CbomSyncSkipDto, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { dateFormatter } from 'utils/dateUtil';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { buildCbomSyncSkipRows, CBOM_SYNC_SKIP_HEADERS } from './cbomSyncSkipTableHelpers';
 
 /**
@@ -19,6 +20,7 @@ import { buildCbomSyncSkipRows, CBOM_SYNC_SKIP_HEADERS } from './cbomSyncSkipTab
  */
 function CbomSyncSkipsList() {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.Cboms);
 
     const skips = useSelector(selectors.selectSkipList);
     const isFetching = useSelector(selectors.selectIsFetchingList);
@@ -29,8 +31,16 @@ function CbomSyncSkipsList() {
     const [retryCandidate, setRetryCandidate] = useState<CbomSyncSkipDto | undefined>(undefined);
 
     const rows = useMemo(
-        () => buildCbomSyncSkipRows(skips, { stateEnum, getEnumLabel, dateFormatter, retryingUuid, onRetry: setRetryCandidate }),
-        [skips, stateEnum, retryingUuid],
+        () =>
+            buildCbomSyncSkipRows(skips, {
+                stateEnum,
+                getEnumLabel,
+                dateFormatter,
+                retryingUuid,
+                retryRequires: can(ResourceAction.Update),
+                onRetry: setRetryCandidate,
+            }),
+        [skips, stateEnum, retryingUuid, can],
     );
 
     const onList = useCallback((filters: SearchRequestModel) => dispatch(actions.listSyncSkips(filters)), [dispatch]);

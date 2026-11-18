@@ -30,7 +30,8 @@ import { actions as customAttributesActions, selectors as customAttributesSelect
 
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { validateRequired } from 'utils/validators';
-import { AttributeType, CertificateState, PlatformEnum, Resource } from '../../../../types/openapi';
+import { AttributeType, CertificateState, PlatformEnum, Resource, ResourceAction } from '../../../../types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import CustomAttributeWidget from '../../../Attributes/CustomAttributeWidget';
 import TabLayout from '../../../Layout/TabLayout';
 import CertificateStatusBadge from '../../../_pages/certificates/CertificateStatus';
@@ -283,6 +284,7 @@ export default function LocationDetail() {
     const dispatch = useDispatch();
 
     const { entityId, id } = useParams();
+    const can = useActionAvailability(Resource.Locations, id);
 
     const location = useSelector(selectors.location);
     const pushAttributeDescriptors = useSelector(selectors.pushAttributeDescriptors);
@@ -441,6 +443,7 @@ export default function LocationDetail() {
             {
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: () => {
                     onEditClick();
@@ -449,6 +452,7 @@ export default function LocationDetail() {
             {
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => {
                     setConfirmDelete(true);
@@ -457,6 +461,7 @@ export default function LocationDetail() {
             {
                 icon: 'check',
                 disabled: location?.enabled || false,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Enable',
                 onClick: () => {
                     onEnableClick();
@@ -465,13 +470,14 @@ export default function LocationDetail() {
             {
                 icon: 'times',
                 disabled: !location?.enabled || false,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Disable',
                 onClick: () => {
                     onDisableClick();
                 },
             },
         ],
-        [location?.enabled, onDisableClick, onEditClick, onEnableClick],
+        [location?.enabled, onDisableClick, onEditClick, onEnableClick, can],
     );
 
     const selectedCertificateDetails = useMemo(() => {
@@ -484,6 +490,7 @@ export default function LocationDetail() {
             {
                 icon: 'trash',
                 disabled: certCheckedRows.length === 0,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Remove',
                 onClick: () => {
                     setConfirmRemoveDialog(true);
@@ -492,6 +499,7 @@ export default function LocationDetail() {
             {
                 icon: 'push',
                 disabled: !location?.supportMultipleEntries && (location ? location.certificates.length > 0 : false),
+                requires: can(ResourceAction.Update),
                 tooltip: 'Push',
                 onClick: () => {
                     setPushDialog(true);
@@ -500,6 +508,7 @@ export default function LocationDetail() {
             {
                 icon: 'cubes',
                 disabled: !location?.supportKeyManagement,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Issue',
                 onClick: () => {
                     setIssueDialog(true);
@@ -508,6 +517,7 @@ export default function LocationDetail() {
             {
                 icon: 'retweet',
                 disabled: certCheckedRows.length === 0 || selectedCertificateDetails?.state === CertificateState.Requested,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Renew',
                 onClick: () => {
                     onRenewClick();
@@ -516,13 +526,14 @@ export default function LocationDetail() {
             {
                 icon: 'repeat',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Sync',
                 onClick: () => {
                     onSyncClick();
                 },
             },
         ],
-        [certCheckedRows.length, location, onRenewClick, onSyncClick, selectedCertificateDetails?.state],
+        [certCheckedRows.length, location, onRenewClick, onSyncClick, selectedCertificateDetails?.state, can],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -752,6 +763,7 @@ export default function LocationDetail() {
                                                 resource={Resource.Locations}
                                                 resourceUuid={location.uuid}
                                                 attributes={location.customAttributes}
+                                                requires={can(ResourceAction.Update)}
                                             />
                                         )}
 

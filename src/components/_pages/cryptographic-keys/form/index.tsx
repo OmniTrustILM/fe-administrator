@@ -39,7 +39,7 @@ import { type KeyRequestType, PlatformEnum, Resource, ResourceAction } from 'typ
 import Container from 'components/Container';
 import Button from 'components/Button';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
-import { hasResourceAction } from 'utils/permissions';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 const EXPORTABLE_HINT_FOR_REQUEST =
     'Required to download the certificate with its private key (PKCS12) after issuance. Cannot be enabled later.';
@@ -87,10 +87,12 @@ export default function CryptographicKeyForm({
     const editMode = useMemo(() => !!id, [id]);
 
     const keyDetail = useSelector(cryptographicKeysSelectors.cryptographicKey);
+    const editedKey = editMode && keyDetail?.uuid === id ? keyDetail : undefined;
 
     const groups = useSelector(groupSelectors.certificateGroups);
     const users = useSelector(userSelectors.users);
     const auth = useSelector(authSelectors.profile);
+    const can = useActionAvailability(Resource.Keys);
     const keyRequestTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.KeyRequestType));
     const supportedKeyRequestTypes = useSelector(cryptographicKeysSelectors.supportedKeyRequestTypes);
     const isFetchingSupportedKeyRequestTypes = useSelector(cryptographicKeysSelectors.isFetchingSupportedKeyRequestTypes);
@@ -389,20 +391,17 @@ export default function CryptographicKeyForm({
     };
 
     const attributeTabs = (tokenProfileUuid: string | undefined) => {
-        if (editMode) {
-            return [
-                {
-                    title: 'Custom Attributes',
-                    content: (
-                        <AttributeEditor
-                            id="customCryptographicKey"
-                            attributeDescriptors={resourceCustomAttributes}
-                            attributes={keyDetail?.customAttributes}
-                        />
-                    ),
-                },
-            ];
-        }
+        const customAttributesTab = {
+            title: 'Custom Attributes',
+            content: (
+                <AttributeEditor
+                    id="customCryptographicKey"
+                    attributeDescriptors={resourceCustomAttributes}
+                    attributes={editedKey?.customAttributes}
+                />
+            ),
+        };
+        if (editMode) return [customAttributesTab];
         return [
             {
                 title: 'Connector Attributes',
@@ -419,16 +418,7 @@ export default function CryptographicKeyForm({
                     <></>
                 ),
             },
-            {
-                title: 'Custom Attributes',
-                content: (
-                    <AttributeEditor
-                        id="customCryptographicKey"
-                        attributeDescriptors={resourceCustomAttributes}
-                        attributes={keyDetail?.customAttributes}
-                    />
-                ),
-            },
+            customAttributesTab,
         ];
     };
 
@@ -699,8 +689,9 @@ export default function CryptographicKeyForm({
     );
 
     const createsAnew = !editMode && !usesGlobalModal;
-    const offersImport = createsAnew && hasResourceAction(auth, Resource.Keys, ResourceAction.ImportKey);
-    const offersOnboarding = createsAnew && hasResourceAction(auth, Resource.Keys, ResourceAction.Create);
+    const offersGenerate = !createsAnew || can(ResourceAction.Create).available;
+    const offersImport = createsAnew && can(ResourceAction.ImportKey).available;
+    const offersOnboarding = createsAnew && can(ResourceAction.Create).available;
     // Leaving an import or an onboarding while it runs would drop its results, so the other tabs wait for it.
     const isTransferring = isImporting || isOnboarding;
 
@@ -711,7 +702,13 @@ export default function CryptographicKeyForm({
                     noBorder
                     onTabKeyChange={setActiveTab}
                     tabs={[
-                        { tabKey: GENERATE_TAB, title: 'Generate new', content: generateNewForm, disabled: isTransferring },
+                        {
+                            tabKey: GENERATE_TAB,
+                            title: 'Generate new',
+                            hidden: !offersGenerate,
+                            content: generateNewForm,
+                            disabled: isTransferring,
+                        },
                         {
                             title: 'Import material',
                             hidden: !offersImport,

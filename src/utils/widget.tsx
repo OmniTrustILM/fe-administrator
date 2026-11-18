@@ -4,16 +4,19 @@ import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { useMemo } from 'react';
 import type { AttributeResponseModel, CustomAttributeModel } from 'types/attributes';
 import type { CertificateGroupResponseModel } from 'types/certificateGroups';
-import type { Resource, UserDto } from 'types/openapi';
+import { type Resource, ResourceAction, type UserDto } from 'types/openapi';
+import type { ActionAvailability } from 'utils/useActionAvailability';
 
 export function getEditAndDeleteWidgetButtons(
     onEditClick: (event: React.MouseEvent) => void,
     setConfirmDelete: (value: boolean) => void,
+    can?: ActionAvailability,
 ): WidgetButtonProps[] {
     return [
         {
             icon: 'pencil',
             disabled: false,
+            requires: can?.(ResourceAction.Update),
             tooltip: 'Edit',
             onClick: (event) => {
                 onEditClick(event);
@@ -22,6 +25,7 @@ export function getEditAndDeleteWidgetButtons(
         {
             icon: 'trash',
             disabled: false,
+            requires: can?.(ResourceAction.Delete),
             tooltip: 'Delete',
             onClick: () => {
                 setConfirmDelete(true);
@@ -76,14 +80,15 @@ export function buildUserOption(user: { uuid: string; firstName?: string; lastNa
 }
 
 function useAttributeEditor({
-    isBusy,
+    isLoading,
     id,
     resourceKey,
     attributes,
     multipleResourceCustomAttributes,
     withRemoveAction = false,
 }: {
-    isBusy: boolean;
+    /** Hides the editor while its object loads. Keep save flags out: the editor resets its fields when it mounts. */
+    isLoading: boolean;
     id: string;
     resourceKey: Resource;
     attributes: AttributeResponseModel[] | undefined;
@@ -91,7 +96,7 @@ function useAttributeEditor({
     withRemoveAction?: boolean;
 }) {
     return useMemo(() => {
-        if (isBusy) return <></>;
+        if (isLoading) return <></>;
         return (
             <AttributeEditor
                 id={id}
@@ -100,7 +105,7 @@ function useAttributeEditor({
                 withRemoveAction={withRemoveAction}
             />
         );
-    }, [isBusy, id, resourceKey, attributes, multipleResourceCustomAttributes, withRemoveAction]);
+    }, [isLoading, id, resourceKey, attributes, multipleResourceCustomAttributes, withRemoveAction]);
 }
 
 export default useAttributeEditor;

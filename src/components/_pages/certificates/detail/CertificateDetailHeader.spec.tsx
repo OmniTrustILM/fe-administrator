@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { CertificateRegistrationState } from 'types/openapi';
+import { CertificateRegistrationState, ResourceAction } from 'types/openapi';
 import { expect, test } from '../../../../../playwright/ct-test';
 import { CertificateDetailHeaderTestWrapper } from './CertificateDetailHeaderTestWrapper';
 
@@ -152,5 +152,56 @@ test.describe('CertificateDetailHeader — renew and rekey dialogs', () => {
         await expect(page.getByTestId('rekeyDialogError')).toBeVisible();
 
         await dismissExpectingRefetches(page, 'progress-button', 1);
+    });
+});
+
+test.describe('CertificateDetailHeader — operations by permission', () => {
+    const readOnly = [ResourceAction.List, ResourceAction.Detail];
+    const owned = [
+        ResourceAction.Detail,
+        ResourceAction.Update,
+        ResourceAction.Delete,
+        ResourceAction.Renew,
+        ResourceAction.Revoke,
+        ResourceAction.Archive,
+    ];
+    const gated = ['Renew', 'Rekey', 'Archive', 'Revoke', 'Delete'];
+
+    const menuItem = (page: Page, label: string) => page.getByRole('menuitem', { name: label, exact: true });
+
+    test('disables operations a read-only user lacks and names the missing permission', async ({ mount, page }) => {
+        await mount(<CertificateDetailHeaderTestWrapper allowedActions={readOnly} />);
+        await page.getByRole('button', { name: 'More actions' }).click();
+
+        for (const label of gated) {
+            await expect(menuItem(page, label)).toHaveAttribute('aria-disabled', 'true');
+        }
+        await expect(menuItem(page, 'Revoke')).toHaveAccessibleDescription('You need the revoke permission on Certificates.');
+        await expect(menuItem(page, 'Delete')).toHaveAccessibleDescription('You need the delete permission on Certificates.');
+    });
+
+    test('names the missing permission over the certificate state when both block an operation', async ({ mount, page }) => {
+        await mount(<CertificateDetailHeaderTestWrapper allowedActions={readOnly} />);
+        await page.getByRole('button', { name: 'More actions' }).click();
+
+        await expect(menuItem(page, 'Issue')).toHaveAccessibleDescription('You need the issue permission on Certificates.');
+    });
+
+    test('offers the operations the certificate answer allows, as for a certificate the user owns', async ({ mount, page }) => {
+        await mount(<CertificateDetailHeaderTestWrapper allowedActions={owned} />);
+        await page.getByRole('button', { name: 'More actions' }).click();
+
+        for (const label of gated) {
+            await expect(menuItem(page, label)).not.toHaveAttribute('aria-disabled', 'true');
+        }
+    });
+
+    test('offers every operation to a fully privileged user as before', async ({ mount, page }) => {
+        await mount(<CertificateDetailHeaderTestWrapper />);
+        await page.getByRole('button', { name: 'More actions' }).click();
+
+        for (const label of gated) {
+            await expect(menuItem(page, label)).not.toHaveAttribute('aria-disabled', 'true');
+        }
     });
 });

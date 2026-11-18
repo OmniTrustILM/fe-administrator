@@ -12,14 +12,51 @@ import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { renderOAuth2StateBadges } from 'utils/oauth2Providers';
+import {
+    AuthenticationScheme,
+    DEFAULT_DELEGATE_CLAIM,
+    DEFAULT_SESSION_MAX_INACTIVE_SECONDS,
+    DEFAULT_SKEW_SECONDS,
+    DEFAULT_USERNAME_CLAIM,
+    formatSeconds,
+    renderOAuth2StateBadges,
+    schemesOfProvider,
+} from 'utils/oauth2Providers';
+import Badge from 'components/Badge';
+import CopyUrlCell from 'components/CopyUrlCell';
+import { Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import Container from 'components/Container';
 import Breadcrumb from 'components/Breadcrumb';
 import DetailPageSkeleton from 'components/DetailPageSkeleton';
 import JwkSetLoadFailureWarning from 'components/_pages/auth-settings/JwkSetLoadFailureWarning';
 
+function ValuePills({ values }: Readonly<{ values?: string[] }>) {
+    if (!values?.length) return <>None</>;
+    return (
+        <div className="flex flex-wrap gap-1">
+            {values.map((value) => (
+                <Badge key={value}>{value}</Badge>
+            ))}
+        </div>
+    );
+}
+
+function WithDefault({ value, fallback }: Readonly<{ value?: string; fallback: string }>) {
+    if (value && value !== fallback) return <>{value}</>;
+    return (
+        <>
+            {fallback}
+            <span className="ml-1 text-content-subtle text-xs">default</span>
+        </>
+    );
+}
+
+const durationOf = (seconds?: number) => (seconds === undefined ? undefined : formatSeconds(seconds));
+
 export default function OAuth2ProviderDetail() {
     const { providerName } = useParams();
+    const can = useActionAvailability(Resource.Settings);
 
     const dispatch = useDispatch();
 
@@ -78,19 +115,21 @@ export default function OAuth2ProviderDetail() {
             {
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: handleOpenEditDialog,
             },
             {
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Delete',
                 onClick: () => {
                     onDeleteClick();
                 },
             },
         ],
-        [handleOpenEditDialog, onDeleteClick],
+        [handleOpenEditDialog, onDeleteClick, can],
     );
 
     const headers: TableHeader[] = useMemo(
@@ -107,50 +146,108 @@ export default function OAuth2ProviderDetail() {
         [],
     );
 
-    const data: TableDataRow[] = useMemo(
-        () =>
-            selectedOAuth2Provider
-                ? [
-                      { id: 'name', columns: ['Name', <>{selectedOAuth2Provider.name}</>] },
-                      { id: 'scheme', columns: ['Authentication Scheme', renderOAuth2StateBadges(selectedOAuth2Provider)] },
-                      { id: 'clientId', columns: ['Client Id', <>{selectedOAuth2Provider.clientId}</>] },
-                      { id: 'issuerUrl', columns: ['Issuer Url', <>{selectedOAuth2Provider.issuerUrl}</>] },
-                      { id: 'authorizationUrl', columns: ['Authorization Url', <>{selectedOAuth2Provider.authorizationUrl}</>] },
-                      { id: 'tokenUrl', columns: ['Token Url', <>{selectedOAuth2Provider.tokenUrl}</>] },
-                      { id: 'jwkSetUrl', columns: ['JWK Set Url', <>{selectedOAuth2Provider.jwkSetUrl}</>] },
-                      { id: 'logoutUrl', columns: ['Logout Url', <>{selectedOAuth2Provider.logoutUrl}</>] },
-                      { id: 'postLogoutUrl', columns: ['Post Logout Url', <>{selectedOAuth2Provider.postLogoutUrl}</>] },
-                      { id: 'userInfoUrl', columns: ['User Info Url', <>{selectedOAuth2Provider.userInfoUrl}</>] },
-                      { id: 'scope', columns: ['Scope', <>{selectedOAuth2Provider.scope?.join(', ')}</>] },
-                      { id: 'audiences', columns: ['Audiences', <>{selectedOAuth2Provider.audiences?.join(', ')}</>] },
-                      {
-                          id: 'allowedDelegates',
-                          columns: ['Allowed delegates', selectedOAuth2Provider.allowedDelegates?.join(', ') || 'None'],
-                      },
-                      { id: 'delegateClaim', columns: ['Delegate claim', selectedOAuth2Provider.delegateClaim || 'client_id'] },
-                      {
-                          id: 'skew',
-                          columns: [
-                              'Skew',
-                              <>
-                                  {selectedOAuth2Provider.skew} second{Number(selectedOAuth2Provider.skew) > 1 ? 's' : ''}
-                              </>,
-                          ],
-                      },
-                      {
-                          id: 'sessionMaxInactiveInterval',
-                          columns: [
-                              'Session Max Inactive Interval',
-                              <>
-                                  {selectedOAuth2Provider.sessionMaxInactiveInterval} second
-                                  {Number(selectedOAuth2Provider.sessionMaxInactiveInterval) > 1 ? 's' : ''}
-                              </>,
-                          ],
-                      },
-                  ]
-                : [],
-        [selectedOAuth2Provider],
-    );
+    const data: TableDataRow[] = useMemo(() => {
+        if (!selectedOAuth2Provider) return [];
+        const provider = selectedOAuth2Provider;
+        const schemes = schemesOfProvider(provider);
+        const url = (id: string, label: string, value?: string): TableDataRow => ({
+            id,
+            columns: [
+                label,
+                <CopyUrlCell key={id} label={label}>
+                    {value}
+                </CopyUrlCell>,
+            ],
+        });
+        const jwtBearerRows: TableDataRow[] = [
+            url('issuerUrl', 'Issuer Url', provider.issuerUrl),
+            {
+                id: 'allowedDelegates',
+                columns: ['Allowed delegates', <ValuePills key="allowedDelegates" values={provider.allowedDelegates} />],
+            },
+            {
+                id: 'delegateClaim',
+                columns: [
+                    'Delegate claim',
+                    <WithDefault key="delegateClaim" value={provider.delegateClaim} fallback={DEFAULT_DELEGATE_CLAIM} />,
+                ],
+            },
+        ];
+        const oauth2FlowRows: TableDataRow[] = [
+            { id: 'clientId', columns: ['Client Id', provider.clientId] },
+            url('authorizationUrl', 'Authorization Url', provider.authorizationUrl),
+            url('tokenUrl', 'Token Url', provider.tokenUrl),
+            url('logoutUrl', 'Logout Url', provider.logoutUrl),
+            url('postLogoutUrl', 'Post Logout Url', provider.postLogoutUrl),
+            { id: 'scope', columns: ['Scope', <ValuePills key="scope" values={provider.scope} />] },
+            {
+                id: 'sessionMaxInactiveInterval',
+                columns: [
+                    'Session Max Inactive Interval',
+                    <WithDefault
+                        key="sessionMaxInactiveInterval"
+                        value={durationOf(provider.sessionMaxInactiveInterval)}
+                        fallback={formatSeconds(DEFAULT_SESSION_MAX_INACTIVE_SECONDS)}
+                    />,
+                ],
+            },
+        ];
+        return [
+            { id: 'name', columns: ['Name', provider.name] },
+            { id: 'scheme', columns: ['Authentication schemes', renderOAuth2StateBadges(provider)] },
+            ...(schemes.includes(AuthenticationScheme.JwtBearer) ? jwtBearerRows : []),
+            ...(schemes.includes(AuthenticationScheme.OAuth2Flow) ? oauth2FlowRows : []),
+            url('jwkSetUrl', 'JWK Set Url', provider.jwkSetUrl),
+            url('userInfoUrl', 'User Info Url', provider.userInfoUrl),
+            { id: 'audiences', columns: ['Audiences', <ValuePills key="audiences" values={provider.audiences} />] },
+            {
+                id: 'usernameClaim',
+                columns: [
+                    'Username claim',
+                    <WithDefault key="usernameClaim" value={provider.usernameClaim} fallback={DEFAULT_USERNAME_CLAIM} />,
+                ],
+            },
+            {
+                id: 'skew',
+                columns: [
+                    'Skew',
+                    <WithDefault key="skew" value={durationOf(provider.skew)} fallback={formatSeconds(DEFAULT_SKEW_SECONDS)} />,
+                ],
+            },
+        ];
+    }, [selectedOAuth2Provider]);
+    const applicationsData: TableDataRow[] = useMemo(() => {
+        const applications = selectedOAuth2Provider?.applications;
+        if (!selectedOAuth2Provider || !applications?.enabled) return [];
+        return [
+            {
+                id: 'applicationsName',
+                columns: [
+                    'Display name',
+                    <WithDefault key="applicationsName" value={applications.name} fallback={selectedOAuth2Provider.name} />,
+                ],
+            },
+            { id: 'applicationsClientId', columns: ['Public client Id', applications.clientId || 'Not set'] },
+            {
+                id: 'applicationsScopes',
+                columns: ['Application scopes', <ValuePills key="applicationsScopes" values={applications.scopes} />],
+            },
+            {
+                id: 'applicationsResource',
+                columns: [
+                    'Resource',
+                    applications.resource ? (
+                        <CopyUrlCell key="applicationsResource" label="Resource">
+                            {applications.resource}
+                        </CopyUrlCell>
+                    ) : (
+                        'Not set'
+                    ),
+                ],
+            },
+        ];
+    }, [selectedOAuth2Provider]);
+
     if ((isFetchingProvider && !selectedOAuth2Provider) || (oauth2Provider && !selectedOAuth2Provider)) {
         return <DetailPageSkeleton layout="simple" buttonsCount={1} />;
     }
@@ -168,6 +265,11 @@ export default function OAuth2ProviderDetail() {
                     <Widget title="Provider Details" widgetButtons={buttons} titleSize="large" refreshAction={getFreshData}>
                         <CustomTable headers={headers} data={data} />
                     </Widget>
+                    {applicationsData.length > 0 && (
+                        <Widget title="Sign-in for Applications" titleSize="large" refreshAction={getFreshData}>
+                            <CustomTable headers={headers} data={applicationsData} />
+                        </Widget>
+                    )}
                     <Widget title="JWK Set Keys" titleSize="large" refreshAction={getFreshData}>
                         <JwkSetLoadFailureWarning failure={selectedOAuth2Provider?.jwkSetLoadFailure} />
                         <JwkSetKeysTable jwkSetKeys={selectedOAuth2Provider?.jwkSetKeys} />

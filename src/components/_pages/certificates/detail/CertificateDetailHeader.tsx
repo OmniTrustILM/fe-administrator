@@ -8,10 +8,11 @@ import { actions, selectors } from 'ducks/certificates';
 import { actions as userInterfaceActions } from 'ducks/user-interface';
 import type { AttributeRequestModel } from 'types/attributes';
 import type { CertificateDetailResponseModel, CertificateRegistrationRequestModel } from 'types/certificate';
-import { CertificateRegistrationState, CertificateRequestFormat, CertificateState as CertStatus } from 'types/openapi';
+import { CertificateRegistrationState, CertificateRequestFormat, CertificateState as CertStatus, ResourceAction } from 'types/openapi';
 import { formatPEM } from 'utils/certificate';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { useCopyToClipboard } from 'utils/common-hooks';
+import type { ActionAvailability } from 'utils/useActionAvailability';
 import CertificateRekeyDialog from '../CertificateRekeyDialog';
 import CertificateRenewDialog from '../CertificateRenewDialog';
 import CertificateRevokeDialog from '../CertificateRevokeDialog';
@@ -23,6 +24,8 @@ type Props = Readonly<{
     certificate: CertificateDetailResponseModel | undefined;
     breadcrumbs: BreadcrumbItem[];
     getFreshCertificateDetail: () => void;
+    /** Answers for this certificate, from the page that requested its allowed actions alongside the detail. */
+    can: ActionAvailability;
 }>;
 
 const requiredStateLabels: Partial<Record<CertStatus, string>> = {
@@ -58,7 +61,7 @@ function archiveBlocker(targetArchived: boolean, isArchived: boolean, isArchivin
     return isArchiving ? 'Archiving is in progress' : undefined;
 }
 
-export default function CertificateDetailHeader({ certificate, breadcrumbs, getFreshCertificateDetail }: Props) {
+export default function CertificateDetailHeader({ certificate, breadcrumbs, getFreshCertificateDetail, can }: Props) {
     const dispatch = useDispatch();
     const copyToClipboard = useCopyToClipboard();
 
@@ -195,6 +198,7 @@ export default function CertificateDetailHeader({ certificate, breadcrumbs, getF
                 label: 'Issue',
                 icon: 'cubes',
                 ...blocked(lifecycleBlocker(certificate, CertStatus.Requested)),
+                requires: can(ResourceAction.Issue),
                 onClick: () =>
                     dispatch(
                         actions.issueCertificateNew({
@@ -209,6 +213,7 @@ export default function CertificateDetailHeader({ certificate, breadcrumbs, getF
                 label: 'Renew',
                 icon: 'retweet',
                 ...blocked(issuedBlocker),
+                requires: can(ResourceAction.Renew),
                 onClick: () => {
                     attemptFailed.current = false;
                     setRenew(true);
@@ -219,6 +224,8 @@ export default function CertificateDetailHeader({ certificate, breadcrumbs, getF
                 label: 'Rekey',
                 icon: 'rekey',
                 ...blocked(issuedBlocker),
+                // Core checks rekey as renew.
+                requires: can(ResourceAction.Renew),
                 onClick: () => {
                     attemptFailed.current = false;
                     setRekey(true);
@@ -229,9 +236,18 @@ export default function CertificateDetailHeader({ certificate, breadcrumbs, getF
                 label: 'Complete',
                 icon: 'check',
                 ...blocked(completeBlocker(certificate)),
+                // Completing a registration issues the certificate.
+                requires: can(ResourceAction.Issue),
                 onClick: () => setComplete(true),
             },
-            { id: 'check-compliance', label: 'Check compliance', icon: 'gavel', ...blocked(complianceBlocker), onClick: onComplianceCheck },
+            {
+                id: 'check-compliance',
+                label: 'Check compliance',
+                icon: 'gavel',
+                ...blocked(complianceBlocker),
+                requires: can(ResourceAction.CheckCompliance),
+                onClick: onComplianceCheck,
+            },
             {
                 id: 'copy',
                 label: 'Copy certificate content',
@@ -249,6 +265,7 @@ export default function CertificateDetailHeader({ certificate, breadcrumbs, getF
                 label: 'Archive',
                 icon: 'archive',
                 ...blocked(archiveBlocker(true, isArchived, isArchiving)),
+                requires: can(ResourceAction.Archive),
                 onClick: () => dispatch(actions.archiveCertificate({ uuid: certificate?.uuid ?? '' })),
             },
             {
@@ -256,6 +273,7 @@ export default function CertificateDetailHeader({ certificate, breadcrumbs, getF
                 label: 'Unarchive',
                 icon: 'unarchive',
                 ...blocked(archiveBlocker(false, isArchived, isArchiving)),
+                requires: can(ResourceAction.Archive),
                 onClick: () => dispatch(actions.unarchiveCertificate({ uuid: certificate?.uuid ?? '' })),
             },
             {
@@ -264,12 +282,20 @@ export default function CertificateDetailHeader({ certificate, breadcrumbs, getF
                 icon: 'minus-square',
                 destructive: true,
                 ...blocked(issuedBlocker),
+                requires: can(ResourceAction.Revoke),
                 onClick: () => setRevoke(true),
             },
-            { id: 'delete', label: 'Delete', icon: 'trash', destructive: true, onClick: () => setConfirmDelete(true) },
+            {
+                id: 'delete',
+                label: 'Delete',
+                icon: 'trash',
+                destructive: true,
+                requires: can(ResourceAction.Delete),
+                onClick: () => setConfirmDelete(true),
+            },
         ];
         return { primaryAction: download, menuActions: rest };
-    }, [certificate, isArchiving, dispatch, onDownloadClick, onComplianceCheck, copyToClipboard]);
+    }, [certificate, isArchiving, dispatch, onDownloadClick, onComplianceCheck, copyToClipboard, can]);
 
     return (
         <>

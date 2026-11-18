@@ -1,4 +1,5 @@
 import type { AppEpic } from 'ducks';
+import { AjaxError } from 'rxjs/ajax';
 import { of } from 'rxjs';
 import { catchError, filter, mergeMap, switchMap } from 'rxjs/operators';
 import { extractError } from 'utils/net';
@@ -15,6 +16,9 @@ import {
 import { actions as appRedirectActions } from './app-redirect';
 import { actions as userInterfaceActions } from './user-interface';
 import { LockWidgetNameEnum } from 'types/user-interface';
+
+/** A save refused because the provider changed since the form read it: the form explains it, so no error toast is raised. */
+const isPreconditionFailed = (err: unknown) => err instanceof AjaxError && err.status === 412;
 
 const getAuthenticationSettings: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
@@ -74,25 +78,28 @@ const getOAuth2ProviderSettings: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.getOAuth2ProviderSettings.match),
         switchMap((action) =>
-            deps.apiClients.settings.getOAuth2ProviderSettings({ providerName: action.payload.providerName }).pipe(
-                mergeMap((provider) =>
-                    of(
-                        slice.actions.getOAuth2ProviderSettingsSuccess({
-                            oauth2Provider: transformOAuth2ProviderSettingsDtoToModel(provider),
-                        }),
-                        userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.AuthenticationProviderDetails),
+            deps.apiClients.settings
+                .getOAuth2ProviderSettings({ providerName: action.payload.providerName }, { responseOpts: { response: 'raw' } })
+                .pipe(
+                    mergeMap((response) =>
+                        of(
+                            slice.actions.getOAuth2ProviderSettingsSuccess({
+                                oauth2Provider: transformOAuth2ProviderSettingsDtoToModel(response.response),
+                                eTag: response.responseHeaders.etag,
+                            }),
+                            userInterfaceActions.removeWidgetLock(LockWidgetNameEnum.AuthenticationProviderDetails),
+                        ),
+                    ),
+                    catchError((err) =>
+                        of(
+                            slice.actions.getOAuth2ProviderSettingsFailure({
+                                error: extractError(err, 'Failed to get OAuth2 provider settings'),
+                            }),
+                            appRedirectActions.fetchError({ error: err, message: 'Failed to get OAuth2 provider settings' }),
+                            userInterfaceActions.insertWidgetLock(err, LockWidgetNameEnum.AuthenticationProviderDetails),
+                        ),
                     ),
                 ),
-                catchError((err) =>
-                    of(
-                        slice.actions.getOAuth2ProviderSettingsFailure({
-                            error: extractError(err, 'Failed to get OAuth2 provider settings'),
-                        }),
-                        appRedirectActions.fetchError({ error: err, message: 'Failed to get OAuth2 provider settings' }),
-                        userInterfaceActions.insertWidgetLock(err, LockWidgetNameEnum.AuthenticationProviderDetails),
-                    ),
-                ),
-            ),
         ),
     );
 };
@@ -106,6 +113,7 @@ const updateOAuth2Provider: AppEpic = (action$, state$, deps) => {
                     oAuth2ProviderSettingsUpdateDto: transformOAuth2ProviderSettingsUpdateModelToDto(
                         action.payload.oauth2ProviderSettingsUpdateModel,
                     ),
+                    ifMatch: action.payload.ifMatch,
                 })
                 .pipe(
                     mergeMap(() =>
@@ -116,12 +124,19 @@ const updateOAuth2Provider: AppEpic = (action$, state$, deps) => {
                         ),
                     ),
                     catchError((err) =>
-                        of(
-                            slice.actions.updateOAuth2ProviderFailure({
-                                error: extractError(err, 'Failed to update OAuth2 provider settings'),
-                            }),
-                            appRedirectActions.fetchError({ error: err, message: 'Failed to update OAuth2 provider settings' }),
-                        ),
+                        isPreconditionFailed(err)
+                            ? of(
+                                  slice.actions.updateOAuth2ProviderFailure({
+                                      error: extractError(err, 'Failed to update OAuth2 provider settings'),
+                                      conflict: true,
+                                  }),
+                              )
+                            : of(
+                                  slice.actions.updateOAuth2ProviderFailure({
+                                      error: extractError(err, 'Failed to update OAuth2 provider settings'),
+                                  }),
+                                  appRedirectActions.fetchError({ error: err, message: 'Failed to update OAuth2 provider settings' }),
+                              ),
                     ),
                 ),
         ),

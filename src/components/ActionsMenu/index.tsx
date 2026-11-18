@@ -4,6 +4,7 @@ import { useRef } from 'react';
 import Dropdown from 'components/Dropdown';
 import MenuItem from 'components/MenuItem';
 import type { IconName } from 'types/icons';
+import type { Availability } from 'utils/availability';
 import { iconRegistry } from 'utils/icons';
 
 export type PageAction = {
@@ -14,8 +15,17 @@ export type PageAction = {
     onClick: (anchor: HTMLElement | null) => void;
     disabled?: boolean;
     disabledReason?: string;
+    requires?: Availability;
     destructive?: boolean;
 };
+
+/** Folds `requires` into `disabled` and `disabledReason` as `Button` does, the denial winning; `undefined` when hidden. */
+export function resolvePageAction(action: PageAction): PageAction | undefined {
+    const { requires } = action;
+    if (!requires || requires.available) return action;
+    if (requires.hidden) return undefined;
+    return { ...action, disabled: true, disabledReason: requires.reason ?? action.disabledReason };
+}
 
 type Props = Readonly<{
     actions: PageAction[];
@@ -23,8 +33,9 @@ type Props = Readonly<{
 
 function ActionsMenu({ actions }: Props) {
     const triggerRef = useRef<HTMLButtonElement>(null);
-    const regular = actions.filter((action) => !action.destructive);
-    const destructive = actions.filter((action) => action.destructive);
+    const offered = actions.map(resolvePageAction).filter((action) => action !== undefined);
+    const regular = offered.filter((action) => !action.destructive);
+    const destructive = offered.filter((action) => action.destructive);
 
     const renderItem = (action: PageAction) => {
         const Icon = iconRegistry[action.icon];

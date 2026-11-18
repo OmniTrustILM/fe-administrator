@@ -205,19 +205,56 @@ test.describe('attributeHelpers', () => {
             expect(fn('abc')).toBeUndefined();
         });
 
-        test('Range constraint adds validator when from and to present', () => {
-            const d = {
-                ...minimalDataDescriptor(AttributeContentType.Integer, false),
-                constraints: [
-                    {
-                        type: AttributeConstraintType.Range,
-                        data: { from: 1, to: 10 },
-                        errorMessage: 'Between 1 and 10',
-                    },
-                ],
+        const withRange = (data: Record<string, unknown>, properties: Record<string, unknown> = {}) => {
+            const d = minimalDataDescriptor(AttributeContentType.Integer, false);
+            return {
+                ...d,
+                properties: { ...d.properties, ...properties },
+                constraints: [{ type: AttributeConstraintType.Range, data, errorMessage: 'Out of range' }],
             };
-            const fn = buildAttributeValidators(d);
-            expect(typeof fn).toBe('function');
+        };
+
+        test('Range constraint forwards both bounds and the constraint message, after the integer check', () => {
+            const fn = buildAttributeValidators(withRange({ from: 1, to: 100 }));
+            expect(fn('1')).toBeUndefined();
+            expect(fn('100')).toBeUndefined();
+            expect(fn('0')).toBe('Out of range');
+            expect(fn('101')).toBe('Out of range');
+            expect(fn('1.5')).toBe('Value must be an integer');
+        });
+
+        test('Range constraint with a null or missing bound checks only the other one', () => {
+            const fn = buildAttributeValidators(withRange({ from: null, to: 10 }));
+            expect(fn('-50')).toBeUndefined();
+            expect(fn('11')).toBe('Out of range');
+            expect(buildAttributeValidators(withRange({ to: 10 }))('11')).toBe('Out of range');
+        });
+
+        test('Range constraint without bounds adds no validator', () => {
+            expect(buildAttributeValidators(withRange({}))('999')).toBeUndefined();
+            expect(buildAttributeValidators(withRange({ from: null, to: null }))('999')).toBeUndefined();
+        });
+
+        test('Range constraint is not applied to a list attribute with fixed options', () => {
+            const fn = buildAttributeValidators(withRange({ from: 1, to: 100 }, { list: true }));
+            expect(fn({ data: 101 })).toBeUndefined();
+        });
+
+        test('a list attribute with fixed options drops only the range constraint and keeps the others', () => {
+            const d = withRange({ from: 1, to: 100 }, { list: true });
+            const fn = buildAttributeValidators({
+                ...d,
+                constraints: [...d.constraints, { type: AttributeConstraintType.RegExp, data: '^\\d$', errorMessage: 'One digit' }],
+            });
+            expect(fn('5')).toBeUndefined();
+            expect(fn('101')).toBe('One digit');
+        });
+
+        test('Range constraint still applies to the custom values of an extensible list', () => {
+            const fn = buildAttributeValidators(withRange({ from: 1, to: 100 }, { list: true, extensibleList: true }));
+            expect(fn(101)).toBe('Out of range');
+            expect(fn([{ data: 50 }, 101])).toBe('Out of range');
+            expect(fn(100)).toBeUndefined();
         });
     });
 

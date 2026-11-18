@@ -10,6 +10,7 @@ import type { SearchFieldListModel, SearchFilterModel, SearchRequestModel } from
 import type { ListViewModel } from 'types/listViews';
 import { FilterFieldSource, Resource } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
+import type { Availability } from 'utils/availability';
 import type { ColumnSort } from 'utils/tableColumns';
 import { createMockStore } from 'utils/test-helpers';
 import PagedList from './PagedList';
@@ -19,6 +20,7 @@ export type StubRow = {
     commonName: string;
     notAfter: string;
     serialNumber?: string;
+    associations?: number;
     attributeValues?: Record<string, Record<string, unknown[]>>;
 };
 
@@ -50,6 +52,8 @@ type Props = Readonly<{
     withPagingControl?: boolean;
     /** Mounts the host with a page header, a Create route and a Delete handler. */
     withPageHeader?: boolean;
+    createRequires?: Availability;
+    deleteRequires?: Availability;
     /** Supplies the column configuration a tick after mount, as a page still fetching its catalogue does. */
     withDeferredConfig?: boolean;
     /** Renders a control that lands the catalogue, so a test can act on the table before it arrives. */
@@ -62,6 +66,8 @@ type Props = Readonly<{
     withViewsControl?: boolean;
     /** Renders a control that blanks the rows and puts a list request in flight, as a listing duck does. */
     withListInFlightControl?: boolean;
+    /** Holds the first page in flight until a control lands it, so the host shows its skeleton meanwhile. */
+    withFirstPageControl?: boolean;
     /** Renders a control that sets these filters, as a user typing into the filter widget does. */
     typedFilters?: SearchFilterModel[];
     /** Renders a second such control, for a user typing a different set of filters afterwards. */
@@ -75,6 +81,7 @@ const registry: CellRegistry<StubRow> = {
     'property:COMMON_NAME': (row) => row.commonName,
     'property:NOT_AFTER': (row) => row.notAfter,
     'property:SERIAL_NUMBER': (row) => row.serialNumber,
+    'property:ASSOCIATIONS': (row) => row.associations?.toString(),
 };
 
 function ListInFlightControl({ onBlank }: Readonly<{ onBlank: () => void }>) {
@@ -90,6 +97,23 @@ function ListInFlightControl({ onBlank }: Readonly<{ onBlank: () => void }>) {
             }}
         >
             Start fetch
+        </button>
+    );
+}
+
+function FirstPageControl({ onLand }: Readonly<{ onLand: () => void }>) {
+    const dispatch = useDispatch();
+
+    return (
+        <button
+            type="button"
+            data-testid="land-first-page"
+            onClick={() => {
+                onLand();
+                dispatch(pagingActions.listSuccess({ entity: EntityType.CERTIFICATE, totalItems: 1 }));
+            }}
+        >
+            Land first page
         </button>
     );
 }
@@ -232,12 +256,15 @@ export default function PagedListColumnsWithStore({
     withRefreshControl = false,
     withPagingControl = false,
     withPageHeader = false,
+    createRequires,
+    deleteRequires,
     withDeferredConfig = false,
     withCatalogueControl = false,
     refreshedCatalogue,
     withCatalogueFailureControl = false,
     withViewsControl = false,
     withListInFlightControl = false,
+    withFirstPageControl = false,
     typedFilters,
     retypedFilters,
 }: Props) {
@@ -268,14 +295,20 @@ export default function PagedListColumnsWithStore({
                 pagings: [
                     {
                         entity: EntityType.CERTIFICATE,
-                        paging: { totalItems: rows.length, checkedRows: [], isFetchingList: false, pageNumber: 1, pageSize: 10 },
+                        paging: {
+                            totalItems: rows.length,
+                            checkedRows: [],
+                            isFetchingList: withFirstPageControl,
+                            pageNumber: 1,
+                            pageSize: 10,
+                        },
                     },
                 ],
             },
         }),
     );
 
-    const [answeredRows, setAnsweredRows] = useState(rows);
+    const [answeredRows, setAnsweredRows] = useState(withFirstPageControl ? [] : rows);
     const [requests, setRequests] = useState<SearchRequestModel[]>([]);
     const [refreshToken, setRefreshToken] = useState(0);
     const [isMounted, setIsMounted] = useState(true);
@@ -319,6 +352,8 @@ export default function PagedListColumnsWithStore({
                         addHidden={!withPageHeader}
                         pageHeader={withPageHeader ? PAGE_HEADER : undefined}
                         onDeleteCallback={withPageHeader ? noop : undefined}
+                        createRequires={createRequires}
+                        deleteRequires={deleteRequires}
                         entityNamePlural={withPageHeader ? 'Certificates' : undefined}
                         configurableColumns={config}
                         refreshToken={refreshToken}
@@ -330,6 +365,8 @@ export default function PagedListColumnsWithStore({
                         Toggle list
                     </button>
                 )}
+
+                {withFirstPageControl && <FirstPageControl onLand={() => setAnsweredRows(rows)} />}
 
                 {withCatalogueControl && <CatalogueControl catalogue={refreshedCatalogue ?? catalogue} />}
 

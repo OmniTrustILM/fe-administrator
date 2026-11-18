@@ -113,3 +113,44 @@ test.describe('ActionsMenu', () => {
         await expect(page.getByTestId('ran')).toHaveText('export:BUTTON');
     });
 });
+
+test.describe('PageHeader permissions', () => {
+    const denied = { available: false, hidden: false, loading: false, reason: 'You need the archive permission on Certificates.' };
+
+    test('disables an entry the user lacks the permission for, giving the denial over its own reason', async ({ mount, page }) => {
+        await mount(
+            <PageHeaderHarness
+                actions={[
+                    { id: 'import', label: 'Import', icon: 'upload' },
+                    { id: 'archive', label: 'Archive', icon: 'archive', disabled: true, disabledReason: 'Select one', requires: denied },
+                ]}
+            />,
+        );
+        await page.getByRole('button', { name: 'More actions' }).click();
+
+        const archive = page.getByRole('menuitem', { name: 'Archive', exact: true });
+        await expect(archive).toHaveAttribute('aria-disabled', 'true');
+        await expect(archive).toHaveAccessibleDescription(denied.reason);
+
+        await archive.dispatchEvent('click');
+        await expect(page.getByTestId('ran')).toHaveText('');
+    });
+
+    test('disables the primary action the user lacks the permission for', async ({ mount, page }) => {
+        await mount(<PageHeaderHarness primaryAction={{ id: 'create', label: 'Create', icon: 'plus', requires: denied }} />);
+
+        await expect(page.getByRole('button', { name: 'Create' })).toBeDisabled();
+    });
+
+    test('leaves out actions hidden when denied, and the whole action area once none remain', async ({ mount, page }) => {
+        const hidden = { ...denied, hidden: true };
+        await mount(
+            <PageHeaderHarness
+                primaryAction={{ id: 'create', label: 'Create', icon: 'plus', requires: hidden }}
+                actions={[{ id: 'archive', label: 'Archive', icon: 'archive', requires: hidden }]}
+            />,
+        );
+
+        await expect(page.getByTestId('page-header-actions')).toHaveCount(0);
+    });
+});

@@ -20,9 +20,10 @@ import { actions as userAction, selectors as userSelectors } from 'ducks/users';
 import type { CertificateListResponseModel, SearchRequestModel } from 'types/certificate';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { dateFormatter } from 'utils/dateUtil';
-import { type CertificateState, PlatformEnum, Resource } from '../../../../types/openapi';
+import { type CertificateState, PlatformEnum, Resource, ResourceAction } from '../../../../types/openapi';
 import { getCertificateStatusColor } from 'utils/certificate';
 import { buildColumnHeaders } from 'utils/tableColumns';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import CertificateGroupDialog from '../CertificateGroupDialog';
 import CertificateImportDialog from '../CertificateImportDialog';
 import CertificateOwnerDialog from '../CertificateOwnerDialog';
@@ -50,6 +51,7 @@ export default function CertificateList({
     isLinkDisabled = false,
 }: Props) {
     const dispatch = useDispatch();
+    const can = useActionAvailability(Resource.Certificates);
     const navigate = useNavigate();
 
     const certificates = useSelector(selectors.certificates);
@@ -119,16 +121,25 @@ export default function CertificateList({
         if (hideWidgetButtons) return undefined;
         const nothingSelected = checkedRows.length === 0;
         const bulk = { disabled: nothingSelected, disabledReason: 'Select one or more certificates' };
+        const create = can(ResourceAction.Create);
+        const updateSelected = { ...bulk, requires: can(ResourceAction.Update, { onObjects: true }) };
+        const archiveSelected = { ...bulk, requires: can(ResourceAction.Archive, { onObjects: true }) };
         const actionsMenu: PageAction[] = hideAdditionalButtons
             ? []
             : [
-                  { id: 'import', label: 'Import certificates and keys', icon: 'upload', onClick: () => setUpload(true) },
-                  { id: 'override-groups', label: 'Override groups', icon: 'group', ...bulk, onClick: () => setUpdateGroup(true) },
+                  { id: 'import', label: 'Import certificates and keys', icon: 'upload', requires: create, onClick: () => setUpload(true) },
+                  {
+                      id: 'override-groups',
+                      label: 'Override groups',
+                      icon: 'group',
+                      ...updateSelected,
+                      onClick: () => setUpdateGroup(true),
+                  },
                   {
                       id: 'override-owner',
                       label: 'Override owner',
                       icon: 'user-check',
-                      ...bulk,
+                      ...updateSelected,
                       onClick: () => {
                           getUserList();
                           setUpdateOwner(true);
@@ -138,7 +149,7 @@ export default function CertificateList({
                       id: 'override-ra-profile',
                       label: 'Override RA profile',
                       icon: 'shield-check',
-                      ...bulk,
+                      ...updateSelected,
                       onClick: () => setUpdateRaProfile(true),
                   },
                   {
@@ -155,8 +166,8 @@ export default function CertificateList({
                       ...bulk,
                       onClick: () => dispatch(actions.getCertificateContents({ uuids: checkedRows, format: 'cer' })),
                   },
-                  { id: 'archive', label: 'Archive', icon: 'archive', ...bulk, onClick: onArchiveClick },
-                  { id: 'unarchive', label: 'Unarchive', icon: 'unarchive', ...bulk, onClick: onUnarchiveClick },
+                  { id: 'archive', label: 'Archive', icon: 'archive', ...archiveSelected, onClick: onArchiveClick },
+                  { id: 'unarchive', label: 'Unarchive', icon: 'unarchive', ...archiveSelected, onClick: onUnarchiveClick },
               ];
         const inventoryLabel = `${getEnumLabel(resourceEnum, Resource.Certificates)} Inventory`;
         return {
@@ -167,6 +178,7 @@ export default function CertificateList({
                       id: 'create',
                       label: 'Create',
                       icon: 'plus',
+                      requires: create,
                       onClick: () => void navigate(`/${Resource.Certificates.toLowerCase()}/add`),
                   },
             actions: actionsMenu,
@@ -181,6 +193,7 @@ export default function CertificateList({
         onArchiveClick,
         onUnarchiveClick,
         navigate,
+        can,
     ]);
 
     const registry = useMemo(
@@ -259,6 +272,7 @@ export default function CertificateList({
                 onListCallback={onListCallback}
                 refreshToken={listRefreshToken}
                 backgroundRefreshToken={listBackgroundRefreshToken}
+                deleteRequires={can(ResourceAction.Delete, { onObjects: true })}
                 onDeleteCallback={(uuids, filters) => dispatch(actions.bulkDelete({ uuids, filters }))}
                 getAvailableFiltersApi={useCallback(
                     (apiClients: ApiClients) => apiClients.certificates.getCertificateSearchableFields(),

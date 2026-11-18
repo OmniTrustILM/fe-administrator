@@ -20,7 +20,7 @@ import CustomTable, { type SortDirection, type TableDataRow, type TableHeader } 
 import { buildTableRows, type CellRegistry } from 'components/CustomTable/columns';
 import Dialog from 'components/Dialog';
 import FilterWidget from 'components/FilterWidget';
-import ViewTabs, { isViewStripReady } from 'components/ViewTabs';
+import ViewTabs, { isViewStripReady, ViewStripOpeningPlaceholder } from 'components/ViewTabs';
 import Widget from 'components/Widget';
 import type { ReactNode, RefObject } from 'react';
 import { selectors as listViewSelectors } from 'ducks/listViews';
@@ -29,7 +29,15 @@ import type { Resource } from 'types/openapi';
 import type { ColumnDefinition, SourcedCatalogueField } from 'types/tableColumns';
 import { moveColumn, toCatalogueFields } from 'utils/columnPicker';
 import { storableColumnTest } from 'utils/listViews';
-import { type ColumnSort, buildColumnHeaders, countStorableColumns, getColumnHeading, getColumnKey } from 'utils/tableColumns';
+import type { Availability } from 'utils/availability';
+import {
+    type ColumnSort,
+    buildColumnHeaders,
+    countStorableColumns,
+    getColumnHeading,
+    getColumnKey,
+    getColumnName,
+} from 'utils/tableColumns';
 import {
     buildListRequest,
     getRenderableProperties,
@@ -75,6 +83,8 @@ export interface ConfigurableColumns<TRow extends object> {
 
 type Props<TRow extends object> = {
     entity: EntityType;
+    createRequires?: Availability;
+    deleteRequires?: Availability;
     headers?: TableHeader[];
     data?: TableDataRow[];
     configurableColumns?: ConfigurableColumns<TRow>;
@@ -99,6 +109,7 @@ type Props<TRow extends object> = {
     notice?: React.ReactNode;
     /** Moves the page's actions into a page header; Create becomes its primary button and Delete a menu entry. */
     pageHeader?: PageHeaderProps;
+    emptyStateDescription?: string;
     /**
      * Bumped by the page to make the host re-run its own request. A request the page assembled would
      * omit the applied columns and ordering, blanking every attribute column and ignoring the sort.
@@ -146,6 +157,8 @@ function PagedList<TRow extends object>({
     filterTitle,
     addHidden,
     entity,
+    createRequires,
+    deleteRequires,
     title,
     isBusy = false,
     multiSelect = true,
@@ -163,6 +176,7 @@ function PagedList<TRow extends object>({
     extraFilterComponent,
     notice,
     pageHeader,
+    emptyStateDescription,
     refreshToken,
     backgroundRefreshToken,
 }: Readonly<Props<TRow>>) {
@@ -190,6 +204,8 @@ function PagedList<TRow extends object>({
     const hasSettledCatalogue = hasLoadedCatalogue && !isFetchingCatalogue;
     // Nor on one a failed read left behind: stored columns would resolve against stale or no fields, and writes send them on.
     const hasCatalogueForViews = hasSettledCatalogue && !hasCatalogueFailed;
+    const isCatalogueFailed = hasCatalogueFailed && !isFetchingCatalogue;
+    const hasFilterWidget = Boolean(getAvailableFiltersApi) && Boolean(filterTitle);
 
     // Taken apart rather than depended on whole: an unmemoised config would rebuild `getFreshData`
     // every render, and the effect watching it would refetch forever.
@@ -341,6 +357,7 @@ function PagedList<TRow extends object>({
                     fields={catalogueFields}
                     isCatalogueLoaded={hasLoadedCatalogue}
                     columns={appliedColumns}
+                    shippedColumns={sortableStandardColumns}
                     // Both withheld until the strip is up: applying the opening view replaces the column
                     // set wholesale, so a change made before that would be wiped without a trace.
                     onToggle={isStripReady ? onToggleColumn : undefined}
@@ -348,7 +365,17 @@ function PagedList<TRow extends object>({
                     isStorable={isStorable}
                 />
             ) : undefined,
-        [isColumnDriven, catalogueFields, hasLoadedCatalogue, appliedColumns, onToggleColumn, onResetColumns, isStripReady, isStorable],
+        [
+            isColumnDriven,
+            catalogueFields,
+            hasLoadedCatalogue,
+            appliedColumns,
+            sortableStandardColumns,
+            onToggleColumn,
+            onResetColumns,
+            isStripReady,
+            isStorable,
+        ],
     );
 
     const currentFiltersSnapshot = useMemo(() => JSON.stringify(currentFilters ?? []), [currentFilters]);
@@ -539,7 +566,8 @@ function PagedList<TRow extends object>({
             return (
                 <ColumnHeaderMenu
                     columnKey={header.id}
-                    label={getColumnHeading(column)}
+                    label={getColumnName(column)}
+                    heading={getColumnHeading(column)}
                     columnKeys={columnKeys}
                     sortable={column.sortable === true}
                     hasCatalogueFailed={hasCatalogueFailed}
@@ -577,7 +605,7 @@ function PagedList<TRow extends object>({
             return (
                 <ColumnDragHandle
                     columnKey={header.id}
-                    label={getColumnHeading(column)}
+                    label={getColumnName(column)}
                     columnKeys={columnKeys}
                     onMove={onMoveColumn}
                     dataTestId={`column-drag-handle-${header.id}`}
@@ -681,6 +709,7 @@ function PagedList<TRow extends object>({
                 id: 'create',
                 icon: 'plus' as IconName,
                 disabled: false,
+                requires: createRequires,
                 tooltip: 'Create',
                 onClick: () => navigate(`./add`),
             });
@@ -690,6 +719,7 @@ function PagedList<TRow extends object>({
                 id: 'delete',
                 icon: 'trash' as IconName,
                 disabled: checkedRows.length === 0,
+                requires: deleteRequires,
                 tooltip: 'Delete',
                 onClick: () => setConfirmDelete(true),
             });
@@ -698,13 +728,15 @@ function PagedList<TRow extends object>({
             result.push(...additionalButtons);
         }
         return result.sort((a, b) => (a.icon === 'plus' ? -1 : 1));
-    }, [checkedRows, additionalButtons, navigate, addHidden, onDeleteCallback]);
+    }, [checkedRows, additionalButtons, navigate, addHidden, onDeleteCallback, createRequires, deleteRequires]);
 
     const header = useMemo(() => {
         if (!pageHeader) return null;
         const primaryAction: PageAction | undefined =
             pageHeader.primaryAction ??
-            (addHidden ? undefined : { id: 'create', label: 'Create', icon: 'plus', onClick: () => navigate('./add') });
+            (addHidden
+                ? undefined
+                : { id: 'create', label: 'Create', icon: 'plus', requires: createRequires, onClick: () => navigate('./add') });
         const deleteActions: PageAction[] = onDeleteCallback
             ? [
                   {
@@ -714,6 +746,7 @@ function PagedList<TRow extends object>({
                       destructive: true,
                       disabled: checkedRows.length === 0,
                       disabledReason: `Select one or more ${(entityNamePlural ?? 'items').toLowerCase()}`,
+                      requires: deleteRequires,
                       onClick: () => setConfirmDelete(true),
                   },
               ]
@@ -727,7 +760,17 @@ function PagedList<TRow extends object>({
                 actions={[...(pageHeader.actions ?? []), ...deleteActions]}
             />
         );
-    }, [pageHeader, addHidden, navigate, onDeleteCallback, checkedRows.length, entityNamePlural, pageWidgetLockName]);
+    }, [
+        pageHeader,
+        addHidden,
+        navigate,
+        onDeleteCallback,
+        checkedRows.length,
+        entityNamePlural,
+        pageWidgetLockName,
+        createRequires,
+        deleteRequires,
+    ]);
 
     // An ordering the page did not declare counts, or there would be no way back from it. Measured
     // against `defaultSort` rather than against no ordering at all, so a page that opens sorted is not
@@ -744,6 +787,10 @@ function PagedList<TRow extends object>({
             dispatch(tablePaginationActions.clearPaginationByRootRoute({ rootRoute }));
         }
     }, [dispatch, entity, location.pathname, defaultSort]);
+
+    const onClearFilters = useCallback(() => {
+        dispatch(filterActions.setCurrentFilters({ entity, currentFilters: [] }));
+    }, [dispatch, entity]);
 
     const paginationData = useMemo(
         () => ({
@@ -769,12 +816,28 @@ function PagedList<TRow extends object>({
             <>
                 {header}
                 <PagedListSkeleton
-                    hasFilter={Boolean(getAvailableFiltersApi) && Boolean(filterTitle)}
+                    hasFilter={hasFilterWidget}
                     filterTitle={filterTitle}
                     buttonsCount={estimatedButtonCount}
                     columnsCount={columnHeaders.length + (isColumnDriven ? 1 : 0)}
                     hasCheckboxes={hasCheckboxes}
                     hasExtraFilter={Boolean(extraFilterComponent)}
+                    viewStrip={
+                        columnsResource &&
+                        standardColumns &&
+                        // The filter widget re-reads the catalogue on mount, so a past failure drops the strip only where none mounts.
+                        !(isCatalogueFailed && !hasFilterWidget) && (
+                            <ViewStripOpeningPlaceholder
+                                resource={columnsResource}
+                                handedIn={handedIn}
+                                catalogue={catalogue}
+                                columns={appliedColumns}
+                                filters={currentFilters}
+                                sort={appliedSort}
+                                dataTestId="paged-list-skeleton-view-strip"
+                            />
+                        )
+                    }
                 />
             </>
         );
@@ -790,6 +853,7 @@ function PagedList<TRow extends object>({
                         resource={columnsResource}
                         catalogue={catalogue}
                         isCatalogueLoaded={hasCatalogueForViews}
+                        isCatalogueFailed={isCatalogueFailed}
                         standardColumns={sortableStandardColumns}
                         standardSort={defaultSort}
                         renderableProperties={renderableProperties}
@@ -842,6 +906,8 @@ function PagedList<TRow extends object>({
                         disableSelectionControls={isBusy || isFetchingList}
                         disableSearchControls={isBusy || isFetchingList}
                         trailingHeaderAction={addColumnMenu}
+                        emptyStateDescription={emptyStateDescription}
+                        onClearFilters={currentFilters.length > 0 ? onClearFilters : undefined}
                     />
                 </Widget>
                 {onDeleteCallback && (
