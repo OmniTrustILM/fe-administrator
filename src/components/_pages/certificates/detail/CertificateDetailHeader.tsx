@@ -41,14 +41,14 @@ function lifecycleBlocker(certificate: CertificateDetailResponseModel | undefine
     return undefined;
 }
 
-function completeBlocker(certificate: CertificateDetailResponseModel | undefined, now: number): string | undefined {
+function completeBlocker(certificate: CertificateDetailResponseModel | undefined): string | undefined {
     // Core rejects completion once the registration authorization is no longer Active (Expired/Locked/
     // Closed) or its issuance window has elapsed, so gate the Complete action on the same conditions.
     const registration = certificate?.registration;
     if (registration?.state && registration.state !== CertificateRegistrationState.Active) {
         return `Registration is ${registrationStateLabels[registration.state] ?? registration.state}`;
     }
-    if (registration?.expiresAt && new Date(registration.expiresAt).getTime() < now) {
+    if (registration?.expiresAt && new Date(registration.expiresAt).getTime() < Date.now()) {
         return 'The issuance window has elapsed';
     }
     return lifecycleBlocker(certificate, CertStatus.Registered);
@@ -57,17 +57,18 @@ function completeBlocker(certificate: CertificateDetailResponseModel | undefined
 // setTimeout fires at once for a delay past 2^31 - 1 ms, so a later expiry is reached in steps.
 const MAX_TIMER_DELAY = 2_147_483_647;
 
-/** The current time, advanced when the registration's issuance window elapses, since nothing else changes then. */
-function useNowUntilExpiry(expiresAt: string | undefined): number {
-    const [now, setNow] = useState(Date.now);
+/** Changes just after the registration's issuance window elapses, since nothing else re-renders then. */
+function useExpiryTick(expiresAt: string | undefined): number {
+    const [tick, setTick] = useState(0);
+    // biome-ignore lint/correctness/useExhaustiveDependencies: tick re-arms the timer after a step capped at MAX_TIMER_DELAY.
     useEffect(() => {
         if (!expiresAt) return;
-        const remaining = new Date(expiresAt).getTime() - now;
-        if (remaining <= 0) return;
-        const timer = setTimeout(() => setNow(Date.now()), Math.min(remaining, MAX_TIMER_DELAY));
+        const remaining = new Date(expiresAt).getTime() - Date.now();
+        if (remaining < 0) return;
+        const timer = setTimeout(() => setTick((count) => count + 1), Math.min(remaining + 1, MAX_TIMER_DELAY));
         return () => clearTimeout(timer);
-    }, [expiresAt, now]);
-    return now;
+    }, [expiresAt, tick]);
+    return tick;
 }
 
 const blocked = (reason: string | undefined) => ({ disabled: !!reason, disabledReason: reason });
@@ -94,7 +95,7 @@ export default function CertificateDetailHeader({ certificate, breadcrumbs, getF
     const [rekey, setRekey] = useState(false);
     const [revoke, setRevoke] = useState(false);
     const [complete, setComplete] = useState(false);
-    const now = useNowUntilExpiry(certificate?.registration?.expiresAt);
+    const expiryTick = useExpiryTick(certificate?.registration?.expiresAt);
 
     const onComplianceCheck = useCallback(() => {
         if (!certificate?.uuid) return;
@@ -193,6 +194,7 @@ export default function CertificateDetailHeader({ certificate, breadcrumbs, getF
         getFreshCertificateDetail();
     }, [getFreshCertificateDetail]);
 
+    // biome-ignore lint/correctness/useExhaustiveDependencies: expiryTick re-reads the clock for Complete once the window elapses.
     const { primaryAction, menuActions } = useMemo(() => {
         const isArchived = !!certificate?.archived;
         const noContent = certificate?.certificateContent ? undefined : 'The certificate has no content';
@@ -252,7 +254,7 @@ export default function CertificateDetailHeader({ certificate, breadcrumbs, getF
                 id: 'complete',
                 label: 'Complete',
                 icon: 'check',
-                ...blocked(completeBlocker(certificate, now)),
+                ...blocked(completeBlocker(certificate)),
                 // Completing a registration issues the certificate.
                 requires: can(ResourceAction.Issue),
                 onClick: () => setComplete(true),
@@ -312,7 +314,7 @@ export default function CertificateDetailHeader({ certificate, breadcrumbs, getF
             },
         ];
         return { primaryAction: download, menuActions: rest };
-    }, [certificate, isArchiving, dispatch, onDownloadClick, onComplianceCheck, copyToClipboard, can, now]);
+    }, [certificate, isArchiving, dispatch, onDownloadClick, onComplianceCheck, copyToClipboard, can, expiryTick]);
 
     return (
         <>
