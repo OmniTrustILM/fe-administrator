@@ -41,17 +41,33 @@ function lifecycleBlocker(certificate: CertificateDetailResponseModel | undefine
     return undefined;
 }
 
-function completeBlocker(certificate: CertificateDetailResponseModel | undefined): string | undefined {
+function completeBlocker(certificate: CertificateDetailResponseModel | undefined, now: number): string | undefined {
     // Core rejects completion once the registration authorization is no longer Active (Expired/Locked/
     // Closed) or its issuance window has elapsed, so gate the Complete action on the same conditions.
     const registration = certificate?.registration;
     if (registration?.state && registration.state !== CertificateRegistrationState.Active) {
         return `Registration is ${registrationStateLabels[registration.state] ?? registration.state}`;
     }
-    if (registration?.expiresAt && new Date(registration.expiresAt).getTime() < Date.now()) {
+    if (registration?.expiresAt && new Date(registration.expiresAt).getTime() < now) {
         return 'The issuance window has elapsed';
     }
     return lifecycleBlocker(certificate, CertStatus.Registered);
+}
+
+// setTimeout fires at once for a delay past 2^31 - 1 ms, so a later expiry is reached in steps.
+const MAX_TIMER_DELAY = 2_147_483_647;
+
+/** The current time, advanced when the registration's issuance window elapses, since nothing else changes then. */
+function useNowUntilExpiry(expiresAt: string | undefined): number {
+    const [now, setNow] = useState(Date.now);
+    useEffect(() => {
+        if (!expiresAt) return;
+        const remaining = new Date(expiresAt).getTime() - now;
+        if (remaining <= 0) return;
+        const timer = setTimeout(() => setNow(Date.now()), Math.min(remaining, MAX_TIMER_DELAY));
+        return () => clearTimeout(timer);
+    }, [expiresAt, now]);
+    return now;
 }
 
 const blocked = (reason: string | undefined) => ({ disabled: !!reason, disabledReason: reason });
@@ -78,6 +94,7 @@ export default function CertificateDetailHeader({ certificate, breadcrumbs, getF
     const [rekey, setRekey] = useState(false);
     const [revoke, setRevoke] = useState(false);
     const [complete, setComplete] = useState(false);
+    const now = useNowUntilExpiry(certificate?.registration?.expiresAt);
 
     const onComplianceCheck = useCallback(() => {
         if (!certificate?.uuid) return;
@@ -235,7 +252,7 @@ export default function CertificateDetailHeader({ certificate, breadcrumbs, getF
                 id: 'complete',
                 label: 'Complete',
                 icon: 'check',
-                ...blocked(completeBlocker(certificate)),
+                ...blocked(completeBlocker(certificate, now)),
                 // Completing a registration issues the certificate.
                 requires: can(ResourceAction.Issue),
                 onClick: () => setComplete(true),
@@ -295,7 +312,7 @@ export default function CertificateDetailHeader({ certificate, breadcrumbs, getF
             },
         ];
         return { primaryAction: download, menuActions: rest };
-    }, [certificate, isArchiving, dispatch, onDownloadClick, onComplianceCheck, copyToClipboard, can]);
+    }, [certificate, isArchiving, dispatch, onDownloadClick, onComplianceCheck, copyToClipboard, can, now]);
 
     return (
         <>

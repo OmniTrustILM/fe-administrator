@@ -24,7 +24,7 @@ export function resolvePageAction(action: PageAction): PageAction | undefined {
     const { requires } = action;
     if (!requires || requires.available) return action;
     if (requires.hidden) return undefined;
-    return { ...action, disabled: true, disabledReason: requires.reason ?? action.disabledReason };
+    return { ...action, disabled: true, disabledReason: requires.reason ?? (action.disabled ? action.disabledReason : undefined) };
 }
 
 type Props = Readonly<{

@@ -153,4 +153,25 @@ test.describe('PageHeader permissions', () => {
 
         await expect(page.getByTestId('page-header-actions')).toHaveCount(0);
     });
+
+    test('gives no stale reason for an action held while its permission loads', async ({ mount, page }) => {
+        const loading = { available: false, hidden: false, loading: true };
+        await mount(
+            <PageHeaderHarness
+                actions={[{ id: 'archive', label: 'Archive', icon: 'archive', disabledReason: 'Select one', requires: loading }]}
+            />,
+        );
+        await page.getByRole('button', { name: 'More actions' }).click();
+
+        const archive = page.getByRole('menuitem', { name: 'Archive', exact: true });
+        await expect(archive).toHaveAttribute('aria-disabled', 'true');
+        await expect(archive).not.toHaveAttribute('aria-describedby');
+    });
+
+    test('gives the lock over a permission denial while the page is locked', async ({ mount, page }) => {
+        await mount(<PageHeaderHarness locked actions={[{ id: 'archive', label: 'Archive', icon: 'archive', requires: denied }]} />);
+        await page.getByRole('button', { name: 'More actions' }).click();
+
+        await expect(page.getByRole('menuitem', { name: 'Archive', exact: true })).toHaveAccessibleDescription('Access denied');
+    });
 });

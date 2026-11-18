@@ -35,7 +35,8 @@ function PrimaryActionButton({ action }: Readonly<{ action: PageAction }>) {
 
 function PageHeader({ breadcrumbs, title, primaryAction, actions = [], widgetLockName }: PageHeaderProps) {
     const lock = useWidgetLock(widgetLockName);
-    const applyLock = (action: PageAction): PageAction => (lock ? { ...action, disabled: true, disabledReason: lock.lockTitle } : action);
+    const applyLock = (action: PageAction): PageAction =>
+        lock ? { ...action, disabled: true, disabledReason: lock.lockTitle, requires: undefined } : action;
     const isOffered = (action: PageAction | undefined): action is PageAction => !!action && !action.requires?.hidden;
     const primary = isOffered(primaryAction) ? applyLock(primaryAction) : undefined;
     const menu = actions.filter(isOffered).map(applyLock);

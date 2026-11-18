@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { CertificateRegistrationState, ResourceAction } from 'types/openapi';
+import { CertificateRegistrationState, CertificateState, ResourceAction } from 'types/openapi';
 import { expect, test } from '../../../../../playwright/ct-test';
 import { CertificateDetailHeaderTestWrapper } from './CertificateDetailHeaderTestWrapper';
 
@@ -203,5 +203,27 @@ test.describe('CertificateDetailHeader — operations by permission', () => {
         for (const label of gated) {
             await expect(menuItem(page, label)).not.toHaveAttribute('aria-disabled', 'true');
         }
+    });
+});
+
+test.describe('CertificateDetailHeader — registration expiry', () => {
+    test('withdraws Complete once the issuance window elapses while the page stays open', async ({ mount, page }) => {
+        const start = new Date('2026-11-18T12:00:00Z');
+        await page.clock.install({ time: start });
+        const certificateOverrides = {
+            state: CertificateState.Registered,
+            registration: { state: CertificateRegistrationState.Active, failedAttempts: 0, expiresAt: '2026-11-18T12:01:00Z' },
+        };
+        await mount(<CertificateDetailHeaderTestWrapper certificateOverrides={certificateOverrides} />);
+
+        await page.getByRole('button', { name: 'More actions' }).click();
+        const complete = page.getByRole('menuitem', { name: 'Complete', exact: true });
+        await expect(complete).not.toHaveAttribute('aria-disabled', 'true');
+        await page.keyboard.press('Escape');
+
+        await page.clock.fastForward('01:01');
+        await page.getByRole('button', { name: 'More actions' }).click();
+        await expect(complete).toHaveAttribute('aria-disabled', 'true');
+        await expect(complete).toHaveAccessibleDescription('The issuance window has elapsed');
     });
 });
