@@ -471,6 +471,27 @@ describe('validators', () => {
             // then
             expect(error).toBe('Value must be an absolute http or https URL without credentials or a fragment');
         });
+
+        test.each([
+            { value: 'https://[::ffff:10.0.0.1]/api', expected: undefined },
+            { value: 'https://[2001:db8:0:0:0:0:0:1]/api', expected: undefined },
+            {
+                value: 'https://[::ffff:999.0.0.1]/api',
+                expected: 'Value must be an absolute http or https URL without credentials or a fragment',
+            },
+            { value: 'https://[1::2::3]/api', expected: 'Value must be an absolute http or https URL without credentials or a fragment' },
+            { value: 'https://[12345::1]/api', expected: 'Value must be an absolute http or https URL without credentials or a fragment' },
+            {
+                value: 'https://ilm.example.com:80a/api',
+                expected: 'Value must be an absolute http or https URL without credentials or a fragment',
+            },
+        ])('reads the host and port of $value as java.net.URI does', ({ value, expected }) => {
+            // when
+            const error = validateResourceIndicator()(value);
+
+            // then
+            expect(error).toBe(expected);
+        });
     });
 
     describe('validateUrlWithRoute', () => {

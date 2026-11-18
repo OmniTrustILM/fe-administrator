@@ -77,7 +77,6 @@ const IP_OCTET = String.raw`(?:25[0-5]|2[0-4]\d|[01]?\d\d?)`;
 const IP_REGEX = new RegExp(String.raw`^${IP_OCTET}\.${IP_OCTET}\.${IP_OCTET}\.${IP_OCTET}$`);
 
 const RESOURCE_INDICATOR_ERROR = 'Value must be an absolute http or https URL without credentials or a fragment';
-const URI_SCHEME_REGEX = /^([A-Za-z][A-Za-z0-9+.-]*):\/\/([^/?]*)(.*)$/;
 const URI_PATH_CHAR = String.raw`[A-Za-z0-9\-_.!~*'():@&=+$,;/]|%[0-9A-Fa-f]{2}|[^\u0000-   -     　]`;
 const URI_PATH_AND_QUERY_REGEX = new RegExp(String.raw`^(?:${URI_PATH_CHAR})*(?:\?(?:${URI_PATH_CHAR}|[?[\]])*)?$`);
 const HOSTNAME_LABEL_REGEX = /^[A-Za-z0-9](?:[A-Za-z0-9-]*[A-Za-z0-9])?$/;
@@ -89,7 +88,7 @@ const PORT_REGEX = /^\d*$/;
 function isUriHostname(host: string): boolean {
     const labels = host.endsWith('.') ? host.slice(0, -1).split('.') : host.split('.');
     if (!labels.every((label) => HOSTNAME_LABEL_REGEX.test(label))) return false;
-    return labels.length === 1 || /^[A-Za-z]/.test(labels.at(-1) ?? '');
+    return labels.length === 1 || /^[A-Za-z]/.test(labels[labels.length - 1]);
 }
 
 function isIpv6Address(address: string): boolean {
@@ -97,8 +96,10 @@ function isIpv6Address(address: string): boolean {
     if (halves.length > 2) return false;
     const groups = halves.flatMap((half) => (half === '' ? [] : half.split(':')));
     let groupCount = groups.length;
-    if (groups.at(-1)?.includes('.')) {
-        if (!IP_REGEX.test(groups.pop() ?? '')) return false;
+    const lastGroup = groups.at(-1);
+    if (lastGroup?.includes('.')) {
+        if (!IP_REGEX.test(lastGroup)) return false;
+        groups.pop();
         groupCount += 1;
     }
     if (!groups.every((group) => IPV6_GROUP_REGEX.test(group))) return false;
@@ -118,15 +119,26 @@ function isUriServerAuthority(authority: string): boolean {
     return IP_REGEX.test(host) || isUriHostname(host);
 }
 
+/** Splits an absolute URI at its `://`, then at the first `/` or `?` after the authority. */
+function splitAbsoluteUri(value: string): { scheme: string; authority: string; pathAndQuery: string } | undefined {
+    const separator = value.indexOf('://');
+    if (separator < 0) return undefined;
+    const rest = value.slice(separator + 3);
+    const pathStart = rest.search(/[/?]/);
+    const authorityEnd = pathStart < 0 ? rest.length : pathStart;
+    return { scheme: value.slice(0, separator), authority: rest.slice(0, authorityEnd), pathAndQuery: rest.slice(authorityEnd) };
+}
+
 /** An RFC 8707 resource indicator as Core accepts it: an absolute http or https URI without credentials or a fragment. A blank value is unset. */
 export const validateResourceIndicator = () => (value: string | undefined) => {
     const trimmed = value?.trim();
     if (!trimmed) return undefined;
-    const [, scheme, authority, pathAndQuery] = URI_SCHEME_REGEX.exec(trimmed) ?? [];
+    const uri = splitAbsoluteUri(trimmed);
     const isValid =
-        ['http', 'https'].includes(scheme?.toLowerCase() ?? '') &&
-        isUriServerAuthority(authority ?? '') &&
-        URI_PATH_AND_QUERY_REGEX.test(pathAndQuery ?? '');
+        uri !== undefined &&
+        ['http', 'https'].includes(uri.scheme.toLowerCase()) &&
+        isUriServerAuthority(uri.authority) &&
+        URI_PATH_AND_QUERY_REGEX.test(uri.pathAndQuery);
     return isValid ? undefined : RESOURCE_INDICATOR_ERROR;
 };
 

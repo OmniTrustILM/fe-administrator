@@ -24,7 +24,9 @@ test('sendsTheTagOfTheLoadedProvider_whenSaving', async ({ mount, page }) => {
     await saveDelegateClaim(page, 'azp');
 
     // then
-    await expect.poll(() => submission(page)).toMatchObject({ ifMatch: loadedTag });
+    await expect(async () => {
+        expect(await submission(page)).toMatchObject({ ifMatch: loadedTag });
+    }).toPass();
 });
 
 test('explainsTheConflictAndOffersAReload_whenSomeoneElseChangedTheProvider', async ({ mount, page }) => {
