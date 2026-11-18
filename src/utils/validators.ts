@@ -88,7 +88,8 @@ const PORT_REGEX = /^\d*$/;
 function isUriHostname(host: string): boolean {
     const labels = host.endsWith('.') ? host.slice(0, -1).split('.') : host.split('.');
     if (!labels.every((label) => HOSTNAME_LABEL_REGEX.test(label))) return false;
-    return labels.length === 1 || /^[A-Za-z]/.test(labels[labels.length - 1]);
+    const [lastLabel] = labels.slice(-1);
+    return labels.length === 1 || /^[A-Za-z]/.test(lastLabel);
 }
 
 function isIpv6Address(address: string): boolean {
