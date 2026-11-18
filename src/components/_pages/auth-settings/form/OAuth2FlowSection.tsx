@@ -1,4 +1,5 @@
 import type { OAuth2ProviderSettingsModel } from 'types/auth-settings';
+import { AuthenticationScheme, schemesOfProvider } from 'utils/oauth2Providers';
 import { validatePositiveInteger, validateUrlWithRoute } from 'utils/validators';
 import FormSection from './FormSection';
 import FormTextField from './FormTextField';
@@ -10,6 +11,7 @@ type Props = {
 };
 
 export default function OAuth2FlowSection({ editMode, storedProvider }: Readonly<Props>) {
+    const hasStoredFlow = Boolean(storedProvider && schemesOfProvider(storedProvider).includes(AuthenticationScheme.OAuth2Flow));
     return (
         <FormSection legend="OAuth2 Flow" description="Signs users in to the administrator interface through the provider's login page.">
             <FormTextField
@@ -25,7 +27,7 @@ export default function OAuth2FlowSection({ editMode, storedProvider }: Readonly
                 label="Client Secret"
                 description="The client secret used by the client application to authenticate with the authorization server."
                 type="password"
-                required={!editMode}
+                required={!editMode || !hasStoredFlow}
             />
 
             <FormTextField

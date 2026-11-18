@@ -87,6 +87,20 @@ test('editing a provider with stored but disabled applications warns that saving
     await expect(page.getByTestId('scheme-removal-warning')).toHaveCount(0);
 });
 
+test('adding OAuth2 Flow to a provider without it asks for a new client secret', async ({ mount, page }) => {
+    await mount(<OAuth2DelegationTestHarness mode="edit" provider={{ ...base, issuerUrl: 'https://issuer.example' }} />);
+
+    await chooseScheme(page, 'OAuth2 Flow');
+
+    await expect(page.getByTestId('label-clientSecret')).toHaveText('Client Secret *');
+});
+
+test('editing a provider with OAuth2 Flow keeps the client secret optional', async ({ mount, page }) => {
+    await mount(<OAuth2DelegationTestHarness mode="edit" provider={provider} />);
+
+    await expect(page.getByTestId('label-clientSecret')).toHaveText('Client Secret');
+});
+
 test('each application field has its description', async ({ mount, page }) => {
     await mount(<OAuth2DelegationTestHarness mode="create" />);
 
