@@ -6,6 +6,7 @@ import { testInitialState } from 'ducks/test-reducers';
 import { useMemo } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter, Route, Routes } from 'react-router';
+import type { OAuth2ProviderSettingsModel } from 'types/auth-settings';
 import type { EnumItemDto } from 'types/openapi';
 import { JwkSetLoadFailure, PlatformEnum } from 'types/openapi';
 import OAuth2ProviderDetail from './detail';
@@ -36,16 +37,22 @@ type PageProps = FailureProps &
     Readonly<{
         providerName?: string;
         loadedProviderName?: string;
+        providers?: Record<string, OAuth2ProviderSettingsModel>;
     }>;
 
-function createStore(failure?: JwkSetLoadFailure, providerName = 'provider', loadedProviderName = providerName) {
+function createStore(
+    failure?: JwkSetLoadFailure,
+    providerName = 'provider',
+    loadedProviderName = providerName,
+    providers?: Record<string, OAuth2ProviderSettingsModel>,
+) {
     const state = {
         ...testInitialState,
         authSettings: {
             ...authSettingsInitialState,
             authenticationSettings: {
                 disableLocalhostUser: false,
-                oauth2Providers: {
+                oauth2Providers: providers ?? {
                     [providerName]: {
                         name: providerName,
                         issuerUrl: 'https://issuer.example',
@@ -68,8 +75,16 @@ function createStore(failure?: JwkSetLoadFailure, providerName = 'provider', loa
     return configureStore({ reducer: () => state });
 }
 
-function useTestStore(failure?: JwkSetLoadFailure, providerName = 'provider', loadedProviderName = providerName) {
-    return useMemo(() => createStore(failure, providerName, loadedProviderName), [failure, providerName, loadedProviderName]);
+function useTestStore(
+    failure?: JwkSetLoadFailure,
+    providerName = 'provider',
+    loadedProviderName = providerName,
+    providers?: Record<string, OAuth2ProviderSettingsModel>,
+) {
+    return useMemo(
+        () => createStore(failure, providerName, loadedProviderName, providers),
+        [failure, providerName, loadedProviderName, providers],
+    );
 }
 
 export function JwkSetLoadFailureWarningTestWrapper({ failure }: FailureProps) {
@@ -96,8 +111,13 @@ export function OAuth2ProviderDetailTestWrapper({ failure, providerName = 'provi
     );
 }
 
-export function AuthenticationSettingsTestWrapper({ failure, providerName = 'provider', loadedProviderName = providerName }: PageProps) {
-    const store = useTestStore(failure, providerName, loadedProviderName);
+export function AuthenticationSettingsTestWrapper({
+    failure,
+    providerName = 'provider',
+    loadedProviderName = providerName,
+    providers,
+}: PageProps) {
+    const store = useTestStore(failure, providerName, loadedProviderName, providers);
 
     return (
         <Provider store={store}>

@@ -1,13 +1,6 @@
 import { expect, test, type Page } from 'playwright/ct-test';
 import OAuth2DelegationTestHarness from './OAuth2DelegationTestHarness';
-
-const provider = {
-    name: 'provider',
-    clientId: 'ilm-login',
-    issuerUrl: 'https://issuer.example',
-    jwkSetUrl: 'https://issuer.example/jwks',
-    jwkSetKeys: [],
-};
+import { provider } from './oauth2ProviderTestFixtures';
 
 const loadedTag = '"tag-when-the-form-loaded"';
 
