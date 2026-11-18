@@ -121,7 +121,7 @@ test.describe('CertificateDetail — permission to change each location', () => 
         });
     }
 
-    test('settles Remove once a refresh drops the checked location, and offers it for another allowed one', async ({ mount, page }) => {
+    const checkThenDropFirstLocation = async (mount: (component: React.JSX.Element) => Promise<unknown>, page: Page) => {
         const thirdLocation = location('loc-3', 'Third location');
         await mount(
             <CertificateDetailWithStore
@@ -134,34 +134,33 @@ test.describe('CertificateDetail — permission to change each location', () => 
         );
         await page.getByRole('tab', { name: 'Locations' }).click();
         await checkRow(page, 'First location');
+        await expect(page.getByTestId('trash-button')).toBeEnabled();
+        await page.evaluate(() => {
+            const win = window as Window & { removeWentBusy?: boolean };
+            win.removeWentBusy = false;
+            new MutationObserver(() => {
+                if (document.querySelector('[data-testid="trash-button"][aria-busy]')) win.removeWentBusy = true;
+            }).observe(document.body, { subtree: true, childList: true, attributes: true, attributeFilter: ['aria-busy'] });
+        });
 
         await page.getByTestId('refresh-locations').click();
+        await expect(page.getByRole('row', { name: /First location/ })).toHaveCount(0);
+    };
+
+    test('settles Remove once a refresh drops the checked location, and offers it for another allowed one', async ({ mount, page }) => {
+        await checkThenDropFirstLocation(mount, page);
 
         const remove = page.getByTestId('trash-button');
-        await expect(page.getByRole('row', { name: /First location/ })).toHaveCount(0);
         await expect(remove).toBeDisabled();
         await expect(remove).not.toHaveAttribute('aria-busy');
+        expect(await page.evaluate(() => (window as Window & { removeWentBusy?: boolean }).removeWentBusy)).toBe(false);
 
         await checkRow(page, 'Third location');
         await expect(remove).toBeEnabled();
     });
 
     test('keeps a dropped location unselected when a later refresh brings it back', async ({ mount, page }) => {
-        const thirdLocation = location('loc-3', 'Third location');
-        await mount(
-            <CertificateDetailWithStore
-                allowedListings={listings}
-                allowedActions={[ResourceAction.Detail]}
-                certificateLocations={[certificateLocations[0], thirdLocation]}
-                refreshedLocations={[thirdLocation]}
-                locationAnswers={answers}
-            />,
-        );
-        await page.getByRole('tab', { name: 'Locations' }).click();
-        await checkRow(page, 'First location');
-
-        await page.getByTestId('refresh-locations').click();
-        await expect(page.getByRole('row', { name: /First location/ })).toHaveCount(0);
+        await checkThenDropFirstLocation(mount, page);
         await page.getByTestId('restore-locations').click();
 
         await expect(page.getByRole('row', { name: /First location/ }).getByRole('checkbox')).not.toBeChecked();

@@ -237,12 +237,19 @@ export default function CertificateDetail() {
     const deviceType = useDeviceType();
     const [currentInfoId, setCurrentInfoId] = useState('');
 
-    const [locationsCheckedRows, setCheckedLocationRows] = useState<string[]>([]);
+    const [checkedLocationRows, setCheckedLocationRows] = useState<string[]>([]);
     // The table drops a removed location from its own selection without reporting it, so a location pushed back later
     // would otherwise return to the page's selection while its checkbox stays clear.
     useEffect(() => {
-        setCheckedLocationRows((rows) => rows.filter((uuid) => certLocationUuids.includes(uuid)));
+        setCheckedLocationRows((rows) =>
+            rows.every((uuid) => certLocationUuids.includes(uuid)) ? rows : rows.filter((uuid) => certLocationUuids.includes(uuid)),
+        );
     }, [certLocationUuids]);
+    // Derived in render so the commit that drops a location never hands a stale UUID to the availability check.
+    const locationsCheckedRows = useMemo(
+        () => checkedLocationRows.filter((uuid) => certLocationUuids.includes(uuid)),
+        [checkedLocationRows, certLocationUuids],
+    );
     const [selectLocationsCheckedRows, setSelectLocationsCheckedRows] = useState<string[]>([]);
 
     const [locationToEntityMap, setLocationToEntityMap] = useState<{ [key: string]: string }>({});
