@@ -98,10 +98,9 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
         [editMode, oauth2Provider, watchedSchemes],
     );
 
+    const storedProviderSchemes = oauth2Provider ? schemesOfProvider(oauth2Provider) : [];
     const incompleteSchemeLabels = editMode
-        ? incompleteSchemes(watchedSchemes, formValues, oauth2Provider ? schemesOfProvider(oauth2Provider) : []).map(
-              (scheme) => authenticationSchemeLabels[scheme],
-          )
+        ? incompleteSchemes(watchedSchemes, formValues, storedProviderSchemes).map((scheme) => authenticationSchemeLabels[scheme])
         : [];
 
     const onSubmit = useCallback(
