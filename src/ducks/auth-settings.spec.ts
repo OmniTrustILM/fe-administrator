@@ -103,6 +103,60 @@ describe('authSettings slice', () => {
         expect(next.updateProviderSucceeded).toBe(false);
     });
 
+    test('storesTheProviderTag_whenTheReadSucceeds', () => {
+        // given
+        const providerTag = '"tag-of-the-read"';
+
+        // when
+        const next = reducer(
+            initialState,
+            actions.getOAuth2ProviderSettingsSuccess({ oauth2Provider: { name: 'p1' } as any, eTag: providerTag }),
+        );
+
+        // then
+        expect(selectors.oauth2ProviderETag({ authSettings: next } as any)).toBe(providerTag);
+    });
+
+    test('marksAConflict_whenTheUpdateFailsWithOne', () => {
+        // given
+        const updating = { ...initialState, isUpdatingProvider: true };
+
+        // when
+        const next = reducer(updating, actions.updateOAuth2ProviderFailure({ error: 'changed', conflict: true }));
+
+        // then
+        expect(selectors.updateProviderConflict({ authSettings: next } as any)).toBe(true);
+        expect(next.isUpdatingProvider).toBe(false);
+    });
+
+    test('clearsTheConflict_whenTheProviderIsReadAgain', () => {
+        // given
+        const conflicted = { ...initialState, updateProviderConflict: true };
+
+        // when
+        const next = reducer(conflicted, actions.getOAuth2ProviderSettings({ providerName: 'p1' }));
+
+        // then
+        expect(next.updateProviderConflict).toBe(false);
+    });
+
+    test('clearsTheTagAndTheConflict_whenTheProviderIsReset', () => {
+        // given
+        const loaded = {
+            ...initialState,
+            oauth2Provider: { name: 'p1' } as any,
+            oauth2ProviderETag: '"tag"',
+            updateProviderConflict: true,
+        };
+
+        // when
+        const next = reducer(loaded, actions.resetOAuth2ProviderSettings());
+
+        // then
+        expect(next.oauth2ProviderETag).toBeUndefined();
+        expect(next.updateProviderConflict).toBe(false);
+    });
+
     test('createOAuth2Provider / success / failure', () => {
         let next = reducer(
             initialState,

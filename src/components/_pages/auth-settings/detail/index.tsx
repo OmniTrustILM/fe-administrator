@@ -157,6 +157,18 @@ export default function OAuth2ProviderDetail() {
                 : [],
         [selectedOAuth2Provider],
     );
+    const applicationsData: TableDataRow[] = useMemo(() => {
+        if (!selectedOAuth2Provider) return [];
+        const applications = selectedOAuth2Provider.applications;
+        return [
+            { id: 'applicationsEnabled', columns: ['Advertised to applications', applications?.enabled ? 'Enabled' : 'Disabled'] },
+            { id: 'applicationsName', columns: ['Display name', applications?.name || selectedOAuth2Provider.name] },
+            { id: 'applicationsClientId', columns: ['Public client Id', applications?.clientId || 'Not set'] },
+            { id: 'applicationsScopes', columns: ['Application scopes', applications?.scopes?.join(', ') || 'None'] },
+            { id: 'applicationsResource', columns: ['Resource', applications?.resource || 'Not set'] },
+        ];
+    }, [selectedOAuth2Provider]);
+
     if ((isFetchingProvider && !selectedOAuth2Provider) || (oauth2Provider && !selectedOAuth2Provider)) {
         return <DetailPageSkeleton layout="simple" buttonsCount={1} />;
     }
@@ -173,6 +185,9 @@ export default function OAuth2ProviderDetail() {
                 <Container>
                     <Widget title="Provider Details" widgetButtons={buttons} titleSize="large" refreshAction={getFreshData}>
                         <CustomTable headers={headers} data={data} />
+                    </Widget>
+                    <Widget title="Sign-in for Applications" titleSize="large" refreshAction={getFreshData}>
+                        <CustomTable headers={headers} data={applicationsData} />
                     </Widget>
                     <Widget title="JWK Set Keys" titleSize="large" refreshAction={getFreshData}>
                         <JwkSetLoadFailureWarning failure={selectedOAuth2Provider?.jwkSetLoadFailure} />

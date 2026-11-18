@@ -502,6 +502,7 @@ models/NotificationProfileRequestDto.ts
 models/NotificationProfileResponseDto.ts
 models/NotificationProfileUpdateRequestDto.ts
 models/NotificationResponseDto.ts
+models/OAuth2ApplicationSettingsDto.ts
 models/OAuth2ProviderSettingsDto.ts
 models/OAuth2ProviderSettingsResponseDto.ts
 models/OAuth2ProviderSettingsUpdateDto.ts
