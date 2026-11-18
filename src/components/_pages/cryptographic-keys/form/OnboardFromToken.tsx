@@ -6,15 +6,15 @@ import CustomTable, { type TableDataRow, type TableHeader } from 'components/Cus
 import RetryCallout from 'components/RetryCallout';
 import Select from 'components/Select';
 import TextInput from 'components/TextInput';
-import Tooltip from 'components/Tooltip';
+import Toggletip from 'components/Toggletip';
 import WizardSection from 'components/_pages/certificates/ImportWizard/WizardSection';
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from 'ducks/customAttributes';
 import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
 import { actions as tokenKeysActions, selectors as tokenKeysSelectors } from 'ducks/token-keys';
 import { actions as tokenProfilesActions, selectors as tokenProfilesSelectors } from 'ducks/token-profiles';
 import { transformAttributeRequestModelToDto } from 'ducks/transform/attributes';
-import { handleOf } from 'ducks/transform/token-keys';
-import { type ReactNode, useCallback, useEffect, useEffectEvent, useMemo, useState } from 'react';
+import { explanationOf, handleOf, isOnboarded } from 'ducks/transform/token-keys';
+import { type ReactNode, useCallback, useEffect, useEffectEvent, useMemo, useRef, useState } from 'react';
 import { type FieldValues, FormProvider, useForm, useFormContext } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import {
@@ -22,6 +22,7 @@ import {
     PlatformEnum,
     Resource,
     type TokenKeyDto,
+    TokenKeyOnboardingOutcome,
     type TokenKeyOnboardingResultDto,
     TokenKeyStatus,
     type TokenProfileDto,
@@ -35,11 +36,13 @@ type Props = Readonly<{
 
 /**
  * A selection keeps its pair as last listed, so a pair picked on another page still names its onboarding result.
- * The name is set once the user types one.
+ * The name is set once the user types one, and the name conflict holds the last onboarding's verdict on that name.
  */
-type Selection = Readonly<{ keyPairMeta: MetadataAttribute[]; listed: TokenKeyDto; name?: string }>;
+type Selection = Readonly<{ keyPairMeta: MetadataAttribute[]; listed: TokenKeyDto; name?: string; nameConflict?: string }>;
 
 type SelectionsByHandle = Record<string, Selection>;
+
+type NamesByHandle = Record<string, string | undefined>;
 
 type SelectionCells = [select: ReactNode, name: ReactNode];
 
@@ -51,8 +54,9 @@ const statusColors: Record<TokenKeyStatus, BadgeColor> = {
     [TokenKeyStatus.InInventory]: 'gray',
     [TokenKeyStatus.InInventoryWithoutToken]: 'warning',
     [TokenKeyStatus.ImportInProgress]: 'gray',
-    [TokenKeyStatus.NoPublicKey]: 'danger',
-    [TokenKeyStatus.NoUsableId]: 'danger',
+    [TokenKeyStatus.PublicKeyUnavailable]: 'danger',
+    [TokenKeyStatus.Unaddressable]: 'danger',
+    [TokenKeyStatus.Refused]: 'danger',
     [TokenKeyStatus.UnsupportedKeyType]: 'danger',
     [TokenKeyStatus.Unreadable]: 'danger',
     [TokenKeyStatus.Gone]: 'gray',
@@ -91,20 +95,26 @@ function storageNameCell(key: TokenKeyDto): ReactNode {
 }
 
 /**
- * A pair's reason shows on hovering or focusing its status, so the column holds only statuses and the keys holding pairs.
- * The reason opens to the right, clear of the statuses below.
+ * A listed entry's explanation opens from its status on hover, tap or Enter, so the column holds only statuses and the keys holding pairs.
+ * The explanation opens to the right, clear of the statuses below.
  */
 function statusCell(key: TokenKeyDto, statusLabel: string): ReactNode {
     const badge = <Badge color={statusColors[key.status]}>{statusLabel}</Badge>;
+    const explanation = explanationOf(key);
     return (
         <span key="status" className="flex flex-wrap items-center gap-2">
-            {key.reason ? (
-                <Tooltip content={key.reason} placement="right">
-                    <button type="button" className="cursor-help">
-                        {badge}
-                        <span className="sr-only">{key.reason}</span>
-                    </button>
-                </Tooltip>
+            {explanation.length > 0 ? (
+                <Toggletip
+                    ariaLabel={[statusLabel, ...explanation].join(' ')}
+                    triggerContent={badge}
+                    triggerClassName="cursor-help"
+                    content={explanation.map((line) => (
+                        <span key={line} className="block">
+                            {line}
+                        </span>
+                    ))}
+                    placement="right"
+                />
             ) : (
                 badge
             )}
@@ -117,9 +127,31 @@ function isOnboardable(status: TokenKeyStatus): boolean {
     return status === TokenKeyStatus.Onboardable || status === TokenKeyStatus.OnboardableIntoKey;
 }
 
-function withoutOnboarded(selections: SelectionsByHandle, results: TokenKeyOnboardingResultDto[]): SelectionsByHandle {
-    const onboarded = new Set(results.filter((result) => result.onboarded).map((result) => handleOf(result.keyPairMeta)));
-    return Object.fromEntries(Object.entries(selections).filter(([handle]) => !onboarded.has(handle)));
+/** Every result except an onboarded one keeps its pair selected, with the name conflict that result implies. */
+function withOnboardingResults(
+    selections: SelectionsByHandle,
+    results: TokenKeyOnboardingResultDto[],
+    sentNames: NamesByHandle,
+): SelectionsByHandle {
+    const resultsByHandle = new Map(results.map((result) => [handleOf(result.keyPairMeta), result]));
+    const remaining: SelectionsByHandle = {};
+    for (const [handle, selection] of Object.entries(selections)) {
+        const result = resultsByHandle.get(handle);
+        if (result === undefined) {
+            remaining[handle] = selection;
+        } else if (!isOnboarded(result)) {
+            const holdsSentName = nameToSend(selection) === sentNames[handle];
+            remaining[handle] = { ...selection, nameConflict: holdsSentName ? nameConflictOf(result) : undefined };
+        }
+    }
+    return remaining;
+}
+
+const UNEXPLAINED_NAME_CONFLICT = 'Another key already has this name.';
+
+function nameConflictOf(result: TokenKeyOnboardingResultDto): string | undefined {
+    if (result.outcome !== TokenKeyOnboardingOutcome.NameTaken) return undefined;
+    return result.reason || UNEXPLAINED_NAME_CONFLICT;
 }
 
 function withRelisted(selections: SelectionsByHandle, keys: readonly TokenKeyDto[]): SelectionsByHandle {
@@ -264,6 +296,8 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
     const [pageNumber, setPageNumber] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [selections, setSelections] = useState<SelectionsByHandle>({});
+    // A name typed while the onboarding runs is a new attempt, so Core's verdict on the sent name leaves it unflagged.
+    const sentNames = useRef<NamesByHandle>({});
     const tokenInstanceUuid = profile.tokenInstanceUuid;
     const tokenProfileUuid = profile.uuid;
 
@@ -276,7 +310,7 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
     }, [listPage]);
 
     const onOnboardingFinished = useEffectEvent((finished: TokenKeyOnboardingResultDto[]) => {
-        setSelections((current) => withoutOnboarded(current, finished));
+        setSelections((current) => withOnboardingResults(current, finished, sentNames.current));
         listPage();
     });
 
@@ -306,7 +340,7 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
     const rename = useCallback((handle: string, name: string) => {
         setSelections((current) => {
             const selection = current[handle];
-            return selection === undefined ? current : { ...current, [handle]: { ...selection, name } };
+            return selection === undefined ? current : { ...current, [handle]: { ...selection, name, nameConflict: undefined } };
         });
     }, []);
 
@@ -320,6 +354,9 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
                 name: nameToSend(selection),
             }));
             const captions = Object.fromEntries(Object.entries(selections).map(([handle, { listed }]) => [handle, captionOf(listed)]));
+            sentNames.current = Object.fromEntries(
+                Object.entries(selections).map(([handle, selection]) => [handle, nameToSend(selection)]),
+            );
             dispatch(tokenKeysActions.onboardTokenKeys({ tokenInstanceUuid, tokenProfileUuid, keys, captions, customAttributes }));
         },
         [dispatch, selections, keyCustomAttributeDescriptors, tokenInstanceUuid, tokenProfileUuid],
@@ -335,6 +372,8 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
                     key="name"
                     ariaLabel={`Name for ${shownLabel}`}
                     value={selection.name ?? key.suggestedName ?? ''}
+                    invalid={selection.nameConflict !== undefined}
+                    error={selection.nameConflict}
                     onChange={(newName) => rename(handle, newName)}
                 />
             );
@@ -377,7 +416,7 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
     }, [tokenKeys, selections, statusEnum, algorithmEnum, toggle, rename]);
 
     const anySelected = Object.keys(selections).length > 0;
-    const anyOnboarded = (results ?? []).some((result) => result.onboarded);
+    const anyOnboarded = (results ?? []).some(isOnboarded);
     // A failed listing leaves required custom attributes unasked, so onboarding waits for it.
     const canOnboard = anySelected && !isOnboarding && !isListingKeyCustomAttributes && !keyCustomAttributesError;
 

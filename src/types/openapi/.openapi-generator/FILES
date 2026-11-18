@@ -723,6 +723,7 @@ models/TokenInstanceStatusComponent.ts
 models/TokenInstanceStatusDetailDto.ts
 models/TokenKeyDto.ts
 models/TokenKeyListResponseDto.ts
+models/TokenKeyOnboardingOutcome.ts
 models/TokenKeyOnboardingResultDto.ts
 models/TokenKeySelectionDto.ts
 models/TokenKeyStatus.ts

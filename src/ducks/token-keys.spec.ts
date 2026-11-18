@@ -7,6 +7,7 @@ import { describe, expect, onTestFinished, test, vi } from 'vitest';
 import {
     type OnboardTokenKeysResponseDto,
     KeyAlgorithm,
+    TokenKeyOnboardingOutcome,
     type TokenKeyOnboardingResultDto,
     type RequestAttribute,
     type TokenKeyListResponseDto,
@@ -44,33 +45,29 @@ const page: TokenKeyListResponseDto = {
 
 const onboarded: TokenKeyOnboardingResultDto = {
     keyPairMeta: keyPairMeta('handle-1'),
-    onboarded: true,
-    intoExistingKey: false,
+    outcome: TokenKeyOnboardingOutcome.Onboarded,
     keyUuid: 'key-1',
     keyName: 'signer',
 };
-const skipped: TokenKeyOnboardingResultDto = {
+const blocked: TokenKeyOnboardingResultDto = {
     keyPairMeta: keyPairMeta('handle-2'),
-    onboarded: false,
-    intoExistingKey: false,
+    outcome: TokenKeyOnboardingOutcome.Blocked,
+    status: TokenKeyStatus.InInventory,
     reason: "Key 'signer' already holds this key pair.",
 };
 const secondOnboarded: TokenKeyOnboardingResultDto = {
     keyPairMeta: keyPairMeta('handle-3'),
-    onboarded: true,
-    intoExistingKey: false,
+    outcome: TokenKeyOnboardingOutcome.Onboarded,
     keyUuid: 'key-3',
     keyName: 'archiver',
 };
-const skippedWithoutReason: TokenKeyOnboardingResultDto = {
+const failedWithoutReason: TokenKeyOnboardingResultDto = {
     keyPairMeta: keyPairMeta('handle-4'),
-    onboarded: false,
-    intoExistingKey: false,
+    outcome: TokenKeyOnboardingOutcome.Failed,
 };
-const skippedForName: TokenKeyOnboardingResultDto = {
+const nameTaken: TokenKeyOnboardingResultDto = {
     keyPairMeta: keyPairMeta('handle-5'),
-    onboarded: false,
-    intoExistingKey: false,
+    outcome: TokenKeyOnboardingOutcome.NameTaken,
     reason: "A key 'backup' already exists.",
 };
 
@@ -147,7 +144,7 @@ describe('token keys slice', () => {
 
     test('an onboarding forgets the previous results and keeps the new ones', () => {
         // given
-        const earlier = { ...initialState, tokenKeyOnboardingResults: [skipped] };
+        const earlier = { ...initialState, tokenKeyOnboardingResults: [blocked] };
 
         // when
         const onboarding = reducer(
@@ -268,9 +265,9 @@ describe('token key epics', () => {
         expect(emitted).toEqual([actions.onboardTokenKeysSuccess({ results: [onboarded] }), alertActions.success('Onboarded 1 key pair.')]);
     });
 
-    test('onboardTokenKeys reports a batch with a refused key as an error', async () => {
+    test('onboardTokenKeys reports a batch with a key not onboarded as an error', async () => {
         // given
-        const onboardTokenKeys = vi.fn(() => of({ results: [onboarded, skipped] }));
+        const onboardTokenKeys = vi.fn(() => of({ results: [onboarded, blocked] }));
         const action = actions.onboardTokenKeys({
             ...request,
             captions,
@@ -290,16 +287,16 @@ describe('token key epics', () => {
             onboardTokenKeysRequestDto: { keys: [{ keyPairMeta: keyPairMeta('handle-1') }, { keyPairMeta: keyPairMeta('handle-2') }] },
         });
         expect(emitted).toEqual([
-            actions.onboardTokenKeysSuccess({ results: [onboarded, skipped] }),
+            actions.onboardTokenKeysSuccess({ results: [onboarded, blocked] }),
             alertActions.error(
                 "Onboarded 1 of 2 key pairs and failed to onboard 1.\narchive-pair: Key 'signer' already holds this key pair.",
             ),
         ]);
     });
 
-    test('onboardTokenKeys reports a refused key as an error with its reason', async () => {
+    test('onboardTokenKeys reports a key not onboarded as an error with its reason', async () => {
         // given
-        const onboardTokenKeys = vi.fn(() => of({ results: [skipped] }));
+        const onboardTokenKeys = vi.fn(() => of({ results: [blocked] }));
         const action = actions.onboardTokenKeys({ ...request, captions, keys: [{ keyPairMeta: keyPairMeta('handle-2') }] });
 
         // when
@@ -311,7 +308,7 @@ describe('token key epics', () => {
 
         // then
         expect(emitted).toEqual([
-            actions.onboardTokenKeysSuccess({ results: [skipped] }),
+            actions.onboardTokenKeysSuccess({ results: [blocked] }),
             alertActions.error("Failed to onboard the key pair. Key 'signer' already holds this key pair."),
         ]);
     });
@@ -371,18 +368,43 @@ describe('summarizeOnboarding', () => {
             expected: { allOnboarded: true, message: 'Onboarded 2 key pairs.' },
         },
         {
-            batch: 'its one key refused',
-            results: [skipped],
+            batch: 'one key onboarded and one joined to an existing key',
+            results: [onboarded, { ...secondOnboarded, outcome: TokenKeyOnboardingOutcome.JoinedExistingKey }],
+            expected: { allOnboarded: true, message: 'Onboarded 2 key pairs.' },
+        },
+        {
+            batch: 'its one key not onboarded',
+            results: [blocked],
             expected: { allOnboarded: false, message: "Failed to onboard the key pair. Key 'signer' already holds this key pair." },
         },
         {
-            batch: 'its one key refused without a reason',
-            results: [skippedWithoutReason],
+            batch: 'its one key not onboarded without a reason',
+            results: [failedWithoutReason],
             expected: { allOnboarded: false, message: 'Failed to onboard the key pair. No reason was given.' },
         },
         {
-            batch: 'every key refused',
-            results: [skipped, skippedForName],
+            batch: "its one key blocked with the connector's diagnostic",
+            results: [
+                {
+                    ...blocked,
+                    status: TokenKeyStatus.Refused,
+                    reason: 'The connector refuses this key pair.',
+                    diagnostic: 'CKA_PRIVATE is false.',
+                },
+            ],
+            expected: {
+                allOnboarded: false,
+                message: 'Failed to onboard the key pair. The connector refuses this key pair. Connector: CKA_PRIVATE is false.',
+            },
+        },
+        {
+            batch: "its one key failed with the connector's diagnostic alone",
+            results: [{ ...failedWithoutReason, diagnostic: 'CKA_PRIVATE is false.' }],
+            expected: { allOnboarded: false, message: 'Failed to onboard the key pair. Connector: CKA_PRIVATE is false.' },
+        },
+        {
+            batch: 'no key onboarded',
+            results: [blocked, nameTaken],
             expected: {
                 allOnboarded: false,
                 message:
@@ -390,8 +412,8 @@ describe('summarizeOnboarding', () => {
             },
         },
         {
-            batch: 'every key refused, one without a reason',
-            results: [skipped, skippedWithoutReason],
+            batch: 'no key onboarded, one without a reason',
+            results: [blocked, failedWithoutReason],
             expected: {
                 allOnboarded: false,
                 message:
@@ -399,8 +421,8 @@ describe('summarizeOnboarding', () => {
             },
         },
         {
-            batch: 'some keys refused',
-            results: [onboarded, skipped, skippedForName],
+            batch: 'some keys not onboarded',
+            results: [onboarded, blocked, nameTaken],
             expected: {
                 allOnboarded: false,
                 message:
@@ -411,12 +433,12 @@ describe('summarizeOnboarding', () => {
         expect(summarizeOnboarding(results, captions)).toEqual(expected);
     });
 
-    test('gives a refusal of a key pair without a caption its reason alone', () => {
+    test('gives a failure of a key pair without a caption its reason alone', () => {
         // given
         const archiveCaptionOnly = { [handleOf(keyPairMeta('handle-2'))]: 'archive-pair' };
 
         // when
-        const { message } = summarizeOnboarding([skipped, skippedForName], archiveCaptionOnly);
+        const { message } = summarizeOnboarding([blocked, nameTaken], archiveCaptionOnly);
 
         // then
         expect(message).toBe(

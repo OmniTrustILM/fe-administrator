@@ -73,9 +73,15 @@ export interface TokenKeyDto {
      */
     suggestedName?: string;
     /**
-     * Why the key cannot be onboarded
+     * Platform\'s summary of why the key cannot be onboarded
      * @type {string}
      * @memberof TokenKeyDto
      */
     reason?: string;
+    /**
+     * Text of the token instance\'s connector naming the cause behind the status and how to fix it, alongside the platform\'s `reason`. Clients display it and never parse it.
+     * @type {string}
+     * @memberof TokenKeyDto
+     */
+    diagnostic?: string;
 }
