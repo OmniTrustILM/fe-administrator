@@ -51,13 +51,13 @@ export interface ContentSigningWorkflowRequestDto {
      */
     family?: SignatureFamily;
     /**
-     * Highest signature level a request may ask for. A request asking for more is rejected. Required for ILM-managed signing; must be omitted for delegated signing.
+     * Signature level at which the profile signs every document. Required for ILM-managed signing; must be omitted for delegated signing.
      * @type {SignatureLevel}
      * @memberof ContentSigningWorkflowRequestDto
      */
-    maxLevel?: SignatureLevel;
+    level?: SignatureLevel;
     /**
-     * Source of the timestamps embedded at level TIMESTAMPED and above. Required when maxLevel is TIMESTAMPED or higher, and must be omitted when maxLevel is SIGNED, which embeds no timestamp. Must be omitted for delegated signing.
+     * Source of the timestamps embedded at level TIMESTAMPED and above. Required when level is TIMESTAMPED or higher, and must be omitted when level is SIGNED, which embeds no timestamp. Must be omitted for delegated signing.
      * @type {TimestampSourceRequestDto}
      * @memberof ContentSigningWorkflowRequestDto
      */

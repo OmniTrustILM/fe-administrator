@@ -90,7 +90,7 @@ export interface GetTspActivationDetailsRequest {
 export interface ListContentSigningFormattingConnectorAttributesRequest {
     connectorUuid: string;
     family: SignatureFamily;
-    maxLevel: SignatureLevel;
+    level: SignatureLevel;
     signingProfileUuid?: string;
 }
 
@@ -428,31 +428,31 @@ export class SigningProfileManagementApi extends BaseAPI {
     }
 
     /**
-     * Returns the formatting attribute descriptors a content signing Signing Profile can reach, merged by name into one flat set carrying the connector\'s default values. family and maxLevel together name the workflow the Signing Profile will run, and the connector must be able to serve it; the descriptor set follows from maxLevel, so family does not narrow the returned descriptors. The signingProfileUuid parameter is used for authorization only and does not affect the returned descriptors.
+     * Returns the formatting attribute descriptors a content signing Signing Profile can reach, merged by name into one flat set carrying the connector\'s default values. family and level together name the workflow the Signing Profile will run, and the connector must be able to serve it; the descriptor set follows from level, so family does not narrow the returned descriptors. The signingProfileUuid parameter is used for authorization only and does not affect the returned descriptors.
      * Get content signing formatting attribute descriptors from a Signature Formatting Provider
      */
     listContentSigningFormattingConnectorAttributes({
         connectorUuid,
         family,
-        maxLevel,
+        level,
         signingProfileUuid,
     }: ListContentSigningFormattingConnectorAttributesRequest): Observable<Array<BaseAttributeDto>>;
     listContentSigningFormattingConnectorAttributes(
-        { connectorUuid, family, maxLevel, signingProfileUuid }: ListContentSigningFormattingConnectorAttributesRequest,
+        { connectorUuid, family, level, signingProfileUuid }: ListContentSigningFormattingConnectorAttributesRequest,
         opts?: OperationOpts,
     ): Observable<AjaxResponse<Array<BaseAttributeDto>>>;
     listContentSigningFormattingConnectorAttributes(
-        { connectorUuid, family, maxLevel, signingProfileUuid }: ListContentSigningFormattingConnectorAttributesRequest,
+        { connectorUuid, family, level, signingProfileUuid }: ListContentSigningFormattingConnectorAttributesRequest,
         opts?: OperationOpts,
     ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
         throwIfNullOrUndefined(connectorUuid, 'connectorUuid', 'listContentSigningFormattingConnectorAttributes');
         throwIfNullOrUndefined(family, 'family', 'listContentSigningFormattingConnectorAttributes');
-        throwIfNullOrUndefined(maxLevel, 'maxLevel', 'listContentSigningFormattingConnectorAttributes');
+        throwIfNullOrUndefined(level, 'level', 'listContentSigningFormattingConnectorAttributes');
 
         const queryParams: HttpQuery = {
             // required parameters are used directly since they are already checked by throwIfNullOrUndefined
             family: family,
-            maxLevel: maxLevel,
+            level: level,
         };
 
         if (signingProfileUuid != null) {
