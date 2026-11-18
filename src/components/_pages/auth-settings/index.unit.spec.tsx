@@ -65,3 +65,44 @@ describe('OAuth2 provider JWK Set keys dialog', () => {
         expect(dialog?.querySelector('[data-testid="spinner"]')).not.toBeNull();
     });
 });
+
+describe('OAuth2 provider list', () => {
+    let container: HTMLDivElement;
+    let root: Root;
+
+    beforeEach(() => {
+        container = document.createElement('div');
+        document.body.appendChild(container);
+        root = createRoot(container);
+    });
+
+    afterEach(() => {
+        act(() => {
+            root.unmount();
+        });
+        container.remove();
+    });
+
+    test('list shows the Application badge for a provider enabled for applications', async () => {
+        await act(async () => {
+            root.render(
+                <AuthenticationSettingsTestWrapper
+                    providers={{
+                        'app-provider': {
+                            name: 'app-provider',
+                            issuerUrl: 'https://issuer.example',
+                            applications: { enabled: true },
+                        },
+                        'plain-provider': { name: 'plain-provider', issuerUrl: 'https://issuer.example' },
+                    }}
+                />,
+            );
+        });
+
+        const rows = Array.from(container.querySelectorAll('tr'));
+        const rowOf = (name: string) => rows.find((row) => row.textContent?.includes(name));
+        expect(rowOf('app-provider')?.textContent).toContain('Application');
+        expect(rowOf('plain-provider')).toBeDefined();
+        expect(rowOf('plain-provider')?.textContent).not.toContain('Application');
+    });
+});

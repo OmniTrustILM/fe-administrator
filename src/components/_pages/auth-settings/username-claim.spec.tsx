@@ -19,7 +19,7 @@ async function submittedModel(page: Page) {
 
 test('a new provider without a username claim leaves it to the platform default', async ({ mount, page }) => {
     await mount(<OAuth2DelegationTestHarness mode="create" />);
-    await page.getByTestId('select-scheme-trigger').click();
+    await page.getByTestId('select-schemes-trigger').click();
     await page.getByRole('option', { name: 'JWT Bearer', exact: true }).click();
     await expect(page.getByLabel('Username claim', { exact: true })).toHaveAttribute('placeholder', 'username');
     await fillInput(page.getByLabel('Provider Name', { exact: false }), 'provider');
@@ -33,7 +33,7 @@ test('a new provider without a username claim leaves it to the platform default'
 
 test('a new provider submits a trimmed username claim', async ({ mount, page }) => {
     await mount(<OAuth2DelegationTestHarness mode="create" />);
-    await page.getByTestId('select-scheme-trigger').click();
+    await page.getByTestId('select-schemes-trigger').click();
     await page.getByRole('option', { name: 'JWT Bearer', exact: true }).click();
     await fillInput(page.getByLabel('Provider Name', { exact: false }), 'provider');
     await fillInput(page.getByLabel('JWK Set Url', { exact: false }), provider.jwkSetUrl);
@@ -89,7 +89,7 @@ test('editing treats an explicit default username claim as no change', async ({ 
 
 test('creating a provider does not warn about the username claim', async ({ mount, page }) => {
     await mount(<OAuth2DelegationTestHarness mode="create" />);
-    await page.getByTestId('select-scheme-trigger').click();
+    await page.getByTestId('select-schemes-trigger').click();
     await page.getByRole('option', { name: 'JWT Bearer', exact: true }).click();
     await fillInput(page.getByLabel('Username claim', { exact: true }), 'oid');
 
@@ -106,5 +106,5 @@ test('provider detail displays the configured username claim', async ({ mount, p
 test('provider detail shows the default username claim when none is configured', async ({ mount, page }) => {
     await mount(<OAuth2DelegationTestHarness mode="detail" provider={provider} />);
 
-    await expect(page.getByRole('row').filter({ hasText: 'Username claim' })).toHaveText('Username claimusername');
+    await expect(page.getByRole('row').filter({ hasText: 'Username claim' })).toHaveText('Username claimusernamedefault');
 });

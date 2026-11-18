@@ -15,7 +15,7 @@ async function fillInput(input: Locator, value: string) {
 
 test('a new provider explains refusal by default and submits the default delegate claim', async ({ mount, page }) => {
     await mount(<OAuth2DelegationTestHarness mode="create" />);
-    await page.getByTestId('select-scheme-trigger').click();
+    await page.getByTestId('select-schemes-trigger').click();
     await page.getByRole('option', { name: 'JWT Bearer', exact: true }).click();
     await expect(page.getByText('A provider without allowed delegates refuses delegation tokens.', { exact: false })).toBeVisible();
     await expect(page.getByLabel('Allowed delegates', { exact: true })).toBeAttached();
@@ -79,7 +79,10 @@ test('provider detail displays configured delegation settings', async ({ mount, 
         />,
     );
 
-    await expect(page.getByRole('row').filter({ hasText: 'Allowed delegates' })).toHaveText('Allowed delegatesService-A, service-a');
+    await expect(page.getByRole('row').filter({ hasText: 'Allowed delegates' }).getByTestId('badge')).toHaveText([
+        'Service-A',
+        'service-a',
+    ]);
     await expect(page.getByRole('row').filter({ hasText: 'Delegate claim' })).toHaveText('Delegate claimazp');
 });
 
@@ -87,5 +90,5 @@ test('provider detail makes disabled delegation and the default claim visible fo
     await mount(<OAuth2DelegationTestHarness mode="detail" provider={provider} />);
 
     await expect(page.getByRole('row').filter({ hasText: 'Allowed delegates' })).toHaveText('Allowed delegatesNone');
-    await expect(page.getByRole('row').filter({ hasText: 'Delegate claim' })).toHaveText('Delegate claimclient_id');
+    await expect(page.getByRole('row').filter({ hasText: 'Delegate claim' })).toHaveText('Delegate claimclient_iddefault');
 });
