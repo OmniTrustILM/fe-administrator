@@ -49,8 +49,18 @@ test.describe('RaProfileDetail actions by permission', () => {
         await expect(page.getByTestId('check-compliance-button')).toBeDisabled();
     });
 
+    test('offers the actions addressed by authority on a profile under one', async ({ mount, page }) => {
+        await mount(<RaProfileDetailWithStore objectAccess={[Resource.ApprovalProfiles]} />);
+
+        await expect(page.getByTestId('add-button')).toBeEnabled();
+        await page.getByRole('tab', { name: 'Validation' }).click();
+        const edit = page.getByTestId('edit-button');
+        await expect(edit).toHaveCount(2);
+        for (let index = 0; index < 2; index++) await expect(edit.nth(index)).toBeEnabled();
+    });
+
     test('disables the actions addressed by authority on a profile without one, whatever the user may update', async ({ mount, page }) => {
-        await mount(<RaProfileDetailWithStore withoutAuthority />);
+        await mount(<RaProfileDetailWithStore withoutAuthority objectAccess={[Resource.ApprovalProfiles]} />);
 
         await expect(page.getByTestId('edit-button')).toBeDisabled();
         await expect(page.getByTestId('add-button')).toBeDisabled();

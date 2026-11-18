@@ -19,6 +19,8 @@ type Props = Readonly<{
     allowedActions?: ResourceAction[];
     /** Actions the user holds on whole resources; none when omitted. */
     resourceGrants?: { resource: Resource; actions: ResourceAction[] }[];
+    /** Resources the user holds object access on; none when omitted. */
+    objectAccess?: Resource[];
     /** Opens a profile that has no authority, under the route's `unknown` segment. */
     withoutAuthority?: boolean;
 }>;
@@ -36,6 +38,7 @@ const raProfile = {
 export default function RaProfileDetailWithStore({
     allowedActions = Object.values(ResourceAction),
     resourceGrants,
+    objectAccess,
     withoutAuthority,
 }: Props) {
     const profile = withoutAuthority ? { ...raProfile, authorityInstanceUuid: undefined, authorityInstanceName: undefined } : raProfile;
@@ -45,6 +48,7 @@ export default function RaProfileDetailWithStore({
             uuid: raProfile.uuid,
             allowedActions,
             resourceGrants,
+            objectAccess,
             realSlices: [acmeProfilesSlice, approvalProfilesSlice, cmpProfilesSlice, estProfilesSlice, scepProfilesSlice],
             preloadedState: {
                 raprofiles: { ...raProfilesInitialState, ...testInitialState.raprofiles, raProfile: profile },
