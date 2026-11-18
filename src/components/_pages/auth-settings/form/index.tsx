@@ -13,7 +13,7 @@ import Label from 'components/Label';
 import { useAreDefaultValuesSame } from 'utils/common-hooks';
 import { validateAlphaNumericWithSpecialChars, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
-import { AuthenticationScheme, authenticationSchemeLabels, withRequiredSchemes } from 'utils/oauth2Providers';
+import { AuthenticationScheme, authenticationSchemeLabels, schemesOfProvider, withRequiredSchemes } from 'utils/oauth2Providers';
 import { type FormValues, incompleteSchemes, removedSchemes, storedSchemes, toFormValues, toUpdateModel } from './form-model';
 import ApplicationsSection from './ApplicationsSection';
 import GeneralSection from './GeneralSection';
@@ -99,7 +99,9 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
     );
 
     const incompleteSchemeLabels = editMode
-        ? incompleteSchemes(watchedSchemes, formValues).map((scheme) => authenticationSchemeLabels[scheme])
+        ? incompleteSchemes(watchedSchemes, formValues, oauth2Provider ? schemesOfProvider(oauth2Provider) : []).map(
+              (scheme) => authenticationSchemeLabels[scheme],
+          )
         : [];
 
     const onSubmit = useCallback(

@@ -101,9 +101,15 @@ type RequiredFieldName = (typeof requiredFieldsOfScheme)[AuthenticationScheme][n
 
 export function incompleteSchemes(
     schemes: AuthenticationScheme[],
-    values: Partial<Pick<FormValues, RequiredFieldName>>,
+    values: Partial<Pick<FormValues, RequiredFieldName | 'clientSecret'>>,
+    stored: AuthenticationScheme[],
 ): AuthenticationScheme[] {
-    return schemes.filter((scheme) => requiredFieldsOfScheme[scheme].some((name: RequiredFieldName) => !values[name]));
+    const needsNewSecret = !stored.includes(AuthenticationScheme.OAuth2Flow) && !values.clientSecret;
+    return schemes.filter(
+        (scheme) =>
+            requiredFieldsOfScheme[scheme].some((name: RequiredFieldName) => !values[name]) ||
+            (scheme === AuthenticationScheme.OAuth2Flow && needsNewSecret),
+    );
 }
 
 export function storedSchemes(provider: OAuth2ProviderSettingsModel): AuthenticationScheme[] {

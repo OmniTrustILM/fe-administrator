@@ -17,6 +17,13 @@ test('shows durations and defaults', async ({ mount, page }) => {
     await expect(row(page, 'Session Max Inactive Interval')).toContainText('15 mindefault');
 });
 
+test('marks stored values equal to the default', async ({ mount, page }) => {
+    await mount(<OAuth2DelegationTestHarness mode="detail" provider={{ ...provider, skew: 30, sessionMaxInactiveInterval: 900 }} />);
+
+    await expect(row(page, 'Skew')).toContainText('30 sdefault');
+    await expect(row(page, 'Session Max Inactive Interval')).toContainText('15 mindefault');
+});
+
 test('formats a stored duration', async ({ mount, page }) => {
     await mount(<OAuth2DelegationTestHarness mode="detail" provider={{ ...provider, skew: 60 }} />);
 

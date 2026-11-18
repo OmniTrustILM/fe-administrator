@@ -43,7 +43,7 @@ function ValuePills({ values }: Readonly<{ values?: string[] }>) {
 }
 
 function WithDefault({ value, fallback }: Readonly<{ value?: string; fallback: string }>) {
-    if (value) return <>{value}</>;
+    if (value && value !== fallback) return <>{value}</>;
     return (
         <>
             {fallback}

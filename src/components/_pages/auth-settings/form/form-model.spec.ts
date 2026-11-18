@@ -135,7 +135,7 @@ describe('storedSchemes', () => {
 
 describe('incompleteSchemes', () => {
     test('lists nothing when every required field is filled', () => {
-        expect(incompleteSchemes(filled.schemes, { ...filled, clientSecret: '' })).toEqual([]);
+        expect(incompleteSchemes(filled.schemes, { ...filled, clientSecret: '' }, filled.schemes)).toEqual([]);
     });
 
     test.each([
@@ -146,10 +146,15 @@ describe('incompleteSchemes', () => {
         ['logoutUrl', OAuth2Flow],
         ['postLogoutUrl', OAuth2Flow],
     ] as const)('an empty %s leaves %s incomplete', (field, scheme) => {
-        expect(incompleteSchemes(filled.schemes, { ...filled, [field]: '' })).toEqual([scheme]);
+        expect(incompleteSchemes(filled.schemes, { ...filled, [field]: '' }, filled.schemes)).toEqual([scheme]);
+    });
+
+    test('needs a new client secret when OAuth2 Flow was not stored', () => {
+        expect(incompleteSchemes(filled.schemes, { ...filled, clientSecret: '' }, [JwtBearer, Application])).toEqual([OAuth2Flow]);
+        expect(incompleteSchemes(filled.schemes, { ...filled, clientSecret: 's' }, [JwtBearer, Application])).toEqual([]);
     });
 
     test('ignores the fields of a scheme that is not chosen', () => {
-        expect(incompleteSchemes([JwtBearer, Application], { ...filled, clientId: '' })).toEqual([]);
+        expect(incompleteSchemes([JwtBearer, Application], { ...filled, clientId: '' }, [JwtBearer])).toEqual([]);
     });
 });

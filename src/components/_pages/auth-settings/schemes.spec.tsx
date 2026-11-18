@@ -93,6 +93,9 @@ test('adding OAuth2 Flow to a provider without it asks for a new client secret',
     await chooseScheme(page, 'OAuth2 Flow');
 
     await expect(page.getByTestId('label-clientSecret')).toHaveText('Client Secret *');
+    await expect(page.getByTestId('incomplete-schemes-warning')).toHaveText(
+        'Complete the OAuth2 Flow settings, or remove the scheme to drop them.',
+    );
 });
 
 test('editing a provider with OAuth2 Flow keeps the client secret optional', async ({ mount, page }) => {
