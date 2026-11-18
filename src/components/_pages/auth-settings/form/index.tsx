@@ -13,8 +13,8 @@ import Label from 'components/Label';
 import { useAreDefaultValuesSame } from 'utils/common-hooks';
 import { validateAlphaNumericWithSpecialChars, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
-import { AuthenticationScheme, authenticationSchemeLabels, schemesOfProvider, withRequiredSchemes } from 'utils/oauth2Providers';
-import { type FormValues, incompleteSchemes, removedSchemes, toFormValues, toUpdateModel } from './form-model';
+import { AuthenticationScheme, authenticationSchemeLabels, withRequiredSchemes } from 'utils/oauth2Providers';
+import { type FormValues, incompleteSchemes, removedSchemes, storedSchemes, toFormValues, toUpdateModel } from './form-model';
 import ApplicationsSection from './ApplicationsSection';
 import GeneralSection from './GeneralSection';
 import JwtBearerSection from './JwtBearerSection';
@@ -93,7 +93,7 @@ export default function OAuth2ProviderForm({ providerName, onCancel, onSuccess }
     const removedSchemeLabels = useMemo(
         () =>
             editMode && oauth2Provider
-                ? removedSchemes(schemesOfProvider(oauth2Provider), watchedSchemes).map((scheme) => authenticationSchemeLabels[scheme])
+                ? removedSchemes(storedSchemes(oauth2Provider), watchedSchemes).map((scheme) => authenticationSchemeLabels[scheme])
                 : [],
         [editMode, oauth2Provider, watchedSchemes],
     );

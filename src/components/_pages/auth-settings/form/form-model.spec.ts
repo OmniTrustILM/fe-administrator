@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import { AuthenticationScheme } from 'utils/oauth2Providers';
-import { type FormValues, incompleteSchemes, removedSchemes, toFormValues, toUpdateModel } from './form-model';
+import { type FormValues, incompleteSchemes, removedSchemes, storedSchemes, toFormValues, toUpdateModel } from './form-model';
 
 const { JwtBearer, OAuth2Flow, Application } = AuthenticationScheme;
 
@@ -110,6 +110,26 @@ describe('toFormValues', () => {
 describe('removedSchemes', () => {
     test('returns the initial schemes that are no longer chosen', () => {
         expect(removedSchemes([JwtBearer, Application], [JwtBearer])).toEqual([Application]);
+    });
+});
+
+describe('storedSchemes', () => {
+    test('counts disabled applications that still hold settings', () => {
+        expect(storedSchemes({ name: 'p', issuerUrl: 'https://i', applications: { enabled: false, clientId: 'x' } })).toEqual([
+            JwtBearer,
+            Application,
+        ]);
+    });
+
+    test('ignores disabled applications without settings', () => {
+        expect(storedSchemes({ name: 'p', issuerUrl: 'https://i', applications: { enabled: false, scopes: [] } })).toEqual([JwtBearer]);
+    });
+
+    test('lists enabled applications once', () => {
+        expect(storedSchemes({ name: 'p', issuerUrl: 'https://i', applications: { enabled: true, clientId: 'x' } })).toEqual([
+            JwtBearer,
+            Application,
+        ]);
     });
 });
 

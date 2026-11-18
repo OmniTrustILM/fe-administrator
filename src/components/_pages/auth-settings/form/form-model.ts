@@ -106,6 +106,17 @@ export function incompleteSchemes(
     return schemes.filter((scheme) => requiredFieldsOfScheme[scheme].some((name: RequiredFieldName) => !values[name]));
 }
 
+export function storedSchemes(provider: OAuth2ProviderSettingsModel): AuthenticationScheme[] {
+    const schemes = schemesOfProvider(provider);
+    const applications = provider.applications;
+    const hasApplicationSettings = Boolean(
+        applications && (applications.name || applications.clientId || applications.scopes?.length || applications.resource),
+    );
+    return hasApplicationSettings && !schemes.includes(AuthenticationScheme.Application)
+        ? [...schemes, AuthenticationScheme.Application]
+        : schemes;
+}
+
 export function removedSchemes(initial: AuthenticationScheme[], chosen: AuthenticationScheme[]): AuthenticationScheme[] {
     return initial.filter((scheme) => !chosen.includes(scheme));
 }

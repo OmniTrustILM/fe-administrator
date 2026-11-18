@@ -72,6 +72,21 @@ test('removing a scheme warns and clears its settings', async ({ mount, page }) 
     expect((await submittedModel(page)).applications).toEqual({ enabled: false, scopes: [] });
 });
 
+test('editing a provider with stored but disabled applications warns that saving removes them', async ({ mount, page }) => {
+    await mount(
+        <OAuth2DelegationTestHarness
+            mode="edit"
+            provider={{ ...provider, applications: { enabled: false, clientId: 'ilm-apps', scopes: ['openid'] } }}
+        />,
+    );
+
+    await expect(page.getByTestId('scheme-removal-warning')).toHaveText('Saving removes the Application settings from this provider.');
+
+    await chooseScheme(page, 'Application');
+
+    await expect(page.getByTestId('scheme-removal-warning')).toHaveCount(0);
+});
+
 test('each application field has its description', async ({ mount, page }) => {
     await mount(<OAuth2DelegationTestHarness mode="create" />);
 
