@@ -558,6 +558,23 @@ describe('DiscoveryForm', () => {
             expect(createdRequest().window).toBeUndefined();
         });
 
+        it('omitsWindow_whenSwitchedToProviderWithoutIncrementalFlag', async () => {
+            await render(buildState({ discoveryProviders: [incrementalProvider, otherProvider], descriptors }));
+            await click('select-discoveryProviderSelect');
+            await click('select-resourcesSelect');
+            await typeName('scan');
+            await click('select-windowModeSelect');
+
+            providerChoice = 'conn-2';
+            await click('select-discoveryProviderSelect');
+            await click('select-resourcesSelect');
+            await submit();
+
+            expect(windowSelect()).toBeNull();
+            expect(createdRequest()).toBeDefined();
+            expect(createdRequest().window).toBeUndefined();
+        });
+
         it('offersSinceLastSuccessfulRun_onlyWhenScheduled', async () => {
             await pickIncrementalProvider();
             expect(windowSelect()?.getAttribute('data-options')).toBe(`${DiscoveryWindowMode.Full},${DiscoveryWindowMode.Lookback}`);
