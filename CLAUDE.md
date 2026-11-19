@@ -316,7 +316,6 @@ Follow the rules of Robert C. Martin's *Clean Code* and *Clean Architecture* in 
 
 - Keep configurable data at high levels.
 - Prefer polymorphism to if/else or switch/case.
-- Separate multi-threaded code.
 - Prevent over-configurability.
 - Use dependency injection.
 - Law of Demeter: a module knows only its direct dependencies.
@@ -371,7 +370,6 @@ Follow the rules of Robert C. Martin's *Clean Code* and *Clean Architecture* in 
 
 **Tests**
 
-- One assert per test.
 - Readable, fast, independent, repeatable.
 
 **Code smells to avoid**
