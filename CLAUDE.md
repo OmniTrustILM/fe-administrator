@@ -301,6 +301,101 @@ add new issues to the analysis.
 - Trust the SonarCloud results over a local SonarQube scan: the local quality profile omits rules
   SonarCloud enforces.
 
+## Clean Code and Clean Architecture
+
+Follow the rules of Robert C. Martin's *Clean Code* and *Clean Architecture* in every change.
+
+**General**
+
+- Follow standard conventions.
+- Keep it simple. Reduce complexity as much as possible.
+- Boy Scout rule: leave the code cleaner than you found it.
+- Always find the root cause of a problem.
+
+**Design**
+
+- Keep configurable data at high levels.
+- Prefer polymorphism to if/else or switch/case.
+- Separate multi-threaded code.
+- Prevent over-configurability.
+- Use dependency injection.
+- Law of Demeter: a module knows only its direct dependencies.
+
+**Understandability**
+
+- Be consistent: do similar things the same way.
+- Use explanatory variables.
+- Encapsulate boundary conditions in one place.
+- Prefer dedicated value objects to primitive types.
+- Avoid logical dependency: a method must not rely on something else in the same class to work correctly.
+- Avoid negative conditionals.
+
+**Names**
+
+- Descriptive and unambiguous.
+- Meaningful distinctions.
+- Pronounceable and searchable.
+- Named constants instead of magic numbers.
+- No encodings, prefixes or type information.
+
+**Functions**
+
+- Small.
+- Do one thing.
+- Descriptive names.
+- Few arguments.
+- No side effects.
+- No flag arguments: split into separate functions instead.
+
+**Comments**
+
+- Explain yourself in code, not in comments.
+- No redundant or obvious comments, no closing-brace comments, no commented-out code.
+- Use a comment only to explain intent, clarify, or warn of consequences.
+
+**Source structure**
+
+- Separate concepts vertically; keep related code vertically dense.
+- Declare variables close to their use.
+- Keep dependent and similar functions close; order functions top-down.
+- Keep lines short; no horizontal alignment; don't break indentation.
+
+**Objects and data structures**
+
+- Hide internal structure.
+- Prefer data structures; avoid hybrids that are half object, half data.
+- Objects are small, do one thing, and have few instance variables.
+- A base class knows nothing about its derivatives.
+- Prefer many functions to passing code into a function to select behaviour.
+- Prefer non-static methods to static methods.
+
+**Tests**
+
+- One assert per test.
+- Readable, fast, independent, repeatable.
+
+**Code smells to avoid**
+
+- Rigidity, fragility, immobility, needless complexity, needless repetition, opacity.
+
+**SOLID**
+
+- Single Responsibility: a module has one reason to change.
+- Open-Closed: open for extension, closed for modification.
+- Liskov Substitution: subtypes are substitutable for their base types.
+- Interface Segregation: don't depend on things you don't use.
+- Dependency Inversion: depend on abstractions, not concretions.
+
+**Architecture**
+
+- Dependency Rule: source code dependencies point only inward, toward higher-level policy.
+- Business rules do not depend on the UI, the framework, the database or external agencies.
+- Keep details (frameworks, I/O, delivery) at the edges, behind boundaries.
+- Components: release together what is reused together (REP); group what changes together (CCP);
+  don't force users to depend on what they don't need (CRP).
+- No cycles in the component dependency graph (ADP); depend in the direction of stability (SDP);
+  stable components are abstract (SAP).
+
 ## Git & Pull Requests
 
 - Do NOT put a PR number or issue number in the PR title. Describe the change itself. (Referencing the issue in the PR body, e.g. "Closes #NNNN", is fine.)
