@@ -80,7 +80,7 @@ export interface DiscoveryDetailDto {
      */
     window?: DiscoveryWindowDto;
     /**
-     * The instant the run discovered from, resolved from the window when it started. Absent for a full discovery.
+     * The instant the run discovered from, resolved from the window when it started. Null for a full discovery.
      * @type {string}
      * @memberof DiscoveryDetailDto
      */
