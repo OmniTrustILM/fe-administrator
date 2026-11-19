@@ -48,6 +48,8 @@ export type OnboardFromTokenWithStoreProps = Readonly<{
 
 const noop = () => {};
 
+export type OnboardFromTokenStoreHolder = { __onboardFromTokenStore__: { dispatch: (action: UnknownAction) => void } };
+
 function answerLater(api: MiddlewareAPI, answered: UnknownAction) {
     setTimeout(() => api.dispatch(answered), 0);
 }
@@ -95,6 +97,8 @@ export default function OnboardFromTokenWithStore({
             middleware: (getDefault) => getDefault({ serializableCheck: false }).concat(answer),
         });
     }, [profiles, page, relistedPage, secondPage, listingError, onboardingResults, keyCustomAttributes, onAction]);
+    // A test answers an onboarding left in flight through this store, after acting while it runs.
+    (globalThis as unknown as OnboardFromTokenStoreHolder).__onboardFromTokenStore__ = store;
 
     return (
         <Provider store={store}>

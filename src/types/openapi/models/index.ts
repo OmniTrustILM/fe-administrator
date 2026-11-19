@@ -653,6 +653,7 @@ export * from './TokenInstanceStatusComponent';
 export * from './TokenInstanceStatusDetailDto';
 export * from './TokenKeyDto';
 export * from './TokenKeyListResponseDto';
+export * from './TokenKeyOnboardingOutcome';
 export * from './TokenKeyOnboardingResultDto';
 export * from './TokenKeySelectionDto';
 export * from './TokenKeyStatus';

@@ -10,7 +10,7 @@
  * Do not edit the class manually.
  */
 
-import type { MetadataAttribute } from './';
+import type { MetadataAttribute, TokenKeyOnboardingOutcome, TokenKeyStatus } from './';
 
 /**
  * What became of one selected key
@@ -25,17 +25,17 @@ export interface TokenKeyOnboardingResultDto {
      */
     keyPairMeta: Array<MetadataAttribute>;
     /**
-     * Whether the key was onboarded
-     * @type {boolean}
+     * What became of the key
+     * @type {TokenKeyOnboardingOutcome}
      * @memberof TokenKeyOnboardingResultDto
      */
-    onboarded: boolean;
+    outcome: TokenKeyOnboardingOutcome;
     /**
-     * Whether the private key joined the inventory key that held the public key
-     * @type {boolean}
+     * Status that blocked the key; present only when `outcome` is `blocked` and a status applies
+     * @type {TokenKeyStatus}
      * @memberof TokenKeyOnboardingResultDto
      */
-    intoExistingKey: boolean;
+    status?: TokenKeyStatus;
     /**
      * UUID of the onboarded key, or of the inventory key that already holds the key. For an existing key, present only when the caller may see that key in detail.
      * @type {string}
@@ -49,9 +49,15 @@ export interface TokenKeyOnboardingResultDto {
      */
     keyName?: string;
     /**
-     * Why the key was skipped
+     * Platform\'s summary of why the key was not onboarded
      * @type {string}
      * @memberof TokenKeyOnboardingResultDto
      */
     reason?: string;
+    /**
+     * Text of the token instance\'s connector naming the cause behind a key that was not onboarded and how to fix it, alongside the platform\'s `reason`. Clients display it and never parse it.
+     * @type {string}
+     * @memberof TokenKeyOnboardingResultDto
+     */
+    diagnostic?: string;
 }

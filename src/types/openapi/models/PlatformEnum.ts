@@ -53,6 +53,7 @@ export enum PlatformEnum {
     KeyUsage = 'KeyUsage',
     KeyRequestType = 'KeyRequestType',
     TokenKeyStatus = 'TokenKeyStatus',
+    TokenKeyOnboardingOutcome = 'TokenKeyOnboardingOutcome',
     KeyCompromiseReason = 'KeyCompromiseReason',
     TokenInstanceStatus = 'TokenInstanceStatus',
     DigestAlgorithm = 'DigestAlgorithm',
