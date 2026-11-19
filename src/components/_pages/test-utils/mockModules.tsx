@@ -37,6 +37,12 @@ export const containerMockModule = () => ({
     default: ({ children }: { children?: ReactNode }) => <div>{children}</div>,
 });
 
+export const switchMockModule = () => ({
+    default: ({ id, checked, onChange }: { id: string; checked?: boolean; onChange: (checked: boolean) => void }) => (
+        <input type="checkbox" data-testid={`switch-${id}`} checked={!!checked} onChange={(e) => onChange(e.target.checked)} />
+    ),
+});
+
 export const widgetMockModule = () => ({
     default: ({
         title,

@@ -295,6 +295,8 @@ export * from './DiscoveryResourceProgressDto';
 export * from './DiscoveryResponseDto';
 export * from './DiscoveryStatus';
 export * from './DiscoverySupportedResourceDto';
+export * from './DiscoveryWindowDto';
+export * from './DiscoveryWindowMode';
 export * from './EditKeyItemDto';
 export * from './EditKeyRequestDto';
 export * from './EditLocationRequestDto';

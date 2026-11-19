@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 
 import DiscoveryForm from './index';
-import { ConnectorInterface, FunctionGroupCode, PlatformEnum, Resource } from 'types/openapi';
+import { ConnectorInterface, DiscoveryWindowMode, FeatureFlag, FunctionGroupCode, PlatformEnum, Resource } from 'types/openapi';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
 import { useDispatchMock, useSelectorMock } from '../../test-utils/reactReduxMockModule';
 
@@ -15,21 +15,28 @@ vi.mock('react-redux', async () => await import('../../test-utils/reactReduxMock
 let multiSelection: { value: string; label: string }[] = [{ value: Resource.Certificates, label: 'Certificates' }];
 let interfaceChoice = 'iface-2';
 let providerChoice = 'conn-1';
+let windowChoice: string = DiscoveryWindowMode.Lookback;
+let unitChoice = 'hours';
 
 vi.mock('components/Select', () => ({
-    default: ({ id, onChange, isMulti }: any) => (
+    default: ({ id, onChange, isMulti, options }: any) => (
         <button
             type="button"
             data-testid={`select-${id}`}
+            data-options={(options ?? []).map((o: any) => o.value).join(',')}
             onClick={() => {
                 if (isMulti) {
                     onChange(multiSelection);
                     return;
                 }
                 onChange(
-                    { discoveryProviderSelect: providerChoice, storeKindSelect: 'IP-HostName', interfaceSelect: interfaceChoice }[
-                        id as string
-                    ],
+                    {
+                        discoveryProviderSelect: providerChoice,
+                        storeKindSelect: 'IP-HostName',
+                        interfaceSelect: interfaceChoice,
+                        windowModeSelect: windowChoice,
+                        windowLookbackUnitSelect: unitChoice,
+                    }[id as string],
                 );
             }}
         >
@@ -39,16 +46,20 @@ vi.mock('components/Select', () => ({
 }));
 
 vi.mock('components/Widget', () => ({
-    default: ({ title, noBorder, children }: any) => (
+    default: ({ title, noBorder, widgetExtraTopNode, children }: any) => (
         <div data-testid={`widget-${title || 'untitled'}`} data-no-border={noBorder ? 'true' : undefined}>
             {title}
+            {widgetExtraTopNode}
             {children}
         </div>
     ),
 }));
 vi.mock('components/Container', () => ({ default: ({ children }: any) => <div>{children}</div> }));
 vi.mock('components/Label', () => ({ default: ({ children }: any) => <div>{children}</div> }));
-vi.mock('components/Switch', () => ({ default: () => <input type="checkbox" /> }));
+vi.mock('components/Switch', async () => {
+    const { switchMockModule } = await import('../../test-utils/mockModules');
+    return switchMockModule();
+});
 vi.mock('components/TextInput', () => ({
     default: ({ id, value, onChange }: any) => (
         <input data-testid={`input-${id}`} value={value ?? ''} onChange={(e) => onChange(e.target.value)} />
@@ -140,6 +151,13 @@ const multiInterfaceProvider = {
     ],
 };
 
+// A v2 provider whose interface advertises incremental discovery, so the window selector is offered.
+const incrementalProvider = {
+    ...singleInterfaceProvider,
+    name: 'incremental v2 scanner',
+    interfaces: [{ uuid: 'iface-1', code: ConnectorInterface.Discovery, version: 'v2', features: [FeatureFlag.DiscoveryIncremental] }],
+};
+
 const descriptors = [{ uuid: 'ad1', name: 'attr', type: 'data', content: [] } as any];
 
 function buildState(over: any = {}) {
@@ -186,6 +204,8 @@ describe('DiscoveryForm', () => {
         multiSelection = [{ value: Resource.Certificates, label: 'Certificates' }];
         interfaceChoice = 'iface-2';
         providerChoice = 'conn-1';
+        windowChoice = DiscoveryWindowMode.Lookback;
+        unitChoice = 'hours';
     });
 
     afterEach(async () => {
@@ -207,12 +227,14 @@ describe('DiscoveryForm', () => {
         });
     };
 
-    const typeName = async (name: string) => {
+    const typeName = async (name: string) => typeInto('name', name);
+
+    const typeInto = async (id: string, value: string) => {
         await act(async () => {
-            const input = container.querySelector<HTMLInputElement>('[data-testid="input-name"]');
+            const input = container.querySelector<HTMLInputElement>(`[data-testid="input-${id}"]`);
             const setter = Object.getOwnPropertyDescriptor(globalThis.HTMLInputElement.prototype, 'value')?.set;
             if (input) {
-                setter?.call(input, name);
+                setter?.call(input, value);
                 input.dispatchEvent(new Event('input', { bubbles: true }));
             }
         });
@@ -513,6 +535,115 @@ describe('DiscoveryForm', () => {
             multiSelection = [{ value: Resource.Certificates, label: 'Certificates' }];
             await click('select-resourcesSelect');
             expect(container.querySelector('[data-testid="trigger-editor"]')).not.toBeNull();
+        });
+    });
+
+    describe('discovery window', () => {
+        const pickIncrementalProvider = async () => {
+            await render(buildState({ discoveryProviders: [incrementalProvider], descriptors }));
+            await click('select-discoveryProviderSelect');
+            await click('select-resourcesSelect');
+            await typeName('scan');
+        };
+        const windowSelect = () => container.querySelector('[data-testid="select-windowModeSelect"]');
+
+        it('hidesWindow_whenInterfaceLacksIncrementalFlag', async () => {
+            await render(buildState({ discoveryProviders: [singleInterfaceProvider], descriptors }));
+            await click('select-discoveryProviderSelect');
+            await click('select-resourcesSelect');
+            await typeName('scan');
+
+            expect(windowSelect()).toBeNull();
+            await submit();
+            expect(createdRequest().window).toBeUndefined();
+        });
+
+        it('offersSinceLastSuccessfulRun_onlyWhenScheduled', async () => {
+            await pickIncrementalProvider();
+            expect(windowSelect()?.getAttribute('data-options')).toBe(`${DiscoveryWindowMode.Full},${DiscoveryWindowMode.Lookback}`);
+
+            await click('switch-scheduled');
+            expect(windowSelect()?.getAttribute('data-options')).toBe(
+                `${DiscoveryWindowMode.Full},${DiscoveryWindowMode.SinceLastSuccessfulRun},${DiscoveryWindowMode.Lookback}`,
+            );
+            windowChoice = DiscoveryWindowMode.SinceLastSuccessfulRun;
+            await click('select-windowModeSelect');
+
+            // A one-off run cannot be measured against an earlier run of its job, so the choice falls back to Full.
+            await click('switch-scheduled');
+            await submit();
+            expect(createdRequest().window).toBeUndefined();
+        });
+
+        it('sendsSinceLastSuccessfulRunWindow_whenScheduled', async () => {
+            await pickIncrementalProvider();
+            await click('switch-scheduled');
+            await typeInto('jobName', 'nightly');
+            await typeInto('cronExpression', '0 0 0 ? * * *');
+            windowChoice = DiscoveryWindowMode.SinceLastSuccessfulRun;
+            await click('select-windowModeSelect');
+            await submit();
+
+            expect(createdRequest()?.window).toEqual({ mode: DiscoveryWindowMode.SinceLastSuccessfulRun });
+        });
+
+        it('sendsLookbackWindow', async () => {
+            await pickIncrementalProvider();
+            await click('select-windowModeSelect');
+            await submit();
+
+            expect(createdRequest()?.window).toEqual({ mode: 'lookback', lookback: 'P7D' });
+        });
+
+        it('sendsLookbackInHours', async () => {
+            await pickIncrementalProvider();
+            await click('select-windowModeSelect');
+            await typeInto('windowLookbackAmount', '12');
+            await click('select-windowLookbackUnitSelect');
+            await submit();
+            expect(createdRequest()?.window).toEqual({ mode: 'lookback', lookback: 'PT12H' });
+        });
+
+        it('explainsLookbackPeriod', async () => {
+            await pickIncrementalProvider();
+            await click('select-windowModeSelect');
+            expect(container.textContent).toContain('created or changed in the 7 days before the discovery starts.');
+            expect(container.textContent).not.toContain('longer than the time between runs');
+
+            await typeInto('windowLookbackAmount', '1');
+            await click('select-windowLookbackUnitSelect');
+            await click('switch-scheduled');
+            expect(container.textContent).toContain(
+                'in the 1 hour before the discovery starts. Choose a period longer than the time between runs.',
+            );
+
+            for (const invalid of ['abc', '0']) {
+                await typeInto('windowLookbackAmount', invalid);
+                expect(container.textContent).not.toContain('Discovers what was created or changed');
+            }
+        });
+
+        it('omitsWindow_whenFull', async () => {
+            await pickIncrementalProvider();
+            await submit();
+
+            expect(createdRequest()).toBeDefined();
+            expect(createdRequest().window).toBeUndefined();
+        });
+
+        it('rejectsInvalidLookback', async () => {
+            await pickIncrementalProvider();
+            await click('select-windowModeSelect');
+
+            for (const invalid of ['', '0', 'abc', '1.5', '3651']) {
+                await typeInto('windowLookbackAmount', invalid);
+                await submit();
+                expect(createdRequest()).toBeUndefined();
+            }
+
+            await typeInto('windowLookbackAmount', '3');
+            await submit();
+            expect(createdRequest()?.window).toEqual({ mode: DiscoveryWindowMode.Lookback, lookback: 'P3D' });
         });
     });
 });

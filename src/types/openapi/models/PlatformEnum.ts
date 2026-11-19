@@ -41,6 +41,7 @@ export enum PlatformEnum {
     CertificateRequestFormat = 'CertificateRequestFormat',
     DiscoveryStatus = 'DiscoveryStatus',
     DiscoveryMessageSeverity = 'DiscoveryMessageSeverity',
+    DiscoveryWindowMode = 'DiscoveryWindowMode',
     CertificateProtocol = 'CertificateProtocol',
     CertificateSubjectType = 'CertificateSubjectType',
     CertificateKeyUsage = 'CertificateKeyUsage',
