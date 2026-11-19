@@ -86,9 +86,9 @@ const toIsoDuration = (amount: number, unit: LookbackUnit) => (unit === 'days' ?
 
 // Explains a valid lookback in words; an invalid amount has its own error message instead.
 const describeLookback = (amount: string, unit: LookbackUnit, scheduled: boolean) => {
-    if (!/^\d+$/.test(amount.trim())) return undefined;
+    if (!/^\d+$/.test(amount)) return undefined;
     const count = Number(amount);
-    if (count < 1) return undefined;
+    if (count < 1 || count > MAX_LOOKBACK_AMOUNT[unit]) return undefined;
     const period = `${count} ${unit === 'days' ? 'day' : 'hour'}${count === 1 ? '' : 's'}`;
     return `Discovers what was created or changed in the ${period} before the discovery starts.${
         scheduled ? ' Choose a period longer than the time between runs.' : ''

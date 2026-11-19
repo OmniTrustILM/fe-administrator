@@ -617,7 +617,7 @@ describe('DiscoveryForm', () => {
                 'in the 1 hour before the discovery starts. Choose a period longer than the time between runs.',
             );
 
-            for (const invalid of ['abc', '0']) {
+            for (const invalid of ['abc', '0', ' 7', '87601']) {
                 await typeInto('windowLookbackAmount', invalid);
                 expect(container.textContent).not.toContain('Discovers what was created or changed');
             }
