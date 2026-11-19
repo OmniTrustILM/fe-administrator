@@ -15,6 +15,7 @@ import type {
     DiscoveryDeliveryMode,
     DiscoveryProgressDto,
     DiscoveryStatus,
+    DiscoveryWindowDto,
     MetadataResponseDto,
     Resource,
     ResponseAttribute,
@@ -72,6 +73,18 @@ export interface DiscoveryDetailDto {
      * @memberof DiscoveryDetailDto
      */
     endTime?: string | null;
+    /**
+     * The window the discovery was asked to cover. Absent means a full discovery.
+     * @type {DiscoveryWindowDto}
+     * @memberof DiscoveryDetailDto
+     */
+    window?: DiscoveryWindowDto;
+    /**
+     * The instant the run discovered from, resolved from the window when it started. Null for a full discovery.
+     * @type {string}
+     * @memberof DiscoveryDetailDto
+     */
+    discoverSince?: string | null;
     /**
      * Certificates this discovery found and saved
      * @type {number}

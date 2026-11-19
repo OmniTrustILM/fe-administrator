@@ -36,4 +36,5 @@ export enum FeatureFlag {
     CertificateRequestStructured = 'certificateRequestStructured',
     CertificateIdentityOverride = 'certificateIdentityOverride',
     DiscoveryStopResume = 'discoveryStopResume',
+    DiscoveryIncremental = 'discoveryIncremental',
 }

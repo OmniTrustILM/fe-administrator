@@ -366,6 +366,8 @@ models/DiscoveryResourceProgressDto.ts
 models/DiscoveryResponseDto.ts
 models/DiscoveryStatus.ts
 models/DiscoverySupportedResourceDto.ts
+models/DiscoveryWindowDto.ts
+models/DiscoveryWindowMode.ts
 models/EditKeyItemDto.ts
 models/EditKeyRequestDto.ts
 models/EditLocationRequestDto.ts

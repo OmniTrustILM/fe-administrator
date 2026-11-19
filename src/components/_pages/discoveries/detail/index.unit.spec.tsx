@@ -5,6 +5,7 @@ import { createRoot, type Root } from 'react-dom/client';
 import DiscoveryDetail from './index';
 import { DiscoveryStatus, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
+import { dateFormatter } from 'utils/dateUtil';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
 import { useDispatchMock, useSelectorMock } from '../../test-utils/reactReduxMockModule';
 
@@ -150,6 +151,10 @@ function buildState(discovery: any, allowedActions: ResourceAction[] = allDiscov
                 },
                 [PlatformEnum.TriggerType]: {},
                 [PlatformEnum.ResourceEvent]: {},
+                [PlatformEnum.DiscoveryWindowMode]: {
+                    lookback: { label: 'Lookback' },
+                    sinceLastSuccessfulRun: { label: 'Since the last successful run' },
+                },
             },
         },
     };
@@ -215,6 +220,30 @@ describe('DiscoveryDetail', () => {
 
             expect(container.querySelector('[data-testid="row-totalCertificatesDownloaded"]')).toBeNull();
             expect(container.textContent).not.toContain('Total Certificates Downloaded');
+        });
+    });
+
+    describe('discovery window', () => {
+        it('showsWindowRows_whenRunHasWindow', async () => {
+            const discoverSince = '2026-11-17T12:00:00.000Z';
+            await render(buildState({ ...v2Run, window: { mode: 'lookback', lookback: 'PT6480H' }, discoverSince }));
+
+            expect(rowText('window')).toBe('Discovery windowLookback (270d)');
+            expect(rowText('discoverSince')).toBe(`Discovered since${dateFormatter(discoverSince)}`);
+        });
+
+        it('shows the mode alone when the window has no lookback, and no start point before the run resolved one', async () => {
+            await render(buildState({ ...v2Run, window: { mode: 'sinceLastSuccessfulRun' }, discoverSince: null }));
+
+            expect(rowText('window')).toBe('Discovery windowSince the last successful run');
+            expect(container.querySelector('[data-testid="row-discoverSince"]')).toBeNull();
+        });
+
+        it('hidesWindowRows_whenAbsent', async () => {
+            await render(buildState(v2Run));
+
+            expect(container.querySelector('[data-testid="row-window"]')).toBeNull();
+            expect(container.querySelector('[data-testid="row-discoverSince"]')).toBeNull();
         });
     });
 

@@ -25,6 +25,7 @@ import { actions as rulesActions, selectors as ruleSelectors } from 'ducks/rules
 import { selectors as userInterfaceSelectors } from 'ducks/user-interface';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { dateFormatter, durationFormatter } from 'utils/dateUtil';
+import { getInputStringFromIso8601String } from 'utils/duration';
 import { hasResourceAction } from 'utils/permissions';
 import DiscoveryStatus from '../DiscoveryStatus';
 import DiscoveryProgressWidget from './DiscoveryProgressWidget';
@@ -89,6 +90,7 @@ export default function DiscoveryDetail() {
         [isFetching, isDeleting, isFetchingRuleTriggerHistories, isChangingLifecycle],
     );
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
+    const windowModeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.DiscoveryWindowMode));
     const resourceTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
     const triggerTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.TriggerType));
 
@@ -299,13 +301,39 @@ export default function DiscoveryDetail() {
                               </span>,
                           ],
                       },
+                      ...(discovery.window
+                          ? [
+                                {
+                                    id: 'window',
+                                    columns: [
+                                        'Discovery window',
+                                        discovery.window.lookback
+                                            ? `${getEnumLabel(windowModeEnum, discovery.window.mode)} (${getInputStringFromIso8601String(discovery.window.lookback)})`
+                                            : getEnumLabel(windowModeEnum, discovery.window.mode),
+                                    ],
+                                },
+                            ]
+                          : []),
+                      ...(discovery.discoverSince
+                          ? [
+                                {
+                                    id: 'discoverSince',
+                                    columns: [
+                                        'Discovered since',
+                                        <span key="discoverSince" style={{ whiteSpace: 'nowrap' }}>
+                                            {dateFormatter(discovery.discoverSince)}
+                                        </span>,
+                                    ],
+                                },
+                            ]
+                          : []),
                       {
                           id: 'message',
                           columns: ['Message', discovery.message || ''],
                       },
                   ]
                 : [],
-        [discovery, resourceEnum],
+        [discovery, resourceEnum, windowModeEnum],
     );
 
     // Neutral unless the log is known to hold an error; the log is fetched only on its own tab, never with the detail.
