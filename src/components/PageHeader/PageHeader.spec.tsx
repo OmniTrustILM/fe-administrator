@@ -1,0 +1,177 @@
+import { expect, test } from '../../../playwright/ct-test';
+import { PageHeaderHarness } from './PageHeader.harness';
+
+const MENU = [
+    { id: 'import', label: 'Import', icon: 'upload' as const },
+    { id: 'archive', label: 'Archive', icon: 'archive' as const, disabled: true, disabledReason: 'Select one or more certificates' },
+    { id: 'delete', label: 'Delete', icon: 'trash' as const, destructive: true },
+    { id: 'export', label: 'Export', icon: 'download' as const },
+];
+
+test.describe('PageHeader', () => {
+    test('shows the breadcrumbs, then the title with the actions beside it', async ({ mount, page }) => {
+        await mount(
+            <PageHeaderHarness
+                title="Certificates Inventory"
+                primaryAction={{ id: 'create', label: 'Create', icon: 'plus' }}
+                actions={MENU}
+            />,
+        );
+
+        await expect(page.getByRole('link', { name: 'Inventory' })).toHaveAttribute('href', '/inventory');
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText('Certificates Inventory');
+        const actions = page.getByTestId('page-header-actions');
+        await expect(actions.getByRole('button', { name: 'Create' })).toBeVisible();
+        await expect(actions.getByRole('button', { name: 'More actions' })).toBeVisible();
+
+        const titleBox = await page.getByRole('heading', { level: 1 }).boundingBox();
+        const actionsBox = await actions.boundingBox();
+        expect(actionsBox?.x).toBeGreaterThan(titleBox?.x ?? Number.POSITIVE_INFINITY);
+    });
+
+    test('runs the primary action with its button as the anchor', async ({ mount, page }) => {
+        await mount(<PageHeaderHarness primaryAction={{ id: 'create', label: 'Create', icon: 'plus' }} />);
+
+        await page.getByRole('button', { name: 'Create' }).click();
+
+        await expect(page.getByTestId('ran')).toHaveText('create:BUTTON');
+        await expect(page.getByRole('button', { name: 'More actions' })).toHaveCount(0);
+    });
+
+    test('renders no action area when the page has no actions', async ({ mount, page }) => {
+        await mount(<PageHeaderHarness title="Certificates" />);
+
+        await expect(page.getByRole('heading', { level: 1 })).toHaveText('Certificates');
+        await expect(page.getByTestId('page-header-actions')).toHaveCount(0);
+    });
+});
+
+test.describe('PageHeader widget lock', () => {
+    test('makes every action unavailable while the page is locked, giving the lock as the reason', async ({ mount, page }) => {
+        await mount(<PageHeaderHarness locked primaryAction={{ id: 'create', label: 'Create', icon: 'plus' }} actions={MENU} />);
+
+        await expect(page.getByRole('button', { name: 'Create' })).toBeDisabled();
+        await page.getByRole('button', { name: 'More actions' }).click();
+        const importEntry = page.getByRole('menuitem', { name: 'Import', exact: true });
+        await expect(importEntry).toHaveAttribute('aria-disabled', 'true');
+        await expect(importEntry).toHaveAccessibleDescription('Access denied');
+
+        await importEntry.dispatchEvent('click');
+        await expect(page.getByTestId('ran')).toHaveText('');
+    });
+});
+
+test.describe('ActionsMenu', () => {
+    test('lists each entry with an icon and a label, destructive entries last after a separator', async ({ mount, page }) => {
+        await mount(<PageHeaderHarness actions={MENU} />);
+        await page.getByRole('button', { name: 'More actions' }).click();
+
+        const items = page.getByRole('menuitem');
+        await expect(items).toHaveCount(4);
+        await expect(items.nth(0)).toContainText('Import');
+        await expect(items.nth(2)).toContainText('Export');
+        await expect(items.nth(3)).toContainText('Delete');
+        for (const index of [0, 1, 2, 3]) {
+            await expect(items.nth(index).locator('svg')).toHaveCount(1);
+        }
+        await expect(page.getByRole('separator')).toHaveCount(1);
+
+        const separatorBox = await page.getByRole('separator').boundingBox();
+        const deleteBox = await items.nth(3).boundingBox();
+        expect(deleteBox?.y).toBeGreaterThan(separatorBox?.y ?? Number.POSITIVE_INFINITY);
+        await expect(items.nth(3)).toHaveClass(/text-danger/);
+        await expect(items.nth(0)).not.toHaveClass(/text-danger/);
+    });
+
+    test('shows why an entry is disabled and does not run it', async ({ mount, page }) => {
+        await mount(<PageHeaderHarness actions={MENU} />);
+        await page.getByRole('button', { name: 'More actions' }).click();
+
+        const archive = page.getByRole('menuitem', { name: 'Archive', exact: true });
+        await expect(archive).toHaveAttribute('aria-disabled', 'true');
+        await expect(archive).toHaveAccessibleDescription('Select one or more certificates');
+
+        await archive.dispatchEvent('click');
+
+        await expect(page.getByRole('menu')).toBeVisible();
+        await expect(page.getByTestId('ran')).toHaveText('');
+    });
+
+    test('is operable from the keyboard, reaching disabled entries too', async ({ mount, page }) => {
+        await mount(<PageHeaderHarness actions={MENU} />);
+        await page.getByRole('button', { name: 'More actions' }).focus();
+        await page.keyboard.press('Enter');
+        await expect(page.getByRole('menuitem', { name: 'Import' })).toBeFocused();
+
+        await page.keyboard.press('ArrowDown');
+        await expect(page.getByRole('menuitem', { name: 'Archive', exact: true })).toBeFocused();
+        await page.keyboard.press('ArrowDown');
+        await expect(page.getByRole('menuitem', { name: 'Export' })).toBeFocused();
+        await page.keyboard.press('Enter');
+
+        await expect(page.getByRole('menu')).toHaveCount(0);
+        await expect(page.getByTestId('ran')).toHaveText('export:BUTTON');
+    });
+});
+
+test.describe('PageHeader permissions', () => {
+    const denied = { available: false, hidden: false, loading: false, reason: 'You need the archive permission on Certificates.' };
+
+    test('disables an entry the user lacks the permission for, giving the denial over its own reason', async ({ mount, page }) => {
+        await mount(
+            <PageHeaderHarness
+                actions={[
+                    { id: 'import', label: 'Import', icon: 'upload' },
+                    { id: 'archive', label: 'Archive', icon: 'archive', disabled: true, disabledReason: 'Select one', requires: denied },
+                ]}
+            />,
+        );
+        await page.getByRole('button', { name: 'More actions' }).click();
+
+        const archive = page.getByRole('menuitem', { name: 'Archive', exact: true });
+        await expect(archive).toHaveAttribute('aria-disabled', 'true');
+        await expect(archive).toHaveAccessibleDescription(denied.reason);
+
+        await archive.dispatchEvent('click');
+        await expect(page.getByTestId('ran')).toHaveText('');
+    });
+
+    test('disables the primary action the user lacks the permission for', async ({ mount, page }) => {
+        await mount(<PageHeaderHarness primaryAction={{ id: 'create', label: 'Create', icon: 'plus', requires: denied }} />);
+
+        await expect(page.getByRole('button', { name: 'Create' })).toBeDisabled();
+    });
+
+    test('leaves out actions hidden when denied, and the whole action area once none remain', async ({ mount, page }) => {
+        const hidden = { ...denied, hidden: true };
+        await mount(
+            <PageHeaderHarness
+                primaryAction={{ id: 'create', label: 'Create', icon: 'plus', requires: hidden }}
+                actions={[{ id: 'archive', label: 'Archive', icon: 'archive', requires: hidden }]}
+            />,
+        );
+
+        await expect(page.getByTestId('page-header-actions')).toHaveCount(0);
+    });
+
+    test('gives no stale reason for an action held while its permission loads', async ({ mount, page }) => {
+        const loading = { available: false, hidden: false, loading: true };
+        await mount(
+            <PageHeaderHarness
+                actions={[{ id: 'archive', label: 'Archive', icon: 'archive', disabledReason: 'Select one', requires: loading }]}
+            />,
+        );
+        await page.getByRole('button', { name: 'More actions' }).click();
+
+        const archive = page.getByRole('menuitem', { name: 'Archive', exact: true });
+        await expect(archive).toHaveAttribute('aria-disabled', 'true');
+        await expect(archive).not.toHaveAttribute('aria-describedby');
+    });
+
+    test('gives the lock over a permission denial while the page is locked', async ({ mount, page }) => {
+        await mount(<PageHeaderHarness locked actions={[{ id: 'archive', label: 'Archive', icon: 'archive', requires: denied }]} />);
+        await page.getByRole('button', { name: 'More actions' }).click();
+
+        await expect(page.getByRole('menuitem', { name: 'Archive', exact: true })).toHaveAccessibleDescription('Access denied');
+    });
+});

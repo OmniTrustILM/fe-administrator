@@ -53,6 +53,8 @@ import {
 import PagedListSkeleton from './PagedListSkeleton';
 import type { IconName } from 'types/icons';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
+import type { PageAction } from 'components/ActionsMenu';
+import PageHeader, { type PageHeaderProps } from 'components/PageHeader';
 import { actions, selectors } from 'ducks/paging';
 import { actions as tablePaginationActions } from 'ducks/table-pagination';
 import type { Observable } from 'rxjs';
@@ -105,6 +107,8 @@ type Props<TRow extends object> = {
     extraFilterComponent?: React.ReactNode;
     /** Shown inside the widget, above the table. */
     notice?: React.ReactNode;
+    /** Moves the page's actions into a page header; Create becomes its primary button and Delete a menu entry. */
+    pageHeader?: PageHeaderProps;
     emptyStateDescription?: string;
     /**
      * Bumped by the page to make the host re-run its own request. A request the page assembled would
@@ -171,6 +175,7 @@ function PagedList<TRow extends object>({
     columnForDetail,
     extraFilterComponent,
     notice,
+    pageHeader,
     emptyStateDescription,
     refreshToken,
     backgroundRefreshToken,
@@ -725,6 +730,48 @@ function PagedList<TRow extends object>({
         return result.sort((a, b) => (a.icon === 'plus' ? -1 : 1));
     }, [checkedRows, additionalButtons, navigate, addHidden, onDeleteCallback, createRequires, deleteRequires]);
 
+    const header = useMemo(() => {
+        if (!pageHeader) return null;
+        const primaryAction: PageAction | undefined =
+            pageHeader.primaryAction ??
+            (addHidden
+                ? undefined
+                : { id: 'create', label: 'Create', icon: 'plus', requires: createRequires, onClick: () => navigate('./add') });
+        const deleteActions: PageAction[] = onDeleteCallback
+            ? [
+                  {
+                      id: 'delete',
+                      label: 'Delete',
+                      icon: 'trash',
+                      destructive: true,
+                      disabled: checkedRows.length === 0,
+                      disabledReason: `Select one or more ${(entityNamePlural ?? 'items').toLowerCase()}`,
+                      requires: deleteRequires,
+                      onClick: () => setConfirmDelete(true),
+                  },
+              ]
+            : [];
+        return (
+            <PageHeader
+                breadcrumbs={pageHeader.breadcrumbs}
+                title={pageHeader.title}
+                widgetLockName={pageWidgetLockName}
+                primaryAction={primaryAction}
+                actions={[...(pageHeader.actions ?? []), ...deleteActions]}
+            />
+        );
+    }, [
+        pageHeader,
+        addHidden,
+        navigate,
+        onDeleteCallback,
+        checkedRows.length,
+        entityNamePlural,
+        pageWidgetLockName,
+        createRequires,
+        deleteRequires,
+    ]);
+
     // An ordering the page did not declare counts, or there would be no way back from it. Measured
     // against `defaultSort` rather than against no ordering at all, so a page that opens sorted is not
     // permanently offering to reset itself to the state it is already in.
@@ -764,116 +811,122 @@ function PagedList<TRow extends object>({
     const isAwaitingFirstPage = columnRows.length === 0 && !hasLoadedOnce.current && (isFetchingList || !hasSentFirstRequest);
 
     if (isAwaitingFirstPage) {
-        const estimatedButtonCount = (addHidden ? 0 : 1) + (onDeleteCallback ? 1 : 0) + (additionalButtons?.length ?? 0);
+        const estimatedButtonCount = pageHeader ? 0 : (addHidden ? 0 : 1) + (onDeleteCallback ? 1 : 0) + (additionalButtons?.length ?? 0);
         return (
-            <PagedListSkeleton
-                hasFilter={hasFilterWidget}
-                filterTitle={filterTitle}
-                buttonsCount={estimatedButtonCount}
-                columnsCount={columnHeaders.length + (isColumnDriven ? 1 : 0)}
-                hasCheckboxes={hasCheckboxes}
-                hasExtraFilter={Boolean(extraFilterComponent)}
-                viewStrip={
-                    columnsResource &&
-                    standardColumns &&
-                    // The filter widget re-reads the catalogue on mount, so a past failure drops the strip only where none mounts.
-                    !(isCatalogueFailed && !hasFilterWidget) && (
-                        <ViewStripOpeningPlaceholder
-                            resource={columnsResource}
-                            handedIn={handedIn}
-                            catalogue={catalogue}
-                            columns={appliedColumns}
-                            filters={currentFilters}
-                            sort={appliedSort}
-                            dataTestId="paged-list-skeleton-view-strip"
-                        />
-                    )
-                }
-            />
+            <>
+                {header}
+                <PagedListSkeleton
+                    hasFilter={hasFilterWidget}
+                    filterTitle={filterTitle}
+                    buttonsCount={estimatedButtonCount}
+                    columnsCount={columnHeaders.length + (isColumnDriven ? 1 : 0)}
+                    hasCheckboxes={hasCheckboxes}
+                    hasExtraFilter={Boolean(extraFilterComponent)}
+                    viewStrip={
+                        columnsResource &&
+                        standardColumns &&
+                        // The filter widget re-reads the catalogue on mount, so a past failure drops the strip only where none mounts.
+                        !(isCatalogueFailed && !hasFilterWidget) && (
+                            <ViewStripOpeningPlaceholder
+                                resource={columnsResource}
+                                handedIn={handedIn}
+                                catalogue={catalogue}
+                                columns={appliedColumns}
+                                filters={currentFilters}
+                                sort={appliedSort}
+                                dataTestId="paged-list-skeleton-view-strip"
+                            />
+                        )
+                    }
+                />
+            </>
         );
     }
 
     return (
-        <div className="flex flex-col gap-4 md:gap-8">
-            {/* Above the filter widget: a view carries its own filters, so a tab contains the filter. */}
-            {columnsResource && standardColumns && (
-                <ViewTabs
-                    resource={columnsResource}
-                    catalogue={catalogue}
-                    isCatalogueLoaded={hasCatalogueForViews}
-                    isCatalogueFailed={isCatalogueFailed}
-                    standardColumns={sortableStandardColumns}
-                    standardSort={defaultSort}
-                    renderableProperties={renderableProperties}
-                    columns={appliedColumns}
-                    filters={currentFilters}
-                    sort={appliedSort}
-                    handedIn={handedIn}
-                    onPositionChange={onViewPositionChange}
-                    onApply={onApplyView}
-                />
-            )}
+        <>
+            {header}
+            <div className="flex flex-col gap-4 md:gap-8">
+                {/* Above the filter widget: a view carries its own filters, so a tab contains the filter. */}
+                {columnsResource && standardColumns && (
+                    <ViewTabs
+                        resource={columnsResource}
+                        catalogue={catalogue}
+                        isCatalogueLoaded={hasCatalogueForViews}
+                        isCatalogueFailed={isCatalogueFailed}
+                        standardColumns={sortableStandardColumns}
+                        standardSort={defaultSort}
+                        renderableProperties={renderableProperties}
+                        columns={appliedColumns}
+                        filters={currentFilters}
+                        sort={appliedSort}
+                        handedIn={handedIn}
+                        onPositionChange={onViewPositionChange}
+                        onApply={onApplyView}
+                    />
+                )}
 
-            {getAvailableFiltersApi && filterTitle && (
-                <FilterWidget
-                    entity={entity}
-                    title={filterTitle}
-                    getAvailableFiltersApi={getAvailableFiltersApi}
-                    extraFilterComponent={extraFilterComponent}
-                />
-            )}
+                {getAvailableFiltersApi && filterTitle && (
+                    <FilterWidget
+                        entity={entity}
+                        title={filterTitle}
+                        getAvailableFiltersApi={getAvailableFiltersApi}
+                        extraFilterComponent={extraFilterComponent}
+                    />
+                )}
 
-            <Widget
-                title={title}
-                busy={isBusy || (isFetchingList && columnRows.length > 0)}
-                disableRefresh={isBusy || isFetchingList}
-                enableBusyOverlay
-                widgetLockName={pageWidgetLockName}
-                refreshAction={getFreshData}
-                resetViewAction={hasNonDefaultViewState ? onResetView : undefined}
-                widgetButtons={buttons}
-                titleSize="large"
-                hideWidgetButtons={hideWidgetButtons}
-            >
-                {notice}
-                <CustomTable
-                    headers={columnHeaders}
-                    data={columnRows}
-                    {...(isColumnDriven ? { onSortChanged, persistSort: false, renderHeaderAction, renderHeaderLead } : {})}
-                    hasCheckboxes={hasCheckboxes}
-                    hasDetails={hasDetails}
-                    columnForDetail={columnForDetail}
-                    hasPagination
-                    multiSelect={multiSelect}
-                    paginationData={paginationData}
-                    onPageChanged={onPageNumberChanged}
-                    onCheckedRowsChanged={onCheckedRowsChanged}
-                    onPageSizeChanged={onPageSizeChanged}
-                    isLoading={isFetchingList && columnRows.length === 0}
-                    disablePaginationControls={isBusy || isFetchingList}
-                    disableSelectionControls={isBusy || isFetchingList}
-                    disableSearchControls={isBusy || isFetchingList}
-                    trailingHeaderAction={addColumnMenu}
-                    emptyStateDescription={emptyStateDescription}
-                    onClearFilters={currentFilters.length > 0 ? onClearFilters : undefined}
-                />
-            </Widget>
-            {onDeleteCallback && (
-                <Dialog
-                    isOpen={confirmDelete}
-                    caption={`Delete ${checkedRows.length > 1 ? entityNamePlural : entityNameSingular}`}
-                    body={`You are about to delete ${
-                        checkedRows.length > 1 ? entityNamePlural : entityNameSingular
-                    }. Is this what you want to do?`}
-                    toggle={() => setConfirmDelete(false)}
-                    icon="delete"
-                    buttons={[
-                        { color: 'secondary', variant: 'outline', onClick: () => setConfirmDelete(false), body: 'Cancel' },
-                        { color: 'danger', onClick: onDeleteConfirmed, body: 'Delete' },
-                    ]}
-                />
-            )}
-        </div>
+                <Widget
+                    title={title}
+                    busy={isBusy || (isFetchingList && columnRows.length > 0)}
+                    disableRefresh={isBusy || isFetchingList}
+                    enableBusyOverlay
+                    widgetLockName={pageWidgetLockName}
+                    refreshAction={getFreshData}
+                    resetViewAction={hasNonDefaultViewState ? onResetView : undefined}
+                    widgetButtons={buttons}
+                    titleSize="large"
+                    hideWidgetButtons={hideWidgetButtons || !!pageHeader}
+                >
+                    {notice}
+                    <CustomTable
+                        headers={columnHeaders}
+                        data={columnRows}
+                        {...(isColumnDriven ? { onSortChanged, persistSort: false, renderHeaderAction, renderHeaderLead } : {})}
+                        hasCheckboxes={hasCheckboxes}
+                        hasDetails={hasDetails}
+                        columnForDetail={columnForDetail}
+                        hasPagination
+                        multiSelect={multiSelect}
+                        paginationData={paginationData}
+                        onPageChanged={onPageNumberChanged}
+                        onCheckedRowsChanged={onCheckedRowsChanged}
+                        onPageSizeChanged={onPageSizeChanged}
+                        isLoading={isFetchingList && columnRows.length === 0}
+                        disablePaginationControls={isBusy || isFetchingList}
+                        disableSelectionControls={isBusy || isFetchingList}
+                        disableSearchControls={isBusy || isFetchingList}
+                        trailingHeaderAction={addColumnMenu}
+                        emptyStateDescription={emptyStateDescription}
+                        onClearFilters={currentFilters.length > 0 ? onClearFilters : undefined}
+                    />
+                </Widget>
+                {onDeleteCallback && (
+                    <Dialog
+                        isOpen={confirmDelete}
+                        caption={`Delete ${checkedRows.length > 1 ? entityNamePlural : entityNameSingular}`}
+                        body={`You are about to delete ${
+                            checkedRows.length > 1 ? entityNamePlural : entityNameSingular
+                        }. Is this what you want to do?`}
+                        toggle={() => setConfirmDelete(false)}
+                        icon="delete"
+                        buttons={[
+                            { color: 'secondary', variant: 'outline', onClick: () => setConfirmDelete(false), body: 'Cancel' },
+                            { color: 'danger', onClick: onDeleteConfirmed, body: 'Delete' },
+                        ]}
+                    />
+                )}
+            </div>
+        </>
     );
 }
 

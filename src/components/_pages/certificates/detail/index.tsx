@@ -64,7 +64,7 @@ import ComplianceCheckResultWidget from 'components/_pages/certificates/Complian
 import Badge from 'components/Badge';
 import { EnumColumnDescription } from 'components/EnumDescription';
 import Container from 'components/Container';
-import Breadcrumb from 'components/Breadcrumb';
+import CertificateDetailHeader from './CertificateDetailHeader';
 import CertificateDetailsContent from './CertificateDetailsContent';
 import CertificateRequestContent from './CertificateRequestContent';
 import { getValidationPanelState, isValidationTabVisible, validationPanelMessages } from '../validationPanel';
@@ -1210,8 +1210,11 @@ export default function CertificateDetail() {
 
     return (
         <div>
-            <Breadcrumb
-                items={[
+            <CertificateDetailHeader
+                certificate={certificate}
+                getFreshCertificateDetail={refreshCertificateDetail}
+                can={can}
+                breadcrumbs={[
                     { label: `${getEnumLabel(resourceEnum, Resource.Certificates)} Inventory`, href: '/certificates' },
                     { label: certificate?.commonName || 'Certificate Details' },
                 ]}

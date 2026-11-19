@@ -1,5 +1,6 @@
 import Dialog from 'components/Dialog';
-import type { WidgetButtonProps } from 'components/WidgetButtons';
+import type { PageAction } from 'components/ActionsMenu';
+import type { PageHeaderProps } from 'components/PageHeader';
 
 import { actions, selectors } from 'ducks/certificates';
 import { EntityType } from 'ducks/filters';
@@ -10,7 +11,6 @@ import { useNavigate } from 'react-router';
 
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 
-import Dropdown from 'components/Dropdown';
 import { EnumColumnDescription } from 'components/EnumDescription';
 
 import type { ApiClients } from '../../../../api';
@@ -28,7 +28,6 @@ import CertificateGroupDialog from '../CertificateGroupDialog';
 import CertificateImportDialog from '../CertificateImportDialog';
 import CertificateOwnerDialog from '../CertificateOwnerDialog';
 import CertificateRAProfileDialog from '../CertificateRAProfileDialog';
-import { ArrowDownToLine } from 'lucide-react';
 import Switch from 'components/Switch';
 import { CERTIFICATE_COLUMNS, buildCertificateCellRegistry } from '../certificateTableHelpers';
 import PendingActionDialogs from '../PendingActionButtons/PendingActionDialogs';
@@ -74,6 +73,7 @@ export default function CertificateList({
     const isBulkUpdatingOwner = useSelector(selectors.isBulkUpdatingOwner);
     const isImporting = useSelector(selectors.isImporting);
     const certificateTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateType));
+    const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
     const isIncludeArchived = useSelector(selectors.isIncludeArchived);
     const [upload, setUpload] = useState<boolean>(false);
     const [updateGroup, setUpdateGroup] = useState<boolean>(false);
@@ -109,32 +109,6 @@ export default function CertificateList({
         }
     }, [checkedRows, onCheckedRowsChanged]);
 
-    const downloadDropDown = useMemo(
-        () => (
-            <Dropdown
-                title={<ArrowDownToLine size={16} aria-hidden="true" />}
-                ariaLabel="Download certificates"
-                btnStyle="transparent"
-                disabled={checkedRows.length === 0}
-                items={[
-                    {
-                        title: 'Download PEM (.pem)',
-                        onClick: () => {
-                            dispatch(actions.getCertificateContents({ uuids: checkedRows, format: 'pem' }));
-                        },
-                    },
-                    {
-                        title: 'Download DER (.cer)',
-                        onClick: () => {
-                            dispatch(actions.getCertificateContents({ uuids: checkedRows, format: 'cer' }));
-                        },
-                    },
-                ]}
-            />
-        ),
-        [dispatch, checkedRows],
-    );
-
     const onArchiveClick = useCallback(() => {
         dispatch(actions.bulkArchiveCertificate({ uuids: checkedRows, filters: appliedFilters }));
     }, [dispatch, checkedRows, appliedFilters]);
@@ -143,83 +117,84 @@ export default function CertificateList({
         dispatch(actions.bulkUnarchiveCertificate({ uuids: checkedRows, filters: appliedFilters }));
     }, [dispatch, checkedRows, appliedFilters]);
 
-    const buttons: WidgetButtonProps[] = useMemo(
-        () =>
-            selectCertsOnly
-                ? []
-                : [
-                      {
-                          icon: 'plus',
-                          disabled: false,
-                          tooltip: 'Create Certificate',
-                          requires: can(ResourceAction.Create),
-                          onClick: (event) => {
-                              event.preventDefault();
-                              void navigate(`/${Resource.Certificates.toLowerCase()}/add`);
-                          },
-                          id: 'add-certificate',
+    const pageHeader = useMemo(() => {
+        if (hideWidgetButtons) return undefined;
+        const nothingSelected = checkedRows.length === 0;
+        const bulk = { disabled: nothingSelected, disabledReason: 'Select one or more certificates' };
+        const create = can(ResourceAction.Create);
+        const updateSelected = { ...bulk, requires: can(ResourceAction.Update, { onObjects: true }) };
+        const archiveSelected = { ...bulk, requires: can(ResourceAction.Archive, { onObjects: true }) };
+        const actionsMenu: PageAction[] = hideAdditionalButtons
+            ? []
+            : [
+                  { id: 'import', label: 'Import certificates and keys', icon: 'upload', requires: create, onClick: () => setUpload(true) },
+                  {
+                      id: 'override-groups',
+                      label: 'Override groups',
+                      icon: 'group',
+                      ...updateSelected,
+                      onClick: () => setUpdateGroup(true),
+                  },
+                  {
+                      id: 'override-owner',
+                      label: 'Override owner',
+                      icon: 'user-check',
+                      ...updateSelected,
+                      onClick: () => {
+                          getUserList();
+                          setUpdateOwner(true);
                       },
-                      {
-                          icon: 'upload',
-                          disabled: false,
-                          tooltip: 'Import certificates and keys',
-                          requires: can(ResourceAction.Create),
-                          onClick: () => {
-                              setUpload(true);
-                          },
-                      },
-                      {
-                          icon: 'group',
-                          disabled: checkedRows.length === 0,
-                          tooltip: 'Override Groups',
-                          requires: can(ResourceAction.Update, { onObjects: true }),
-                          onClick: () => {
-                              setUpdateGroup(true);
-                          },
-                      },
-                      {
-                          icon: 'user-check',
-                          disabled: checkedRows.length === 0,
-                          tooltip: 'Override Owner',
-                          requires: can(ResourceAction.Update, { onObjects: true }),
-                          onClick: () => {
-                              getUserList();
-                              setUpdateOwner(true);
-                          },
-                      },
-                      {
-                          icon: 'shield-check',
-                          disabled: checkedRows.length === 0,
-                          tooltip: 'Override RA Profile',
-                          requires: can(ResourceAction.Update, { onObjects: true }),
-                          onClick: () => {
-                              setUpdateRaProfile(true);
-                          },
-                      },
-                      {
-                          icon: 'download',
-                          disabled: checkedRows.length === 0,
-                          tooltip: 'Download',
-                          custom: downloadDropDown,
-                          onClick: () => {},
-                      },
-                      {
-                          icon: 'archive',
-                          disabled: checkedRows.length === 0,
-                          tooltip: 'Archive',
-                          requires: can(ResourceAction.Archive, { onObjects: true }),
-                          onClick: onArchiveClick,
-                      },
-                      {
-                          icon: 'unarchive',
-                          disabled: checkedRows.length === 0,
-                          tooltip: 'Unarchive',
-                          requires: can(ResourceAction.Archive, { onObjects: true }),
-                          onClick: onUnarchiveClick,
-                      },
-                  ],
-        [checkedRows.length, downloadDropDown, selectCertsOnly, getUserList, onArchiveClick, onUnarchiveClick, navigate, can],
-    );
+                  },
+                  {
+                      id: 'override-ra-profile',
+                      label: 'Override RA profile',
+                      icon: 'shield-check',
+                      ...updateSelected,
+                      onClick: () => setUpdateRaProfile(true),
+                  },
+                  {
+                      id: 'download-pem',
+                      label: 'Download PEM (.pem)',
+                      icon: 'download',
+                      ...bulk,
+                      onClick: () => dispatch(actions.getCertificateContents({ uuids: checkedRows, format: 'pem' })),
+                  },
+                  {
+                      id: 'download-der',
+                      label: 'Download DER (.cer)',
+                      icon: 'download',
+                      ...bulk,
+                      onClick: () => dispatch(actions.getCertificateContents({ uuids: checkedRows, format: 'cer' })),
+                  },
+                  { id: 'archive', label: 'Archive', icon: 'archive', ...archiveSelected, onClick: onArchiveClick },
+                  { id: 'unarchive', label: 'Unarchive', icon: 'unarchive', ...archiveSelected, onClick: onUnarchiveClick },
+              ];
+        const inventoryLabel = `${getEnumLabel(resourceEnum, Resource.Certificates)} Inventory`;
+        return {
+            breadcrumbs: [{ label: inventoryLabel }],
+            primaryAction: hideAdditionalButtons
+                ? undefined
+                : {
+                      id: 'create',
+                      label: 'Create',
+                      icon: 'plus',
+                      requires: create,
+                      onClick: () => void navigate(`/${Resource.Certificates.toLowerCase()}/add`),
+                  },
+            actions: actionsMenu,
+        } satisfies PageHeaderProps;
+    }, [
+        hideWidgetButtons,
+        hideAdditionalButtons,
+        checkedRows,
+        resourceEnum,
+        dispatch,
+        getUserList,
+        onArchiveClick,
+        onUnarchiveClick,
+        navigate,
+        can,
+    ]);
 
     const registry = useMemo(
         () =>
@@ -303,7 +278,7 @@ export default function CertificateList({
                     (apiClients: ApiClients) => apiClients.certificates.getCertificateSearchableFields(),
                     [],
                 )}
-                additionalButtons={hideAdditionalButtons ? [] : buttons}
+                pageHeader={pageHeader}
                 configurableColumns={configurableColumns}
                 headers={pickerHeaders}
                 data={pickerRows}

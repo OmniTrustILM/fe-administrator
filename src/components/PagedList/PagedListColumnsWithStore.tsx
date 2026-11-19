@@ -10,6 +10,7 @@ import type { SearchFieldListModel, SearchFilterModel, SearchRequestModel } from
 import type { ListViewModel } from 'types/listViews';
 import { FilterFieldSource, Resource } from 'types/openapi';
 import type { ColumnDefinition } from 'types/tableColumns';
+import type { Availability } from 'utils/availability';
 import type { ColumnSort } from 'utils/tableColumns';
 import { createMockStore } from 'utils/test-helpers';
 import PagedList from './PagedList';
@@ -49,6 +50,10 @@ type Props = Readonly<{
      * applying the opening view is itself a reset, and runs before a test can act.
      */
     withPagingControl?: boolean;
+    /** Mounts the host with a page header, a Create route and a Delete handler. */
+    withPageHeader?: boolean;
+    createRequires?: Availability;
+    deleteRequires?: Availability;
     /** Supplies the column configuration a tick after mount, as a page still fetching its catalogue does. */
     withDeferredConfig?: boolean;
     /** Renders a control that lands the catalogue, so a test can act on the table before it arrives. */
@@ -68,6 +73,9 @@ type Props = Readonly<{
     /** Renders a second such control, for a user typing a different set of filters afterwards. */
     retypedFilters?: SearchFilterModel[];
 }>;
+
+const PAGE_HEADER = { breadcrumbs: [{ label: 'Certificates Inventory' }] };
+const noop = () => {};
 
 const registry: CellRegistry<StubRow> = {
     'property:COMMON_NAME': (row) => row.commonName,
@@ -247,6 +255,9 @@ export default function PagedListColumnsWithStore({
     withRemountControl = false,
     withRefreshControl = false,
     withPagingControl = false,
+    withPageHeader = false,
+    createRequires,
+    deleteRequires,
     withDeferredConfig = false,
     withCatalogueControl = false,
     refreshedCatalogue,
@@ -338,7 +349,12 @@ export default function PagedListColumnsWithStore({
                         filterTitle="Certificate Inventory Filter"
                         getAvailableFiltersApi={getAvailableFiltersApi}
                         onListCallback={onListCallback}
-                        addHidden
+                        addHidden={!withPageHeader}
+                        pageHeader={withPageHeader ? PAGE_HEADER : undefined}
+                        onDeleteCallback={withPageHeader ? noop : undefined}
+                        createRequires={createRequires}
+                        deleteRequires={deleteRequires}
+                        entityNamePlural={withPageHeader ? 'Certificates' : undefined}
                         configurableColumns={config}
                         refreshToken={refreshToken}
                     />
