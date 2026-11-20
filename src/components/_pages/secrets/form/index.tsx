@@ -16,7 +16,7 @@ import { actions as secretsActions, selectors as secretsSelectors } from 'ducks/
 import { actions as vaultProfileActions, selectors as vaultProfileSelectors } from 'ducks/vault-profiles';
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from 'ducks/customAttributes';
 
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -34,6 +34,8 @@ import { selectors as enumSelectors, getEnumDescription, getEnumLabel } from 'du
 import { validateAlphaNumericWithSpecialChars, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
+import { generatePrivateKeyPem, KEY_ALGORITHMS, type KeyAlgorithm, toPrivateKeySecretContent } from 'utils/privateKeyGeneration';
+import { actions as alertActions } from 'ducks/alerts';
 
 interface SelectOption {
     value: string;
@@ -45,12 +47,18 @@ type SecretFormProps = Readonly<{
     onCancel?: () => void;
     onSuccess?: () => void;
     initialSecret?: SecretDetailDto;
-    // A new Generic secret whose content was decided elsewhere: both are shown, neither can be edited.
-    preset?: Readonly<{ type: SecretType.Generic; content: string }>;
+    // A new secret of a type decided elsewhere; the type is fixed unless several allowedTypes are given.
+    // With a content the secret holds it and neither can be edited.
+    preset?: Readonly<{ type: SecretType; content?: string; allowedTypes?: SecretType[] }>;
     // Takes over creating, so the content goes out with the request only and never through the store.
     onCreate?: (request: CreateSecretRequest) => void;
     createInProgress?: boolean;
 }>;
+
+function keyGenerationStatus(generating: boolean, generatedKeyLabel: string | undefined): string {
+    if (generating) return 'Generating key...';
+    return generatedKeyLabel ? `Generated ${generatedKeyLabel} key` : '';
+}
 
 interface FormValues {
     name: string;
@@ -128,6 +136,8 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
         [vaultProfiles],
     );
 
+    const allowedTypes = preset?.allowedTypes && preset.allowedTypes.length > 1 ? preset.allowedTypes : undefined;
+
     const optionsForTypes = useMemo(() => {
         const options: SelectOption[] = [];
         for (const key in SecretType) {
@@ -138,8 +148,8 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
                 description: getEnumDescription(secretTypeEnum, value),
             });
         }
-        return options;
-    }, [secretTypeEnum]);
+        return allowedTypes ? options.filter((option) => allowedTypes.includes(option.value as SecretType)) : options;
+    }, [secretTypeEnum, allowedTypes]);
 
     const defaultValues: FormValues = useMemo(
         () =>
@@ -204,7 +214,46 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
 
     const watchedType = useWatch({ control, name: 'type', defaultValue: defaultValues.type });
     const watchedSourceVaultProfile = useWatch({ control, name: 'sourceVaultProfile' });
-    const fixedType = initialSecret?.type ?? preset?.type;
+    const fixedType = initialSecret?.type ?? (allowedTypes ? undefined : preset?.type);
+    const [keyAlgorithm, setKeyAlgorithm] = useState<KeyAlgorithm>(KEY_ALGORITHMS[0].value);
+    const [generatedKeyLabel, setGeneratedKeyLabel] = useState<string>();
+    const [generating, setGenerating] = useState(false);
+    // Only the latest generation may fill the content; leaving Private Key also outdates a pending one.
+    const generation = useRef(0);
+
+    const generateKey = async () => {
+        generation.current += 1;
+        const current = generation.current;
+        setGenerating(true);
+        try {
+            const content = toPrivateKeySecretContent(await generatePrivateKeyPem(keyAlgorithm));
+            if (current !== generation.current) return;
+            setValue('content', content, { shouldDirty: true, shouldValidate: true });
+            setGeneratedKeyLabel(KEY_ALGORITHMS.find((algorithm) => algorithm.value === keyAlgorithm)?.label);
+        } catch {
+            if (current === generation.current) dispatch(alertActions.error('Failed to generate key'));
+        } finally {
+            if (current === generation.current) setGenerating(false);
+        }
+    };
+
+    // A generated key is not shown, so it must not surface in another type's field or come back as pasted content.
+    const changeType = (type: string, onChange: (value: string) => void) => {
+        if (type !== SecretType.PrivateKey) {
+            generation.current += 1;
+            setGenerating(false);
+            if (generatedKeyLabel) {
+                setValue('content', '', { shouldDirty: true });
+                setGeneratedKeyLabel(undefined);
+            }
+        }
+        onChange(type);
+    };
+
+    const discardGeneratedKey = () => {
+        setValue('content', '', { shouldDirty: true, shouldValidate: true });
+        setGeneratedKeyLabel(undefined);
+    };
 
     useEffect(() => {
         if (!watchedSourceVaultProfile || !watchedType) return;
@@ -454,7 +503,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
                                                 placeholder="Select"
                                                 options={optionsForTypes}
                                                 value={field.value || ''}
-                                                onChange={field.onChange}
+                                                onChange={(value) => changeType(value as string, field.onChange)}
                                                 error={getFieldErrorMessage(fieldState)}
                                                 showOptionDescriptionInDropdown
                                                 showSelectedDescriptionAsHelp
@@ -576,7 +625,30 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
                                         </div>
                                     </>
                                 )}
-                                {watchedType === SecretType.PrivateKey && (
+                                {watchedType === SecretType.PrivateKey && !initialSecret && (
+                                    <div className="flex items-end gap-2">
+                                        <Select
+                                            id="secret-key-algorithm"
+                                            label="Key algorithm"
+                                            options={KEY_ALGORITHMS.map(({ value, label }) => ({ value, label }))}
+                                            value={keyAlgorithm}
+                                            onChange={(value) => setKeyAlgorithm(value as KeyAlgorithm)}
+                                            isDisabled={generating}
+                                        />
+                                        <Button variant="outline" type="button" onClick={generateKey} disabled={generating}>
+                                            Generate key
+                                        </Button>
+                                        <output data-testid="secret-generated-key" className="self-center text-sm text-content">
+                                            {keyGenerationStatus(generating, generatedKeyLabel)}
+                                        </output>
+                                        {generatedKeyLabel && (
+                                            <Button variant="outline" type="button" onClick={discardGeneratedKey} disabled={generating}>
+                                                Discard
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
+                                {watchedType === SecretType.PrivateKey && !generatedKeyLabel && (
                                     <>
                                         <Controller
                                             name="content"
@@ -749,7 +821,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
                                                 onChange={field.onChange}
                                                 onBlur={field.onBlur}
                                                 error={getFieldErrorMessage(fieldState)}
-                                                disabled={!!preset}
+                                                disabled={!!preset?.content}
                                                 required={!initialSecret}
                                             />
                                         )}
@@ -832,7 +904,9 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
                             </Button>
                             <ProgressButton
                                 inProgress={isSubmitting || isCreating}
-                                disabled={!isDirty || !isValid || isSubmitting || isCreating || isFetchingSecretCreationAttributes}
+                                disabled={
+                                    !isDirty || !isValid || isSubmitting || isCreating || isFetchingSecretCreationAttributes || generating
+                                }
                                 title={submitTitle}
                                 inProgressTitle={inProgressTitle}
                                 type="submit"
