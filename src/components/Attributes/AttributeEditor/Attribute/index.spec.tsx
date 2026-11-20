@@ -1,7 +1,7 @@
 import { test, expect } from '../../../../../playwright/ct-test';
 import { AttributeTestWrapper } from './AttributeTestWrapper';
 import type { DataAttributeModel, InfoAttributeModel, CustomAttributeModel } from 'types/attributes';
-import { AttributeContentType, AttributeType } from 'types/openapi';
+import { AttributeContentType, AttributeResource, AttributeType } from 'types/openapi';
 
 const defaultProperties = {
     label: 'Test Field',
@@ -172,6 +172,24 @@ test.describe('Attribute', () => {
         await expect(page.getByTestId('global-modal-state')).toHaveText('Create Credential');
         // "+ Create new" is a command, not a value — it must not end up as the field's selection.
         await expect(page.locator('select#fieldSelect')).not.toHaveValue('__add_new__');
+    });
+
+    test('offers "+ Create new" on a secret picker and opens the secret dialog', async ({ mount, page }) => {
+        const descriptor = dataDescriptor({
+            contentType: AttributeContentType.Resource,
+            properties: { ...defaultProperties, label: 'Secret', resource: AttributeResource.Secrets } as any,
+        });
+        await mount(<AttributeTestWrapper name="field" descriptor={descriptor} options={[]} renderGlobalModal={false} />);
+
+        await page.getByTestId('select-fieldSelect-trigger').click();
+        await page.getByRole('option', { name: '+ Create new' }).click();
+
+        // Its own dialog, so a form already shown in the global modal stays in place.
+        await expect(page.getByRole('dialog', { name: 'Create Secret' })).toBeVisible();
+        await expect(page.getByTestId('global-modal-state')).toHaveText('closed');
+
+        await page.getByRole('dialog', { name: 'Create Secret' }).getByRole('button', { name: 'Cancel' }).click();
+        await expect(page.getByRole('dialog', { name: 'Create Secret' })).toHaveCount(0);
     });
 
     test('passes busy and deleteButton to child', async ({ mount, page }) => {

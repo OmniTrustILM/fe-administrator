@@ -98,6 +98,17 @@ test.describe('GenerateEabKeyDialog', () => {
         await expect(page.getByTestId('store-actions')).not.toContainText('abc-1');
     });
 
+    test("the secret's custom attributes are read for the form", async ({ mount, page }) => {
+        await mount(<GenerateEabKeyDialogHarness generatedKey="abc" />);
+        await page.getByTestId('open').click();
+        const dialog = page.getByTestId('generate-eab-key-dialog');
+
+        await dialog.getByText('Custom Attributes', { exact: true }).click();
+        await expect(dialog.getByText('Secret owner')).toHaveCount(1);
+        await expect(page.getByTestId('store-actions')).toContainText('vaultProfiles/listVaultProfiles');
+        await expect(page.getByTestId('store-actions')).not.toContainText('customAttributes/listResourceCustomAttributes');
+    });
+
     test("the vault profile's attributes are filled here and sent with the secret", async ({ mount, page }) => {
         await mount(<GenerateEabKeyDialogHarness vaultProfileHasAttribute />);
         await page.getByTestId('open').click();

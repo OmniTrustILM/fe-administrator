@@ -7,37 +7,31 @@ import { actions as alertActions } from 'ducks/alerts';
 import { actions as secretsActions } from 'ducks/secrets';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import { catchError, forkJoin, map, type Observable, of, type Subscription, switchMap } from 'rxjs';
-import {
-    type AcmeEabKeyDto,
-    type ApprovalProfileDto,
-    type CreateSecretRequest,
-    Resource,
-    type SecretDetailDto,
-    type SecretDto,
-    SecretType,
-} from 'types/openapi';
+import type { Observable, Subscription } from 'rxjs';
+import type { CustomAttributeModel } from 'types/attributes';
+import { type AcmeEabKeyDto, type CreateSecretRequest, type SecretDto, SecretType } from 'types/openapi';
 import { EAB_CLIENT_HINT, EAB_KEY_NOTICE, EAB_SECRET_CREATED, EAB_SECRET_SELECTED, newEabSecretProblem } from 'utils/acme-eab';
-import { extractError, extractErrorReason } from 'utils/net';
+import { extractError } from 'utils/net';
+import { createAndEnableSecret, type SecretCreationApi } from 'utils/secret-creation';
+import {
+    backendSecretCreationApi,
+    loadSecretAttributes,
+    loadSecretCustomAttributes,
+    type SecretAttributesLoader,
+} from 'components/_pages/secrets/secretCreationApi';
 
-export type EabKeyApi = Readonly<{
-    generateKey: () => Observable<AcmeEabKeyDto>;
-    createSecret: (request: CreateSecretRequest) => Observable<SecretDetailDto>;
-    enableSecret: (uuid: string) => Observable<void>;
-    getSecret: (uuid: string) => Observable<SecretDetailDto>;
-    vaultProfileApprovalProfiles: (vaultProfileUuid: string) => Observable<ApprovalProfileDto[]>;
-}>;
+export type EabKeyApi = SecretCreationApi &
+    Readonly<{
+        generateKey: () => Observable<AcmeEabKeyDto>;
+        loadCustomAttributes: () => Observable<CustomAttributeModel[]>;
+        loadSecretAttributes: SecretAttributesLoader;
+    }>;
 
 const backendEabKeyApi: EabKeyApi = {
+    ...backendSecretCreationApi,
     generateKey: () => backendClient.acmeProfiles.generateEabKey(),
-    createSecret: (request) => backendClient.secrets.createSecret(request),
-    enableSecret: (uuid) => backendClient.secrets.enableSecret({ uuid }),
-    getSecret: (uuid) => backendClient.secrets.getSecretDetails({ uuid }),
-    vaultProfileApprovalProfiles: (vaultProfileUuid) =>
-        backendClient.approvalProfiles.getAssociatedApprovalProfiles1({
-            resource: Resource.VaultProfiles,
-            associationObjectUuid: vaultProfileUuid,
-        }),
+    loadCustomAttributes: loadSecretCustomAttributes,
+    loadSecretAttributes,
 };
 
 type Props = Readonly<{
@@ -57,6 +51,7 @@ export default function GenerateEabKeyDialog({ isOpen, onClose, onSelect, api = 
     const [isGenerating, setIsGenerating] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [created, setCreated] = useState<Created>();
+    const [customAttributes, setCustomAttributes] = useState<CustomAttributeModel[]>([]);
     const creation = useRef<Subscription>(undefined);
 
     // Parents pass inline callbacks; regenerating on their identity would replace a key already shown.
@@ -92,58 +87,41 @@ export default function GenerateEabKeyDialog({ isOpen, onClose, onSelect, api = 
 
     useEffect(() => () => creation.current?.unsubscribe(), []);
 
+    // Loaded here, as the page beneath may show its own custom attributes from the store.
+    useEffect(() => {
+        if (!isOpen) return;
+        const loading = apiRef.current.loadCustomAttributes().subscribe({
+            next: setCustomAttributes,
+            error: (err) => dispatch(alertActions.error(extractError(err, 'Failed to get Resource Custom Attributes list'))),
+        });
+        return () => loading.unsubscribe();
+    }, [isOpen, dispatch]);
+
     const preset = useMemo(() => (key ? { type: SecretType.Generic as const, content: key } : undefined), [key]);
 
     const createSecret = (request: CreateSecretRequest) => {
         const calls = apiRef.current;
         setIsCreating(true);
-        creation.current = calls
-            .createSecret(request)
-            .pipe(
-                // Core creates a secret disabled and settles its state only after replying, so it is read again once
-                // enabled; while it is still inactive, the vault profile's approval profiles say whether it will be held.
-                switchMap((secret) =>
-                    forkJoin({
-                        enable: calls.enableSecret(secret.uuid).pipe(
-                            map(() => ({ enabled: true, enableError: undefined as string | undefined })),
-                            catchError((err) => of({ enabled: false, enableError: extractErrorReason(err) })),
-                        ),
-                        needsApproval: calls.vaultProfileApprovalProfiles(request.vaultProfileUuid).pipe(
-                            map((profiles) => profiles.length > 0),
-                            catchError(() => of(undefined)),
-                        ),
-                    }).pipe(
-                        switchMap((checks) =>
-                            calls.getSecret(secret.uuid).pipe(
-                                map((current) => ({ secret: current, stateRead: true, ...checks })),
-                                catchError(() =>
-                                    of({ secret: { ...secret, enabled: checks.enable.enabled }, stateRead: false, ...checks }),
-                                ),
-                            ),
-                        ),
-                    ),
-                ),
-            )
-            .subscribe({
-                next: ({ secret, stateRead, enable, needsApproval }) => {
-                    const problem = newEabSecretProblem({
-                        secret,
-                        vaultProfileName: secret.sourceVaultProfile.name,
-                        needsApproval,
-                        enableError: enable.enableError,
-                        stateRead,
-                    });
-                    setIsCreating(false);
-                    setCreated({ secret, problem });
-                    if (!problem) onSelectRef.current?.(secret);
-                    // The listing read before this secret existed is what the form and the detail page name secrets from.
-                    dispatch(secretsActions.listSecretOptions());
-                },
-                error: (err) => {
-                    setIsCreating(false);
-                    dispatch(alertActions.error(extractError(err, 'Failed to create Secret')));
-                },
-            });
+        creation.current = createAndEnableSecret(calls, request).subscribe({
+            next: ({ secret, stateRead, enableError, needsApproval }) => {
+                const problem = newEabSecretProblem({
+                    secret,
+                    vaultProfileName: secret.sourceVaultProfile.name,
+                    needsApproval,
+                    enableError,
+                    stateRead,
+                });
+                setIsCreating(false);
+                setCreated({ secret, problem });
+                if (!problem) onSelectRef.current?.(secret);
+                // The listing read before this secret existed is what the form and the detail page name secrets from.
+                dispatch(secretsActions.listSecretOptions());
+            },
+            error: (err) => {
+                setIsCreating(false);
+                dispatch(alertActions.error(extractError(err, 'Failed to create Secret')));
+            },
+        });
     };
 
     // A close mid-creation would drop the key and the reply of a create that may already have gone through.
@@ -193,7 +171,14 @@ export default function GenerateEabKeyDialog({ isOpen, onClose, onSelect, api = 
                                     <output className="block text-sm text-warning" data-testid="eab-key-notice">
                                         {EAB_KEY_NOTICE}
                                     </output>
-                                    <SecretForm preset={preset} onCreate={createSecret} createInProgress={isCreating} onCancel={close} />
+                                    <SecretForm
+                                        preset={preset}
+                                        onCreate={createSecret}
+                                        createInProgress={isCreating}
+                                        onCancel={close}
+                                        customAttributeDescriptors={customAttributes}
+                                        loadSecretAttributes={api.loadSecretAttributes}
+                                    />
                                 </>
                             )}
                         </>
