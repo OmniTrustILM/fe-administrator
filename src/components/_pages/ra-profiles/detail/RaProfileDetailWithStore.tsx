@@ -19,6 +19,10 @@ type Props = Readonly<{
     allowedActions?: ResourceAction[];
     /** Actions the user holds on whole resources; none when omitted. */
     resourceGrants?: { resource: Resource; actions: ResourceAction[] }[];
+    /** Resources the user holds object access on; none when omitted. */
+    objectAccess?: Resource[];
+    /** Opens a profile that has no authority, under the route's `unknown` segment. */
+    withoutAuthority?: boolean;
 }>;
 
 const raProfile = {
@@ -31,16 +35,23 @@ const raProfile = {
     certificateValidationSettings: { usePlatformSettings: true },
 } as unknown as RaProfileResponseModel;
 
-export default function RaProfileDetailWithStore({ allowedActions = Object.values(ResourceAction), resourceGrants }: Props) {
+export default function RaProfileDetailWithStore({
+    allowedActions = Object.values(ResourceAction),
+    resourceGrants,
+    objectAccess,
+    withoutAuthority,
+}: Props) {
+    const profile = withoutAuthority ? { ...raProfile, authorityInstanceUuid: undefined, authorityInstanceName: undefined } : raProfile;
     const [store] = useState(() =>
         createObjectPermissionStore({
             resource: Resource.RaProfiles,
             uuid: raProfile.uuid,
             allowedActions,
             resourceGrants,
+            objectAccess,
             realSlices: [acmeProfilesSlice, approvalProfilesSlice, cmpProfilesSlice, estProfilesSlice, scepProfilesSlice],
             preloadedState: {
-                raprofiles: { ...raProfilesInitialState, ...testInitialState.raprofiles, raProfile },
+                raprofiles: { ...raProfilesInitialState, ...testInitialState.raprofiles, raProfile: profile },
                 complianceProfiles: { ...complianceProfilesInitialState, ...testInitialState.complianceProfiles },
             },
         }),
@@ -48,7 +59,7 @@ export default function RaProfileDetailWithStore({ allowedActions = Object.value
 
     return (
         <Provider store={store}>
-            <MemoryRouter initialEntries={[`/raprofiles/detail/${raProfile.authorityInstanceUuid}/${raProfile.uuid}`]}>
+            <MemoryRouter initialEntries={[`/raprofiles/detail/${profile.authorityInstanceUuid ?? 'unknown'}/${profile.uuid}`]}>
                 <Routes>
                     <Route path="/raprofiles/detail/:authorityId/:id" element={<RaProfileDetail />} />
                 </Routes>
