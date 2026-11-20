@@ -162,6 +162,14 @@ export function Attribute({
     );
     /* c8 ignore stop */
 
+    const selectCreatedResource = useCallback(
+        (option: AttributeSelectOption) => {
+            onUserInteraction();
+            selectCreated(option);
+        },
+        [onUserInteraction, selectCreated],
+    );
+
     if (!descriptor) return <></>;
 
     if (isDataAttributeModel(descriptor) || isCustomAttributeModel(descriptor)) {
@@ -184,7 +192,7 @@ export function Attribute({
                     {isAddingNew &&
                         typeof addNewContent === 'function' &&
                         isDataAttributeModel(descriptor) &&
-                        addNewContent(descriptor, selectCreated, closeAddNew)}
+                        addNewContent(descriptor, selectCreatedResource, closeAddNew)}
                 </>
             );
         }

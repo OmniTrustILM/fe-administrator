@@ -22,27 +22,55 @@ const withMappings = (mappings: unknown[]): DataAttributeModel =>
         attributeCallback: { callbackContext: '/c', callbackMethod: 'GET', mappings },
     } as never);
 
+const filter = (operator: string, value: unknown, targets = [AttributeValueTarget.Filter]) => ({
+    to: `SECRET_TYPE.${operator}`,
+    targets,
+    value,
+});
+
 describe('allowedSecretTypes', () => {
-    test('readsSingleAndListFilterValues', () => {
+    const all = Object.values(SecretType);
+
+    test('equalsAllowsItsValues', () => {
+        expect(allowedSecretTypes(withMappings([filter('EQUALS', ['apiKey', 'basicAuth', 'bogus'])]))).toEqual([
+            SecretType.BasicAuth,
+            SecretType.ApiKey,
+        ]);
+        expect(allowedSecretTypes(withMappings([filter('EQUALS', 'privateKey')]))).toEqual([SecretType.PrivateKey]);
+    });
+
+    test('notEqualsExcludesItsValues', () => {
+        const allowed = allowedSecretTypes(withMappings([filter('NOT_EQUALS', 'privateKey')]));
+        expect(allowed).toEqual(all.filter((type) => type !== SecretType.PrivateKey));
+    });
+
+    test('otherOperatorsDoNotRestrict', () => {
+        expect(allowedSecretTypes(withMappings([filter('CONTAINS', 'apiKey')]))).toEqual(all);
+        expect(allowedSecretTypes(withMappings([filter('a', 'apiKey')]))).toEqual(all);
+    });
+
+    test('mappingsIntersect', () => {
+        expect(allowedSecretTypes(withMappings([filter('EQUALS', ['apiKey', 'basicAuth']), filter('NOT_EQUALS', 'basicAuth')]))).toEqual([
+            SecretType.ApiKey,
+        ]);
+    });
+
+    test('ignoresNonFilterAndOtherMappings', () => {
         expect(
             allowedSecretTypes(
                 withMappings([
-                    { to: 'SECRET_TYPE.a', targets: [AttributeValueTarget.Filter], value: 'apiKey' },
-                    { to: 'SECRET_TYPE.b', targets: [AttributeValueTarget.Filter], value: ['basicAuth', 'bogus'] },
-                    { to: 'SECRET_TYPE.c', targets: [AttributeValueTarget.Body], value: 'generic' },
+                    filter('EQUALS', 'generic', [AttributeValueTarget.Body]),
                     { to: 'other', targets: [AttributeValueTarget.Filter], value: 'keyStore' },
                 ]),
             ),
-        ).toEqual([SecretType.ApiKey, SecretType.BasicAuth]);
-    });
-
-    test('fallsBackToAllTypes_withoutFilter', () => {
-        const all = Object.values(SecretType);
+        ).toEqual(all);
         expect(allowedSecretTypes(withMappings([]))).toEqual(all);
         expect(allowedSecretTypes(descriptor())).toEqual(all);
-        expect(allowedSecretTypes(withMappings([{ to: 'SECRET_TYPE.a', targets: [AttributeValueTarget.Filter], value: 'bogus' }]))).toEqual(
-            all,
-        );
+    });
+
+    test('isEmpty_whenNoTypeSatisfiesFilters', () => {
+        expect(allowedSecretTypes(withMappings([filter('EQUALS', 'apiKey'), filter('NOT_EQUALS', 'apiKey')]))).toEqual([]);
+        expect(allowedSecretTypes(withMappings([filter('EQUALS', 'bogus')]))).toEqual([]);
     });
 });
 
@@ -77,6 +105,11 @@ describe('findAddNewAttribute', () => {
                 list,
             ),
         ).toBe(credential);
+    });
+
+    test('offersNoSecretCreation_whenNoTypeSatisfiesFilters', () => {
+        expect(findAddNewAttribute(withMappings([filter('EQUALS', 'apiKey'), filter('NOT_EQUALS', 'apiKey')]), list)).toBeUndefined();
+        expect(findAddNewAttribute(withMappings([filter('NOT_EQUALS', 'apiKey')]), list)).toBe(secret);
     });
 
     test('ignoresOtherResources', () => {

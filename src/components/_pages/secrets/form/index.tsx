@@ -29,6 +29,7 @@ import {
     type SecretRequestDto,
     SecretType,
 } from 'types/openapi';
+import type { CustomAttributeModel } from 'types/attributes';
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { selectors as enumSelectors, getEnumDescription, getEnumLabel } from 'ducks/enums';
 import { validateAlphaNumericWithSpecialChars, validateRequired } from 'utils/validators';
@@ -53,7 +54,11 @@ type SecretFormProps = Readonly<{
     // Takes over creating, so the content goes out with the request only and never through the store.
     onCreate?: (request: CreateSecretRequest) => void;
     createInProgress?: boolean;
+    // With onCreate, the custom attribute descriptors come from here, leaving the store's shared ones to the page.
+    customAttributeDescriptors?: CustomAttributeModel[];
 }>;
+
+const NO_CUSTOM_ATTRIBUTES: CustomAttributeModel[] = [];
 
 function keyGenerationStatus(generating: boolean, generatedKeyLabel: string | undefined): string {
     if (generating) return 'Generating key...';
@@ -76,7 +81,15 @@ interface FormValues {
     keyValueContent?: string;
 }
 
-export default function SecretForm({ onCancel, onSuccess, initialSecret, preset, onCreate, createInProgress }: SecretFormProps) {
+export default function SecretForm({
+    onCancel,
+    onSuccess,
+    initialSecret,
+    preset,
+    onCreate,
+    createInProgress,
+    customAttributeDescriptors,
+}: SecretFormProps) {
     const dispatch = useDispatch();
 
     const users = useSelector(userSelectors.users);
@@ -90,7 +103,8 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
     const vaultProfiles = useSelector(vaultProfileSelectors.vaultProfiles);
     const secretCreationAttributeDescriptors = useSelector(secretsSelectors.secretCreationAttributeDescriptors);
     const isFetchingSecretCreationAttributes = useSelector(secretsSelectors.isFetchingSecretCreationAttributes);
-    const resourceCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
+    const storeCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
+    const resourceCustomAttributes = onCreate ? (customAttributeDescriptors ?? NO_CUSTOM_ATTRIBUTES) : storeCustomAttributes;
 
     const secretTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.SecretType));
 
@@ -103,9 +117,10 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
         dispatch(vaultProfileActions.listVaultProfiles());
     }, [dispatch]);
 
+    const usesStoreCustomAttributes = !onCreate;
     useEffect(() => {
-        dispatch(customAttributesActions.listResourceCustomAttributes(Resource.Secrets));
-    }, [dispatch]);
+        if (usesStoreCustomAttributes) dispatch(customAttributesActions.listResourceCustomAttributes(Resource.Secrets));
+    }, [dispatch, usesStoreCustomAttributes]);
 
     const optionsForUsers = useMemo(
         () =>
@@ -625,7 +640,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
                                         </div>
                                     </>
                                 )}
-                                {watchedType === SecretType.PrivateKey && !initialSecret && (
+                                {watchedType === SecretType.PrivateKey && onCreate && !initialSecret && (
                                     <div className="flex items-end gap-2">
                                         <Select
                                             id="secret-key-algorithm"

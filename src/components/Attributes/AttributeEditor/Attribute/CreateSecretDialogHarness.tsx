@@ -1,11 +1,12 @@
 import GlobalModal from 'components/GlobalModal';
 import { createEabSecretStore, type EabKeyApiBehaviour, stubEabKeyApi } from 'components/_pages/acme-profiles/eab/eabKeyFixture';
+import { actions as customAttributesActions, selectors as customAttributesSelectors } from 'ducks/customAttributes';
 import { actions as userInterfaceActions } from 'ducks/user-interface';
 import { isValidElement, type ReactNode, useMemo, useState } from 'react';
-import { Subject } from 'rxjs';
+import { of, Subject } from 'rxjs';
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
-import { useDispatch } from 'react-redux';
-import type { DataAttributeModel } from 'types/attributes';
+import { useDispatch, useSelector } from 'react-redux';
+import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
 import {
     AttributeContentType,
     AttributeResource,
@@ -22,6 +23,20 @@ import type { SecretCreationApi } from 'utils/secret-creation';
 import { useCreatedOptions } from './useCreatedOptions';
 
 const FIELD = 'secret';
+
+const customAttribute = (name: string, label: string): CustomAttributeModel =>
+    ({
+        uuid: `${name}-uuid`,
+        name,
+        type: AttributeType.Custom,
+        contentType: AttributeContentType.String,
+        properties: { label, required: false, readOnly: false, visible: true, list: false, multiSelect: false },
+    }) as CustomAttributeModel;
+
+// What a parent form has loaded into the store for its own resource.
+const PARENT_ATTRIBUTES = [customAttribute('credentialOwner', 'Credential owner')];
+const SECRET_ATTRIBUTES = [customAttribute('secretOwner', 'Secret owner')];
+const loadSecretAttributes = () => of(SECRET_ATTRIBUTES);
 
 // What the first page of the picker's resource listing holds; the secret created here is not on it.
 const listing = (name: string, uuid: string): AttributeSelectOption => ({
@@ -50,7 +65,7 @@ function secretDescriptor(multiSelect: boolean, secretType: SecretType): DataAtt
             resource: AttributeResource.Secrets,
         },
         attributeCallback: {
-            mappings: [{ to: 'SECRET_TYPE.type', targets: [AttributeValueTarget.Filter], value: secretType }],
+            mappings: [{ to: 'SECRET_TYPE.EQUALS', targets: [AttributeValueTarget.Filter], value: secretType }],
         },
     } as DataAttributeModel;
 }
@@ -69,7 +84,15 @@ function SecretPicker({ api, multiSelect, listed, secretType }: PickerProps) {
             <button type="button" data-testid="open" onClick={() => setIsCreating(true)}>
                 Create new
             </button>
-            {isCreating && <CreateSecretDialog descriptor={descriptor} onCreated={select} onClose={() => setIsCreating(false)} api={api} />}
+            {isCreating && (
+                <CreateSecretDialog
+                    descriptor={descriptor}
+                    onCreated={select}
+                    onClose={() => setIsCreating(false)}
+                    api={api}
+                    loadCustomAttributes={loadSecretAttributes}
+                />
+            )}
             <pre data-testid="value">{JSON.stringify(value ?? null)}</pre>
             <AttributeFieldSelect
                 name={FIELD}
@@ -101,6 +124,11 @@ function recordCreatedContent(request: CreateSecretRequest) {
     (globalThis as unknown as Record<string, unknown>).createdSecretContent = 'content' in secret ? secret.content : undefined;
 }
 
+function SharedCustomAttributes() {
+    const descriptors = useSelector(customAttributesSelectors.resourceCustomAttributes);
+    return <pre data-testid="shared-custom-attributes">{descriptors.map((descriptor) => descriptor.name).join(',')}</pre>;
+}
+
 function OpenParentButton({ content }: Readonly<{ content: ReactNode }>) {
     const dispatch = useDispatch();
     const open = () => dispatch(userInterfaceActions.showGlobalModal({ isOpen: true, size: 'xl', title: 'Create Credential', content }));
@@ -130,11 +158,13 @@ export default function CreateSecretDialogHarness({
     }>) {
     const createGate = useMemo(() => new Subject<void>(), []);
     const [actions, setActions] = useState<string[]>([]);
-    const store = useMemo(
-        () =>
-            createEabSecretStore({ onAction: (action) => setActions((current) => [...current, JSON.stringify(action, withoutElements)]) }),
-        [],
-    );
+    const store = useMemo(() => {
+        const created = createEabSecretStore({
+            onAction: (action) => setActions((current) => [...current, JSON.stringify(action, withoutElements)]),
+        });
+        created.dispatch(customAttributesActions.listResourceCustomAttributesSuccess(PARENT_ATTRIBUTES));
+        return created;
+    }, []);
     // biome-ignore lint/correctness/useExhaustiveDependencies: one stub per mount
     const api = useMemo(() => stubEabKeyApi({ ...behaviour, createGate: holdCreate ? createGate : undefined }, recordCreatedContent), []);
     const picker = (
@@ -148,6 +178,7 @@ export default function CreateSecretDialogHarness({
             <button type="button" data-testid="resolve-create" onClick={() => createGate.next()}>
                 Resolve create
             </button>
+            <SharedCustomAttributes />
             <pre data-testid="store-actions">{actions.join('\n')}</pre>
             {!inGlobalModal && picker}
         </div>,

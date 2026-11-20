@@ -22,7 +22,8 @@ function recordRequest(request: CreateSecretRequest) {
     target[CREATE_REQUESTS] = [...(target[CREATE_REQUESTS] ?? []), request];
 }
 
-export default function SecretFormPresetHarness({ preset }: Readonly<{ preset?: Preset }>) {
+// Without onCreate the form creates through the store, as the secrets inventory does.
+export default function SecretFormPresetHarness({ preset, throughStore = false }: Readonly<{ preset?: Preset; throughStore?: boolean }>) {
     const store = useMemo(
         () =>
             createMockStore({
@@ -38,5 +39,5 @@ export default function SecretFormPresetHarness({ preset }: Readonly<{ preset?: 
         [],
     );
 
-    return withProviders(<SecretForm preset={preset} onCreate={recordRequest} />, { store });
+    return withProviders(<SecretForm preset={preset} onCreate={throughStore ? undefined : recordRequest} />, { store });
 }

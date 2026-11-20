@@ -143,6 +143,22 @@ test.describe('CreateSecretDialog', () => {
         await expect(page.getByTestId('value')).toHaveText('null');
     });
 
+    test('leaves the custom attributes a parent form loaded in the store', async ({ mount, page }) => {
+        await mount(<CreateSecretDialogHarness inGlobalModal />);
+        await page.getByTestId('open-parent').click();
+        await page.getByTestId('open').click();
+        const dialog = page.getByTestId('create-secret-dialog');
+
+        await dialog.getByText('Custom Attributes', { exact: true }).click();
+        await expect(dialog.getByText('Secret owner')).toHaveCount(1);
+        await expect(dialog.getByText('Credential owner')).toHaveCount(0);
+        await dialog.getByRole('button', { name: 'Cancel', exact: true }).click();
+
+        await expect(page.getByTestId('create-secret-dialog')).toHaveCount(0);
+        await expect(page.getByTestId('shared-custom-attributes')).toHaveText('credentialOwner');
+        await expect(page.getByTestId('store-actions')).not.toContainText('customAttributes/listResourceCustomAttributes"');
+    });
+
     test('neverDispatchesKeyToStore', async ({ mount, page }) => {
         await mount(<CreateSecretDialogHarness />);
 

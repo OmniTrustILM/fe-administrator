@@ -1,11 +1,11 @@
 import Dialog from 'components/Dialog';
 import SecretForm from 'components/_pages/secrets/form';
-import { backendSecretCreationApi } from 'components/_pages/secrets/secretCreationApi';
+import { backendSecretCreationApi, loadSecretCustomAttributes } from 'components/_pages/secrets/secretCreationApi';
 import { actions as alertActions } from 'ducks/alerts';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
-import type { Subscription } from 'rxjs';
-import type { DataAttributeModel } from 'types/attributes';
+import type { Observable, Subscription } from 'rxjs';
+import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
 import { AttributeResource, type CreateSecretRequest, type SecretDto } from 'types/openapi';
 import type { AttributeSelectOption } from 'utils/attributes/attributes';
 import { allowedSecretTypes } from 'utils/attributes/secretPicker';
@@ -39,17 +39,35 @@ type Props = Readonly<{
     onCreated: (option: AttributeSelectOption) => void;
     onClose: () => void;
     api?: SecretCreationApi;
+    loadCustomAttributes?: () => Observable<CustomAttributeModel[]>;
 }>;
 
 // Creates through the api rather than the store, so the secret content never reaches client state. A dialog of its own,
-// so a form the picker belongs to stays open beneath it, even one shown in the global modal.
-export default function CreateSecretDialog({ descriptor, onCreated, onClose, api = backendSecretCreationApi }: Props) {
+// so a form the picker belongs to stays open beneath it, even one shown in the global modal. Its custom attributes are
+// loaded here, as that form may show its own from the store.
+export default function CreateSecretDialog({
+    descriptor,
+    onCreated,
+    onClose,
+    api = backendSecretCreationApi,
+    loadCustomAttributes = loadSecretCustomAttributes,
+}: Props) {
     const dispatch = useDispatch();
     const [isCreating, setIsCreating] = useState(false);
     const [problem, setProblem] = useState<string>();
+    const [customAttributes, setCustomAttributes] = useState<CustomAttributeModel[]>([]);
     const creation = useRef<Subscription>(undefined);
 
     useEffect(() => () => creation.current?.unsubscribe(), []);
+
+    // biome-ignore lint/correctness/useExhaustiveDependencies: loaded once per dialog
+    useEffect(() => {
+        const loading = loadCustomAttributes().subscribe({
+            next: setCustomAttributes,
+            error: (err) => dispatch(alertActions.error(extractError(err, 'Failed to get Resource Custom Attributes list'))),
+        });
+        return () => loading.unsubscribe();
+    }, []);
 
     const preset = useMemo(() => {
         const allowedTypes = allowedSecretTypes(descriptor);
@@ -92,7 +110,13 @@ export default function CreateSecretDialog({ descriptor, onCreated, onClose, api
                         {problem}
                     </output>
                 ) : (
-                    <SecretForm preset={preset} onCreate={create} createInProgress={isCreating} onCancel={close} />
+                    <SecretForm
+                        preset={preset}
+                        onCreate={create}
+                        createInProgress={isCreating}
+                        onCancel={close}
+                        customAttributeDescriptors={customAttributes}
+                    />
                 )
             }
             buttons={problem ? [{ color: 'primary', body: 'Close', onClick: onClose }] : undefined}

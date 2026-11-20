@@ -67,6 +67,15 @@ test.describe('SecretForm preset', () => {
         await expect(page.getByRole('button', { name: 'Generate key' })).toBeVisible();
     });
 
+    test('offers no key generation when creating through the store', async ({ mount, page }) => {
+        await mount(<SecretFormPresetHarness throughStore preset={{ type: SecretType.PrivateKey }} />);
+
+        await expect(page.locator('#secret-privatekey-content')).toBeEnabled();
+        await expect(page.locator('#secret-privatekey-file__fileUpload__file')).toHaveCount(1);
+        await expect(page.getByRole('button', { name: 'Generate key' })).toHaveCount(0);
+        await expect(page.locator('#secret-key-algorithm')).toHaveCount(0);
+    });
+
     test('limitsTypeSelectToAllowedTypes', async ({ mount, page }) => {
         await mount(
             <SecretFormPresetHarness preset={{ type: SecretType.ApiKey, allowedTypes: [SecretType.ApiKey, SecretType.PrivateKey] }} />,
