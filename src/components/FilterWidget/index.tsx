@@ -36,6 +36,7 @@ import {
 } from 'utils/duration';
 import Button from 'components/Button';
 import Badge from 'components/Badge';
+import FilterValueChips from 'components/FilterValueChips';
 import { validateDuration, validatePostgresPosixRegex } from 'utils/validators';
 import Label from 'components/Label';
 import type { Availability } from 'utils/availability';
@@ -430,6 +431,24 @@ export default function FilterWidget({
         [currentFilters, dispatch, entity, onFilterUpdate],
     );
 
+    const onRemoveFilterValueClick = useCallback(
+        (index: number, valueIndex: number) => {
+            const filter = currentFilters[index];
+            if (!Array.isArray(filter?.value) || filter.value.length <= 1) {
+                onRemoveFilterClick(index);
+                return;
+            }
+            const updated = { ...filter, value: filter.value.filter((_, i) => i !== valueIndex) } as SearchFilterModel;
+            const newFilters = currentFilters.map((f, i) => (i === index ? updated : f));
+            dispatch(actions.setCurrentFilters({ entity, currentFilters: newFilters }));
+            setSelectedFilter(-1);
+            if (onFilterUpdate) {
+                onFilterUpdate(newFilters.map(mapFilterToRequestDto));
+            }
+        },
+        [currentFilters, dispatch, entity, onFilterUpdate, onRemoveFilterClick],
+    );
+
     const toggleFilter = useCallback(
         (index: number) => {
             setSelectedFilter(selectedFilter === index ? -1 : index);
@@ -500,17 +519,40 @@ export default function FilterWidget({
     }, [currentField, platformEnums]);
 
     const getBadgeContent = useCallback(
-        (itemNumber: number, fieldSource: string, fieldCondition: string, label: string, value: string) => {
+        (itemNumber: number, fieldSource: string, fieldCondition: string, label: string, value: string | string[]) => {
             if (isFetchingAvailableFilters || busyBadges) return null;
             return (
                 <React.Fragment key={itemNumber}>
-                    <b>{getEnumLabel(searchGroupEnum, fieldSource)}&nbsp;</b>'{label}'&nbsp;
-                    {getEnumLabel(FilterConditionOperatorEnum, fieldCondition)}&nbsp;
-                    {value}
+                    <button
+                        type="button"
+                        className="cursor-pointer rounded-sm focus-visible:outline-2 focus-visible:outline-current"
+                        onClick={() => toggleFilter(itemNumber)}
+                    >
+                        <b>{getEnumLabel(searchGroupEnum, fieldSource)}&nbsp;</b>'{label}'&nbsp;
+                        {getEnumLabel(FilterConditionOperatorEnum, fieldCondition)}
+                        {!Array.isArray(value) && <>&nbsp;{value}</>}
+                    </button>
+                    {Array.isArray(value) && (
+                        <FilterValueChips
+                            values={value}
+                            filterLabel={label}
+                            onRemoveValue={
+                                disableBadgeRemove ? undefined : (valueIndex) => onRemoveFilterValueClick(itemNumber, valueIndex)
+                            }
+                        />
+                    )}
                 </React.Fragment>
             );
         },
-        [isFetchingAvailableFilters, FilterConditionOperatorEnum, searchGroupEnum, busyBadges],
+        [
+            isFetchingAvailableFilters,
+            FilterConditionOperatorEnum,
+            searchGroupEnum,
+            busyBadges,
+            toggleFilter,
+            disableBadgeRemove,
+            onRemoveFilterValueClick,
+        ],
     );
 
     const renderFilterValueInput = useCallback(() => {
@@ -676,7 +718,7 @@ export default function FilterWidget({
         regexError,
     ]);
 
-    function getFilterBadgeValue(f: SearchFilterModel, field: FieldData | undefined): string {
+    function getFilterBadgeValue(f: SearchFilterModel, field: FieldData | undefined): string | string[] {
         function mapArrayValue(v: unknown): string {
             if (field?.platformEnum) return String(platformEnums[field.platformEnum][String(v)]?.label ?? v);
             if (typeof v === 'object' && v !== null && 'name' in v && (v as { name?: unknown }).name) {
@@ -710,7 +752,7 @@ export default function FilterWidget({
         }
 
         if (field?.type === FilterFieldType.Boolean) return `'${booleanOptions.find((b) => !!f.value === b.value)?.label}'`;
-        if (Array.isArray(f.value)) return `'${f.value.map((v) => mapArrayValue(v)).join(' OR ')}'`;
+        if (Array.isArray(f.value)) return f.value.map((v) => mapArrayValue(v));
         return `'${mapValue()}'`;
     }
 
@@ -813,7 +855,6 @@ export default function FilterWidget({
                         return (
                             <Badge
                                 key={f.fieldIdentifier + i}
-                                onClick={() => toggleFilter(i)}
                                 color={selectedFilter === i ? 'primary' : 'secondary'}
                                 onRemove={disableBadgeRemove ? undefined : () => onRemoveFilterClick(i)}
                                 size="medium"

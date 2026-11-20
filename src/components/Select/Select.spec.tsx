@@ -85,6 +85,65 @@ test.describe('Select', () => {
         await expect(page.getByTestId('value-display')).toContainText('Option 2');
     });
 
+    test('multi mode marks options with a leading checkbox instead of a trailing check', async ({ mount, page }) => {
+        await mount(<MultiHarness initial={[{ value: '2', label: 'Option 2' }]} />);
+        await page.getByTestId('sel-trigger').click();
+
+        const selected = page.getByRole('option', { name: 'Option 2' });
+        const unselected = page.getByRole('option', { name: 'Option 1' });
+        await expect(page.getByRole('option')).toHaveCount(3);
+        await expect(page.getByTestId('select-option-checkbox')).toHaveCount(3);
+        await expect(selected.getByTestId('select-option-checkbox')).toHaveClass(/bg-brand-solid/);
+        await expect(selected.getByTestId('select-option-checkbox').locator('svg')).toHaveCount(1);
+        await expect(unselected.getByTestId('select-option-checkbox').locator('svg')).toHaveCount(0);
+        await expect(selected.locator('svg')).toHaveCount(1);
+
+        const firstChild = await selected.evaluate((el) => el.firstElementChild?.firstElementChild?.getAttribute('data-testid'));
+        expect(firstChild).toBe('select-option-checkbox');
+    });
+
+    test('multi mode toggles the same way from the checkbox, the row and the keyboard', async ({ mount, page }) => {
+        await mount(<MultiHarness />);
+        await page.getByTestId('sel-trigger').click();
+        const option1 = page.getByRole('option', { name: 'Option 1' });
+        const option2 = page.getByRole('option', { name: 'Option 2' });
+
+        await option1.getByTestId('select-option-checkbox').click();
+        await expect(option1).toHaveAttribute('aria-selected', 'true');
+
+        await option2.click();
+        await expect(option2).toHaveAttribute('aria-selected', 'true');
+
+        await option1.hover();
+        await page.keyboard.press('Enter');
+        await expect(option1).toHaveAttribute('aria-selected', 'false');
+        await expect(page.getByTestId('value-display')).toHaveText(JSON.stringify([{ value: '2', label: 'Option 2' }]));
+    });
+
+    test('multi mode gives the add-new action no checkbox', async ({ mount, page }) => {
+        await mount(
+            <Select
+                id="m"
+                isMulti
+                value={[]}
+                onChange={() => {}}
+                options={[...BASE_OPTIONS, { value: '__add_new__', label: '+ Create new' }]}
+                dataTestId="sel"
+            />,
+        );
+        await page.getByTestId('sel-trigger').click();
+        await expect(page.getByRole('option', { name: 'Option 1' }).getByTestId('select-option-checkbox')).toHaveCount(1);
+        await expect(page.getByRole('option', { name: '+ Create new' }).getByTestId('select-option-checkbox')).toHaveCount(0);
+    });
+
+    test('single mode keeps the trailing check and shows no checkbox', async ({ mount, page }) => {
+        await mount(<SingleHarness initial="2" />);
+        await page.getByTestId('sel-trigger').click();
+        await expect(page.getByTestId('select-option-checkbox')).toHaveCount(0);
+        await expect(page.getByRole('option', { name: 'Option 2' }).locator('svg')).toHaveCount(1);
+        await expect(page.getByRole('option', { name: 'Option 1' }).locator('svg')).toHaveCount(0);
+    });
+
     test('multi mode emits undefined when all chips removed', async ({ mount, page }) => {
         await mount(<MultiHarness initial={[{ value: '1', label: 'Option 1' }]} />);
         await page.getByTestId('sel-trigger').locator('button[aria-label="Remove Option 1"]').click();
