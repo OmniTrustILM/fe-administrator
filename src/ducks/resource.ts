@@ -26,6 +26,12 @@ export const initialState: State = {
 // Route UUIDs and server-returned UUIDs can differ in case, and both must address the same entry.
 export const objectKey = (resource: Resource, uuid: string): string => `${resource}/${uuid.toLowerCase()}`;
 
+export const objectsKey = (resource: Resource, uuids: readonly string[]): string =>
+    `${resource}/${uuids
+        .map((uuid) => uuid.toLowerCase())
+        .sort((a, b) => a.localeCompare(b))
+        .join(',')}`;
+
 export const slice = createSlice({
     name: 'resource',
 
@@ -77,20 +83,23 @@ export const slice = createSlice({
             state.isFetchingResourceEvents = false;
         },
 
-        listObjectAllowedActions: (state, action: PayloadAction<{ resource: Resource; uuid: string }>) => {
-            state.objectAllowedActions[objectKey(action.payload.resource, action.payload.uuid)] = { status: 'loading' };
+        listObjectAllowedActions: (state, action: PayloadAction<{ resource: Resource; uuids: string[] }>) => {
+            for (const uuid of action.payload.uuids)
+                state.objectAllowedActions[objectKey(action.payload.resource, uuid)] = { status: 'loading' };
         },
 
         listObjectAllowedActionsSuccess(
             state,
-            action: PayloadAction<{ resource: Resource; uuid: string; allowedActions: ResourceAction[] | undefined }>,
+            action: PayloadAction<{ resource: Resource; answers: { uuid: string; allowedActions: ResourceAction[] | undefined }[] }>,
         ) {
-            const { resource, uuid, allowedActions } = action.payload;
-            state.objectAllowedActions[objectKey(resource, uuid)] = { status: 'loaded', allowedActions };
+            const { resource, answers } = action.payload;
+            for (const { uuid, allowedActions } of answers)
+                state.objectAllowedActions[objectKey(resource, uuid)] = { status: 'loaded', allowedActions };
         },
 
-        listObjectAllowedActionsFailure(state, action: PayloadAction<{ resource: Resource; uuid: string }>) {
-            state.objectAllowedActions[objectKey(action.payload.resource, action.payload.uuid)] = { status: 'failed' };
+        listObjectAllowedActionsFailure(state, action: PayloadAction<{ resource: Resource; uuids: string[] }>) {
+            for (const uuid of action.payload.uuids)
+                state.objectAllowedActions[objectKey(action.payload.resource, uuid)] = { status: 'failed' };
         },
     },
 });

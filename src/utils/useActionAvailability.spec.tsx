@@ -32,7 +32,7 @@ test.describe('useActionAvailability', () => {
         );
 
         await expect(component.getByTestId('dispatched')).toHaveText(
-            JSON.stringify([{ type: 'resource/listObjectAllowedActions', payload: { resource: Resource.Secrets, uuid: 'uuid-1' } }]),
+            JSON.stringify([{ type: 'resource/listObjectAllowedActions', payload: { resource: Resource.Secrets, uuids: ['uuid-1'] } }]),
         );
         await expect(component.getByTestId('availability')).toHaveText(JSON.stringify({ available: false, hidden: false, loading: true }));
     });
@@ -90,6 +90,60 @@ test.describe('useActionAvailability', () => {
             await expect(component.getByTestId('availability')).toHaveText(JSON.stringify(expected));
         });
     }
+});
+
+test.describe('useActionAvailability on several objects', () => {
+    const answered = {
+        auth: { profile: profileWithout },
+        enums,
+        resource: {
+            resourcesList: [],
+            isFetchingResourcesList: false,
+            objectAllowedActions: {
+                [`${Resource.Secrets}/uuid-1`]: { status: 'loaded' as const, allowedActions: [ResourceAction.Update] },
+                [`${Resource.Secrets}/uuid-2`]: { status: 'loaded' as const, allowedActions: [ResourceAction.Detail] },
+            },
+        },
+    };
+
+    test('asks for every object in one request', async ({ mount }) => {
+        const component = await mount(
+            <UseActionAvailabilityWithStore
+                resource={Resource.Secrets}
+                objectUuid={['uuid-1', 'uuid-2']}
+                preloadedState={{ auth: { profile: profileWithout }, enums }}
+            />,
+        );
+
+        await expect(component.getByTestId('dispatched')).toHaveText(
+            JSON.stringify([
+                { type: 'resource/listObjectAllowedActions', payload: { resource: Resource.Secrets, uuids: ['uuid-1', 'uuid-2'] } },
+            ]),
+        );
+    });
+
+    test('denies an action one of the objects does not allow', async ({ mount }) => {
+        const component = await mount(
+            <UseActionAvailabilityWithStore resource={Resource.Secrets} objectUuid={['uuid-1', 'uuid-2']} preloadedState={answered} />,
+        );
+
+        await expect(component.getByTestId('availability')).toHaveText(
+            JSON.stringify({ available: false, hidden: false, loading: false, reason: 'You need the Update permission on Secrets.' }),
+        );
+    });
+
+    test('decides only over the narrowed objects', async ({ mount }) => {
+        const component = await mount(
+            <UseActionAvailabilityWithStore
+                resource={Resource.Secrets}
+                objectUuid={['uuid-1', 'uuid-2']}
+                decideOver={['uuid-1']}
+                preloadedState={answered}
+            />,
+        );
+
+        await expect(component.getByTestId('availability')).toHaveText(JSON.stringify({ available: true, hidden: false, loading: false }));
+    });
 });
 
 test.describe('useActionAvailability on a list', () => {
