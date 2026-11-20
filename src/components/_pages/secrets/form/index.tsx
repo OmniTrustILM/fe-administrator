@@ -54,11 +54,9 @@ type SecretFormProps = Readonly<{
     // Takes over creating, so the content goes out with the request only and never through the store.
     onCreate?: (request: CreateSecretRequest) => void;
     createInProgress?: boolean;
-    // With onCreate, the custom attribute descriptors come from here, leaving the store's shared ones to the page.
+    // When given, the custom attribute descriptors come from here, leaving the store's shared ones to the page.
     customAttributeDescriptors?: CustomAttributeModel[];
 }>;
-
-const NO_CUSTOM_ATTRIBUTES: CustomAttributeModel[] = [];
 
 function keyGenerationStatus(generating: boolean, generatedKeyLabel: string | undefined): string {
     if (generating) return 'Generating key...';
@@ -104,7 +102,7 @@ export default function SecretForm({
     const secretCreationAttributeDescriptors = useSelector(secretsSelectors.secretCreationAttributeDescriptors);
     const isFetchingSecretCreationAttributes = useSelector(secretsSelectors.isFetchingSecretCreationAttributes);
     const storeCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
-    const resourceCustomAttributes = onCreate ? (customAttributeDescriptors ?? NO_CUSTOM_ATTRIBUTES) : storeCustomAttributes;
+    const resourceCustomAttributes = customAttributeDescriptors ?? storeCustomAttributes;
 
     const secretTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.SecretType));
 
@@ -117,7 +115,7 @@ export default function SecretForm({
         dispatch(vaultProfileActions.listVaultProfiles());
     }, [dispatch]);
 
-    const usesStoreCustomAttributes = !onCreate;
+    const usesStoreCustomAttributes = !customAttributeDescriptors;
     useEffect(() => {
         if (usesStoreCustomAttributes) dispatch(customAttributesActions.listResourceCustomAttributes(Resource.Secrets));
     }, [dispatch, usesStoreCustomAttributes]);
