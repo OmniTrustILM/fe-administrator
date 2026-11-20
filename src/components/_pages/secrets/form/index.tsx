@@ -29,7 +29,7 @@ import {
     type SecretRequestDto,
     SecretType,
 } from 'types/openapi';
-import type { CustomAttributeModel } from 'types/attributes';
+import type { AttributeDescriptorModel, CustomAttributeModel } from 'types/attributes';
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { selectors as enumSelectors, getEnumDescription, getEnumLabel } from 'ducks/enums';
 import { validateAlphaNumericWithSpecialChars, validateRequired } from 'utils/validators';
@@ -37,6 +37,10 @@ import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-hel
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { generatePrivateKeyPem, KEY_ALGORITHMS, type KeyAlgorithm, toPrivateKeySecretContent } from 'utils/privateKeyGeneration';
 import { actions as alertActions } from 'ducks/alerts';
+import {
+    loadSecretAttributes as loadVaultSecretAttributes,
+    type SecretAttributesLoader,
+} from 'components/_pages/secrets/secretCreationApi';
 
 interface SelectOption {
     value: string;
@@ -56,7 +60,13 @@ type SecretFormProps = Readonly<{
     createInProgress?: boolean;
     // When given, the custom attribute descriptors come from here, leaving the store's shared ones to the page.
     customAttributeDescriptors?: CustomAttributeModel[];
+    // With onCreate, the vault profile's attributes are loaded through this, leaving the store's shared ones to the page.
+    loadSecretAttributes?: SecretAttributesLoader;
 }>;
+
+type LocalSecretAttributes = Readonly<{ descriptors: AttributeDescriptorModel[]; loading: boolean }>;
+
+const NO_SECRET_ATTRIBUTES: LocalSecretAttributes = { descriptors: [], loading: false };
 
 function keyGenerationStatus(generating: boolean, generatedKeyLabel: string | undefined): string {
     if (generating) return 'Generating key...';
@@ -87,6 +97,7 @@ export default function SecretForm({
     onCreate,
     createInProgress,
     customAttributeDescriptors,
+    loadSecretAttributes = loadVaultSecretAttributes,
 }: SecretFormProps) {
     const dispatch = useDispatch();
 
@@ -99,8 +110,12 @@ export default function SecretForm({
     const updateSecretSucceeded = useSelector(secretsSelectors.updateSecretSucceeded);
     const secret = useSelector(secretsSelectors.secret);
     const vaultProfiles = useSelector(vaultProfileSelectors.vaultProfiles);
-    const secretCreationAttributeDescriptors = useSelector(secretsSelectors.secretCreationAttributeDescriptors);
-    const isFetchingSecretCreationAttributes = useSelector(secretsSelectors.isFetchingSecretCreationAttributes);
+    const storeSecretAttributeDescriptors = useSelector(secretsSelectors.secretCreationAttributeDescriptors);
+    const isFetchingStoreSecretAttributes = useSelector(secretsSelectors.isFetchingSecretCreationAttributes);
+    const createsDirectly = !!onCreate;
+    const [localSecretAttributes, setLocalSecretAttributes] = useState<LocalSecretAttributes>(NO_SECRET_ATTRIBUTES);
+    const secretCreationAttributeDescriptors = createsDirectly ? localSecretAttributes.descriptors : storeSecretAttributeDescriptors;
+    const isFetchingSecretCreationAttributes = createsDirectly ? localSecretAttributes.loading : isFetchingStoreSecretAttributes;
     const storeCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
     const resourceCustomAttributes = customAttributeDescriptors ?? storeCustomAttributes;
 
@@ -273,14 +288,18 @@ export default function SecretForm({
         const profile = vaultProfiles.find((p) => p.uuid === watchedSourceVaultProfile);
         const vaultUuid = profile?.vaultInstance?.uuid;
         if (!vaultUuid) return;
-        dispatch(
-            secretsActions.listSecretAttributes({
-                vaultUuid,
-                vaultProfileUuid: watchedSourceVaultProfile,
-                secretType: watchedType as SecretType,
-            }),
-        );
-    }, [dispatch, vaultProfiles, watchedSourceVaultProfile, watchedType]);
+        const query = { vaultUuid, vaultProfileUuid: watchedSourceVaultProfile, secretType: watchedType as SecretType };
+        if (!createsDirectly) {
+            dispatch(secretsActions.listSecretAttributes(query));
+            return;
+        }
+        setLocalSecretAttributes({ descriptors: [], loading: true });
+        const loading = loadSecretAttributes(query).subscribe({
+            next: (descriptors) => setLocalSecretAttributes({ descriptors, loading: false }),
+            error: () => setLocalSecretAttributes(NO_SECRET_ATTRIBUTES),
+        });
+        return () => loading.unsubscribe();
+    }, [dispatch, vaultProfiles, watchedSourceVaultProfile, watchedType, createsDirectly, loadSecretAttributes]);
 
     const buildSecretContent = useCallback((values: FormValues): import('types/openapi').SecretContent => {
         const type = values.type as SecretType;

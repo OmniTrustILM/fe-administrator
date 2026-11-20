@@ -180,6 +180,24 @@ test.describe('SecretForm preset', () => {
         await expect(page.getByRole('button', { name: 'Generate key' })).toBeEnabled();
     });
 
+    test("loads a vault profile's attributes without the store when creating directly", async ({ mount, page }) => {
+        await mount(<SecretFormPresetHarness preset={{ type: SecretType.Generic }} vaultProfileHasAttribute />);
+
+        await fillNameAndVaultProfile(page);
+
+        await expect(page.getByTestId('text-input-__attributes__secret__.path')).toBeVisible();
+        await expect(page.getByTestId('store-action-types')).toContainText('vaultProfiles/listVaultProfiles');
+        await expect(page.getByTestId('store-action-types')).not.toContainText('secrets/listSecretAttributes');
+    });
+
+    test("loads a vault profile's attributes through the store when creating through it", async ({ mount, page }) => {
+        await mount(<SecretFormPresetHarness throughStore preset={{ type: SecretType.Generic }} />);
+
+        await fillNameAndVaultProfile(page);
+
+        await expect(page.getByTestId('store-action-types')).toContainText('secrets/listSecretAttributes');
+    });
+
     test('keepsGenericPresetForEab', async ({ mount, page }) => {
         await mount(<SecretFormPresetHarness preset={{ type: SecretType.Generic, content: 'abc' }} />);
 

@@ -1,6 +1,10 @@
 import Dialog from 'components/Dialog';
 import SecretForm from 'components/_pages/secrets/form';
-import { backendSecretCreationApi, loadSecretCustomAttributes } from 'components/_pages/secrets/secretCreationApi';
+import {
+    backendSecretCreationApi,
+    loadSecretCustomAttributes,
+    type SecretAttributesLoader,
+} from 'components/_pages/secrets/secretCreationApi';
 import { actions as alertActions } from 'ducks/alerts';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
@@ -40,6 +44,7 @@ type Props = Readonly<{
     onClose: () => void;
     api?: SecretCreationApi;
     loadCustomAttributes?: () => Observable<CustomAttributeModel[]>;
+    loadSecretAttributes?: SecretAttributesLoader;
 }>;
 
 // Creates through the api rather than the store, so the secret content never reaches client state. A dialog of its own,
@@ -51,6 +56,7 @@ export default function CreateSecretDialog({
     onClose,
     api = backendSecretCreationApi,
     loadCustomAttributes = loadSecretCustomAttributes,
+    loadSecretAttributes,
 }: Props) {
     const dispatch = useDispatch();
     const [isCreating, setIsCreating] = useState(false);
@@ -116,6 +122,7 @@ export default function CreateSecretDialog({
                         createInProgress={isCreating}
                         onCancel={close}
                         customAttributeDescriptors={customAttributes}
+                        loadSecretAttributes={loadSecretAttributes}
                     />
                 )
             }

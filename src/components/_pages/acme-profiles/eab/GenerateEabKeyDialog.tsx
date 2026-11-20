@@ -8,17 +8,30 @@ import { actions as secretsActions } from 'ducks/secrets';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import type { Observable, Subscription } from 'rxjs';
+import type { CustomAttributeModel } from 'types/attributes';
 import { type AcmeEabKeyDto, type CreateSecretRequest, type SecretDto, SecretType } from 'types/openapi';
 import { EAB_CLIENT_HINT, EAB_KEY_NOTICE, EAB_SECRET_CREATED, EAB_SECRET_SELECTED, newEabSecretProblem } from 'utils/acme-eab';
 import { extractError } from 'utils/net';
 import { createAndEnableSecret, type SecretCreationApi } from 'utils/secret-creation';
-import { backendSecretCreationApi } from 'components/_pages/secrets/secretCreationApi';
+import {
+    backendSecretCreationApi,
+    loadSecretAttributes,
+    loadSecretCustomAttributes,
+    type SecretAttributesLoader,
+} from 'components/_pages/secrets/secretCreationApi';
 
-export type EabKeyApi = SecretCreationApi & Readonly<{ generateKey: () => Observable<AcmeEabKeyDto> }>;
+export type EabKeyApi = SecretCreationApi &
+    Readonly<{
+        generateKey: () => Observable<AcmeEabKeyDto>;
+        loadCustomAttributes: () => Observable<CustomAttributeModel[]>;
+        loadSecretAttributes: SecretAttributesLoader;
+    }>;
 
 const backendEabKeyApi: EabKeyApi = {
     ...backendSecretCreationApi,
     generateKey: () => backendClient.acmeProfiles.generateEabKey(),
+    loadCustomAttributes: loadSecretCustomAttributes,
+    loadSecretAttributes,
 };
 
 type Props = Readonly<{
@@ -38,6 +51,7 @@ export default function GenerateEabKeyDialog({ isOpen, onClose, onSelect, api = 
     const [isGenerating, setIsGenerating] = useState(false);
     const [isCreating, setIsCreating] = useState(false);
     const [created, setCreated] = useState<Created>();
+    const [customAttributes, setCustomAttributes] = useState<CustomAttributeModel[]>([]);
     const creation = useRef<Subscription>(undefined);
 
     // Parents pass inline callbacks; regenerating on their identity would replace a key already shown.
@@ -72,6 +86,16 @@ export default function GenerateEabKeyDialog({ isOpen, onClose, onSelect, api = 
     }, [isOpen, dispatch]);
 
     useEffect(() => () => creation.current?.unsubscribe(), []);
+
+    // Loaded here, as the page beneath may show its own custom attributes from the store.
+    useEffect(() => {
+        if (!isOpen) return;
+        const loading = apiRef.current.loadCustomAttributes().subscribe({
+            next: setCustomAttributes,
+            error: (err) => dispatch(alertActions.error(extractError(err, 'Failed to get Resource Custom Attributes list'))),
+        });
+        return () => loading.unsubscribe();
+    }, [isOpen, dispatch]);
 
     const preset = useMemo(() => (key ? { type: SecretType.Generic as const, content: key } : undefined), [key]);
 
@@ -147,7 +171,14 @@ export default function GenerateEabKeyDialog({ isOpen, onClose, onSelect, api = 
                                     <output className="block text-sm text-warning" data-testid="eab-key-notice">
                                         {EAB_KEY_NOTICE}
                                     </output>
-                                    <SecretForm preset={preset} onCreate={createSecret} createInProgress={isCreating} onCancel={close} />
+                                    <SecretForm
+                                        preset={preset}
+                                        onCreate={createSecret}
+                                        createInProgress={isCreating}
+                                        onCancel={close}
+                                        customAttributeDescriptors={customAttributes}
+                                        loadSecretAttributes={api.loadSecretAttributes}
+                                    />
                                 </>
                             )}
                         </>

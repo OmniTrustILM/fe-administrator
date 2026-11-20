@@ -72,6 +72,18 @@ test.describe('CreateSecretDialog', () => {
         await expect(page.getByTestId('value')).toHaveText('null');
     });
 
+    test("Create waits until the vault profile's attributes have loaded", async ({ mount, page }) => {
+        await mount(<CreateSecretDialogHarness attributesLoading />);
+        await page.getByTestId('open').click();
+
+        await fillEabSecretForm(page, 'new-secret');
+        await page.locator('#secret-generic-content').fill(CONTENT);
+
+        await expect(page.getByText('Loading attributes...')).toBeVisible();
+        await expect(page.getByRole('button', { name: 'Create', exact: true })).toBeDisabled();
+        await expect(page.getByTestId('store-actions')).not.toContainText('secrets/listSecretAttributes');
+    });
+
     test('a failed create keeps the form for another try', async ({ mount, page }) => {
         await mount(<CreateSecretDialogHarness createFails />);
 

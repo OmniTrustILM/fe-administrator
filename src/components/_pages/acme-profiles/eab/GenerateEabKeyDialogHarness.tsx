@@ -10,7 +10,6 @@ type Props = EabKeyApiBehaviour &
         // The detail page opens the dialog without a field to select the secret in.
         selectable?: boolean;
         vaultProfileHasAttribute?: boolean;
-        attributesLoading?: boolean;
         // The create stays pending until the `resolve-create` button is clicked.
         holdCreate?: boolean;
     }>;
@@ -18,7 +17,6 @@ type Props = EabKeyApiBehaviour &
 export default function GenerateEabKeyDialogHarness({
     selectable = true,
     vaultProfileHasAttribute = false,
-    attributesLoading = false,
     holdCreate = false,
     ...behaviour
 }: Props) {
@@ -28,21 +26,17 @@ export default function GenerateEabKeyDialogHarness({
     const [requests, setRequests] = useState<CreateSecretRequest[]>([]);
     const [selected, setSelected] = useState<SecretDto[]>([]);
     const [actions, setActions] = useState<unknown[]>([]);
-    // biome-ignore lint/correctness/useExhaustiveDependencies: one store per mount
-    const store = useMemo(
-        () =>
-            createEabSecretStore({
-                vaultAttributes: vaultProfileHasAttribute ? [VAULT_PATH_ATTRIBUTE] : [],
-                attributesLoading,
-                onAction: (action) => setActions((current) => [...current, action]),
-            }),
-        [],
-    );
+    const store = useMemo(() => createEabSecretStore({ onAction: (action) => setActions((current) => [...current, action]) }), []);
     // biome-ignore lint/correctness/useExhaustiveDependencies: one stub per mount, so its generation count survives re-renders
     const api = useMemo(
         () =>
-            stubEabKeyApi({ ...behaviour, createGate: holdCreate ? createGate : undefined }, (request) =>
-                setRequests((current) => [...current, request]),
+            stubEabKeyApi(
+                {
+                    ...behaviour,
+                    createGate: holdCreate ? createGate : undefined,
+                    vaultAttributes: vaultProfileHasAttribute ? [VAULT_PATH_ATTRIBUTE] : [],
+                },
+                (request) => setRequests((current) => [...current, request]),
             ),
         [],
     );

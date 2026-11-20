@@ -1,5 +1,6 @@
 import GlobalModal from 'components/GlobalModal';
 import { createEabSecretStore, type EabKeyApiBehaviour, stubEabKeyApi } from 'components/_pages/acme-profiles/eab/eabKeyFixture';
+import type { EabKeyApi } from 'components/_pages/acme-profiles/eab/GenerateEabKeyDialog';
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from 'ducks/customAttributes';
 import { actions as userInterfaceActions } from 'ducks/user-interface';
 import { isValidElement, type ReactNode, useMemo, useState } from 'react';
@@ -19,7 +20,6 @@ import type { AttributeSelectOption } from 'utils/attributes/attributes';
 import { withProviders } from 'utils/test-helpers';
 import { AttributeFieldSelect } from './AttributeFieldSelect';
 import CreateSecretDialog from './CreateSecretDialog';
-import type { SecretCreationApi } from 'utils/secret-creation';
 import { useCreatedOptions } from './useCreatedOptions';
 
 const FIELD = 'secret';
@@ -70,7 +70,7 @@ function secretDescriptor(multiSelect: boolean, secretType: SecretType): DataAtt
     } as DataAttributeModel;
 }
 
-type PickerProps = Readonly<{ api: SecretCreationApi; multiSelect: boolean; listed: AttributeSelectOption[]; secretType: SecretType }>;
+type PickerProps = Readonly<{ api: EabKeyApi; multiSelect: boolean; listed: AttributeSelectOption[]; secretType: SecretType }>;
 
 function SecretPicker({ api, multiSelect, listed, secretType }: PickerProps) {
     const descriptor = useMemo(() => secretDescriptor(multiSelect, secretType), [multiSelect, secretType]);
@@ -91,6 +91,7 @@ function SecretPicker({ api, multiSelect, listed, secretType }: PickerProps) {
                     onClose={() => setIsCreating(false)}
                     api={api}
                     loadCustomAttributes={loadSecretAttributes}
+                    loadSecretAttributes={api.loadSecretAttributes}
                 />
             )}
             <pre data-testid="value">{JSON.stringify(value ?? null)}</pre>
