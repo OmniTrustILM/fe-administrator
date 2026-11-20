@@ -377,6 +377,7 @@ export * from './JwtTokenSecretContent';
 export * from './KeyAlgorithm';
 export * from './KeyAssociationDto';
 export * from './KeyCompromiseReason';
+export * from './KeyDescriptionDto';
 export * from './KeyDetailDto';
 export * from './KeyDto';
 export * from './KeyEventHistoryDto';

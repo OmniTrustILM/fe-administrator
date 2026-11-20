@@ -406,6 +406,27 @@ test.describe('CryptographicKeyItem key export', () => {
     }
 });
 
+test.describe('CryptographicKeyItem key algorithm', () => {
+    for (const [description, itemOverrides, algorithm, parameters] of [
+        [
+            'an ECDSA key item by its curve and size',
+            { keyAlgorithm: KeyAlgorithm.Ecdsa, parameterSet: 'P-256', length: 256 },
+            KeyAlgorithm.Ecdsa,
+            'P-256 · 256 bits',
+        ],
+        ['an RSA key item by its size', {}, KeyAlgorithm.Rsa, '2048 bits'],
+    ] as const) {
+        test(`shows ${description} after the algorithm in the Key Algorithm row`, async ({ mount, page }) => {
+            await mount(<CryptographicKeyDetailWithStore cryptographicKey={aKeyWithExportableItem(itemOverrides)} />);
+
+            const algorithmCell = page.locator('tr[data-id="keyAlgorithm"] td').nth(1);
+            await expect(algorithmCell).toHaveText(new RegExp(`^${algorithm}`));
+            await expect(algorithmCell.getByTestId('key-parameters')).toHaveText(parameters);
+            await expect(page.locator('tr[data-id="keyAlgorithm"] + tr')).toHaveAttribute('data-id', 'format');
+        });
+    }
+});
+
 test.describe('CryptographicKeyDetail signature attributes', () => {
     test('Sign requires an algorithm before submitting data', async ({ mount, page }) => {
         const tokenProfile = aTokenProfile([KeyUsage.Sign]);

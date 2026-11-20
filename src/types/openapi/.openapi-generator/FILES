@@ -448,6 +448,7 @@ models/JwtTokenSecretContent.ts
 models/KeyAlgorithm.ts
 models/KeyAssociationDto.ts
 models/KeyCompromiseReason.ts
+models/KeyDescriptionDto.ts
 models/KeyDetailDto.ts
 models/KeyDto.ts
 models/KeyEventHistoryDto.ts
