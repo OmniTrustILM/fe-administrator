@@ -62,6 +62,7 @@ export default function CreateSecretDialog({
     const [isCreating, setIsCreating] = useState(false);
     const [problem, setProblem] = useState<string>();
     const [customAttributes, setCustomAttributes] = useState<CustomAttributeModel[]>([]);
+    const [customAttributesLoading, setCustomAttributesLoading] = useState(true);
     const creation = useRef<Subscription>(undefined);
 
     useEffect(() => () => creation.current?.unsubscribe(), []);
@@ -69,7 +70,10 @@ export default function CreateSecretDialog({
     // biome-ignore lint/correctness/useExhaustiveDependencies: loaded once per dialog
     useEffect(() => {
         const loading = loadCustomAttributes().subscribe({
-            next: setCustomAttributes,
+            next: (loaded) => {
+                setCustomAttributes(loaded);
+                setCustomAttributesLoading(false);
+            },
             error: (err) => dispatch(alertActions.error(extractError(err, 'Failed to get Resource Custom Attributes list'))),
         });
         return () => loading.unsubscribe();
@@ -122,6 +126,7 @@ export default function CreateSecretDialog({
                         createInProgress={isCreating}
                         onCancel={close}
                         customAttributeDescriptors={customAttributes}
+                        customAttributesLoading={customAttributesLoading}
                         loadSecretAttributes={loadSecretAttributes}
                     />
                 )

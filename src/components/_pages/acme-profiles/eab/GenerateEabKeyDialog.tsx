@@ -52,6 +52,7 @@ export default function GenerateEabKeyDialog({ isOpen, onClose, onSelect, api = 
     const [isCreating, setIsCreating] = useState(false);
     const [created, setCreated] = useState<Created>();
     const [customAttributes, setCustomAttributes] = useState<CustomAttributeModel[]>([]);
+    const [customAttributesLoading, setCustomAttributesLoading] = useState(true);
     const creation = useRef<Subscription>(undefined);
 
     // Parents pass inline callbacks; regenerating on their identity would replace a key already shown.
@@ -90,8 +91,12 @@ export default function GenerateEabKeyDialog({ isOpen, onClose, onSelect, api = 
     // Loaded here, as the page beneath may show its own custom attributes from the store.
     useEffect(() => {
         if (!isOpen) return;
+        setCustomAttributesLoading(true);
         const loading = apiRef.current.loadCustomAttributes().subscribe({
-            next: setCustomAttributes,
+            next: (loaded) => {
+                setCustomAttributes(loaded);
+                setCustomAttributesLoading(false);
+            },
             error: (err) => dispatch(alertActions.error(extractError(err, 'Failed to get Resource Custom Attributes list'))),
         });
         return () => loading.unsubscribe();
@@ -177,6 +182,7 @@ export default function GenerateEabKeyDialog({ isOpen, onClose, onSelect, api = 
                                         createInProgress={isCreating}
                                         onCancel={close}
                                         customAttributeDescriptors={customAttributes}
+                                        customAttributesLoading={customAttributesLoading}
                                         loadSecretAttributes={api.loadSecretAttributes}
                                     />
                                 </>

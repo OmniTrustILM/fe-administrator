@@ -84,6 +84,27 @@ test.describe('CreateSecretDialog', () => {
         await expect(page.getByTestId('store-actions')).not.toContainText('secrets/listSecretAttributes');
     });
 
+    test("Create waits until the secret's custom attributes have loaded", async ({ mount, page }) => {
+        await mount(<CreateSecretDialogHarness holdCustomAttributes />);
+        await page.getByTestId('open').click();
+        await fillEabSecretForm(page, 'new-secret');
+        await page.locator('#secret-generic-content').fill(CONTENT);
+        const create = page.getByRole('button', { name: 'Create', exact: true });
+
+        await expect(create).toBeDisabled();
+        await page.getByTestId('resolve-custom-attributes').dispatchEvent('click');
+        await expect(create).toBeEnabled();
+    });
+
+    test("Create stays disabled when the secret's custom attributes failed to load", async ({ mount, page }) => {
+        await mount(<CreateSecretDialogHarness customAttributesFail />);
+        await page.getByTestId('open').click();
+        await fillEabSecretForm(page, 'new-secret');
+        await page.locator('#secret-generic-content').fill(CONTENT);
+
+        await expect(page.getByRole('button', { name: 'Create', exact: true })).toBeDisabled();
+    });
+
     test('a failed create keeps the form for another try', async ({ mount, page }) => {
         await mount(<CreateSecretDialogHarness createFails />);
 

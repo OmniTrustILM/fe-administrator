@@ -74,6 +74,9 @@ export type EabKeyApiBehaviour = Readonly<{
     vaultAttributes?: AttributeDescriptorModel[];
     // The vault profile's attributes never finish loading.
     attributesLoading?: boolean;
+    // Holds the secret's custom attributes until this emits.
+    customAttributesGate?: Observable<unknown>;
+    customAttributesFail?: boolean;
 }>;
 
 // Core replies to a create before the secret is enabled or has reached its vault.
@@ -128,7 +131,14 @@ export function stubEabKeyApi(behaviour: EabKeyApiBehaviour, onCreate: (request:
             if (behaviour.approvalLookupFails) return throwError(() => new Error('Access Denied'));
             return of(behaviour.approvalRequired ? [{ uuid: 'ap-1', name: 'Four eyes' } as ApprovalProfileDto] : []);
         },
-        loadCustomAttributes: () => of([SECRET_CUSTOM_ATTRIBUTE]),
+        loadCustomAttributes: () => {
+            if (behaviour.customAttributesFail) return throwError(() => new Error('Service Unavailable'));
+            const reply = behaviour.customAttributesGate ?? of(undefined);
+            return reply.pipe(
+                take(1),
+                map(() => [SECRET_CUSTOM_ATTRIBUTE]),
+            );
+        },
         loadSecretAttributes: () => (behaviour.attributesLoading ? NEVER : of(behaviour.vaultAttributes ?? [])),
     };
 }

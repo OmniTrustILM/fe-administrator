@@ -217,6 +217,24 @@ test.describe('GenerateEabKeyDialog', () => {
         await expect(createButton(page)).toBeDisabled();
     });
 
+    test("Create waits until the secret's custom attributes have loaded", async ({ mount, page }) => {
+        await mount(<GenerateEabKeyDialogHarness holdCustomAttributes />);
+        await page.getByTestId('open').click();
+        await fillEabSecretForm(page, 'acme-eab');
+
+        await expect(createButton(page)).toBeDisabled();
+        await page.getByTestId('resolve-custom-attributes').dispatchEvent('click');
+        await expect(createButton(page)).toBeEnabled();
+    });
+
+    test("Create stays disabled when the secret's custom attributes failed to load", async ({ mount, page }) => {
+        await mount(<GenerateEabKeyDialogHarness customAttributesFail />);
+        await page.getByTestId('open').click();
+        await fillEabSecretForm(page, 'acme-eab');
+
+        await expect(createButton(page)).toBeDisabled();
+    });
+
     test('a secret that could not be enabled is not selected, and the dialog says why', async ({ mount, page }) => {
         await mount(<GenerateEabKeyDialogHarness enableFails />);
         await page.getByTestId('open').click();

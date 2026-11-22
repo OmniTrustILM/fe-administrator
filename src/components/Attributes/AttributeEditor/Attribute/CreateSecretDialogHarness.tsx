@@ -4,7 +4,7 @@ import type { EabKeyApi } from 'components/_pages/acme-profiles/eab/GenerateEabK
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from 'ducks/customAttributes';
 import { actions as userInterfaceActions } from 'ducks/user-interface';
 import { isValidElement, type ReactNode, useMemo, useState } from 'react';
-import { of, Subject } from 'rxjs';
+import { Subject } from 'rxjs';
 import { FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
@@ -35,8 +35,6 @@ const customAttribute = (name: string, label: string): CustomAttributeModel =>
 
 // What a parent form has loaded into the store for its own resource.
 const PARENT_ATTRIBUTES = [customAttribute('credentialOwner', 'Credential owner')];
-const SECRET_ATTRIBUTES = [customAttribute('secretOwner', 'Secret owner')];
-const loadSecretAttributes = () => of(SECRET_ATTRIBUTES);
 
 // What the first page of the picker's resource listing holds; the secret created here is not on it.
 const listing = (name: string, uuid: string): AttributeSelectOption => ({
@@ -90,7 +88,7 @@ function SecretPicker({ api, multiSelect, listed, secretType }: PickerProps) {
                     onCreated={select}
                     onClose={() => setIsCreating(false)}
                     api={api}
-                    loadCustomAttributes={loadSecretAttributes}
+                    loadCustomAttributes={api.loadCustomAttributes}
                     loadSecretAttributes={api.loadSecretAttributes}
                 />
             )}
@@ -144,6 +142,7 @@ export default function CreateSecretDialogHarness({
     multiSelect = false,
     sameNameListed = false,
     holdCreate = false,
+    holdCustomAttributes = false,
     inGlobalModal = false,
     secretType = SecretType.Generic,
     ...behaviour
@@ -153,11 +152,14 @@ export default function CreateSecretDialogHarness({
         sameNameListed?: boolean;
         // The create stays pending until the `resolve-create` button is clicked.
         holdCreate?: boolean;
+        // The secret's custom attributes stay pending until the `resolve-custom-attributes` button is clicked.
+        holdCustomAttributes?: boolean;
         // The picker sits in a form already shown in the global modal, opened with the `open-parent` button.
         inGlobalModal?: boolean;
         secretType?: SecretType;
     }>) {
     const createGate = useMemo(() => new Subject<void>(), []);
+    const customAttributesGate = useMemo(() => new Subject<void>(), []);
     const [actions, setActions] = useState<string[]>([]);
     const store = useMemo(() => {
         const created = createEabSecretStore({
@@ -167,7 +169,18 @@ export default function CreateSecretDialogHarness({
         return created;
     }, []);
     // biome-ignore lint/correctness/useExhaustiveDependencies: one stub per mount
-    const api = useMemo(() => stubEabKeyApi({ ...behaviour, createGate: holdCreate ? createGate : undefined }, recordCreatedContent), []);
+    const api = useMemo(
+        () =>
+            stubEabKeyApi(
+                {
+                    ...behaviour,
+                    createGate: holdCreate ? createGate : undefined,
+                    customAttributesGate: holdCustomAttributes ? customAttributesGate : undefined,
+                },
+                recordCreatedContent,
+            ),
+        [],
+    );
     const picker = (
         <PickerForm api={api} multiSelect={multiSelect} listed={sameNameListed ? LISTED_WITH_SAME_NAME : LISTED} secretType={secretType} />
     );
@@ -178,6 +191,9 @@ export default function CreateSecretDialogHarness({
             {inGlobalModal && <OpenParentButton content={picker} />}
             <button type="button" data-testid="resolve-create" onClick={() => createGate.next()}>
                 Resolve create
+            </button>
+            <button type="button" data-testid="resolve-custom-attributes" onClick={() => customAttributesGate.next()}>
+                Resolve custom attributes
             </button>
             <SharedCustomAttributes />
             <pre data-testid="store-actions">{actions.join('\n')}</pre>

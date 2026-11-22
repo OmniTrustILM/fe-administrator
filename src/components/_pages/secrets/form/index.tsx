@@ -60,6 +60,8 @@ type SecretFormProps = Readonly<{
     createInProgress?: boolean;
     // When given, the custom attribute descriptors come from here, leaving the store's shared ones to the page.
     customAttributeDescriptors?: CustomAttributeModel[];
+    // Holds Create back while the descriptors given above are still being loaded.
+    customAttributesLoading?: boolean;
     // With onCreate, the vault profile's attributes are loaded through this, leaving the store's shared ones to the page.
     loadSecretAttributes?: SecretAttributesLoader;
 }>;
@@ -97,6 +99,7 @@ export default function SecretForm({
     onCreate,
     createInProgress,
     customAttributeDescriptors,
+    customAttributesLoading = false,
     loadSecretAttributes = loadVaultSecretAttributes,
 }: SecretFormProps) {
     const dispatch = useDispatch();
@@ -937,7 +940,13 @@ export default function SecretForm({
                             <ProgressButton
                                 inProgress={isSubmitting || isCreating}
                                 disabled={
-                                    !isDirty || !isValid || isSubmitting || isCreating || isFetchingSecretCreationAttributes || generating
+                                    !isDirty ||
+                                    !isValid ||
+                                    isSubmitting ||
+                                    isCreating ||
+                                    isFetchingSecretCreationAttributes ||
+                                    customAttributesLoading ||
+                                    generating
                                 }
                                 title={submitTitle}
                                 inProgressTitle={inProgressTitle}
