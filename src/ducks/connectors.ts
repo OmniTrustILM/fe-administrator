@@ -138,6 +138,10 @@ export const slice = createSlice({
             state.callbackData = {};
         },
 
+        clearCallbackDataFor: (state, action: PayloadAction<{ callbackId: string }>) => {
+            state.callbackData[action.payload.callbackId] = undefined;
+        },
+
         listConnectors: (state, action: PayloadAction<SearchRequestModel | undefined>) => {
             state.checkedRows = [];
             state.connectors = [];

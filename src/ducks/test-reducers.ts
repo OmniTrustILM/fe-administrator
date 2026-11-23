@@ -536,6 +536,9 @@ function connectorsTestReducer(state: ConnectorsTestState = connectorsTestInitia
     if (a.type === 'connectors/clearCallbackData') {
         return { ...state, callbackData: {} };
     }
+    if (a.type === 'connectors/clearCallbackDataFor' && a.payload?.callbackId) {
+        return { ...state, callbackData: { ...state.callbackData, [a.payload.callbackId]: undefined } };
+    }
     if (a.type === 'connectors/callbackSuccess' && a.payload) {
         return {
             ...state,
