@@ -331,6 +331,30 @@ test.describe('FilterWidget', () => {
         await expect(page.getByRole('group', { name: 'Applied filters' })).toBeFocused();
     });
 
+    test('puts focus on the surviving chip once a save that hid the badges finishes', async ({ mount, page }) => {
+        await mount(
+            <FilterWidgetTestWrapper
+                busyWhileSaving
+                initialCurrentFilters={[
+                    {
+                        fieldSource: FilterFieldSource.Meta,
+                        fieldIdentifier: 'owners',
+                        condition: FilterConditionOperator.Equals,
+                        value: [{ name: 'Alice' }, { name: 'Bob' }],
+                    },
+                ]}
+            />,
+        );
+
+        await page.getByRole('button', { name: 'Remove Bob from Owners', exact: true }).focus();
+        await page.keyboard.press('Enter');
+        await expect(page.getByTestId('filter-value-chip')).toHaveCount(0);
+
+        await page.getByTestId('finish-save').evaluate((button: HTMLButtonElement) => button.click());
+
+        await expect(page.getByRole('button', { name: 'Remove Alice from Owners', exact: true })).toBeFocused();
+    });
+
     test('offers no per-value removal when badge removal is disabled', async ({ mount, page }) => {
         await mount(
             <FilterWidgetTestWrapper

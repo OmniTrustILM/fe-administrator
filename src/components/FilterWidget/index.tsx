@@ -190,6 +190,9 @@ export default function FilterWidget({
 
     const [selectedFilter, setSelectedFilter] = useState<number>(-1);
     const badgeListRef = useRef<HTMLDivElement>(null);
+    // The removed chip takes its focused button with it, so focus moves to the chip now in its place.
+    const [chipFocus, setChipFocus] = useState<{ item: number; value: number } | undefined>(undefined);
+    const clearChipFocus = useCallback(() => setChipFocus(undefined), []);
 
     const [filterGroup, setFilterGroup] = useState<SingleValue<{ label: string; value: FilterFieldSource }> | undefined>(undefined);
     const [filterField, setFilterField] = useState<SingleValue<{ label: string; value: string }> | undefined>(undefined);
@@ -441,6 +444,7 @@ export default function FilterWidget({
                 onRemoveFilterClick(index);
                 return;
             }
+            setChipFocus({ item: index, value: valueIndex });
             const updated = { ...filter, value: filter.value.filter((_, i) => i !== valueIndex) } as SearchFilterModel;
             const newFilters = currentFilters.map((f, i) => (i === index ? updated : f));
             dispatch(actions.setCurrentFilters({ entity, currentFilters: newFilters }));
@@ -542,6 +546,8 @@ export default function FilterWidget({
                             onRemoveValue={
                                 disableBadgeRemove ? undefined : (valueIndex) => onRemoveFilterValueClick(itemNumber, valueIndex)
                             }
+                            focusIndex={chipFocus?.item === itemNumber ? chipFocus.value : undefined}
+                            onFocusPlaced={clearChipFocus}
                         />
                     )}
                 </React.Fragment>
@@ -555,6 +561,8 @@ export default function FilterWidget({
             toggleFilter,
             disableBadgeRemove,
             onRemoveFilterValueClick,
+            chipFocus,
+            clearChipFocus,
         ],
     );
 

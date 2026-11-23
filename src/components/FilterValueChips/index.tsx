@@ -5,6 +5,12 @@ type Props = Readonly<{
     values: string[];
     filterLabel?: string;
     onRemoveValue?: (index: number) => void;
+    /**
+     * The chip whose remove button takes focus, clamped to the last one. Held by the host rather than here, because a
+     * busy host unmounts its chips mid-save and they must place focus when they mount again.
+     */
+    focusIndex?: number;
+    onFocusPlaced?: () => void;
 }>;
 
 /** Values may repeat, so a value's key also counts how often it appeared before. */
@@ -17,25 +23,18 @@ function toChipKeys(values: string[]): string[] {
     });
 }
 
-function FilterValueChips({ values, filterLabel, onRemoveValue }: Props) {
+function FilterValueChips({ values, filterLabel, onRemoveValue, focusIndex, onFocusPlaced }: Props) {
     const containerRef = useRef<HTMLSpanElement>(null);
-    const focusAfterRemoval = useRef<number | undefined>(undefined);
     const keys = toChipKeys(values);
 
-    // The removed chip takes its focused button with it, so focus moves to the chip now in its place, or the last one.
-    // biome-ignore lint/correctness/useExhaustiveDependencies: keyed on `values`, which a removal changes; keyed on nothing it runs every render.
+    // biome-ignore lint/correctness/useExhaustiveDependencies: re-run on `values` too, since the chips the index points into change with them.
     useLayoutEffect(() => {
-        const index = focusAfterRemoval.current;
-        if (index === undefined) return;
-        focusAfterRemoval.current = undefined;
+        if (focusIndex === undefined) return;
         const buttons = containerRef.current?.querySelectorAll('button');
-        if (buttons?.length) buttons[Math.min(index, buttons.length - 1)].focus();
-    }, [values]);
-
-    const removeValue = (index: number) => {
-        if (values.length > 1) focusAfterRemoval.current = index;
-        onRemoveValue?.(index);
-    };
+        if (!buttons?.length) return;
+        buttons[Math.min(focusIndex, buttons.length - 1)].focus();
+        onFocusPlaced?.();
+    }, [focusIndex, values, onFocusPlaced]);
 
     return (
         <span ref={containerRef} className="inline-flex flex-wrap items-center gap-1">
@@ -51,7 +50,7 @@ function FilterValueChips({ values, filterLabel, onRemoveValue }: Props) {
                             type="button"
                             aria-label={filterLabel ? `Remove ${value} from ${filterLabel}` : `Remove ${value}`}
                             className="shrink-0 inline-flex items-center justify-center rounded-full size-3.5 cursor-pointer hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-brand"
-                            onClick={() => removeValue(index)}
+                            onClick={() => onRemoveValue(index)}
                         >
                             <X className="size-3" aria-hidden />
                         </button>

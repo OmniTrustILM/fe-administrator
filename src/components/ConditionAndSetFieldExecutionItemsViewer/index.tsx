@@ -62,6 +62,8 @@ const ConditionAndSetFieldExecutionItemsViewer = ({ resource, formType, requires
 
     useEffect(() => {
         return () => {
+            // The filters are cleared here, so a remount, StrictMode's replay included, must hydrate them again.
+            hydratedFrom.current = undefined;
             dispatch(filterActions.setCurrentFilters({ currentFilters: [], entity: EntityType.CONDITIONS }));
         };
         // eslint-disable-next-line react-hooks/exhaustive-deps

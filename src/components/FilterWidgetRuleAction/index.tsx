@@ -210,6 +210,9 @@ export default function FilterWidgetRuleAction({
 
     const [selectedFilter, setSelectedFilter] = useState<number>(-1);
     const badgeListRef = useRef<HTMLDivElement>(null);
+    // The removed chip takes its focused button with it, so focus moves to the chip now in its place.
+    const [chipFocus, setChipFocus] = useState<{ item: number; value: number } | undefined>(undefined);
+    const clearChipFocus = useCallback(() => setChipFocus(undefined), []);
 
     const [fieldSource, setFieldSource] = useState<FilterFieldSource | undefined>(undefined);
 
@@ -528,6 +531,7 @@ export default function FilterWidgetRuleAction({
                 onRemoveFilterClick(index);
                 return;
             }
+            setChipFocus({ item: index, value: valueIndex });
             const updated = { ...action, data: action.data.filter((_, i) => i !== valueIndex) };
             const newActions = actions.map((a, i) => (i === index ? updated : a));
             setActions(newActions);
@@ -1019,6 +1023,8 @@ export default function FilterWidgetRuleAction({
                                     values={f.data.map((v) => formatBadgeDataValue(v, field, platformEnums))}
                                     filterLabel={label}
                                     onRemoveValue={disableBadgeRemove ? undefined : (valueIndex) => onRemoveActionValueClick(i, valueIndex)}
+                                    focusIndex={chipFocus?.item === i ? chipFocus.value : undefined}
+                                    onFocusPlaced={clearChipFocus}
                                 />
                             );
                         } else if (f.data) {
