@@ -634,18 +634,12 @@ test.describe('AttributeEditor NG group callbacks', () => {
     test('keeps an injected field the user changed when another group answers', async ({ mount, page }) => {
         // given
         await mountWithDnsWriterGroup(mount);
-        await answerGroupCallback(page);
-        await expect(page.getByTestId('spinner')).toHaveCount(0, { timeout: 10000 });
-        const writerTypeTrigger = page.getByTestId('select-__attributes__testEditor__.dnsWriterTypeSelect-trigger');
-        await writerTypeTrigger.click();
-        await page.getByRole('option', { name: 'rfc2136' }).click();
-        await expect(page.getByTestId('spinner')).toBeVisible({ timeout: 10000 });
+        const writerTypeTrigger = await selectRfc2136Writer(page);
 
         // when
-        await page.getByTestId(`answer-callback-__attributes__${editorId}__.dnsWriterGroup`).click();
+        await answerWriterGroup(page);
 
         // then — a reset would land after the answer is applied, so outlast the change pass that follows it
-        await expect(page.getByTestId('text-input-__attributes__testEditor__.rfc2136Server')).toBeVisible({ timeout: 10000 });
         await page.waitForTimeout(CALLBACK_DEBOUNCE_MS * 2); // NOSONAR(S2925)
         await expect(writerTypeTrigger).toContainText('rfc2136');
     });
@@ -653,14 +647,8 @@ test.describe('AttributeEditor NG group callbacks', () => {
     test('initialises an injected field again when its own group answers it anew', async ({ mount, page }) => {
         // given
         await mountWithDnsWriterGroup(mount);
-        await answerGroupCallback(page);
-        await expect(page.getByTestId('spinner')).toHaveCount(0, { timeout: 10000 });
-        const writerTypeTrigger = page.getByTestId('select-__attributes__testEditor__.dnsWriterTypeSelect-trigger');
-        await writerTypeTrigger.click();
-        await page.getByRole('option', { name: 'rfc2136' }).click();
-        await expect(page.getByTestId('spinner')).toBeVisible({ timeout: 10000 });
-        await page.getByTestId(`answer-callback-__attributes__${editorId}__.dnsWriterGroup`).click();
-        await expect(page.getByTestId('text-input-__attributes__testEditor__.rfc2136Server')).toBeVisible({ timeout: 10000 });
+        const writerTypeTrigger = await selectRfc2136Writer(page);
+        await answerWriterGroup(page);
 
         // when
         await page.getByTestId(`answer-callback-__attributes__${editorId}__.dnsGroup`).click();
@@ -703,6 +691,21 @@ test.describe('AttributeEditor NG group callbacks', () => {
         // The first debounced change pass fires the group callback again; answer only after it.
         await page.waitForTimeout(CALLBACK_DEBOUNCE_MS * 2); // NOSONAR(S2925)
         await page.getByTestId('answer-callbacks').click();
+    };
+
+    const selectRfc2136Writer = async (page: Page) => {
+        await answerGroupCallback(page);
+        await expect(page.getByTestId('spinner')).toHaveCount(0, { timeout: 10000 });
+        const writerTypeTrigger = page.getByTestId('select-__attributes__testEditor__.dnsWriterTypeSelect-trigger');
+        await writerTypeTrigger.click();
+        await page.getByRole('option', { name: 'rfc2136' }).click();
+        await expect(page.getByTestId('spinner')).toBeVisible({ timeout: 10000 });
+        return writerTypeTrigger;
+    };
+
+    const answerWriterGroup = async (page: Page) => {
+        await page.getByTestId(`answer-callback-__attributes__${editorId}__.dnsWriterGroup`).click();
+        await expect(page.getByTestId('text-input-__attributes__testEditor__.rfc2136Server')).toBeVisible({ timeout: 10000 });
     };
 
     const mountWithDnsChallengeSelected = (
