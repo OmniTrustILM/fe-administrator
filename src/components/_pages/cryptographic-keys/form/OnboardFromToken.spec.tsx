@@ -275,15 +275,48 @@ test.describe('OnboardFromToken', () => {
         ).toBeVisible();
     });
 
-    test('heads the columns with the storage name and the size', async ({ mount, page: browser }) => {
+    test('heads the columns with the storage name and the algorithm', async ({ mount, page: browser }) => {
         await mount(<OnboardFromTokenWithStore profiles={[profile]} page={page} />);
 
         await chooseProfile(browser);
 
-        await expect(browser.getByRole('columnheader')).toHaveText(['', 'Storage name', 'Algorithm', 'Size', 'Status', 'Onboard as']);
+        await expect(browser.getByRole('columnheader')).toHaveText(['', 'Storage name', 'Algorithm', 'Status', 'Onboard as']);
     });
 
-    test('shows an empty size for a key pair listed without one', async ({ mount, page: browser }) => {
+    test('labels each key pair by its parameter set or by its algorithm and size', async ({ mount, page: browser }) => {
+        const described: TokenKeyListResponseDto = {
+            ...page,
+            items: [
+                { storageName: 'rsa signer', keyAlgorithm: KeyAlgorithm.Rsa, length: 2048, status: TokenKeyStatus.Onboardable },
+                {
+                    storageName: 'ecdsa signer',
+                    keyAlgorithm: KeyAlgorithm.Ecdsa,
+                    parameterSet: 'P-384',
+                    length: 384,
+                    status: TokenKeyStatus.Onboardable,
+                },
+                {
+                    storageName: 'pqc signer',
+                    keyAlgorithm: KeyAlgorithm.MlDsa,
+                    parameterSet: 'ML-DSA-65',
+                    length: 15616,
+                    status: TokenKeyStatus.Onboardable,
+                },
+            ],
+            totalItems: 3,
+        };
+        await mount(<OnboardFromTokenWithStore profiles={[profile]} page={described} />);
+
+        await chooseProfile(browser);
+
+        await expect(browser.getByRole('row').filter({ hasText: 'signer' }).locator('td:nth-child(3)')).toHaveText([
+            'RSA 2048',
+            'ECDSA P-384',
+            'ML-DSA-65',
+        ]);
+    });
+
+    test('labels an unsized key pair by its algorithm alone', async ({ mount, page: browser }) => {
         const unsized: TokenKeyListResponseDto = {
             ...page,
             items: [
@@ -301,7 +334,7 @@ test.describe('OnboardFromToken', () => {
 
         await chooseProfile(browser);
 
-        await expect(browser.getByRole('row').filter({ hasText: 'pqc signer' }).getByRole('cell').nth(3)).toHaveText('');
+        await expect(browser.getByRole('row').filter({ hasText: 'pqc signer' }).getByRole('cell').nth(2)).toHaveText('ML-DSA');
     });
 
     test('shows an empty algorithm for a key listed without one', async ({ mount, page: browser }) => {

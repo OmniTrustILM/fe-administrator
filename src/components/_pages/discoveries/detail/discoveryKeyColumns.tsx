@@ -6,20 +6,17 @@ import type { ReactNode } from 'react';
 import type { DiscoveryItemModel } from 'types/discoveries';
 import type { EnumItemModel } from 'types/enums';
 import { type DiscoveredKeyDto, Resource } from 'types/openapi';
+import { keyLabel } from 'utils/keyLabel';
 
 type PlatformEnumMap = { [key: string]: EnumItemModel } | undefined;
 
 /** The three enums a key row names by label; the platform's own words, never the wire code. */
 export type KeyColumnEnums = Readonly<{ type: PlatformEnumMap; algorithm: PlatformEnumMap; format: PlatformEnumMap }>;
 
-/**
- * Headings match the inventory keys list. Fingerprint gets the width: it correlates a key across runs, connectors and
- * certificates.
- */
+/** Fingerprint gets the width: it correlates a key across runs, connectors and certificates. */
 export const KEY_HEADERS: TableHeader[] = [
     { id: 'keyType', content: 'Type' },
     { id: 'keyAlgorithm', content: 'Algorithm' },
-    { id: 'keyLength', content: 'Size', align: 'right' },
     { id: 'keyFormat', content: 'Format' },
     { id: 'keyFingerprint', content: 'Fingerprint', width: '20%' },
 ];
@@ -39,19 +36,17 @@ export function discoveredKey(item: Pick<DiscoveryItemModel, 'payload'>): Discov
  * One cell per `KEY_HEADERS` entry. A private, secret or split key reports no public part by contract, so its format
  * cell stays empty and {@link publicKeyCell} offers nothing to open.
  */
-export function keyCells(item: Pick<DiscoveryItemModel, 'uuid' | 'payload'>, enums: KeyColumnEnums): ReactNode[] {
+export function keyCells(item: Pick<DiscoveryItemModel, 'uuid' | 'payload' | 'keyDescription'>, enums: KeyColumnEnums): ReactNode[] {
     const key = discoveredKey(item);
     const label = (platformEnum: PlatformEnumMap, code: string | undefined) => (code ? getEnumLabel(platformEnum, code) : '');
+    const reportedByProvider = { algorithm: key?.algorithm, length: key?.length };
 
     return [
         <span key="keyType" data-testid="key-type">
             {label(enums.type, key?.type)}
         </span>,
         <span key="keyAlgorithm" data-testid="key-algorithm">
-            {label(enums.algorithm, key?.algorithm)}
-        </span>,
-        <span key="keyLength" data-testid="key-length" className="tabular-nums">
-            {key?.length ?? ''}
+            {keyLabel(item.keyDescription ?? reportedByProvider, (code) => label(enums.algorithm, code))}
         </span>,
         <span key="keyFormat" data-testid="key-format">
             {label(enums.format, key?.publicKeyFormat)}

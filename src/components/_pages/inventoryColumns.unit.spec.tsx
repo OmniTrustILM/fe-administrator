@@ -82,6 +82,7 @@ const inventories = [
             'CKI_TYPE',
             'CKI_USAGE',
             'CKI_CRYPTOGRAPHIC_ALGORITHM',
+            'CKI_PARAMETER_SET',
             'CKI_LENGTH',
             'CKI_FORMAT',
             'CKI_CREATED',

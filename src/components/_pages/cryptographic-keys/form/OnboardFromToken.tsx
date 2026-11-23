@@ -18,6 +18,7 @@ import { type ReactNode, useCallback, useEffect, useEffectEvent, useMemo, useRef
 import { type FieldValues, FormProvider, useForm, useFormContext } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import {
+    type KeyAlgorithm,
     type MetadataAttribute,
     PlatformEnum,
     Resource,
@@ -28,6 +29,7 @@ import {
     type TokenProfileDto,
 } from 'types/openapi';
 import { collectFormAttributes } from 'utils/attributes/attributes';
+import { keyLabel } from 'utils/keyLabel';
 
 type Props = Readonly<{
     onCancel: () => void;
@@ -66,7 +68,6 @@ const headers: TableHeader[] = [
     { id: 'select', content: '', width: '5%' },
     { id: 'storageName', content: 'Storage name' },
     { id: 'algorithm', content: 'Algorithm' },
-    { id: 'length', content: 'Size' },
     { id: 'status', content: 'Status' },
     { id: 'name', content: 'Onboard as' },
 ];
@@ -363,6 +364,7 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
     );
 
     const rows: TableDataRow[] = useMemo(() => {
+        const algorithmLabel = (algorithm: KeyAlgorithm) => getEnumLabel(algorithmEnum, algorithm);
         const nameCell = (key: TokenKeyDto, handle: string, shownLabel: string, selection: Selection): ReactNode => {
             if (key.status === TokenKeyStatus.OnboardableIntoKey) {
                 return <span className="text-sm">{`Into ${key.inventoryKeyName ?? 'the existing key'}`}</span>;
@@ -406,8 +408,7 @@ function ProfileOnboarding({ profile, onRetryKeyCustomAttributes, onCancel, onDo
                 columns: [
                     select,
                     storageNameCell(key),
-                    key.keyAlgorithm ? getEnumLabel(algorithmEnum, key.keyAlgorithm) : '',
-                    key.length?.toString() ?? '',
+                    keyLabel({ algorithm: key.keyAlgorithm, parameterSet: key.parameterSet, length: key.length }, algorithmLabel),
                     statusCell(key, getEnumLabel(statusEnum, key.status)),
                     name,
                 ],

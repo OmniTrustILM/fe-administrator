@@ -50,6 +50,13 @@ export const KEY_COLUMNS: ColumnDefinition[] = [
         type: FilterFieldType.List,
         align: 'center',
     },
+    {
+        fieldSource: FilterFieldSource.Property,
+        fieldIdentifier: 'CKI_PARAMETER_SET',
+        catalogueLabel: 'Parameter Set',
+        type: FilterFieldType.List,
+        align: 'center',
+    },
     { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'CKI_LENGTH', catalogueLabel: 'Size', type: FilterFieldType.Number },
     {
         fieldSource: FilterFieldSource.Property,
@@ -108,7 +115,7 @@ function buildGroupValues(item: CryptographicKeyResponseModel): ListCellValue[] 
 }
 
 /**
- * Cell renderers for the key property columns that are rich today. Anything not registered here
+ * Cell renderers for the key property columns. Anything not registered here
  * falls through to the attribute renderer, which is how a custom or metadata column renders without
  * this file knowing about it.
  */
@@ -128,6 +135,7 @@ export function buildKeyCellRegistry({
         ),
         'property:CKI_TYPE': (item) => (item.type ? <Badge color="secondary">{getEnumLabel(keyTypeEnum, item.type)}</Badge> : null),
         'property:CKI_CRYPTOGRAPHIC_ALGORITHM': (item) => item.keyAlgorithm,
+        'property:CKI_PARAMETER_SET': (item) => item.parameterSet,
         // An unset size or format resolves to the shared empty state.
         'property:CKI_LENGTH': (item) => item.length?.toString(),
         'property:CKI_FORMAT': (item) => item.format,

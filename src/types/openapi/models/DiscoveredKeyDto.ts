@@ -48,7 +48,7 @@ export interface DiscoveredKeyDto {
      */
     fingerprint?: string;
     /**
-     * Format of publicKey, typically SubjectPublicKeyInfo. Present only with publicKey.
+     * Format of `publicKey`, one of `Raw`, `SubjectPublicKeyInfo` or `Custom`; present only with `publicKey`, and taken as SubjectPublicKeyInfo when absent.
      * @type {KeyFormat}
      * @memberof DiscoveredKeyDto
      */
@@ -59,4 +59,10 @@ export interface DiscoveredKeyDto {
      * @memberof DiscoveredKeyDto
      */
     publicKey?: string;
+    /**
+     * Base64-encoded DER AlgorithmIdentifier naming the key\'s parameters, as SubjectPublicKeyInfo and PKCS#8 carry it. The provider must send it, when it can read the parameters, for a private or split key and for a public key without a SubjectPublicKeyInfo `publicKey`, and must omit it for a secret key and beside a SubjectPublicKeyInfo `publicKey`.
+     * @type {string}
+     * @memberof DiscoveredKeyDto
+     */
+    algorithmIdentifier?: string;
 }

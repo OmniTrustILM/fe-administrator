@@ -10,7 +10,7 @@
  * Do not edit the class manually.
  */
 
-import type { DiscoveredItemPayload, MetadataAttribute, NameAndUuidDto, Resource } from './';
+import type { DiscoveredItemPayload, KeyDescriptionDto, MetadataAttribute, NameAndUuidDto, Resource } from './';
 
 /**
  * @export
@@ -82,4 +82,10 @@ export interface DiscoveryItemDto {
      * @memberof DiscoveryItemDto
      */
     meta?: Array<MetadataAttribute>;
+    /**
+     * Algorithm, parameter set and size the platform derives from the payload of a key item; absent for other resources and for a key payload the platform cannot read.
+     * @type {KeyDescriptionDto}
+     * @memberof DiscoveryItemDto
+     */
+    keyDescription?: KeyDescriptionDto;
 }

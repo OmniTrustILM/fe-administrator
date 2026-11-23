@@ -29,6 +29,7 @@ import { composeValidators, validateAlphaNumericWithSpecialChars, validateRequir
 import EditableTableCell from 'components/CustomTable/EditableTableCell';
 import { keyWithoutTokenInstanceActionNotes } from '../constants';
 import { createWidgetDetailHeaders } from 'utils/widget';
+import { parameterSetAndSize } from 'utils/keyLabel';
 import Button from 'components/Button';
 import { Info } from 'lucide-react';
 import Container from 'components/Container';
@@ -398,6 +399,7 @@ export default function CryptographicKeyItem({
                               <span key="keyAlgorithm" className="inline-flex items-center gap-1">
                                   {keyItem.keyAlgorithm}
                                   <EnumValueDescription platformEnum={PlatformEnum.KeyAlgorithm} value={keyItem.keyAlgorithm} />
+                                  <span data-testid="key-parameters">{parameterSetAndSize(keyItem)}</span>
                               </span>,
                           ],
                       },

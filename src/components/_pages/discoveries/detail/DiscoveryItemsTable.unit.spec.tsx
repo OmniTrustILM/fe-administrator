@@ -254,7 +254,7 @@ describe('DiscoveryItemsTable', () => {
 
         expect(container.querySelector('[data-testid="header-keyFingerprint"]')?.textContent).toBe('Fingerprint');
         const row = container.querySelector('[data-testid="row-key-1"]');
-        expect(row?.querySelector('[data-testid="key-algorithm"]')?.textContent).toBe('RSA');
+        expect(row?.querySelector('[data-testid="key-algorithm"]')?.textContent).toBe('RSA 2048');
         expect(row?.querySelector('[data-testid="key-fingerprint"]')?.textContent).toBe('e3b0c44298fc1c14');
 
         await render(buildState([item()]));
@@ -282,7 +282,6 @@ describe('DiscoveryItemsTable', () => {
             'header-inventory',
             'header-keyType',
             'header-keyAlgorithm',
-            'header-keyLength',
             'header-keyFormat',
             'header-keyFingerprint',
             'header-discoveredAt',
