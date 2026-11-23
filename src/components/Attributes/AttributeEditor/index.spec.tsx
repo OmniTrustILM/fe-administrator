@@ -1159,6 +1159,40 @@ test.describe('AttributeEditor NG group callbacks', () => {
         await expect(dnsServerInput).toBeVisible();
     });
 
+    test("drops a group's injected fields when its dependency is cleared after the page cleared all callback data", async ({
+        mount,
+        page,
+    }) => {
+        // given
+        await mountWithDnsChallengeSelected(mount);
+        await answerGroupAndNestedGroupCallbacks(page);
+        const dnsServerInput = page.getByTestId('text-input-__attributes__testEditor__.dnsServer');
+        await expect(dnsServerInput).toBeVisible();
+        await page.getByTestId('clear-callback-data').click();
+
+        // when
+        await page.getByTestId('select-__attributes__testEditor__.challengeTypeSelect-clear').click();
+
+        // then
+        await expect(dnsServerInput).toHaveCount(0, { timeout: 10000 });
+        await expect(page.getByTestId('text-input-__attributes__testEditor__.dnsZone')).toHaveCount(0);
+    });
+
+    test('leaves out the fields injected before the page was left once the editor comes back', async ({ mount, page }) => {
+        // given
+        await mountWithDnsChallengeSelected(mount);
+        await answerGroupAndNestedGroupCallbacks(page);
+        const dnsServerInput = page.getByTestId('text-input-__attributes__testEditor__.dnsServer');
+        await expect(dnsServerInput).toBeVisible();
+
+        // when
+        await page.getByTestId('leave-and-return').click();
+
+        // then
+        await page.waitForTimeout(CALLBACK_DEBOUNCE_MS * 2); // NOSONAR(S2925)
+        await expect(dnsServerInput).toHaveCount(0);
+    });
+
     test('fires the initial callback of a dropped child group again once its parent injects it anew', async ({ mount, page }) => {
         // given
         const firesOnMountOnly: string[] = [];

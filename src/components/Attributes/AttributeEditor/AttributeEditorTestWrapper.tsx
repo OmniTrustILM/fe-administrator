@@ -25,8 +25,10 @@ export type AttributeEditorTestWrapperProps = {
      *  parent re-render or a resolved group callback does. */
     withDescriptorRefresh?: boolean;
     /** Keeps groupAttributesCallbackAttributes in wrapper state, the way a form page does, so the editor can
-     *  add and remove callback-injected fields, and renders a button that resets them the way a page does when its
-     *  context changes: clearing all callback data and the injected fields. */
+     *  add and remove callback-injected fields, and renders buttons that reset them the way a page does when its
+     *  context changes (clearing all callback data and the injected fields) and that clear all callback data alone, as
+     *  a page does when another of its editors changes context, and that replaces the editor with a new one on a fresh
+     *  page in one render, as leaving a page and coming back to it does. */
     withGroupCallbackState?: boolean;
     /** Renders buttons that answer every callbackId, or one, with a deep copy of its data, as a response off the
      *  wire would be, standing in for the callback epic. */
@@ -95,6 +97,7 @@ export function AttributeEditorTestWrapper({
     const store = useMemo(() => createMockStore(preloadedState), [preloadedState]);
     const [refreshCount, setRefreshCount] = useState(0);
     const [secondEditorShown, setSecondEditorShown] = useState(false);
+    const [editorKey, setEditorKey] = useState(0);
     const [groupCallbackState, setGroupCallbackState] = useState<AttributeDescriptorModel[]>(groupAttributesCallbackAttributes);
     const currentDescriptors = useMemo(
         () => (refreshCount === 0 ? attributeDescriptors : [...attributeDescriptors]),
@@ -119,6 +122,7 @@ export function AttributeEditorTestWrapper({
             <MemoryRouter>
                 <ReactHookForm.FormProvider {...methods}>
                     <AttributeEditor
+                        key={editorKey}
                         id={id}
                         attributeDescriptors={currentDescriptors}
                         attributes={attributes}
@@ -141,6 +145,27 @@ export function AttributeEditorTestWrapper({
                             }}
                         >
                             Reset callback state
+                        </button>
+                    )}
+                    {withGroupCallbackState && (
+                        <button
+                            type="button"
+                            data-testid="leave-and-return"
+                            onClick={() => {
+                                setEditorKey((key) => key + 1);
+                                setGroupCallbackState([]);
+                            }}
+                        >
+                            Leave and return
+                        </button>
+                    )}
+                    {withGroupCallbackState && (
+                        <button
+                            type="button"
+                            data-testid="clear-callback-data"
+                            onClick={() => store.dispatch(connectorActions.clearCallbackData())}
+                        >
+                            Clear callback data
                         </button>
                     )}
                     {withDescriptorRefresh && (

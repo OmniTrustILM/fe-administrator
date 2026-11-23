@@ -151,7 +151,9 @@ function AttributeEditorInner({
 
     const previousAttributesRef = useRef<Record<string, unknown>>({});
     // stores previous callback data in order to be possible to detect what data changed
-    const [previousCallbackData, setPreviousCallbackData] = useState<{ [callbackId: string]: unknown }>({});
+    // Starts from the callback data at mount: what is there was answered before this editor asked, such as by an editor
+    // of the same id on a page left before, and the editor clears it on mount.
+    const [previousCallbackData, setPreviousCallbackData] = useState<{ [callbackId: string]: unknown }>(callbackData);
 
     // used to store custom attributes which user has selected
     const [prevShownCustomAttributes, setPrevShownCustomAttributes] = useState<AttributeDescriptorModel[]>([]);
@@ -672,6 +674,14 @@ function AttributeEditorInner({
     // The descriptors each callback last answered with, by callbackId, for the same reason: another callback's answer
     // rebuilds the injected fields while this one's request is in flight, and must not lose what it injected.
     const injectedDescriptorsRef = useRef<Record<string, AttributeDescriptorModel[]>>({});
+
+    // A page resets what group callbacks injected by emptying the injected list; clearing the shared callback store
+    // alone does not, as a page with several editors clears it for one of them.
+    useEffect(() => {
+        if (injectedDescriptors.length > 0) return;
+        injectedChildNamesRef.current = {};
+        injectedDescriptorsRef.current = {};
+    }, [injectedDescriptors]);
 
     // NG descriptors whose dependsOn names no mounted attribute — warned once per descriptor.
     const warnedMissingDependsOnRef = useRef<Set<string>>(new Set());
@@ -1244,13 +1254,6 @@ function AttributeEditorInner({
         // The callback data of every attribute editor on the page shares one store; this editor reads only its own.
         const ownCallbackIdPrefix = getAttributeEditorAttributeKey(id, '');
         const ownCallbackData = Object.entries(callbackData).filter(([callbackId]) => callbackId.startsWith(ownCallbackIdPrefix));
-        // A request leaves its callback's key in the store; a page that clears all callback data removes the keys, and
-        // with them what those callbacks injected.
-        for (const callbackId of Object.keys(injectedDescriptorsRef.current)) {
-            if (callbackId in callbackData) continue;
-            delete injectedDescriptorsRef.current[callbackId];
-            delete injectedChildNamesRef.current[callbackId];
-        }
         for (const [callbackId, data] of ownCallbackData) {
             if (data !== previousCallbackData[callbackId] && Array.isArray(data)) {
                 injectedDescriptorsRef.current[callbackId] = data.filter(isAttributeDescriptorModel);
