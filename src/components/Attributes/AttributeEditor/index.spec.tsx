@@ -644,6 +644,37 @@ test.describe('AttributeEditor NG group callbacks', () => {
         await expect(writerTypeTrigger).toContainText('rfc2136');
     });
 
+    test('skips the callback of a removed child group whose dependency changed in the same pass', async ({ mount, page }) => {
+        // given — the child group depends on a top-level field, which the drop leaves in place
+        const providerDescriptor = dataDescriptor({
+            name: 'dnsProvider',
+            uuid: 'dns-provider-uuid',
+            properties: { ...dataDescriptor().properties, label: 'DNS Provider', required: false, list: true },
+            content: [{ data: 'route53' }, { data: 'cloudflare' }] as any,
+        });
+        await mountWithDnsGroupAnswers(
+            mount,
+            {
+                [`__attributes__${editorId}__.dnsGroup`]: [groupDescriptor('dnsProviderGroup', ['dnsProvider'])],
+                [`__attributes__${editorId}__.dnsProviderGroup`]: [injectedFieldDescriptor('providerToken', 'Provider Token')],
+            },
+            [providerDescriptor],
+        );
+        await answerGroupCallback(page);
+        await expect(page.getByTestId('text-input-__attributes__testEditor__.providerToken')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('spinner')).toHaveCount(0, { timeout: 10000 });
+        await page.getByTestId('select-__attributes__testEditor__.dnsProviderSelect-trigger').click();
+        await page.getByRole('option', { name: 'route53' }).click();
+
+        // when
+        await page.getByTestId('select-__attributes__testEditor__.challengeTypeSelect-clear').click();
+
+        // then — a fired provider-group callback would stay in flight, as the test store never answers it
+        await expect(page.getByTestId('text-input-__attributes__testEditor__.providerToken')).toHaveCount(0, { timeout: 10000 });
+        await page.waitForTimeout(CALLBACK_DEBOUNCE_MS); // NOSONAR(S2925)
+        await expect(page.getByTestId('spinner')).toHaveCount(0);
+    });
+
     test('initialises an injected field again when its own group answers it anew', async ({ mount, page }) => {
         // given
         await mountWithDnsWriterGroup(mount);
