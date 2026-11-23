@@ -74,6 +74,7 @@ export type EabKeyApiBehaviour = Readonly<{
     vaultAttributes?: AttributeDescriptorModel[];
     // The vault profile's attributes never finish loading.
     attributesLoading?: boolean;
+    attributesFail?: boolean;
     // Holds the secret's custom attributes until this emits.
     customAttributesGate?: Observable<unknown>;
     customAttributesFail?: boolean;
@@ -139,6 +140,9 @@ export function stubEabKeyApi(behaviour: EabKeyApiBehaviour, onCreate: (request:
                 map(() => [SECRET_CUSTOM_ATTRIBUTE]),
             );
         },
-        loadSecretAttributes: () => (behaviour.attributesLoading ? NEVER : of(behaviour.vaultAttributes ?? [])),
+        loadSecretAttributes: () => {
+            if (behaviour.attributesFail) return throwError(() => new Error('Service Unavailable'));
+            return behaviour.attributesLoading ? NEVER : of(behaviour.vaultAttributes ?? []);
+        },
     };
 }

@@ -84,6 +84,15 @@ test.describe('CreateSecretDialog', () => {
         await expect(page.getByTestId('store-actions')).not.toContainText('secrets/listSecretAttributes');
     });
 
+    test("Create stays disabled when the vault profile's attributes failed to load", async ({ mount, page }) => {
+        await mount(<CreateSecretDialogHarness attributesFail />);
+        await page.getByTestId('open').click();
+        await fillEabSecretForm(page, 'new-secret');
+        await page.locator('#secret-generic-content').fill(CONTENT);
+
+        await expect(page.getByRole('button', { name: 'Create', exact: true })).toBeDisabled();
+    });
+
     test("Create waits until the secret's custom attributes have loaded", async ({ mount, page }) => {
         await mount(<CreateSecretDialogHarness holdCustomAttributes />);
         await page.getByTestId('open').click();

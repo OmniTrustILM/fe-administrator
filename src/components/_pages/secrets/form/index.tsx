@@ -66,7 +66,7 @@ type SecretFormProps = Readonly<{
     loadSecretAttributes?: SecretAttributesLoader;
 }>;
 
-type LocalSecretAttributes = Readonly<{ descriptors: AttributeDescriptorModel[]; loading: boolean }>;
+type LocalSecretAttributes = Readonly<{ descriptors: AttributeDescriptorModel[]; loading: boolean; failed?: boolean }>;
 
 const NO_SECRET_ATTRIBUTES: LocalSecretAttributes = { descriptors: [], loading: false };
 
@@ -299,7 +299,10 @@ export default function SecretForm({
         setLocalSecretAttributes({ descriptors: [], loading: true });
         const loading = loadSecretAttributes(query).subscribe({
             next: (descriptors) => setLocalSecretAttributes({ descriptors, loading: false }),
-            error: () => setLocalSecretAttributes(NO_SECRET_ATTRIBUTES),
+            error: () => {
+                setLocalSecretAttributes({ descriptors: [], loading: false, failed: true });
+                dispatch(alertActions.error("Failed to load the vault profile's secret attributes"));
+            },
         });
         return () => loading.unsubscribe();
     }, [dispatch, vaultProfiles, watchedSourceVaultProfile, watchedType, createsDirectly, loadSecretAttributes]);
@@ -946,6 +949,7 @@ export default function SecretForm({
                                     isCreating ||
                                     isFetchingSecretCreationAttributes ||
                                     customAttributesLoading ||
+                                    (createsDirectly && !!localSecretAttributes.failed) ||
                                     generating
                                 }
                                 title={submitTitle}
