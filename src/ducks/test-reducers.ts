@@ -75,6 +75,9 @@ function userInterfaceTestReducer(
     if (a.type === 'userInterface/showGlobalModal' && a.payload) {
         return { ...state, globalModal: a.payload as UserInterfaceTestState['globalModal'] };
     }
+    if (a.type === 'userInterface/hideGlobalModal') {
+        return { ...state, globalModal: userInterfaceTestInitialState.globalModal };
+    }
     if (a.type === 'userInterface/resetState') {
         return { ...userInterfaceTestInitialState };
     }

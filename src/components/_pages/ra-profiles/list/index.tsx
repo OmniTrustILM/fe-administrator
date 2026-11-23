@@ -14,11 +14,14 @@ import Widget from 'components/Widget';
 import RaProfileForm from '../form';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { Resource } from 'types/openapi';
+import { Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 
 function RaProfileList() {
     const dispatch = useDispatch();
 
+    const can = useActionAvailability(Resource.RaProfiles);
+    const canOnComplianceProfiles = useActionAvailability(Resource.ComplianceProfiles);
     const checkedRows = useSelector(selectors.checkedRows);
     const raProfiles = useSelector(selectors.raProfiles);
 
@@ -108,12 +111,14 @@ function RaProfileList() {
                 icon: 'plus',
                 disabled: false,
                 tooltip: 'Create',
+                requires: can(ResourceAction.Create),
                 onClick: handleOpenAddModal,
             },
             {
                 icon: 'trash',
                 disabled: checkedRows.length === 0,
                 tooltip: 'Delete',
+                requires: can(ResourceAction.Delete, { onObjects: true }),
                 onClick: () => {
                     setConfirmDelete(true);
                 },
@@ -122,6 +127,7 @@ function RaProfileList() {
                 icon: 'check',
                 disabled: checkedRows.length === 0,
                 tooltip: 'Enable',
+                requires: can(ResourceAction.Enable, { onObjects: true }),
                 onClick: () => {
                     onEnableClick();
                 },
@@ -130,6 +136,7 @@ function RaProfileList() {
                 icon: 'times',
                 disabled: checkedRows.length === 0,
                 tooltip: 'Disable',
+                requires: can(ResourceAction.Enable, { onObjects: true }),
                 onClick: () => {
                     onDisableClick();
                 },
@@ -138,12 +145,13 @@ function RaProfileList() {
                 icon: 'gavel',
                 disabled: checkedRows.length === 0,
                 tooltip: 'Check Compliance',
+                requires: canOnComplianceProfiles(ResourceAction.CheckCompliance),
                 onClick: () => {
                     setComplianceCheck(true);
                 },
             },
         ],
-        [checkedRows, handleOpenAddModal, onEnableClick, onDisableClick],
+        [checkedRows, handleOpenAddModal, onEnableClick, onDisableClick, can, canOnComplianceProfiles],
     );
 
     const raProfilesTableHeaders: TableHeader[] = useMemo(

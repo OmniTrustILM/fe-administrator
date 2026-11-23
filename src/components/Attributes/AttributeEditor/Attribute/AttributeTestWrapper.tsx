@@ -2,6 +2,7 @@ import type React from 'react';
 import { useRef, useState } from 'react';
 import * as ReactHookForm from 'react-hook-form';
 import { Provider, useSelector } from 'react-redux';
+import { MemoryRouter } from 'react-router';
 import { createMockStore } from 'utils/test-helpers';
 import GlobalModal from 'components/GlobalModal';
 import { selectors as userInterfaceSelectors } from 'ducks/user-interface';
@@ -72,19 +73,22 @@ export function AttributeTestWrapper({
     });
     return (
         <Provider store={store}>
-            {renderGlobalModal && <GlobalModal />}
-            <GlobalModalProbe />
-            {probeUserInteracted && <span data-testid="user-interacted">{String(interacted)}</span>}
-            <ReactHookForm.FormProvider {...methods}>
-                <Attribute
-                    name={name}
-                    descriptor={descriptor}
-                    options={options}
-                    busy={busy}
-                    userInteractedRef={effectiveInteractedRef}
-                    deleteButton={deleteButton}
-                />
-            </ReactHookForm.FormProvider>
+            {/* The secret dialog's form needs a router. */}
+            <MemoryRouter>
+                {renderGlobalModal && <GlobalModal />}
+                <GlobalModalProbe />
+                {probeUserInteracted && <span data-testid="user-interacted">{String(interacted)}</span>}
+                <ReactHookForm.FormProvider {...methods}>
+                    <Attribute
+                        name={name}
+                        descriptor={descriptor}
+                        options={options}
+                        busy={busy}
+                        userInteractedRef={effectiveInteractedRef}
+                        deleteButton={deleteButton}
+                    />
+                </ReactHookForm.FormProvider>
+            </MemoryRouter>
         </Provider>
     );
 }

@@ -1,5 +1,5 @@
-import { map, type Observable, of, take, throwError } from 'rxjs';
-import type { AttributeDescriptorModel } from 'types/attributes';
+import { map, NEVER, type Observable, of, take, throwError } from 'rxjs';
+import type { AttributeDescriptorModel, CustomAttributeModel } from 'types/attributes';
 import {
     type ApprovalProfileDto,
     AttributeContentType,
@@ -25,20 +25,26 @@ export const VAULT_PATH_ATTRIBUTE: AttributeDescriptorModel = {
     properties: { label: 'Path', required: true, readOnly: false, visible: true, list: false, multiSelect: false },
 };
 
+export const SECRET_CUSTOM_ATTRIBUTE = {
+    uuid: 'secret-owner-attribute',
+    name: 'secretOwner',
+    type: AttributeType.Custom,
+    contentType: AttributeContentType.String,
+    properties: { label: 'Secret owner', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
+} as CustomAttributeModel;
+
 export type EabSecretStoreOptions = Readonly<{
-    vaultAttributes?: AttributeDescriptorModel[];
-    attributesLoading?: boolean;
     onAction?: (action: unknown) => void;
 }>;
 
-export function createEabSecretStore({ vaultAttributes = [], attributesLoading = false, onAction }: EabSecretStoreOptions = {}) {
+export function createEabSecretStore({ onAction }: EabSecretStoreOptions = {}) {
     const store = createMockStore({
         vaultProfiles: { vaultProfiles: [VAULT_PROFILE] },
         secrets: {
             syncVaultProfileAttributeDescriptors: [],
             isFetchingSyncVaultProfileAttributes: false,
-            secretCreationAttributeDescriptors: vaultAttributes,
-            isFetchingSecretCreationAttributes: attributesLoading,
+            secretCreationAttributeDescriptors: [],
+            isFetchingSecretCreationAttributes: false,
         },
         enums: { platformEnums: { SecretType: { [SecretType.Generic]: { label: 'Generic' } } } },
     });
@@ -64,6 +70,14 @@ export type EabKeyApiBehaviour = Readonly<{
     getSecretFails?: boolean;
     // What the secret has become by the time it is read again; Core settles it after replying to the create.
     stateAfterCreate?: SecretState;
+    // What the vault profile asks for when a secret is created in it.
+    vaultAttributes?: AttributeDescriptorModel[];
+    // The vault profile's attributes never finish loading.
+    attributesLoading?: boolean;
+    attributesFail?: boolean;
+    // Holds the secret's custom attributes until this emits.
+    customAttributesGate?: Observable<unknown>;
+    customAttributesFail?: boolean;
 }>;
 
 // Core replies to a create before the secret is enabled or has reached its vault.
@@ -117,6 +131,18 @@ export function stubEabKeyApi(behaviour: EabKeyApiBehaviour, onCreate: (request:
         vaultProfileApprovalProfiles: () => {
             if (behaviour.approvalLookupFails) return throwError(() => new Error('Access Denied'));
             return of(behaviour.approvalRequired ? [{ uuid: 'ap-1', name: 'Four eyes' } as ApprovalProfileDto] : []);
+        },
+        loadCustomAttributes: () => {
+            if (behaviour.customAttributesFail) return throwError(() => new Error('Service Unavailable'));
+            const reply = behaviour.customAttributesGate ?? of(undefined);
+            return reply.pipe(
+                take(1),
+                map(() => [SECRET_CUSTOM_ATTRIBUTE]),
+            );
+        },
+        loadSecretAttributes: () => {
+            if (behaviour.attributesFail) return throwError(() => new Error('Service Unavailable'));
+            return behaviour.attributesLoading ? NEVER : of(behaviour.vaultAttributes ?? []);
         },
     };
 }

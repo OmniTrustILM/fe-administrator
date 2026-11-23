@@ -11,12 +11,14 @@ import {
     isDataAttributeModel,
 } from 'types/attributes';
 import { AttributeContentType } from 'types/openapi';
+import { findAddNewAttribute } from '../../../../utils/attributes/secretPicker';
 import { actions as userInterfaceActions, selectors as userInterfaceSelectors } from '../../../../ducks/user-interface';
 import { type AttributeSelectOption, getAttributeContent } from '../../../../utils/attributes/attributes';
 import { AttributeInfo } from './AttributeInfo';
 import { AttributeFieldSelect } from './AttributeFieldSelect';
 import { AttributeFieldFile } from './AttributeFieldFile';
 import { AttributeFieldInput } from './AttributeFieldInput';
+import { useCreatedOptions } from './useCreatedOptions';
 
 type Props = {
     name: string;
@@ -37,20 +39,30 @@ export function Attribute({
 }: Readonly<Props>): React.ReactNode {
     const { setValue } = useFormContext();
     const [addNewAttributeValue, setAddNewAttributeValue] = useState<AddNewAttributeType | undefined>();
+    const [isAddingNew, setIsAddingNew] = useState(false);
     const attributeCallbackValue = useSelector(userInterfaceSelectors.selectAttributeCallbackValue);
     const initiateAttributeCallback = useSelector(userInterfaceSelectors.selectInitiateAttributeCallback);
     const dispatch = useDispatch();
+    const { options: pickerOptions, select: selectCreated } = useCreatedOptions(
+        name,
+        !!descriptor && isDataAttributeModel(descriptor) && descriptor.properties.multiSelect,
+        options,
+    );
 
     useEffect(() => {
         if (descriptor?.name) {
-            const addNew = AddNewAttributeList.find((a) => a.contentType === descriptor.contentType);
-            setAddNewAttributeValue(addNew);
+            setAddNewAttributeValue(findAddNewAttribute(descriptor, AddNewAttributeList));
         }
     }, [descriptor]);
 
     /* c8 ignore start */
     const handleAddNew = useCallback(() => {
         if (!addNewAttributeValue) return;
+        // The picker may sit in a form shown in the global modal, which only a dialog of its own leaves in place.
+        if (typeof addNewAttributeValue.content === 'function') {
+            setIsAddingNew(true);
+            return;
+        }
         dispatch(
             userInterfaceActions.showGlobalModal({
                 content: addNewAttributeValue.content,
@@ -60,6 +72,8 @@ export function Attribute({
             }),
         );
     }, [dispatch, addNewAttributeValue]);
+
+    const closeAddNew = useCallback(() => setIsAddingNew(false), []);
 
     const onUserInteraction = useCallback(() => {
         if (userInteractionRef) {
@@ -122,31 +136,29 @@ export function Attribute({
         (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => {
             const selected: unknown[] = Array.isArray(newValue) ? newValue : [];
             const toRawValue = (v: unknown) => (v && typeof v === 'object' && 'value' in v ? (v as { value: unknown }).value : v);
-            if (selected.some((v) => toRawValue(v) === '__add_new__')) {
-                handleAddNew();
-                const filteredValue = selected.filter((v) => toRawValue(v) !== '__add_new__').map(toRawValue);
-                fieldOnChange(filteredValue.length > 0 ? filteredValue : undefined);
-                return;
-            }
             const rawValues = selected.map(toRawValue);
             fieldOnChange(rawValues.length > 0 ? rawValues : undefined);
             onUserInteraction();
         },
-        [handleAddNew, onUserInteraction],
+        [onUserInteraction],
     );
 
     const handleSelectChangeSingle = useCallback(
         (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => {
-            if (newValue === '__add_new__') {
-                handleAddNew();
-                return;
-            }
             fieldOnChange(newValue);
             onUserInteraction();
         },
-        [handleAddNew, onUserInteraction],
+        [onUserInteraction],
     );
     /* c8 ignore stop */
+
+    const selectCreatedResource = useCallback(
+        (option: AttributeSelectOption) => {
+            onUserInteraction();
+            selectCreated(option);
+        },
+        [onUserInteraction, selectCreated],
+    );
 
     if (!descriptor) return <></>;
 
@@ -154,17 +166,24 @@ export function Attribute({
         const shouldRenderSelect = descriptor.properties.list || descriptor.contentType === AttributeContentType.Resource;
 
         if (shouldRenderSelect) {
+            const addNewContent = addNewAttributeValue?.content;
             return (
-                <AttributeFieldSelect
-                    name={name}
-                    descriptor={descriptor}
-                    options={options}
-                    busy={busy}
-                    deleteButton={deleteButton}
-                    addNewAttributeValue={addNewAttributeValue ? { label: '+ Create new', value: '__add_new__' } : undefined}
-                    onSelectChangeMulti={handleSelectChangeMulti}
-                    onSelectChangeSingle={handleSelectChangeSingle}
-                />
+                <>
+                    <AttributeFieldSelect
+                        name={name}
+                        descriptor={descriptor}
+                        options={pickerOptions}
+                        busy={busy}
+                        deleteButton={deleteButton}
+                        createNewAction={addNewAttributeValue ? { label: '+ Create new', onClick: handleAddNew } : undefined}
+                        onSelectChangeMulti={handleSelectChangeMulti}
+                        onSelectChangeSingle={handleSelectChangeSingle}
+                    />
+                    {isAddingNew &&
+                        typeof addNewContent === 'function' &&
+                        isDataAttributeModel(descriptor) &&
+                        addNewContent(descriptor, selectCreatedResource, closeAddNew)}
+                </>
             );
         }
         if (descriptor.contentType === AttributeContentType.File) {

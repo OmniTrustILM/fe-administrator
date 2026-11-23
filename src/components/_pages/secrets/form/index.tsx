@@ -16,7 +16,7 @@ import { actions as secretsActions, selectors as secretsSelectors } from 'ducks/
 import { actions as vaultProfileActions, selectors as vaultProfileSelectors } from 'ducks/vault-profiles';
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from 'ducks/customAttributes';
 
-import { useCallback, useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 
@@ -29,11 +29,18 @@ import {
     type SecretRequestDto,
     SecretType,
 } from 'types/openapi';
+import type { AttributeDescriptorModel, CustomAttributeModel } from 'types/attributes';
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { selectors as enumSelectors, getEnumDescription, getEnumLabel } from 'ducks/enums';
 import { validateAlphaNumericWithSpecialChars, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
+import { generatePrivateKeyPem, KEY_ALGORITHMS, type KeyAlgorithm, toPrivateKeySecretContent } from 'utils/privateKeyGeneration';
+import { actions as alertActions } from 'ducks/alerts';
+import {
+    loadSecretAttributes as loadVaultSecretAttributes,
+    type SecretAttributesLoader,
+} from 'components/_pages/secrets/secretCreationApi';
 
 interface SelectOption {
     value: string;
@@ -45,12 +52,33 @@ type SecretFormProps = Readonly<{
     onCancel?: () => void;
     onSuccess?: () => void;
     initialSecret?: SecretDetailDto;
-    // A new Generic secret whose content was decided elsewhere: both are shown, neither can be edited.
-    preset?: Readonly<{ type: SecretType.Generic; content: string }>;
+    // A new secret of a type decided elsewhere; the type is fixed unless several allowedTypes are given.
+    // With a content the secret holds it and neither can be edited.
+    preset?: Readonly<{ type: SecretType; content?: string; allowedTypes?: SecretType[] }>;
     // Takes over creating, so the content goes out with the request only and never through the store.
     onCreate?: (request: CreateSecretRequest) => void;
     createInProgress?: boolean;
+    // When given, the custom attribute descriptors come from here, leaving the store's shared ones to the page.
+    customAttributeDescriptors?: CustomAttributeModel[];
+    // Holds Create back while the descriptors given above are still being loaded.
+    customAttributesLoading?: boolean;
+    // With onCreate, the vault profile's attributes are loaded through this, leaving the store's shared ones to the page.
+    loadSecretAttributes?: SecretAttributesLoader;
 }>;
+
+type SecretAttributeQuery = Readonly<{ vaultUuid: string; vaultProfileUuid: string; secretType: SecretType }>;
+
+type LocalSecretAttributes = Readonly<{ descriptors: AttributeDescriptorModel[]; loading: boolean; failed?: boolean }>;
+
+const NO_SECRET_ATTRIBUTES: LocalSecretAttributes = { descriptors: [], loading: false };
+
+const SECRET_EDITOR_IDS = { attributes: 'secret', customAttributes: 'customSecret' } as const;
+const NEW_SECRET_EDITOR_IDS = { attributes: 'newSecret', customAttributes: 'newCustomSecret' } as const;
+
+function keyGenerationStatus(generating: boolean, generatedKeyLabel: string | undefined): string {
+    if (generating) return 'Generating key...';
+    return generatedKeyLabel ? `Generated ${generatedKeyLabel} key` : '';
+}
 
 interface FormValues {
     name: string;
@@ -68,7 +96,17 @@ interface FormValues {
     keyValueContent?: string;
 }
 
-export default function SecretForm({ onCancel, onSuccess, initialSecret, preset, onCreate, createInProgress }: SecretFormProps) {
+export default function SecretForm({
+    onCancel,
+    onSuccess,
+    initialSecret,
+    preset,
+    onCreate,
+    createInProgress,
+    customAttributeDescriptors,
+    customAttributesLoading = false,
+    loadSecretAttributes = loadVaultSecretAttributes,
+}: SecretFormProps) {
     const dispatch = useDispatch();
 
     const users = useSelector(userSelectors.users);
@@ -80,9 +118,16 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
     const updateSecretSucceeded = useSelector(secretsSelectors.updateSecretSucceeded);
     const secret = useSelector(secretsSelectors.secret);
     const vaultProfiles = useSelector(vaultProfileSelectors.vaultProfiles);
-    const secretCreationAttributeDescriptors = useSelector(secretsSelectors.secretCreationAttributeDescriptors);
-    const isFetchingSecretCreationAttributes = useSelector(secretsSelectors.isFetchingSecretCreationAttributes);
-    const resourceCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
+    const storeSecretAttributeDescriptors = useSelector(secretsSelectors.secretCreationAttributeDescriptors);
+    const isFetchingStoreSecretAttributes = useSelector(secretsSelectors.isFetchingSecretCreationAttributes);
+    const createsDirectly = !!onCreate;
+    // Distinct editor ids keep this form's attribute callbacks apart from a secret form it is opened from.
+    const editorIds = createsDirectly ? NEW_SECRET_EDITOR_IDS : SECRET_EDITOR_IDS;
+    const [localSecretAttributes, setLocalSecretAttributes] = useState<LocalSecretAttributes>(NO_SECRET_ATTRIBUTES);
+    const secretCreationAttributeDescriptors = createsDirectly ? localSecretAttributes.descriptors : storeSecretAttributeDescriptors;
+    const isFetchingSecretCreationAttributes = createsDirectly ? localSecretAttributes.loading : isFetchingStoreSecretAttributes;
+    const storeCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
+    const resourceCustomAttributes = customAttributeDescriptors ?? storeCustomAttributes;
 
     const secretTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.SecretType));
 
@@ -95,9 +140,10 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
         dispatch(vaultProfileActions.listVaultProfiles());
     }, [dispatch]);
 
+    const usesStoreCustomAttributes = !customAttributeDescriptors;
     useEffect(() => {
-        dispatch(customAttributesActions.listResourceCustomAttributes(Resource.Secrets));
-    }, [dispatch]);
+        if (usesStoreCustomAttributes) dispatch(customAttributesActions.listResourceCustomAttributes(Resource.Secrets));
+    }, [dispatch, usesStoreCustomAttributes]);
 
     const optionsForUsers = useMemo(
         () =>
@@ -128,6 +174,8 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
         [vaultProfiles],
     );
 
+    const allowedTypes = preset?.allowedTypes && preset.allowedTypes.length > 1 ? preset.allowedTypes : undefined;
+
     const optionsForTypes = useMemo(() => {
         const options: SelectOption[] = [];
         for (const key in SecretType) {
@@ -138,8 +186,8 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
                 description: getEnumDescription(secretTypeEnum, value),
             });
         }
-        return options;
-    }, [secretTypeEnum]);
+        return allowedTypes ? options.filter((option) => allowedTypes.includes(option.value as SecretType)) : options;
+    }, [secretTypeEnum, allowedTypes]);
 
     const defaultValues: FormValues = useMemo(
         () =>
@@ -204,21 +252,75 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
 
     const watchedType = useWatch({ control, name: 'type', defaultValue: defaultValues.type });
     const watchedSourceVaultProfile = useWatch({ control, name: 'sourceVaultProfile' });
-    const fixedType = initialSecret?.type ?? preset?.type;
+    const fixedType = initialSecret?.type ?? (allowedTypes ? undefined : preset?.type);
+    const [keyAlgorithm, setKeyAlgorithm] = useState<KeyAlgorithm>(KEY_ALGORITHMS[0].value);
+    const [generatedKeyLabel, setGeneratedKeyLabel] = useState<string>();
+    const [generating, setGenerating] = useState(false);
+    // Only the latest generation may fill the content; leaving Private Key also outdates a pending one.
+    const generation = useRef(0);
+
+    const generateKey = async () => {
+        generation.current += 1;
+        const current = generation.current;
+        setGenerating(true);
+        try {
+            const content = toPrivateKeySecretContent(await generatePrivateKeyPem(keyAlgorithm));
+            if (current !== generation.current) return;
+            setValue('content', content, { shouldDirty: true, shouldValidate: true });
+            setGeneratedKeyLabel(KEY_ALGORITHMS.find((algorithm) => algorithm.value === keyAlgorithm)?.label);
+        } catch {
+            if (current === generation.current) dispatch(alertActions.error('Failed to generate key'));
+        } finally {
+            if (current === generation.current) setGenerating(false);
+        }
+    };
+
+    // A generated key is not shown, so it must not surface in another type's field or come back as pasted content.
+    const changeType = (type: string, onChange: (value: string) => void) => {
+        if (type !== SecretType.PrivateKey) {
+            generation.current += 1;
+            setGenerating(false);
+            if (generatedKeyLabel) {
+                setValue('content', '', { shouldDirty: true });
+                setGeneratedKeyLabel(undefined);
+            }
+        }
+        onChange(type);
+    };
+
+    const discardGeneratedKey = () => {
+        setValue('content', '', { shouldDirty: true, shouldValidate: true });
+        setGeneratedKeyLabel(undefined);
+    };
+
+    const vaultUuid = vaultProfiles.find((p) => p.uuid === watchedSourceVaultProfile)?.vaultInstance?.uuid;
+    const [attributeQuery, setAttributeQuery] = useState<SecretAttributeQuery>();
+    useEffect(() => {
+        if (!vaultUuid || !watchedSourceVaultProfile || !watchedType) return;
+        const secretType = watchedType as SecretType;
+        setAttributeQuery((prev) =>
+            prev?.vaultUuid === vaultUuid && prev.vaultProfileUuid === watchedSourceVaultProfile && prev.secretType === secretType
+                ? prev
+                : { vaultUuid, vaultProfileUuid: watchedSourceVaultProfile, secretType },
+        );
+    }, [vaultUuid, watchedSourceVaultProfile, watchedType]);
 
     useEffect(() => {
-        if (!watchedSourceVaultProfile || !watchedType) return;
-        const profile = vaultProfiles.find((p) => p.uuid === watchedSourceVaultProfile);
-        const vaultUuid = profile?.vaultInstance?.uuid;
-        if (!vaultUuid) return;
-        dispatch(
-            secretsActions.listSecretAttributes({
-                vaultUuid,
-                vaultProfileUuid: watchedSourceVaultProfile,
-                secretType: watchedType as SecretType,
-            }),
-        );
-    }, [dispatch, vaultProfiles, watchedSourceVaultProfile, watchedType]);
+        if (!attributeQuery) return;
+        if (!createsDirectly) {
+            dispatch(secretsActions.listSecretAttributes(attributeQuery));
+            return;
+        }
+        setLocalSecretAttributes({ descriptors: [], loading: true });
+        const loading = loadSecretAttributes(attributeQuery).subscribe({
+            next: (descriptors) => setLocalSecretAttributes({ descriptors, loading: false }),
+            error: () => {
+                setLocalSecretAttributes({ descriptors: [], loading: false, failed: true });
+                dispatch(alertActions.error("Failed to load the vault profile's secret attributes"));
+            },
+        });
+        return () => loading.unsubscribe();
+    }, [dispatch, attributeQuery, createsDirectly, loadSecretAttributes]);
 
     const buildSecretContent = useCallback((values: FormValues): import('types/openapi').SecretContent => {
         const type = values.type as SecretType;
@@ -293,8 +395,8 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
 
             const secretContent = buildSecretContent(values);
             const allValues = getValues();
-            const attributes = collectFormAttributes('secret', secretCreationAttributeDescriptors, allValues);
-            const customAttributes = collectFormAttributes('customSecret', resourceCustomAttributes, allValues);
+            const attributes = collectFormAttributes(editorIds.attributes, secretCreationAttributeDescriptors, allValues);
+            const customAttributes = collectFormAttributes(editorIds.customAttributes, resourceCustomAttributes, allValues);
 
             if (initialSecret) {
                 // Edit mode
@@ -341,6 +443,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
         [
             buildSecretContent,
             dispatch,
+            editorIds,
             getValues,
             initialSecret,
             onCreate,
@@ -454,7 +557,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
                                                 placeholder="Select"
                                                 options={optionsForTypes}
                                                 value={field.value || ''}
-                                                onChange={field.onChange}
+                                                onChange={(value) => changeType(value as string, field.onChange)}
                                                 error={getFieldErrorMessage(fieldState)}
                                                 showOptionDescriptionInDropdown
                                                 showSelectedDescriptionAsHelp
@@ -576,7 +679,30 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
                                         </div>
                                     </>
                                 )}
-                                {watchedType === SecretType.PrivateKey && (
+                                {watchedType === SecretType.PrivateKey && onCreate && !initialSecret && (
+                                    <div className="flex items-end gap-2">
+                                        <Select
+                                            id="secret-key-algorithm"
+                                            label="Key algorithm"
+                                            options={KEY_ALGORITHMS.map(({ value, label }) => ({ value, label }))}
+                                            value={keyAlgorithm}
+                                            onChange={(value) => setKeyAlgorithm(value as KeyAlgorithm)}
+                                            isDisabled={generating}
+                                        />
+                                        <Button variant="outline" type="button" onClick={generateKey} disabled={generating}>
+                                            Generate key
+                                        </Button>
+                                        <output data-testid="secret-generated-key" className="self-center text-sm text-content">
+                                            {keyGenerationStatus(generating, generatedKeyLabel)}
+                                        </output>
+                                        {generatedKeyLabel && (
+                                            <Button variant="outline" type="button" onClick={discardGeneratedKey} disabled={generating}>
+                                                Discard
+                                            </Button>
+                                        )}
+                                    </div>
+                                )}
+                                {watchedType === SecretType.PrivateKey && !generatedKeyLabel && (
                                     <>
                                         <Controller
                                             name="content"
@@ -749,7 +875,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
                                                 onChange={field.onChange}
                                                 onBlur={field.onBlur}
                                                 error={getFieldErrorMessage(fieldState)}
-                                                disabled={!!preset}
+                                                disabled={!!preset?.content}
                                                 required={!initialSecret}
                                             />
                                         )}
@@ -806,7 +932,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
                                             <div className="text-sm text-content-subtle">Loading attributes...</div>
                                         ) : (
                                             <AttributeEditor
-                                                id="secret"
+                                                id={editorIds.attributes}
                                                 attributeDescriptors={secretCreationAttributeDescriptors}
                                                 attributes={initialSecret?.attributes}
                                             />
@@ -816,7 +942,7 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
                                         title: 'Custom Attributes',
                                         content: (
                                             <AttributeEditor
-                                                id="customSecret"
+                                                id={editorIds.customAttributes}
                                                 attributeDescriptors={resourceCustomAttributes}
                                                 attributes={initialSecret?.customAttributes}
                                             />
@@ -832,7 +958,16 @@ export default function SecretForm({ onCancel, onSuccess, initialSecret, preset,
                             </Button>
                             <ProgressButton
                                 inProgress={isSubmitting || isCreating}
-                                disabled={!isDirty || !isValid || isSubmitting || isCreating || isFetchingSecretCreationAttributes}
+                                disabled={
+                                    !isDirty ||
+                                    !isValid ||
+                                    isSubmitting ||
+                                    isCreating ||
+                                    isFetchingSecretCreationAttributes ||
+                                    customAttributesLoading ||
+                                    (createsDirectly && !!localSecretAttributes.failed) ||
+                                    generating
+                                }
                                 title={submitTitle}
                                 inProgressTitle={inProgressTitle}
                                 type="submit"

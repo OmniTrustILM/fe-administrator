@@ -143,7 +143,7 @@ test.describe('AttributeFieldSelect', () => {
         await expect(page.getByTestId('select-testSelectSelect-input')).toBeAttached();
     });
 
-    test('includes add-new option when addNewAttributeValue is provided', async ({ mount, page }) => {
+    test('offers "+ Create new" below the list, not as an option', async ({ mount, page }) => {
         const descriptor = minimalDescriptor({
             properties: { ...defaultProperties, label: 'Add item' },
         } as any);
@@ -153,42 +153,17 @@ test.describe('AttributeFieldSelect', () => {
                 name="testSelect"
                 descriptor={descriptor}
                 options={options}
-                addNewAttributeValue={{ label: '+ Create new', value: '__add_new__' }}
+                createNewAction={{ label: '+ Create new', onClick: () => {} }}
             />,
         );
 
-        await expect(page.getByTestId('select-testSelectSelect')).toBeVisible();
         await page.getByTestId('select-testSelectSelect-trigger').click();
         await expect(page.getByRole('option', { name: 'Option A' })).toBeVisible();
-        await expect(page.getByRole('option', { name: '+ Create new' })).toBeVisible();
+        await expect(page.getByRole('option', { name: '+ Create new' })).toHaveCount(0);
+        await expect(page.getByRole('button', { name: '+ Create new' })).toBeVisible();
     });
 
-    test('selecting __add_new__ when field is empty resets Select to placeholder', async ({ mount, page }) => {
-        const descriptor = minimalDescriptor({
-            properties: { ...defaultProperties, label: 'Credential' },
-        } as any);
-        const options = [{ label: 'Credential A', value: 'cred-a' }];
-
-        await mount(
-            <AttributeFieldSelectTestWrapper
-                name="testSelect"
-                descriptor={descriptor}
-                options={options}
-                addNewAttributeValue={{ label: '+ Create new', value: '__add_new__' }}
-            />,
-        );
-
-        const select = page.getByTestId('select-testSelectSelect-input');
-
-        await select.evaluate((el: HTMLSelectElement) => {
-            el.value = '__add_new__';
-            el.dispatchEvent(new Event('change', { bubbles: true }));
-        });
-
-        await expect(select).toHaveValue('');
-    });
-
-    test('selecting __add_new__ when field has a value preserves the previous selection', async ({ mount, page }) => {
+    test('"+ Create new" on a single select runs the action and keeps the previous selection', async ({ mount, page }) => {
         const descriptor = minimalDescriptor({
             properties: { ...defaultProperties, label: 'Credential' },
         } as any);
@@ -196,29 +171,28 @@ test.describe('AttributeFieldSelect', () => {
             { label: 'Credential A', value: 'cred-a' },
             { label: 'Credential B', value: 'cred-b' },
         ];
+        let created = 0;
 
         await mount(
             <AttributeFieldSelectTestWrapper
                 name="testSelect"
                 descriptor={descriptor}
                 options={options}
-                addNewAttributeValue={{ label: '+ Create new', value: '__add_new__' }}
+                createNewAction={{ label: '+ Create new', onClick: () => created++ }}
                 defaultValues={{ testSelect: 'cred-a' }}
             />,
         );
 
         const select = page.getByTestId('select-testSelectSelect-input');
-        await expect(select).toHaveValue('cred-a');
+        await page.getByTestId('select-testSelectSelect-trigger').click();
+        await page.getByRole('button', { name: '+ Create new' }).click();
 
-        await select.evaluate((el: HTMLSelectElement) => {
-            el.value = '__add_new__';
-            el.dispatchEvent(new Event('change', { bubbles: true }));
-        });
-
+        await expect.poll(() => created).toBe(1);
+        await expect(page.getByRole('listbox')).toHaveCount(0);
         await expect(select).toHaveValue('cred-a');
     });
 
-    test('onSelectChangeMulti: selecting __add_new__ with other items removes __add_new__ and keeps others', async ({ mount, page }) => {
+    test('"+ Create new" on a multi select runs the action and keeps the selected items', async ({ mount, page }) => {
         const descriptor = minimalDescriptor({
             properties: { ...defaultProperties, multiSelect: true, label: 'Multi Credential' },
         } as any);
@@ -226,52 +200,23 @@ test.describe('AttributeFieldSelect', () => {
             { label: 'Option A', value: 'a' },
             { label: 'Option B', value: 'b' },
         ];
+        let created = 0;
 
         await mount(
             <AttributeFieldSelectTestWrapper
                 name="testSelect"
                 descriptor={descriptor}
                 options={options}
-                addNewAttributeValue={{ label: '+ Create new', value: '__add_new__' }}
+                createNewAction={{ label: '+ Create new', onClick: () => created++ }}
             />,
         );
 
         await page.getByTestId('select-testSelectSelect-trigger').click();
         await page.getByRole('option', { name: 'Option A' }).click();
-        await page.getByRole('option', { name: '+ Create new' }).click();
+        await page.getByRole('button', { name: '+ Create new' }).click();
 
-        // __add_new__ should be stripped; only 'a' remains
-        const select = page.getByTestId('select-testSelectSelect-input');
-        await expect(select).toHaveValues(['a']);
-    });
-
-    test('onSelectChangeMulti: selecting only __add_new__ does not add it to the field', async ({ mount, page }) => {
-        const descriptor = minimalDescriptor({
-            properties: { ...defaultProperties, multiSelect: true, label: 'Multi Credential' },
-        } as any);
-        const options = [{ label: 'Option A', value: 'a' }];
-
-        await mount(
-            <AttributeFieldSelectTestWrapper
-                name="testSelect"
-                descriptor={descriptor}
-                options={options}
-                addNewAttributeValue={{ label: '+ Create new', value: '__add_new__' }}
-            />,
-        );
-
-        const clearBtn = page.getByTestId('select-testSelectSelect-clear');
-        await expect(clearBtn).toHaveCount(0);
-
-        const select = page.getByTestId('select-testSelectSelect-input');
-        await select.evaluate((el: HTMLSelectElement) => {
-            Array.from(el.options).forEach((opt) => {
-                opt.selected = opt.value === '__add_new__';
-            });
-            el.dispatchEvent(new Event('change', { bubbles: true }));
-        });
-
-        await expect(clearBtn).toHaveCount(0);
+        await expect.poll(() => created).toBe(1);
+        await expect(page.getByTestId('select-testSelectSelect-input')).toHaveValues(['a']);
     });
 
     test('onSelectChangeMulti: selecting regular options updates the field', async ({ mount, page }) => {
@@ -576,14 +521,14 @@ test.describe('AttributeFieldSelect', () => {
                     name="testSelect"
                     descriptor={requiredList()}
                     options={requiredOptions}
-                    addNewAttributeValue={{ label: '+ Create new', value: '__add_new__' }}
+                    createNewAction={{ label: '+ Create new', onClick: () => {} }}
                     mode="onChange"
                     validateOnMount
                 />,
             );
 
             await page.getByTestId('select-testSelectSelect-trigger').click();
-            await page.getByRole('option', { name: '+ Create new' }).click();
+            await page.getByRole('button', { name: '+ Create new' }).click();
 
             await expect(page.getByText('Required Field')).toBeVisible();
         });
