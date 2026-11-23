@@ -747,10 +747,7 @@ test.describe('AttributeEditor NG group callbacks', () => {
             page,
         }) => {
             // given
-            const dnsGroupCallbackId = `__attributes__${editorId}__.dnsGroup`;
-            const answers = nestedGroupAnswers();
-            if (parentAlsoInjectsField)
-                answers[dnsGroupCallbackId] = [...answers[dnsGroupCallbackId], injectedFieldDescriptor('dnsZone', 'DNS Zone')];
+            const answers = parentAlsoInjectsField ? nestedGroupAnswersWithZoneFromBoth() : nestedGroupAnswers();
             await mountWithDnsGroupAnswers(
                 mount,
                 { ...answers, [`__attributes__${editorId}__.sharedGroup`]: [groupDescriptor('dnsNestedGroup')] },
@@ -759,7 +756,7 @@ test.describe('AttributeEditor NG group callbacks', () => {
                 answerWithoutNestedGroup(),
             );
             await answerGroupAndNestedGroupCallbacks(page);
-            const dnsZoneInput = page.getByTestId('text-input-__attributes__testEditor__.dnsZone').first();
+            const dnsZoneInput = page.getByTestId('text-input-__attributes__testEditor__.dnsZone');
             const enteredDnsZone = 'example.com';
             await dnsZoneInput.click(); // TextInput stays read-only until focused, which keeps autofill out
             await dnsZoneInput.fill(enteredDnsZone);
@@ -882,6 +879,166 @@ test.describe('AttributeEditor NG group callbacks', () => {
         await expect(dnsZoneInput).toHaveCount(0, { timeout: 10000 });
     });
 
+    test('shows a field that two groups inject once', async ({ mount, page }) => {
+        // given
+        await mountWithDnsGroupAnswers(mount, nestedGroupAnswersWithZoneFromBoth());
+
+        // when
+        await answerGroupAndNestedGroupCallbacks(page);
+
+        // then
+        await expect(page.getByTestId('text-input-__attributes__testEditor__.dnsZone')).toHaveCount(1);
+    });
+
+    test('offers the options of the first group that injects a field', async ({ mount, page }) => {
+        // given
+        await mountWithZoneFromBothGroups(mount, page, zoneListCopy('zone-a', 'zone-a.example'), zoneListCopy('zone-b', 'zone-b.example'));
+
+        // when
+        await page.getByTestId('select-__attributes__testEditor__.dnsZoneSelect-trigger').click();
+
+        // then
+        await expect(page.getByRole('option', { name: 'zone-a.example' })).toBeVisible();
+        await expect(page.getByRole('option', { name: 'zone-b.example' })).toHaveCount(0);
+    });
+
+    test('offers no options of the first group that injects a field once that group is dropped', async ({ mount, page }) => {
+        // given
+        const zoneSelectTrigger = page.getByTestId('select-__attributes__testEditor__.dnsZoneSelect-trigger');
+        await mountWithZoneFromBothGroups(mount, page, zoneListCopy('zone-a', 'zone-a.example'), zoneListCopy('zone-b'));
+        await expect(zoneSelectTrigger).toBeEnabled();
+
+        // when
+        await page.getByTestId('select-__attributes__testEditor__.challengeTypeSelect-clear').click();
+
+        // then — the remaining group offers no zone to pick
+        await expect(zoneSelectTrigger).toBeDisabled({ timeout: 10000 });
+    });
+
+    test('validates a field against the remaining group once the first group that injects it is dropped', async ({ mount, page }) => {
+        // given
+        const optionalZone = dataDescriptor({
+            name: 'dnsZone',
+            uuid: 'zone-a',
+            properties: { ...dataDescriptor().properties, label: 'DNS Zone', required: false },
+        });
+        const requiredZone = dataDescriptor({
+            name: 'dnsZone',
+            uuid: 'zone-b',
+            properties: { ...dataDescriptor().properties, label: 'DNS Zone', required: true },
+        });
+        await mountWithZoneFromBothGroups(mount, page, optionalZone, requiredZone, true);
+        await expect(page.getByTestId('form-valid')).toHaveText('true');
+
+        // when
+        await page.getByTestId('select-__attributes__testEditor__.challengeTypeSelect-clear').click();
+
+        // then
+        await expect(page.getByTestId('form-valid')).toHaveText('false', { timeout: 10000 });
+    });
+
+    test('fires the initial callback of the first group copy again once it takes over from another copy anew', async ({ mount, page }) => {
+        // given
+        const answer = (callbackName: string) => page.getByTestId(`answer-callback-__attributes__${editorId}__.${callbackName}`).click();
+        await mountWithDnsGroupAnswers(
+            mount,
+            {
+                [`__attributes__${editorId}__.dnsGroup`]: [groupDescriptor('dnsNestedGroup'), zoneGroupCopy('zone-group-x', [])],
+                [`__attributes__${editorId}__.dnsNestedGroup`]: [zoneGroupCopy('zone-group-y', [])],
+                [`__attributes__${editorId}__.sharedGroup`]: [groupDescriptor('dnsNestedGroup')],
+                [`__attributes__${editorId}__.zoneGroup`]: [injectedFieldDescriptor('dnsZone', 'DNS Zone')],
+            },
+            [groupDescriptor('sharedGroup')],
+        );
+        await answerGroupAndNestedGroupCallbacks(page);
+        await answer('zoneGroup');
+        await expect(page.getByTestId('spinner')).toHaveCount(0, { timeout: 10000 });
+        await page.getByTestId('select-__attributes__testEditor__.challengeTypeSelect-clear').click();
+        await expect(page.getByTestId('spinner')).toBeVisible({ timeout: 10000 });
+        await answer('zoneGroup');
+        await expect(page.getByTestId('spinner')).toHaveCount(0, { timeout: 10000 });
+
+        // when
+        await page.getByTestId('select-__attributes__testEditor__.challengeTypeSelect-trigger').click();
+        await page.getByRole('option', { name: 'dns-01' }).click();
+        await page.waitForTimeout(CALLBACK_DEBOUNCE_MS * 2); // NOSONAR(S2925)
+        await answer('dnsGroup');
+
+        // then — the first copy's callback is in flight again, as nothing answers it
+        await page.waitForTimeout(CALLBACK_DEBOUNCE_MS * 2); // NOSONAR(S2925)
+        await expect(page.getByTestId('spinner')).toBeVisible();
+    });
+
+    test("keeps the options of the form's own field that a group injects under the same name", async ({ mount, page }) => {
+        // given
+        const injectedChallengeType = dataDescriptor({
+            name: 'challengeType',
+            uuid: 'injected-challenge-type-uuid',
+            properties: { ...dataDescriptor().properties, label: 'Challenge Type', required: false, list: true },
+            content: [{ data: 'tls-alpn-01' }] as any,
+        });
+        await mountWithDnsGroupAnswers(mount, { [`__attributes__${editorId}__.dnsGroup`]: [injectedChallengeType] });
+        await answerGroupCallback(page);
+        await expect(page.getByTestId('spinner')).toHaveCount(0, { timeout: 10000 });
+
+        // when
+        await page.getByTestId('select-__attributes__testEditor__.challengeTypeSelect-trigger').click();
+
+        // then
+        await expect(page.getByRole('option', { name: 'http-01' })).toBeVisible();
+        await expect(page.getByRole('option', { name: 'tls-alpn-01' })).toHaveCount(0);
+    });
+
+    test('drops what the first copy of a group injected once a copy without a callback takes over', async ({ mount, page }) => {
+        // given
+        await mountWithDnsGroupAnswers(
+            mount,
+            {
+                [`__attributes__${editorId}__.dnsGroup`]: [groupDescriptor('dnsNestedGroup'), zoneGroupCopy('zone-group-x', [])],
+                [`__attributes__${editorId}__.dnsNestedGroup`]: [zoneGroupCopy('zone-group-y')],
+                [`__attributes__${editorId}__.sharedGroup`]: [groupDescriptor('dnsNestedGroup')],
+                [`__attributes__${editorId}__.zoneGroup`]: [injectedFieldDescriptor('dnsZone', 'DNS Zone')],
+            },
+            [groupDescriptor('sharedGroup')],
+        );
+        await answerGroupAndNestedGroupCallbacks(page);
+        const dnsZoneInput = page.getByTestId('text-input-__attributes__testEditor__.dnsZone');
+        await expect(dnsZoneInput).toBeVisible({ timeout: 10000 });
+
+        // when
+        await page.getByTestId('select-__attributes__testEditor__.challengeTypeSelect-clear').click();
+
+        // then
+        await expect(dnsZoneInput).toHaveCount(0, { timeout: 10000 });
+    });
+
+    test('fires no callback of a group the first copy injected once a copy without a callback takes over', async ({ mount, page }) => {
+        // given
+        await mountWithDnsGroupAnswers(
+            mount,
+            {
+                [`__attributes__${editorId}__.dnsGroup`]: [groupDescriptor('dnsNestedGroup'), zoneGroupCopy('zone-group-x', [])],
+                [`__attributes__${editorId}__.dnsNestedGroup`]: [zoneGroupCopy('zone-group-y')],
+                [`__attributes__${editorId}__.sharedGroup`]: [groupDescriptor('dnsNestedGroup')],
+                [`__attributes__${editorId}__.zoneGroup`]: [groupDescriptor('zoneChildGroup', [])],
+                [`__attributes__${editorId}__.zoneChildGroup`]: [injectedFieldDescriptor('dnsZone', 'DNS Zone')],
+            },
+            [groupDescriptor('sharedGroup')],
+        );
+        await answerGroupAndNestedGroupCallbacks(page);
+        await page.waitForTimeout(CALLBACK_DEBOUNCE_MS * 2); // NOSONAR(S2925) — the injected child group fires on mount
+        await page.getByTestId('answer-callbacks').click();
+        await expect(page.getByTestId('spinner')).toHaveCount(0, { timeout: 10000 });
+        await expect(page.getByTestId('text-input-__attributes__testEditor__.dnsZone')).toBeVisible({ timeout: 10000 });
+
+        // when
+        await page.getByTestId('select-__attributes__testEditor__.challengeTypeSelect-clear').click();
+
+        // then — a callback in flight would show the spinner
+        await page.waitForTimeout(CALLBACK_DEBOUNCE_MS * 2); // NOSONAR(S2925)
+        await expect(page.getByTestId('spinner')).toHaveCount(0);
+    });
+
     test('fires the initial callback of a dropped child group again once its parent injects it anew', async ({ mount, page }) => {
         // given
         const firesOnMountOnly: string[] = [];
@@ -961,6 +1118,40 @@ test.describe('AttributeEditor NG group callbacks', () => {
         ],
         [`__attributes__${editorId}__.dnsNestedGroup`]: [injectedFieldDescriptor('dnsZone', 'DNS Zone')],
     });
+
+    const nestedGroupAnswersWithZoneFromBoth = () => {
+        const answers = nestedGroupAnswers();
+        const dnsGroupCallbackId = `__attributes__${editorId}__.dnsGroup`;
+        answers[dnsGroupCallbackId] = [...answers[dnsGroupCallbackId], injectedFieldDescriptor('dnsZone', 'DNS Zone')];
+        return answers;
+    };
+
+    const zoneGroupCopy = (uuid: string, dependsOn?: string[]) =>
+        ({ ...groupDescriptor('zoneGroup', dependsOn), uuid }) as GroupAttributeModel;
+
+    const zoneListCopy = (uuid: string, ...offeredZones: string[]): DataAttributeModel =>
+        dataDescriptor({
+            name: 'dnsZone',
+            uuid,
+            properties: { ...dataDescriptor().properties, label: 'DNS Zone', required: false, list: true },
+            ...(offeredZones.length > 0 ? { content: offeredZones.map((zone) => ({ data: zone })) as any } : {}),
+        });
+
+    const mountWithZoneFromBothGroups = async (
+        mount: any,
+        page: Page,
+        dnsGroupZone: DataAttributeModel,
+        nestedGroupZone: DataAttributeModel,
+        renderFormValidity = false,
+    ) => {
+        const answers = {
+            [`__attributes__${editorId}__.dnsGroup`]: [groupDescriptor('dnsNestedGroup'), dnsGroupZone],
+            [`__attributes__${editorId}__.dnsNestedGroup`]: [nestedGroupZone],
+            [`__attributes__${editorId}__.sharedGroup`]: [groupDescriptor('dnsNestedGroup')],
+        };
+        await mountWithDnsGroupAnswers(mount, answers, [groupDescriptor('sharedGroup')], renderFormValidity);
+        await answerGroupAndNestedGroupCallbacks(page);
+    };
 
     const answerWithoutNestedGroup = () => ({
         [`__attributes__${editorId}__.dnsGroup`]: [injectedFieldDescriptor('dnsServer', 'DNS Server')],
