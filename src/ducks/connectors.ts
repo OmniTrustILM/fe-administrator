@@ -138,6 +138,14 @@ export const slice = createSlice({
             state.callbackData = {};
         },
 
+        /** Drops a callback's data and supersedes a request still in flight, so its late response is discarded. */
+        clearCallbackDataFor: (state, action: PayloadAction<{ callbackId: string }>) => {
+            const { callbackId } = action.payload;
+            state.callbackData[callbackId] = undefined;
+            state.isRunningCallback[callbackId] = false;
+            state.callbackSeq[callbackId] = (state.callbackSeq[callbackId] ?? 0) + 1;
+        },
+
         listConnectors: (state, action: PayloadAction<SearchRequestModel | undefined>) => {
             state.checkedRows = [];
             state.connectors = [];

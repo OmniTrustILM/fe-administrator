@@ -2,6 +2,7 @@ import type React from 'react';
 import { useMemo, useState } from 'react';
 import * as ReactHookForm from 'react-hook-form';
 import { Provider } from 'react-redux';
+import { actions as connectorActions } from 'ducks/connectors';
 import { MemoryRouter } from 'react-router';
 import { createMockStore } from 'utils/test-helpers';
 import AttributeEditor from './index';
@@ -23,7 +24,23 @@ export type AttributeEditorTestWrapperProps = {
     /** Renders a button that hands AttributeEditor the same descriptors under a new identity, the way a
      *  parent re-render or a resolved group callback does. */
     withDescriptorRefresh?: boolean;
+    /** Keeps groupAttributesCallbackAttributes in wrapper state, the way a form page does, so the editor can
+     *  add and remove callback-injected fields. */
+    withGroupCallbackState?: boolean;
+    /** Renders buttons that answer every callbackId, or one, with a deep copy of its data, as a response off the
+     *  wire would be, standing in for the callback epic. */
+    callbackResponses?: Record<string, unknown[]>;
+    /** Renders a button that answers every callbackId with this data instead, as a later answer that differs from
+     *  the first. */
+    laterCallbackResponses?: Record<string, unknown[]>;
+    /** Validates on change, as form pages do, and renders the form's validity. */
+    renderFormValidity?: boolean;
 };
+
+function FormValidityProbe() {
+    const { isValid } = ReactHookForm.useFormState();
+    return <span data-testid="form-valid">{String(isValid)}</span>;
+}
 
 function FormValuesProbe() {
     const values = ReactHookForm.useWatch();
@@ -65,9 +82,14 @@ export function AttributeEditorTestWrapper({
     preloadedState,
     renderFormValues = false,
     withDescriptorRefresh = false,
+    withGroupCallbackState = false,
+    callbackResponses,
+    laterCallbackResponses,
+    renderFormValidity = false,
 }: Readonly<AttributeEditorTestWrapperProps>) {
     const store = useMemo(() => createMockStore(preloadedState), [preloadedState]);
     const [refreshCount, setRefreshCount] = useState(0);
+    const [groupCallbackState, setGroupCallbackState] = useState<AttributeDescriptorModel[]>(groupAttributesCallbackAttributes);
     const currentDescriptors = useMemo(
         () => (refreshCount === 0 ? attributeDescriptors : [...attributeDescriptors]),
         [attributeDescriptors, refreshCount],
@@ -76,8 +98,15 @@ export function AttributeEditorTestWrapper({
         () => ({ ...buildAttributeDefaultValues(id, attributeDescriptors, attributes) }),
         [id, attributeDescriptors, attributes],
     );
+    const answerCallbacks = (callbackIds: string[], responses = callbackResponses) => {
+        for (const callbackId of callbackIds) {
+            const data = structuredClone(responses?.[callbackId] ?? []);
+            store.dispatch(connectorActions.callbackSuccess({ callbackId, data }));
+        }
+    };
     const methods = ReactHookForm.useForm({
         defaultValues,
+        mode: renderFormValidity ? 'onChange' : undefined,
     });
     return (
         <Provider store={store}>
@@ -87,8 +116,10 @@ export function AttributeEditorTestWrapper({
                         id={id}
                         attributeDescriptors={currentDescriptors}
                         attributes={attributes}
-                        groupAttributesCallbackAttributes={groupAttributesCallbackAttributes}
-                        setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes ?? (() => {})}
+                        groupAttributesCallbackAttributes={withGroupCallbackState ? groupCallbackState : groupAttributesCallbackAttributes}
+                        setGroupAttributesCallbackAttributes={
+                            withGroupCallbackState ? setGroupCallbackState : (setGroupAttributesCallbackAttributes ?? (() => {}))
+                        }
                         connectorUuid={connectorUuid}
                         functionGroupCode={functionGroupCode}
                         kind={kind}
@@ -99,7 +130,38 @@ export function AttributeEditorTestWrapper({
                             Refresh descriptors
                         </button>
                     )}
+                    {callbackResponses && (
+                        <>
+                            <button
+                                type="button"
+                                data-testid="answer-callbacks"
+                                onClick={() => answerCallbacks(Object.keys(callbackResponses))}
+                            >
+                                Answer callbacks
+                            </button>
+                            {Object.keys(callbackResponses).map((callbackId) => (
+                                <button
+                                    key={callbackId}
+                                    type="button"
+                                    data-testid={`answer-callback-${callbackId}`}
+                                    onClick={() => answerCallbacks([callbackId])}
+                                >
+                                    Answer {callbackId}
+                                </button>
+                            ))}
+                        </>
+                    )}
+                    {laterCallbackResponses && (
+                        <button
+                            type="button"
+                            data-testid="answer-later-callbacks"
+                            onClick={() => answerCallbacks(Object.keys(laterCallbackResponses), laterCallbackResponses)}
+                        >
+                            Answer callbacks again
+                        </button>
+                    )}
                     {renderFormValues && <FormValuesProbe />}
+                    {renderFormValidity && <FormValidityProbe />}
                 </ReactHookForm.FormProvider>
             </MemoryRouter>
         </Provider>
