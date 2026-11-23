@@ -22,6 +22,7 @@ import Dialog from 'components/Dialog';
 import FilterWidget from 'components/FilterWidget';
 import ViewTabs, { isViewStripReady, ViewStripOpeningPlaceholder } from 'components/ViewTabs';
 import Widget from 'components/Widget';
+import CatalogueFailedNotice, { useRetryFailedCatalogue } from './CatalogueFailedNotice';
 import type { ReactNode, RefObject } from 'react';
 import { selectors as listViewSelectors } from 'ducks/listViews';
 import type { ViewSlice } from 'types/listViews';
@@ -442,10 +443,13 @@ function PagedList<TRow extends object>({
         onListCallback(listRequestRef.current);
     }, [onListCallback]);
 
+    const retryFailedCatalogue = useRetryFailedCatalogue(entity, getAvailableFiltersApi);
+
     const getFreshData = useCallback(() => {
+        retryFailedCatalogue();
         requestList();
         onCheckedRowsChanged([]);
-    }, [requestList, onCheckedRowsChanged]);
+    }, [retryFailedCatalogue, requestList, onCheckedRowsChanged]);
 
     const onPageSizeChanged = useCallback(
         (pageSize: number) => {
@@ -553,11 +557,6 @@ function PagedList<TRow extends object>({
         [sortableStandardColumns],
     );
 
-    const onRetryCatalogue = useMemo(
-        () => (getAvailableFiltersApi ? () => dispatch(filterActions.getAvailableFilters({ entity, getAvailableFiltersApi })) : undefined),
-        [dispatch, entity, getAvailableFiltersApi],
-    );
-
     const renderHeaderAction = useCallback(
         (header: TableHeader) => {
             // Withheld until the strip is up: the opening view replaces the columns and the ordering when
@@ -576,7 +575,6 @@ function PagedList<TRow extends object>({
                     sortable={canEditColumns && column.sortable === true}
                     canEdit={canEditColumns}
                     hasCatalogueFailed={hasCatalogueFailed}
-                    onRetryCatalogue={onRetryCatalogue}
                     onSort={(direction) => onSortChanged(header.id, direction)}
                     onMove={onMoveColumn}
                     onRename={(next) => onRenameColumn(header.id, next)}
@@ -593,7 +591,6 @@ function PagedList<TRow extends object>({
             appliedColumns,
             columnKeys,
             hasCatalogueFailed,
-            onRetryCatalogue,
             onSortChanged,
             onMoveColumn,
             onRenameColumn,
@@ -845,6 +842,7 @@ function PagedList<TRow extends object>({
                 enableBusyOverlay
                 widgetLockName={pageWidgetLockName}
                 refreshAction={getFreshData}
+                titleNotice={isColumnDriven && isCatalogueFailed && <CatalogueFailedNotice />}
                 resetViewAction={hasNonDefaultViewState ? onResetView : undefined}
                 widgetButtons={buttons}
                 titleSize="large"

@@ -13,7 +13,6 @@ import {
     EllipsisVertical,
     EyeOff,
     Pencil,
-    RefreshCw,
     RotateCcw,
 } from 'lucide-react';
 import { type ReactNode, useCallback, useEffect, useId, useState } from 'react';
@@ -83,8 +82,6 @@ type Props = Readonly<{
      * which read identically on the column itself.
      */
     hasCatalogueFailed?: boolean;
-    /** Reads the catalogue again. Offered only while the last read failed. */
-    onRetryCatalogue?: () => void;
     onSort: (direction: SortDirection) => void;
     onMove: (from: number, to: number) => void;
     /**
@@ -123,7 +120,6 @@ export default function ColumnHeaderMenu({
     sortable,
     canEdit = true,
     hasCatalogueFailed = false,
-    onRetryCatalogue,
     onSort,
     onMove,
     onRename,
@@ -221,15 +217,6 @@ export default function ColumnHeaderMenu({
                         >
                             {hasCatalogueFailed ? CATALOGUE_FAILED_REASON : NOT_SORTABLE_REASON}
                         </DropdownMenu.Label>
-                    )}
-                    {hasCatalogueFailed && onRetryCatalogue && (
-                        <MenuItem
-                            icon={<RefreshCw className={ICON_CLASS} aria-hidden="true" />}
-                            label="Retry loading fields"
-                            disabled={false}
-                            dataTestId={`${dataTestId}-retry-catalogue`}
-                            onSelect={onRetryCatalogue}
-                        />
                     )}
 
                     <DropdownMenu.Separator className="my-1 h-px bg-divider" />

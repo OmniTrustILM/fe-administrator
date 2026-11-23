@@ -407,7 +407,7 @@ test.describe('PagedList · column header menu', () => {
         );
     });
 
-    test('reads the catalogue again from the menu when the read failed', async ({ mount, page }) => {
+    test('reads the catalogue again from the refresh beside the title when the read failed', async ({ mount, page }) => {
         await mount(
             <PagedListColumnsWithStore
                 rows={rows}
@@ -423,8 +423,8 @@ test.describe('PagedList · column header menu', () => {
         await expect(trigger(page, NOT_AFTER)).toBeVisible();
         const readsBefore = Number(await page.getByTestId('catalogue-reads').textContent());
 
-        await openMenu(page, NOT_AFTER);
-        await page.getByTestId(`column-header-menu-${NOT_AFTER}-retry-catalogue`).click();
+        await expect(page.getByTestId('paged-list-catalogue-failed')).toHaveText(/Fields failed to load/);
+        await page.getByTestId('refresh-icon').click();
 
         await expect(page.getByTestId('catalogue-reads')).toHaveText(String(readsBefore + 1));
     });
@@ -446,8 +446,8 @@ test.describe('PagedList · column header menu', () => {
         await expect(trigger(page, NOT_AFTER)).toBeVisible();
         await expect(grip(page, NOT_AFTER)).toHaveCount(0);
 
+        await expect(page.getByTestId('paged-list-catalogue-failed')).toBeVisible();
         await openMenu(page, NOT_AFTER);
-        await expect(page.getByTestId(`column-header-menu-${NOT_AFTER}-retry-catalogue`)).toBeVisible();
         for (const entry of ['move-start', 'rename', 'remove']) {
             await expect(page.getByTestId(`column-header-menu-${NOT_AFTER}-${entry}`)).toHaveAttribute('aria-disabled', 'true');
         }
@@ -487,7 +487,7 @@ test.describe('PagedList · column header menu', () => {
         await expect(page.getByRole('button', { name: 'Expires At', exact: true })).toBeVisible();
     });
 
-    test('offers no retry when the catalogue answered', async ({ mount, page }) => {
+    test('shows no catalogue warning when the catalogue answered', async ({ mount, page }) => {
         await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
         await expect.poll(() => headings(page)).toHaveLength(3);
 
@@ -496,7 +496,7 @@ test.describe('PagedList · column header menu', () => {
         await expect(page.getByTestId(`column-header-menu-${DEPARTMENT}-sort-unavailable`)).toHaveText(
             'This field cannot be used for ordering.',
         );
-        await expect(page.getByTestId(`column-header-menu-${DEPARTMENT}-retry-catalogue`)).toHaveCount(0);
+        await expect(page.getByTestId('paged-list-catalogue-failed')).toHaveCount(0);
     });
 
     test('closes again when the control is pressed a second time', async ({ mount, page }) => {
