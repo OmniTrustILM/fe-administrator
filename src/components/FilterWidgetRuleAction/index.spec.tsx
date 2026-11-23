@@ -616,10 +616,53 @@ test.describe('FilterWidgetRuleAction', () => {
             extraProps: { onActionsUpdate: (actions) => updates.push(actions) },
         });
 
-        await page.getByTestId('filter-value-chip').first().getByRole('button').click();
+        await expect(page.getByTestId('filter-value-chip')).toHaveText(['Option One', 'Option Two']);
+        await page.getByRole('button', { name: 'Remove Option One from Custom Attr', exact: true }).click();
 
         await expect.poll(() => updates.length).toBeGreaterThan(0);
         expect(firstAction(updates.at(-1)!).data).toEqual(['r2']);
+    });
+
+    test('names a saved value by its identifier when its matched option carries no readable label', async ({ mount, page }) => {
+        await mountWithExecution(mount, {
+            source: FilterFieldSource.Custom,
+            fieldDef: {
+                ...customAttrFieldDef,
+                multiValue: true,
+                value: [
+                    { reference: 'r1', data: { code: 1 } },
+                    { reference: 'r2', data: { code: 2 } },
+                ],
+            },
+            fieldIdentifier: 'customAttr',
+            data: ['r1', 'r2'],
+        });
+
+        await expect(page.getByTestId('filter-value-chip')).toHaveText(['r1', 'r2']);
+        await expect(page.getByRole('button', { name: 'Remove r1 from Custom Attr', exact: true })).toBeVisible();
+    });
+
+    test('drops the action when its last value is removed, and keeps focus on the action list', async ({ mount, page }) => {
+        const actions = await mountWithActions(mount, {
+            availableFilters: [
+                ...makeSearchFieldList(FilterFieldSource.Meta, [{ ...modeFieldDef, multiValue: true, value: ['alpha', 'beta', 'gamma'] }]),
+                ...makeSearchFieldList(FilterFieldSource.Custom, [{ ...customAttrFieldDef, multiValue: true }]),
+            ],
+            ExecutionsList: [
+                { fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'mode', data: ['alpha', 'beta'] },
+                { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'customAttr', data: ['r1', 'r2'] },
+            ],
+        });
+
+        await page.getByRole('button', { name: 'Remove alpha from Mode', exact: true }).focus();
+        await page.keyboard.press('Enter');
+        await expect(page.getByRole('button', { name: 'Remove beta from Mode', exact: true })).toBeFocused();
+        await page.keyboard.press('Enter');
+
+        await expect(page.getByTestId('badge').filter({ hasText: 'Mode' })).toHaveCount(0);
+        await expect(page.getByRole('group', { name: 'Applied actions' })).toBeFocused();
+        await expect.poll(() => actions.current.length).toBe(1);
+        expect((actions.current as Record<string, unknown>[]).map((a) => a.fieldIdentifier)).toEqual(['customAttr']);
     });
 
     test('emits the identifiers of every other saved list action when a value is removed', async ({ mount, page }) => {
@@ -722,16 +765,22 @@ test.describe('FilterWidgetRuleAction', () => {
     });
 
     for (const key of ['Enter', 'Space'] as const) {
-        test(`unselectFilters via keyboard ${key} clears selection`, async ({ mount, page }) => {
+        test(`the selected badge's own button deselects it with ${key}`, async ({ mount, page }) => {
             await mount(<FilterWidgetRuleActionTestWrapper onActionsUpdate={() => {}} />);
             await addStringAction(page, 'Status', key);
             await page.getByText("'Status'").click();
             await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeVisible();
-            await page.locator('#unselectFilters').focus();
+            await page.getByTestId('badge').filter({ hasText: 'Status' }).getByRole('button').first().focus();
             await page.keyboard.press(key);
             await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeVisible();
         });
     }
+
+    test('offers no keyboard stop on the editor background', async ({ mount, page }) => {
+        await mount(<FilterWidgetRuleActionTestWrapper onActionsUpdate={() => {}} />);
+        await expect(page.locator('#unselectFilters')).not.toHaveAttribute('tabindex');
+        await expect(page.locator('#unselectFilters')).not.toHaveAttribute('role');
+    });
 
     for (const data of ['true', true] as const) {
         test(`boolean execution item hydrates true when backend sends ${typeof data} true`, async ({ mount, page }) => {

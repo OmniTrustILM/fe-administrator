@@ -1,6 +1,6 @@
 import Widget from 'components/Widget';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { ApiClients } from 'src/api';
 import { selectors as enumSelectors, getEnumLabel, getEnumDescription } from 'ducks/enums';
@@ -189,6 +189,7 @@ export default function FilterWidget({
     const isFetchingAvailableFilters = useSelector(selectors.isFetchingFilters(entity));
 
     const [selectedFilter, setSelectedFilter] = useState<number>(-1);
+    const badgeListRef = useRef<HTMLDivElement>(null);
 
     const [filterGroup, setFilterGroup] = useState<SingleValue<{ label: string; value: FilterFieldSource }> | undefined>(undefined);
     const [filterField, setFilterField] = useState<SingleValue<{ label: string; value: string }> | undefined>(undefined);
@@ -435,6 +436,8 @@ export default function FilterWidget({
         (index: number, valueIndex: number) => {
             const filter = currentFilters[index];
             if (!Array.isArray(filter?.value) || filter.value.length <= 1) {
+                // The badge goes with its last value, so focus lands on the list rather than on nothing.
+                badgeListRef.current?.focus();
                 onRemoveFilterClick(index);
                 return;
             }
@@ -843,7 +846,8 @@ export default function FilterWidget({
                         {selectedFilter === -1 ? 'Apply' : 'Update'}
                     </Button>
                 </div>
-                <div className="flex gap-2 flex-wrap">
+                {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would announce the badges as form controls; this is only a labelled focus target for the list. */}
+                <div ref={badgeListRef} role="group" aria-label="Applied filters" tabIndex={-1} className="flex gap-2 flex-wrap">
                     {currentFilters.map((f, i) => {
                         const field = availableFilters
                             .find((a) => a.filterFieldSource === f.fieldSource)

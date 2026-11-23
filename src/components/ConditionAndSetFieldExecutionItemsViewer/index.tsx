@@ -3,7 +3,7 @@ import FilterWidget from 'components/FilterWidget';
 import FilterWidgetRuleAction from 'components/FilterWidgetRuleAction';
 import { EntityType, actions as filterActions } from 'ducks/filters';
 import { actions as rulesActions, selectors as rulesSelectors } from 'ducks/rules';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { useParams } from 'react-router';
 import type { Resource } from 'types/openapi';
@@ -30,7 +30,8 @@ const ConditionAndSetFieldExecutionItemsViewer = ({ resource, formType, requires
     const isFetchingExecutionDetails = useSelector(rulesSelectors.isFetchingExecutionDetails);
     const isUpdatingExecution = useSelector(rulesSelectors.isUpdatingExecution);
 
-    const [hasEffectRun, setHasEffectRun] = useState(false);
+    // Each server copy rehydrates the editor, so a rejected save's refetch puts back what the save removed.
+    const hydratedFrom = useRef<typeof conditionDetails>(undefined);
 
     const dispatch = useDispatch();
 
@@ -52,17 +53,12 @@ const ConditionAndSetFieldExecutionItemsViewer = ({ resource, formType, requires
     }, [id, dispatch, formType, conditionDetails?.uuid, executionDetails?.uuid]);
 
     useEffect(() => {
-        if (!hasEffectRun && editMode && id) {
-            if (formType === 'conditionItems') {
-                if (conditionDetails?.uuid !== id) return;
-                const currentConditions = conditionDetails?.items ?? [];
-
-                const currentFilters = conditionGroupToFilter(currentConditions);
-                setHasEffectRun(true);
-                dispatch(filterActions.setCurrentFilters({ currentFilters: currentFilters, entity: EntityType.CONDITIONS }));
-            }
-        }
-    }, [editMode, conditionDetails, hasEffectRun, dispatch, formType, id]);
+        if (!editMode || !id || formType !== 'conditionItems') return;
+        if (conditionDetails?.uuid !== id || hydratedFrom.current === conditionDetails) return;
+        hydratedFrom.current = conditionDetails;
+        const currentFilters = conditionGroupToFilter(conditionDetails.items ?? []);
+        dispatch(filterActions.setCurrentFilters({ currentFilters, entity: EntityType.CONDITIONS }));
+    }, [editMode, conditionDetails, dispatch, formType, id]);
 
     useEffect(() => {
         return () => {

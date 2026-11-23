@@ -284,7 +284,7 @@ test.describe('FilterWidget', () => {
                         fieldSource: FilterFieldSource.Meta,
                         fieldIdentifier: 'owners',
                         condition: FilterConditionOperator.Equals,
-                        value: [{ name: 'Alice' }, { name: 'Bob' }] as any,
+                        value: [{ name: 'Alice' }, { name: 'Bob' }],
                     },
                 ]}
             />,
@@ -298,11 +298,37 @@ test.describe('FilterWidget', () => {
 
         await expect(chips).toHaveText(['Bob']);
         await expect.poll(() => updates.length).toBe(1);
-        expect(JSON.stringify(updates[0])).not.toContain('Alice');
-        expect(JSON.stringify(updates[0])).toContain('Bob');
+        expect(updates[0]).toEqual([
+            { fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'owners', condition: FilterConditionOperator.Equals, value: ['Bob'] },
+        ]);
 
         await page.getByRole('button', { name: 'Remove Bob from Owners', exact: true }).click();
         await expect(page.getByText("'Owners'")).toHaveCount(0);
+        await expect.poll(() => updates.length).toBe(2);
+        expect(updates[1]).toEqual([]);
+    });
+
+    test('keeps keyboard focus on a surviving chip, then on the filter list, as values are removed', async ({ mount, page }) => {
+        await mount(
+            <FilterWidgetTestWrapper
+                onFilterUpdate={() => {}}
+                initialCurrentFilters={[
+                    {
+                        fieldSource: FilterFieldSource.Meta,
+                        fieldIdentifier: 'owners',
+                        condition: FilterConditionOperator.Equals,
+                        value: [{ name: 'Alice' }, { name: 'Bob' }],
+                    },
+                ]}
+            />,
+        );
+
+        await page.getByRole('button', { name: 'Remove Bob from Owners', exact: true }).focus();
+        await page.keyboard.press('Enter');
+        await expect(page.getByRole('button', { name: 'Remove Alice from Owners', exact: true })).toBeFocused();
+
+        await page.keyboard.press('Enter');
+        await expect(page.getByRole('group', { name: 'Applied filters' })).toBeFocused();
     });
 
     test('offers no per-value removal when badge removal is disabled', async ({ mount, page }) => {
@@ -314,7 +340,7 @@ test.describe('FilterWidget', () => {
                         fieldSource: FilterFieldSource.Meta,
                         fieldIdentifier: 'owners',
                         condition: FilterConditionOperator.Equals,
-                        value: [{ name: 'Alice' }, { name: 'Bob' }] as any,
+                        value: [{ name: 'Alice' }, { name: 'Bob' }],
                     },
                 ]}
             />,

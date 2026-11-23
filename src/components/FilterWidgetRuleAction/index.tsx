@@ -1,6 +1,6 @@
 import Widget from 'components/Widget';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { ApiClients } from 'src/api';
 import { selectors as enumSelectors, getEnumLabel, getEnumDescription } from 'ducks/enums';
@@ -47,6 +47,26 @@ const toSelectableValue = (value: unknown): SelectableValue => {
     return toDisplayString(value);
 };
 
+/** An option's own readable text, or undefined where it carries only an object with no name. */
+function readableLabel(item: Record<string, unknown>): string | undefined {
+    const label = item.name ?? item.label ?? item.data;
+    if (label == null) return undefined;
+    const named = asRecord(label)?.name;
+    if (named != null) return toDisplayString(named);
+    return typeof label === 'object' ? undefined : String(label);
+}
+
+function matchedOptionLabel(identifier: unknown, field: FieldData | undefined): string | undefined {
+    if (!Array.isArray(field?.value)) return undefined;
+    const matched = asRecord(
+        (field.value as unknown[]).find((fv) => {
+            const r = asRecord(fv);
+            return r ? r.uuid === identifier || r.value === identifier || r.reference === identifier : false;
+        }),
+    );
+    return matched ? readableLabel(matched) : undefined;
+}
+
 function formatBadgeDataValue(v: unknown, field: FieldData | undefined, platformEnums: PlatformEnumModel): string {
     if (field?.platformEnum) {
         return platformEnums[field.platformEnum]?.[String(v)]?.label ?? String(v);
@@ -58,16 +78,15 @@ function formatBadgeDataValue(v: unknown, field: FieldData | undefined, platform
             const labelStr = String(record.label ?? v);
             return field.attributeContentType === AttributeContentType.Date ? getFormattedDate(labelStr) : getFormattedDateTime(labelStr);
         }
-        return record.label == null ? String(v) : toDisplayString(record.label);
+        const own = readableLabel(record);
+        if (own !== undefined) return own;
+        // Only the identifier it was saved under: the matching option names it, else the identifier itself does.
+        const identifier = record.reference ?? record.uuid ?? record.value;
+        if (identifier == null) return toDisplayString(v);
+        return matchedOptionLabel(identifier, field) ?? String(identifier);
     }
-    if (Array.isArray(field?.value)) {
-        const matched = (field.value as unknown[]).find((fv) => {
-            const r = asRecord(fv);
-            return r ? r.uuid === v || r.value === v || r.reference === v : false;
-        });
-        const mr = asRecord(matched);
-        if (mr) return String(mr.name ?? mr.label ?? mr.data ?? v);
-    }
+    const matched = matchedOptionLabel(v, field);
+    if (matched !== undefined) return matched;
     if (field?.attributeContentType === AttributeContentType.Date) {
         return getFormattedDate(String(v));
     }
@@ -190,6 +209,7 @@ export default function FilterWidgetRuleAction({
     const isFetchingAvailableFilters = useSelector(selectors.isFetchingFilters(entity));
 
     const [selectedFilter, setSelectedFilter] = useState<number>(-1);
+    const badgeListRef = useRef<HTMLDivElement>(null);
 
     const [fieldSource, setFieldSource] = useState<FilterFieldSource | undefined>(undefined);
 
@@ -264,17 +284,6 @@ export default function FilterWidgetRuleAction({
     const onUnselectFiltersClick = useCallback(
         (e: React.MouseEvent<HTMLDivElement>) => {
             if ((e.target as HTMLDivElement).id === 'unselectFilters') {
-                unselectAllFilters();
-            }
-        },
-        [unselectAllFilters],
-    );
-
-    const onUnselectFiltersKeyDown = useCallback(
-        (e: React.KeyboardEvent<HTMLDivElement>) => {
-            if ((e.target as HTMLElement).id !== 'unselectFilters') return;
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
                 unselectAllFilters();
             }
         },
@@ -514,6 +523,8 @@ export default function FilterWidgetRuleAction({
         (index: number, valueIndex: number) => {
             const action = actions[index];
             if (!Array.isArray(action?.data) || action.data.length <= 1) {
+                // The badge goes with its last value, so focus lands on the list rather than on nothing.
+                badgeListRef.current?.focus();
                 onRemoveFilterClick(index);
                 return;
             }
@@ -869,14 +880,9 @@ export default function FilterWidgetRuleAction({
 
     return (
         <Widget title={title} busy={isFetchingAvailableFilters} titleSize="large">
-            {/* biome-ignore lint/a11y/useSemanticElements: can't be a <button> — it wraps the filter form's inputs and badges (interactive content is invalid inside a button); role="button" is the closest accessible fit for the click/keyboard "deselect on empty background" behaviour. */}
-            <div // NOSONAR(S6819)
-                id="unselectFilters"
-                role="button"
-                tabIndex={0}
-                onClick={onUnselectFiltersClick}
-                onKeyDown={onUnselectFiltersKeyDown}
-            >
+            {/* biome-ignore lint/a11y/noStaticElementInteractions: deselecting by clicking the empty background is a pointer shortcut; keyboard users deselect with the selected badge's own button. */}
+            {/* biome-ignore lint/a11y/useKeyWithClickEvents: same pointer-only shortcut as above. */}
+            <div id="unselectFilters" onClick={onUnselectFiltersClick}>
                 {mappingSupported && isMappingTargetCustom && (
                     <div className="flex flex-row gap-4 mb-3 text-sm">
                         <label className="flex items-center gap-2 cursor-pointer">
@@ -993,7 +999,8 @@ export default function FilterWidgetRuleAction({
                     </div>
                 </div>
 
-                <div className="flex gap-2 flex-wrap">
+                {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would announce the badges as form controls; this is only a labelled focus target for the list. */}
+                <div ref={badgeListRef} role="group" aria-label="Applied actions" tabIndex={-1} className="flex gap-2 flex-wrap">
                     {actions.map((f, i) => {
                         const field = findFieldDef(availableFilters, f.fieldSource, f.fieldIdentifier);
                         const label = field ? field.fieldLabel : f.fieldIdentifier;
