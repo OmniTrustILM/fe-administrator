@@ -362,6 +362,7 @@ function PagedList<TRow extends object>({
                     // set wholesale, so a change made before that would be wiped without a trace.
                     onToggle={canEditColumns ? onToggleColumn : undefined}
                     onReset={canEditColumns ? onResetColumns : undefined}
+                    isCatalogueFailed={isCatalogueFailed}
                     isStorable={isStorable}
                 />
             ) : undefined,
@@ -369,6 +370,7 @@ function PagedList<TRow extends object>({
             isColumnDriven,
             catalogueFields,
             hasLoadedCatalogue,
+            isCatalogueFailed,
             appliedColumns,
             sortableStandardColumns,
             onToggleColumn,
@@ -446,10 +448,31 @@ function PagedList<TRow extends object>({
     const retryFailedCatalogue = useRetryFailedCatalogue(entity, getAvailableFiltersApi);
 
     const getFreshData = useCallback(() => {
-        retryFailedCatalogue();
         requestList();
         onCheckedRowsChanged([]);
-    }, [retryFailedCatalogue, requestList, onCheckedRowsChanged]);
+    }, [requestList, onCheckedRowsChanged]);
+
+    // Only the refresh button retries the catalogue: `getFreshData` also runs on every page turn and filter edit.
+    const isAwaitingCatalogueRetry = useRef(false);
+    const [catalogueStatus, setCatalogueStatus] = useState('');
+    const onRefresh = useCallback(() => {
+        if (retryFailedCatalogue()) {
+            isAwaitingCatalogueRetry.current = true;
+            setCatalogueStatus('');
+        }
+        getFreshData();
+    }, [retryFailedCatalogue, getFreshData]);
+
+    // The warning leaves as the retry starts, so the controls coming back is announced rather than left silent.
+    useEffect(() => {
+        if (!isAwaitingCatalogueRetry.current) return;
+        if (canEditColumns) {
+            isAwaitingCatalogueRetry.current = false;
+            setCatalogueStatus('Fields loaded. Columns and sorting can be changed again.');
+        } else if (isCatalogueFailed) {
+            isAwaitingCatalogueRetry.current = false;
+        }
+    }, [canEditColumns, isCatalogueFailed]);
 
     const onPageSizeChanged = useCallback(
         (pageSize: number) => {
@@ -841,7 +864,8 @@ function PagedList<TRow extends object>({
                 disableRefresh={isBusy || isFetchingList}
                 enableBusyOverlay
                 widgetLockName={pageWidgetLockName}
-                refreshAction={getFreshData}
+                refreshAction={onRefresh}
+                refreshThroughLock={isColumnDriven && isCatalogueFailed}
                 titleNotice={isColumnDriven && isCatalogueFailed && <CatalogueFailedNotice />}
                 resetViewAction={hasNonDefaultViewState ? onResetView : undefined}
                 widgetButtons={buttons}
@@ -849,6 +873,11 @@ function PagedList<TRow extends object>({
                 hideWidgetButtons={hideWidgetButtons}
             >
                 {notice}
+                {isColumnDriven && (
+                    <span role="status" className="sr-only" data-testid="paged-list-catalogue-status">
+                        {catalogueStatus}
+                    </span>
+                )}
                 <CustomTable
                     headers={columnHeaders}
                     data={columnRows}

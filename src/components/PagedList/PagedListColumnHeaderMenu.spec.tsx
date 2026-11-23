@@ -407,7 +407,10 @@ test.describe('PagedList · column header menu', () => {
         );
     });
 
-    test('reads the catalogue again from the refresh beside the title when the read failed', async ({ mount, page }) => {
+    test('reads the catalogue again from the refresh beside the title, once, and unlocks the columns when it answers', async ({
+        mount,
+        page,
+    }) => {
         await mount(
             <PagedListColumnsWithStore
                 rows={rows}
@@ -415,18 +418,114 @@ test.describe('PagedList · column header menu', () => {
                 catalogue={catalogue}
                 withheldCatalogue
                 withCatalogueFailureControl
+                withCatalogueControl
+                holdsCatalogueReads
             />,
         );
         await expect.poll(() => headings(page)).toHaveLength(3);
 
         await page.getByTestId('fail-catalogue').click();
-        await expect(trigger(page, NOT_AFTER)).toBeVisible();
+        await expect(page.getByTestId('paged-list-catalogue-failed')).toHaveText(/Fields failed to load/);
+        const readsBefore = Number(await page.getByTestId('catalogue-reads').textContent());
+        const requestsBefore = await requestCount(page);
+
+        await page.getByTestId('refresh-icon').click();
+        await expect(page.getByTestId('catalogue-reads')).toHaveText(String(readsBefore + 1));
+        await expect.poll(() => requestCount(page)).toBe(requestsBefore + 1);
+
+        await page.getByTestId('refresh-icon').click();
+        await expect.poll(() => requestCount(page)).toBe(requestsBefore + 2);
+        await expect(page.getByTestId('catalogue-reads')).toHaveText(String(readsBefore + 1));
+
+        await page.getByTestId('land-catalogue').click();
+        await expect(page.getByTestId('paged-list-catalogue-failed')).toHaveCount(0);
+        await expect(grip(page, NOT_AFTER)).toBeVisible();
+        await expect(page.getByTestId('paged-list-catalogue-status')).toHaveText(/Columns and sorting can be changed again/);
+    });
+
+    test('reloads only the rows on a page turn after the catalogue read failed', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                withheldCatalogue
+                withCatalogueFailureControl
+                withPagingControl
+            />,
+        );
+        await expect.poll(() => headings(page)).toHaveLength(3);
+
+        await page.getByTestId('fail-catalogue').click();
+        await expect(page.getByTestId('paged-list-catalogue-failed')).toBeVisible();
         const readsBefore = Number(await page.getByTestId('catalogue-reads').textContent());
 
-        await expect(page.getByTestId('paged-list-catalogue-failed')).toHaveText(/Fields failed to load/);
+        await page.getByTestId('go-to-page-two').click();
+
+        await expect.poll(async () => (await lastRequest(page))?.pageNumber).toBe(2);
+        await expect(page.getByTestId('catalogue-reads')).toHaveText(String(readsBefore));
+    });
+
+    test('reads no catalogue from the refresh after a read that succeeded', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} />);
+        await expect.poll(() => headings(page)).toHaveLength(3);
+        const readsBefore = Number(await page.getByTestId('catalogue-reads').textContent());
+        const requestsBefore = await requestCount(page);
+
         await page.getByTestId('refresh-icon').click();
 
-        await expect(page.getByTestId('catalogue-reads')).toHaveText(String(readsBefore + 1));
+        await expect.poll(() => requestCount(page)).toBe(requestsBefore + 1);
+        await expect(page.getByTestId('catalogue-reads')).toHaveText(String(readsBefore));
+    });
+
+    test('reads no catalogue from the refresh before the first read has answered', async ({ mount, page }) => {
+        await mount(<PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} withheldCatalogue />);
+        await expect.poll(() => headings(page)).toHaveLength(3);
+        const readsBefore = Number(await page.getByTestId('catalogue-reads').textContent());
+        const requestsBefore = await requestCount(page);
+
+        await page.getByTestId('refresh-icon').click();
+
+        await expect.poll(() => requestCount(page)).toBe(requestsBefore + 1);
+        await expect(page.getByTestId('catalogue-reads')).toHaveText(String(readsBefore));
+    });
+
+    test('reads no catalogue from the refresh on a page with no catalogue API', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                failedCatalogue
+                withoutCatalogueApi
+            />,
+        );
+        await expect.poll(() => headings(page)).toHaveLength(3);
+        const requestsBefore = await requestCount(page);
+
+        await page.getByTestId('refresh-icon').click();
+
+        await expect.poll(() => requestCount(page)).toBe(requestsBefore + 1);
+        await expect(page.getByTestId('catalogue-reads')).toHaveText('0');
+    });
+
+    test('locks the add-column menu after a failed read and names the refresh that retries it', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                failsCatalogueOnMount
+                withCatalogueControl
+            />,
+        );
+        await expect.poll(() => headings(page)).toHaveLength(3);
+        await expect(page.getByTestId('paged-list-catalogue-failed')).toBeVisible();
+
+        await page.getByTestId('add-column-menu-trigger').click();
+        await expect(page.getByTestId(`add-column-menu-field-${COMMON_NAME}`)).toBeDisabled();
+        await expect(page.getByTestId('add-column-menu-hint')).toHaveText(/Refresh to try again/);
+        await expect(page.getByTestId('add-column-menu-reset')).toHaveCount(0);
     });
 
     test('keeps the columns uneditable until the catalogue answers, so the opening view cannot wipe an edit', async ({ mount, page }) => {

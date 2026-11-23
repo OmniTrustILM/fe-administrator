@@ -37,6 +37,8 @@ type Props = {
     widgetLock?: WidgetLockErrorModel;
     refreshAction?: () => void;
     resetViewAction?: () => void;
+    /** Keeps refresh live under a store lock, for a refresh that also retries something the lock does not cover. */
+    refreshThroughLock?: boolean;
     widgetButtons?: WidgetButtonProps[];
     widgetExtraTopNode?: React.ReactNode;
     /** Shown right after the refresh button, for a status that refreshing resolves. */
@@ -67,6 +69,7 @@ function Widget({
     widgetLock: ownLock,
     refreshAction,
     resetViewAction,
+    refreshThroughLock = false,
     widgetExtraTopNode,
     titleNotice,
     hideWidgetButtons = false,
@@ -128,7 +131,7 @@ function Widget({
                 variant="transparent"
                 title="Refresh"
                 aria-label="Refresh"
-                disabled={busy || disableRefresh || !!storeLock}
+                disabled={busy || disableRefresh || (!!storeLock && !refreshThroughLock)}
             >
                 <RefreshCw size={16} />
             </Button>

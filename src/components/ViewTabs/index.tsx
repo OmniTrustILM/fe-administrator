@@ -423,6 +423,9 @@ export default function ViewTabs({
      */
     const liveSlice = useRef<ViewSlice>({ columns, filters, sort });
     liveSlice.current = { columns, filters, sort };
+    // Filters edited before the opening view lands, while a failed catalogue read keeps the strip shut, are kept through it.
+    const filtersBeforeOpening = useRef({ resource, key: liveFiltersKey });
+    if (filtersBeforeOpening.current.resource !== resource) filtersBeforeOpening.current = { resource, key: liveFiltersKey };
     const applyFromEffect = useCallback((slice: ViewSlice) => {
         liveSlice.current = slice;
         applyRef.current(slice);
@@ -561,7 +564,8 @@ export default function ViewTabs({
                 : sliceOf(views.find((view) => view.uuid === initial) as ListViewModel);
         setActiveId(initial);
         setDrillDownFilters(isDrillDown ? liveSlice.current.filters : undefined);
-        applyRef.current(handedIn ? { ...opening, filters: liveSlice.current.filters } : opening, initial === position?.viewId);
+        const keepsLiveFilters = handedIn !== undefined || filtersKey(liveSlice.current.filters) !== filtersBeforeOpening.current.key;
+        applyRef.current(keepsLiveFilters ? { ...opening, filters: liveSlice.current.filters } : opening, initial === position?.viewId);
         openedRef.current?.(resource);
     }, [resource, isReady, views, sliceOf, standardColumns, standardSort, handedIn]);
 

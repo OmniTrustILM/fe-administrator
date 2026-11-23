@@ -1,5 +1,5 @@
 import type { CellRegistry } from 'components/CustomTable/columns';
-import type { FiltersTestState, ListViewsTestState } from 'ducks/test-reducers';
+import { type FiltersTestState, type ListViewsTestState, testReducers } from 'ducks/test-reducers';
 import { actions as filterActions, EntityType } from 'ducks/filters';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
@@ -69,7 +69,24 @@ type Props = Readonly<{
     typedFilters?: SearchFilterModel[];
     /** Renders a second such control, for a user typing a different set of filters afterwards. */
     retypedFilters?: SearchFilterModel[];
+    /** Marks a catalogue read as in flight until it is answered, as the real reducer does; no epic answers it here. */
+    holdsCatalogueReads?: boolean;
+    /** Mounts the host with no catalogue API, as a page without a filter widget does. */
+    withoutCatalogueApi?: boolean;
 }>;
+
+const holdingCatalogueReads: typeof testReducers = (state, action) => {
+    const next = testReducers(state, action);
+    if (!filterActions.getAvailableFilters.match(action)) return next;
+    return {
+        ...next,
+        filters: {
+            filters: next.filters.filters.map((entry) =>
+                entry.entity === action.payload.entity ? { ...entry, filter: { ...entry.filter, isFetchingFilters: true } } : entry,
+            ),
+        },
+    };
+};
 
 const registry: CellRegistry<StubRow> = {
     'property:COMMON_NAME': (row) => row.commonName,
@@ -264,6 +281,8 @@ export default function PagedListColumnsWithStore({
     withFirstPageControl = false,
     typedFilters,
     retypedFilters,
+    holdsCatalogueReads = false,
+    withoutCatalogueApi = false,
 }: Props) {
     const [catalogueReads, setCatalogueReads] = useState(0);
     const [store] = useState(() =>
@@ -308,6 +327,7 @@ export default function PagedListColumnsWithStore({
             ({ type }) => {
                 if (type === filterActions.getAvailableFilters.type) setCatalogueReads((count) => count + 1);
             },
+            holdsCatalogueReads ? holdingCatalogueReads : testReducers,
         ),
     );
 
@@ -350,7 +370,7 @@ export default function PagedListColumnsWithStore({
                         entity={EntityType.CERTIFICATE}
                         title="List of Certificates"
                         filterTitle="Certificate Inventory Filter"
-                        getAvailableFiltersApi={getAvailableFiltersApi}
+                        getAvailableFiltersApi={withoutCatalogueApi ? undefined : getAvailableFiltersApi}
                         onListCallback={onListCallback}
                         addHidden
                         configurableColumns={config}

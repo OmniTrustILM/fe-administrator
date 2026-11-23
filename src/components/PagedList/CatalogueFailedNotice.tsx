@@ -9,18 +9,27 @@ import type { SearchFieldListModel } from 'types/certificate';
 
 type GetAvailableFiltersApi = (apiClients: ApiClients) => Observable<Array<SearchFieldListModel>>;
 
-/** Reads the field catalogue again, but only when its last read failed, so a plain refresh costs nothing extra. */
+/** Reads the field catalogue again when its last read failed and no read is already out. Reports whether it asked. */
 export function useRetryFailedCatalogue(entity: EntityType, getAvailableFiltersApi: GetAvailableFiltersApi | undefined) {
     const dispatch = useDispatch();
     const store = useStore<AppState>();
 
     return useCallback(() => {
-        if (!getAvailableFiltersApi || !filterSelectors.hasFailedFilters(entity)(store.getState())) return;
+        const state = store.getState();
+        // A read already out would be cancelled by the next one, so a second click restarts rather than retries.
+        if (
+            !getAvailableFiltersApi ||
+            !filterSelectors.hasFailedFilters(entity)(state) ||
+            filterSelectors.isFetchingFilters(entity)(state)
+        ) {
+            return false;
+        }
         dispatch(filterActions.getAvailableFilters({ entity, getAvailableFiltersApi }));
+        return true;
     }, [dispatch, store, entity, getAvailableFiltersApi]);
 }
 
-/** Sits beside the widget's refresh button, which is what reads the catalogue again. */
+/** The host's refresh action is what reads the catalogue again. */
 export default function CatalogueFailedNotice() {
     return (
         <span
