@@ -389,7 +389,6 @@ test.describe('Select', () => {
             await page.getByTestId('sel-trigger').click();
             const footer = page.getByRole('button', { name: '+ Create new' });
             await expect(footer).toBeDisabled();
-            await footer.click({ force: true });
             await expect(page.getByTestId('created-count')).toHaveText('0');
         });
     });
