@@ -712,6 +712,28 @@ test.describe('AttributeEditor NG group callbacks', () => {
         });
     }
 
+    test('keeps a field of a dropped child group that its parent group now injects itself', async ({ mount, page }) => {
+        // given
+        const answerWithZoneMovedUp = {
+            [`__attributes__${editorId}__.dnsGroup`]: [
+                injectedFieldDescriptor('dnsServer', 'DNS Server'),
+                injectedFieldDescriptor('dnsZone', 'DNS Zone'),
+            ],
+        };
+        await mountWithDnsChallengeSelected(mount, undefined, [], answerWithZoneMovedUp);
+        await answerGroupCallback(page);
+        await expect(page.getByTestId('spinner')).toHaveCount(0, { timeout: 10000 });
+        const dnsZoneInput = page.getByTestId('text-input-__attributes__testEditor__.dnsZone');
+        await expect(dnsZoneInput).toBeVisible({ timeout: 10000 });
+
+        // when
+        await page.getByTestId('answer-later-callbacks').click();
+
+        // then — a removal would land after the answer is applied, so outlast the change pass that follows it
+        await page.waitForTimeout(CALLBACK_DEBOUNCE_MS * 2); // NOSONAR(S2925)
+        await expect(dnsZoneInput).toBeVisible();
+    });
+
     test('fires the initial callback of a dropped child group again once its parent injects it anew', async ({ mount, page }) => {
         // given
         const firesOnMountOnly: string[] = [];

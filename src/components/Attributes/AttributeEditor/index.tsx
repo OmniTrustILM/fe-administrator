@@ -729,22 +729,38 @@ function AttributeEditorInner({
             const isPending = (callbackId: string) => !!injected[callbackId] || !!isRunningCallback[callbackId];
             if (!isPending(groupFormAttributeName)) return noDroppedNames;
 
-            const droppedNames = new Set<string>();
-            const callbackIds = [groupFormAttributeName];
+            const collectInjectedBelow = (keptNames: ReadonlySet<string>) => {
+                const names = new Set<string>();
+                const callbackIds = [groupFormAttributeName];
+                for (const callbackId of callbackIds) {
+                    for (const childName of injected[callbackId] ?? []) {
+                        if (keptNames.has(childName)) continue;
+                        names.add(childName);
+                        const childFormAttributeName = getAttributeEditorAttributeKey(id, childName);
+                        if (isPending(childFormAttributeName)) callbackIds.push(childFormAttributeName);
+                    }
+                }
+                return { names, callbackIds };
+            };
+            // A field another callback still injects, such as one the parent group's new answer now carries itself, stays.
+            const { callbackIds: allCallbackIdsBelow } = collectInjectedBelow(noDroppedNames);
+            const stillInjectedNames = new Set(
+                Object.entries(injected)
+                    .filter(([callbackId]) => !allCallbackIdsBelow.includes(callbackId))
+                    .flatMap(([, childNames]) => childNames),
+            );
+            const { names: droppedNames, callbackIds } = collectInjectedBelow(stillInjectedNames);
+            const droppedDescriptors = new Set(callbackIds.flatMap((callbackId) => callbackData[callbackId] ?? []));
             for (const callbackId of callbackIds) {
                 dispatch(connectorActions.clearCallbackDataFor({ callbackId }));
-                const childNames = injected[callbackId] ?? [];
                 delete injected[callbackId];
-                childNames.forEach((childName) => {
-                    droppedNames.add(childName);
-                    const childFormAttributeName = getAttributeEditorAttributeKey(id, childName);
-                    if (isPending(childFormAttributeName)) callbackIds.push(childFormAttributeName);
-                });
             }
+            setGroupAttributesCallbackAttributes((prev) =>
+                prev.filter((descriptor) => !droppedNames.has(descriptor.name) && !droppedDescriptors.has(descriptor)),
+            );
             if (droppedNames.size === 0) return droppedNames;
 
             const droppedFormAttributeNames = [...droppedNames].map((childName) => getAttributeEditorAttributeKey(id, childName));
-            setGroupAttributesCallbackAttributes((prev) => prev.filter((descriptor) => !droppedNames.has(descriptor.name)));
             setOptions((prev) => {
                 const next = { ...prev };
                 for (const childFormAttributeName of droppedFormAttributeNames) delete next[childFormAttributeName];
@@ -756,7 +772,7 @@ function AttributeEditorInner({
             }
             return droppedNames;
         },
-        [dispatch, forgetInitialCallbackRun, id, isRunningCallback, setGroupAttributesCallbackAttributes, setValue],
+        [callbackData, dispatch, forgetInitialCallbackRun, id, isRunningCallback, setGroupAttributesCallbackAttributes, setValue],
     );
 
     /* c8 ignore start */
