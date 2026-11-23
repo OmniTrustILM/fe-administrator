@@ -2,6 +2,7 @@ import type React from 'react';
 import { useEffect, useState } from 'react';
 import * as ReactHookForm from 'react-hook-form';
 import { AttributeFieldSelect } from './AttributeFieldSelect';
+import type { SelectFooterAction } from 'components/Select';
 import type { DataAttributeModel } from 'types/attributes';
 
 export type AttributeFieldSelectTestWrapperProps = {
@@ -10,7 +11,7 @@ export type AttributeFieldSelectTestWrapperProps = {
     options?: { label: string; value: string | number }[];
     busy?: boolean;
     deleteButton?: React.ReactNode;
-    addNewAttributeValue?: { label: string; value: string; disabled?: boolean };
+    createNewAction?: SelectFooterAction;
     defaultValues?: Record<string, unknown>;
     mode?: ReactHookForm.Mode;
     validateOnMount?: boolean;
@@ -23,7 +24,7 @@ export function AttributeFieldSelectTestWrapper({
     options = [],
     busy = false,
     deleteButton,
-    addNewAttributeValue,
+    createNewAction,
     defaultValues = {},
     mode,
     validateOnMount = false,
@@ -45,18 +46,10 @@ export function AttributeFieldSelectTestWrapper({
     const onSelectChangeMulti = (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => {
         const selected: unknown[] = Array.isArray(newValue) ? newValue : [];
         const toRawValue = (v: unknown) => (v && typeof v === 'object' && 'value' in v ? (v as { value: unknown }).value : v);
-        if (selected.some((v) => toRawValue(v) === '__add_new__')) {
-            const filtered = selected.filter((v) => toRawValue(v) !== '__add_new__').map(toRawValue);
-            fieldOnChange(filtered.length > 0 ? filtered : undefined);
-            return;
-        }
         const rawValues = selected.map(toRawValue);
         fieldOnChange(rawValues.length > 0 ? rawValues : undefined);
     };
-    const onSelectChangeSingle = (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => {
-        if (newValue === '__add_new__') return; // simulate production: modal opens, field unchanged
-        fieldOnChange(newValue);
-    };
+    const onSelectChangeSingle = (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => fieldOnChange(newValue);
 
     const field = (
         <AttributeFieldSelect
@@ -65,7 +58,7 @@ export function AttributeFieldSelectTestWrapper({
             options={options}
             busy={busy}
             deleteButton={deleteButton}
-            addNewAttributeValue={addNewAttributeValue}
+            createNewAction={createNewAction}
             onSelectChangeMulti={onSelectChangeMulti}
             onSelectChangeSingle={onSelectChangeSingle}
         />

@@ -136,29 +136,19 @@ export function Attribute({
         (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => {
             const selected: unknown[] = Array.isArray(newValue) ? newValue : [];
             const toRawValue = (v: unknown) => (v && typeof v === 'object' && 'value' in v ? (v as { value: unknown }).value : v);
-            if (selected.some((v) => toRawValue(v) === '__add_new__')) {
-                handleAddNew();
-                const filteredValue = selected.filter((v) => toRawValue(v) !== '__add_new__').map(toRawValue);
-                fieldOnChange(filteredValue.length > 0 ? filteredValue : undefined);
-                return;
-            }
             const rawValues = selected.map(toRawValue);
             fieldOnChange(rawValues.length > 0 ? rawValues : undefined);
             onUserInteraction();
         },
-        [handleAddNew, onUserInteraction],
+        [onUserInteraction],
     );
 
     const handleSelectChangeSingle = useCallback(
         (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => {
-            if (newValue === '__add_new__') {
-                handleAddNew();
-                return;
-            }
             fieldOnChange(newValue);
             onUserInteraction();
         },
-        [handleAddNew, onUserInteraction],
+        [onUserInteraction],
     );
     /* c8 ignore stop */
 
@@ -185,7 +175,7 @@ export function Attribute({
                         options={pickerOptions}
                         busy={busy}
                         deleteButton={deleteButton}
-                        addNewAttributeValue={addNewAttributeValue ? { label: '+ Create new', value: '__add_new__' } : undefined}
+                        createNewAction={addNewAttributeValue ? { label: '+ Create new', onClick: handleAddNew } : undefined}
                         onSelectChangeMulti={handleSelectChangeMulti}
                         onSelectChangeSingle={handleSelectChangeSingle}
                     />

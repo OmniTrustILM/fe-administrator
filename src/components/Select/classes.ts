@@ -48,7 +48,6 @@ export const OPTION_CLASSES =
 
 export const OPTION_HIGHLIGHTED_CLASSES = 'bg-surface-hover';
 export const OPTION_DISABLED_CLASSES = 'pointer-events-none opacity-50';
-export const OPTION_ADD_NEW_CLASSES = 'text-brand-hover font-medium';
 
 export const OPTION_LABEL_TRUNCATE_CLASSES = 'truncate block min-w-0';
 export const OPTION_LABEL_WRAP_CLASSES = 'whitespace-normal block min-w-0';
@@ -64,3 +63,8 @@ export const CHIP_LABEL_CLASSES = 'truncate min-w-0 cursor-default block';
 export const SELECTED_ICON_CLASSES = 'shrink-0 size-3.5 text-brand ml-2';
 
 export const NO_OPTIONS_CLASSES = 'py-2 px-3 text-sm text-content-subtle';
+
+export const FOOTER_CLASSES = 'sticky bottom-0 z-10 bg-surface-raised border-t border-divider p-1';
+
+export const FOOTER_ACTION_CLASSES =
+    'block w-full py-2 px-3 text-start text-sm rounded-lg cursor-pointer text-brand-hover font-medium hover:bg-surface-hover focus:outline-hidden focus-visible:bg-surface-hover disabled:pointer-events-none disabled:opacity-50';
