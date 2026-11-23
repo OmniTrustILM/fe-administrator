@@ -1091,6 +1091,27 @@ test.describe('AttributeEditor NG group callbacks', () => {
         await expect(page.getByTestId('form-valid')).toHaveText('false', { timeout: 10000 });
     });
 
+    test('keeps the value of a field while its first group refreshes and another group answers', async ({ mount, page }) => {
+        // given
+        const textZone = (uuid: string) =>
+            dataDescriptor({ name: 'dnsZone', uuid, properties: { ...dataDescriptor().properties, label: 'DNS Zone', required: false } });
+        await mountWithZoneFromBothGroups(mount, page, textZone('zone-a'), textZone('zone-b'));
+        const dnsZoneInput = page.getByTestId('text-input-__attributes__testEditor__.dnsZone');
+        const enteredZone = 'zone-a.example';
+        await dnsZoneInput.click(); // TextInput stays read-only until focused, which keeps autofill out
+        await dnsZoneInput.fill(enteredZone);
+        await page.getByTestId('select-__attributes__testEditor__.challengeTypeSelect-trigger').click();
+        await page.getByRole('option', { name: 'http-01' }).click();
+        await expect(page.getByTestId('spinner')).toBeVisible({ timeout: 10000 });
+
+        // when — the first group's refresh is still in flight
+        await page.getByTestId(`answer-callback-__attributes__${editorId}__.dnsNestedGroup`).click();
+
+        // then
+        await page.waitForTimeout(CALLBACK_DEBOUNCE_MS * 2); // NOSONAR(S2925)
+        await expect(page.getByTestId('form-values')).toContainText(enteredZone);
+    });
+
     test('fires the initial callback of a dropped child group again once its parent injects it anew', async ({ mount, page }) => {
         // given
         const firesOnMountOnly: string[] = [];
