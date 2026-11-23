@@ -904,8 +904,8 @@ function AttributeEditorInner({
         // A group callback answer must not reset the fields other callbacks injected before it. Their descriptors
         // keep their identity; a descriptor its callback answered anew is initialised again.
         const keptInjectedDescriptors = new Set(onlyGroupDescriptorsChanged ? (prevGroupDescriptors ?? []) : []);
-        // Where another copy of an injected field takes over, it starts as a field injected anew: the previous copy's
-        // options and what its callback injected go, and its initial callback runs.
+        // Where another copy of an injected field takes over, it starts as a field injected anew: its value is set up
+        // again, the previous copy's options and what its callback injected go, and its initial callback runs.
         const previouslyFirstByName = new Map(
             firstInjectedDescriptorOfEachName(prevGroupDescriptors ?? [], attributeDescriptors).map((descriptor) => [
                 descriptor.name,
@@ -919,6 +919,9 @@ function AttributeEditorInner({
             if (previouslyFirst && previouslyFirst.uuid !== descriptor.uuid) {
                 const formAttributeName = getAttributeEditorAttributeKey(id, descriptor.name);
                 takenOverFormAttributeNames.push(formAttributeName);
+                keptInjectedDescriptors.delete(descriptor);
+                // Cleared first: setting up a value leaves a field without a default, such as a file, as it was.
+                setValue(formAttributeName, undefined);
                 for (const droppedName of dropInjectedGroupChildren(formAttributeName)) droppedNames.add(droppedName);
                 forgetInitialCallbackRun(formAttributeName);
             }
@@ -998,6 +1001,7 @@ function AttributeEditorInner({
         dropInjectedGroupChildren,
         forgetInitialCallbackRun,
         setAttributeFormValue,
+        setValue,
         getAttributeStaticOptions,
         deletedAttributes,
         reAddedAttributes,

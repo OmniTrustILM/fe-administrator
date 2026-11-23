@@ -1039,6 +1039,58 @@ test.describe('AttributeEditor NG group callbacks', () => {
         await expect(page.getByTestId('spinner')).toHaveCount(0);
     });
 
+    test('sets up the value of a field again once another copy takes it over', async ({ mount, page }) => {
+        // given
+        const firstZone = dataDescriptor({
+            name: 'dnsZone',
+            uuid: 'zone-a',
+            properties: { ...dataDescriptor().properties, label: 'DNS Zone', required: false },
+        });
+        const otherZone = dataDescriptor({
+            name: 'dnsZone',
+            uuid: 'zone-b',
+            properties: { ...dataDescriptor().properties, label: 'DNS Zone', required: false },
+        });
+        await mountWithZoneFromBothGroups(mount, page, firstZone, otherZone);
+        const dnsZoneInput = page.getByTestId('text-input-__attributes__testEditor__.dnsZone');
+        const zoneEnteredForFirstCopy = 'zone-a.example';
+        await dnsZoneInput.click(); // TextInput stays read-only until focused, which keeps autofill out
+        await dnsZoneInput.fill(zoneEnteredForFirstCopy);
+        await expect(page.getByTestId('form-values')).toContainText(zoneEnteredForFirstCopy);
+
+        // when
+        await page.getByTestId('select-__attributes__testEditor__.challengeTypeSelect-clear').click();
+
+        // then
+        await expect(page.getByTestId('form-values')).not.toContainText(zoneEnteredForFirstCopy, { timeout: 10000 });
+    });
+
+    test('clears the file of the first copy once a copy without a file takes the field over', async ({ mount, page }) => {
+        // given
+        const firstCopysFile = 'first-zone.pem';
+        const firstZone = zoneFileCopy('zone-a', false, firstCopysFile);
+        await mountWithZoneFromBothGroups(mount, page, firstZone, zoneFileCopy('zone-b', false));
+        await expect(page.getByTestId('form-values')).toContainText(firstCopysFile);
+
+        // when
+        await page.getByTestId('select-__attributes__testEditor__.challengeTypeSelect-clear').click();
+
+        // then
+        await expect(page.getByTestId('form-values')).not.toContainText(firstCopysFile, { timeout: 10000 });
+    });
+
+    test('validates a required file that takes the field over from a copy with a file', async ({ mount, page }) => {
+        // given
+        await mountWithZoneFromBothGroups(mount, page, zoneFileCopy('zone-a', false, 'first-zone.pem'), zoneFileCopy('zone-b', true), true);
+        await expect(page.getByTestId('form-valid')).toHaveText('true');
+
+        // when
+        await page.getByTestId('select-__attributes__testEditor__.challengeTypeSelect-clear').click();
+
+        // then
+        await expect(page.getByTestId('form-valid')).toHaveText('false', { timeout: 10000 });
+    });
+
     test('fires the initial callback of a dropped child group again once its parent injects it anew', async ({ mount, page }) => {
         // given
         const firesOnMountOnly: string[] = [];
@@ -1128,6 +1180,15 @@ test.describe('AttributeEditor NG group callbacks', () => {
 
     const zoneGroupCopy = (uuid: string, dependsOn?: string[]) =>
         ({ ...groupDescriptor('zoneGroup', dependsOn), uuid }) as GroupAttributeModel;
+
+    const zoneFileCopy = (uuid: string, required: boolean, fileName?: string): DataAttributeModel =>
+        dataDescriptor({
+            name: 'dnsZone',
+            uuid,
+            contentType: AttributeContentType.File,
+            properties: { ...dataDescriptor().properties, label: 'DNS Zone', required },
+            ...(fileName ? { content: [{ data: { content: 'Wm9uZQ==', fileName, mimeType: 'text/plain' } }] as any } : {}),
+        });
 
     const zoneListCopy = (uuid: string, ...offeredZones: string[]): DataAttributeModel =>
         dataDescriptor({
