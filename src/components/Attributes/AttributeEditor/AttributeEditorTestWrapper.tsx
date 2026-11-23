@@ -30,6 +30,9 @@ export type AttributeEditorTestWrapperProps = {
     /** Renders buttons that answer every callbackId, or one, with a deep copy of its data, as a response off the
      *  wire would be, standing in for the callback epic. */
     callbackResponses?: Record<string, unknown[]>;
+    /** Renders a button that answers every callbackId with this data instead, as a later answer that differs from
+     *  the first. */
+    laterCallbackResponses?: Record<string, unknown[]>;
     /** Validates on change, as form pages do, and renders the form's validity. */
     renderFormValidity?: boolean;
 };
@@ -81,6 +84,7 @@ export function AttributeEditorTestWrapper({
     withDescriptorRefresh = false,
     withGroupCallbackState = false,
     callbackResponses,
+    laterCallbackResponses,
     renderFormValidity = false,
 }: Readonly<AttributeEditorTestWrapperProps>) {
     const store = useMemo(() => createMockStore(preloadedState), [preloadedState]);
@@ -94,9 +98,9 @@ export function AttributeEditorTestWrapper({
         () => ({ ...buildAttributeDefaultValues(id, attributeDescriptors, attributes) }),
         [id, attributeDescriptors, attributes],
     );
-    const answerCallbacks = (callbackIds: string[]) => {
+    const answerCallbacks = (callbackIds: string[], responses = callbackResponses) => {
         for (const callbackId of callbackIds) {
-            const data = structuredClone(callbackResponses?.[callbackId] ?? []);
+            const data = structuredClone(responses?.[callbackId] ?? []);
             store.dispatch(connectorActions.callbackSuccess({ callbackId, data }));
         }
     };
@@ -146,6 +150,15 @@ export function AttributeEditorTestWrapper({
                                 </button>
                             ))}
                         </>
+                    )}
+                    {laterCallbackResponses && (
+                        <button
+                            type="button"
+                            data-testid="answer-later-callbacks"
+                            onClick={() => answerCallbacks(Object.keys(laterCallbackResponses), laterCallbackResponses)}
+                        >
+                            Answer callbacks again
+                        </button>
                     )}
                     {renderFormValues && <FormValuesProbe />}
                     {renderFormValidity && <FormValidityProbe />}

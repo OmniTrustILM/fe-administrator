@@ -708,13 +708,20 @@ function AttributeEditorInner({
         [attributeDescriptors, groupAttributesCallbackAttributes, formValues, id],
     );
 
+    /** Lets a removed attribute's initial callback run again once it is injected anew. */
+    const forgetInitialCallbackRun = useCallback((formAttributeName: string) => {
+        for (const key of initialCallbackRunRef.current) {
+            if (key.endsWith(`:${formAttributeName}`)) initialCallbackRunRef.current.delete(key);
+        }
+    }, []);
+
     /**
      * Removes what a group's callback injected — its child fields, those of injected child groups, and
      * their values — along with the callback data they came from, which would otherwise restore them the
      * next time any callback answers, and any of those callbacks still in flight. Their initial callbacks
      * may run again once they are injected anew.
-     * Runs when a dependency of the group is cleared: no callback fires then to replace them. Returns the
-     * names of the removed fields.
+     * Runs when a dependency of the group is cleared, as no callback fires then to replace them, and when the
+     * group's parent answers without it. Returns the names of the removed fields.
      */
     const dropInjectedGroupChildren = useCallback(
         (groupFormAttributeName: string): ReadonlySet<string> => {
@@ -745,13 +752,11 @@ function AttributeEditorInner({
             });
             for (const childFormAttributeName of droppedFormAttributeNames) {
                 setValue(childFormAttributeName, undefined);
-                for (const key of initialCallbackRunRef.current) {
-                    if (key.endsWith(`:${childFormAttributeName}`)) initialCallbackRunRef.current.delete(key);
-                }
+                forgetInitialCallbackRun(childFormAttributeName);
             }
             return droppedNames;
         },
-        [dispatch, id, isRunningCallback, setGroupAttributesCallbackAttributes, setValue],
+        [dispatch, forgetInitialCallbackRun, id, isRunningCallback, setGroupAttributesCallbackAttributes, setValue],
     );
 
     /* c8 ignore start */
@@ -1128,12 +1133,15 @@ function AttributeEditorInner({
             }
         }
 
+        const droppedChildCallbackIds: string[] = [];
         for (const callbackId in callbackData) {
             if (callbackData[callbackId] === previousCallbackData[callbackId]) continue;
             if (!callbackData[callbackId]) continue;
             if (!Array.isArray(callbackData[callbackId])) continue;
             const groupCallbackAttributes: AttributeDescriptorModel[] = callbackData[callbackId].filter(isAttributeDescriptorModel);
-            injectedChildNamesRef.current[callbackId] = groupCallbackAttributes.map((descriptor) => descriptor.name);
+            const previousChildNames = injectedChildNamesRef.current[callbackId] ?? [];
+            const childNames = groupCallbackAttributes.map((descriptor) => descriptor.name);
+            injectedChildNamesRef.current[callbackId] = childNames;
 
             const descriptors = [...attributeDescriptors, ...groupAttributesCallbackAttributes];
             const callbackDescriptor = descriptors.find((d) => getAttributeEditorAttributeKey(id, d.name) === callbackId);
@@ -1183,11 +1191,31 @@ function AttributeEditorInner({
 
                 setGroupAttributesCallbackAttributes(newGroupCallbackDescriptors);
                 updateValueFromCallbackData(callbackId, callbackDescriptor);
+                for (const childName of previousChildNames) {
+                    if (!childNames.includes(childName)) droppedChildCallbackIds.push(getAttributeEditorAttributeKey(id, childName));
+                }
             }
         }
 
+        // A child group a new answer no longer injects would keep its own callback data, and with it its fields.
+        // Dropped after the loop, as each answer above sets the fields and options from all callback data.
+        for (const childCallbackId of droppedChildCallbackIds) {
+            forgetInitialCallbackRun(childCallbackId);
+            dropInjectedGroupChildren(childCallbackId);
+        }
+
         setPreviousCallbackData(callbackData);
-    }, [callbackData, options, previousCallbackData, setValue, id, attributeDescriptors, groupAttributesCallbackAttributes]);
+    }, [
+        callbackData,
+        options,
+        previousCallbackData,
+        setValue,
+        id,
+        attributeDescriptors,
+        groupAttributesCallbackAttributes,
+        forgetInitialCallbackRun,
+        dropInjectedGroupChildren,
+    ]);
     /* c8 ignore stop */
 
     /*

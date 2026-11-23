@@ -614,9 +614,7 @@ test.describe('AttributeEditor NG group callbacks', () => {
         // given
         const firesOnMountOnly: string[] = [];
         await mountWithDnsChallengeSelected(mount, firesOnMountOnly);
-        await answerGroupCallback(page);
-        await page.getByTestId('answer-callbacks').click();
-        await expect(page.getByTestId('spinner')).toHaveCount(0, { timeout: 10000 });
+        await answerGroupAndNestedGroupCallbacks(page);
         await page.getByTestId('select-__attributes__testEditor__.challengeTypeSelect-clear').click();
         await expect(page.getByTestId('text-input-__attributes__testEditor__.dnsZone')).toHaveCount(0, { timeout: 10000 });
 
@@ -688,6 +686,48 @@ test.describe('AttributeEditor NG group callbacks', () => {
         await expect(writerTypeTrigger).toContainText('external', { timeout: 10000 });
     });
 
+    for (const { condition, withAnotherCallback } of [
+        { condition: 'when its parent group answers without it', withAnotherCallback: false },
+        { condition: 'when its parent group answers without it in the same update as another callback', withAnotherCallback: true },
+    ]) {
+        test(`drops the fields of a child group ${condition}`, async ({ mount, page }) => {
+            // given
+            const otherDescriptors = withAnotherCallback ? [endpointDescriptor()] : [];
+            const laterAnswers = {
+                [`__attributes__${editorId}__.dnsGroup`]: [injectedFieldDescriptor('dnsServer', 'DNS Server')],
+                ...(withAnotherCallback ? { [`__attributes__${editorId}__.endpoint`]: [{ data: 'acme.example' }] } : {}),
+            };
+            await mountWithDnsChallengeSelected(mount, undefined, otherDescriptors, laterAnswers);
+            await answerGroupCallback(page);
+            await expect(page.getByTestId('spinner')).toHaveCount(0, { timeout: 10000 });
+            const dnsZoneInput = page.getByTestId('text-input-__attributes__testEditor__.dnsZone');
+            await expect(dnsZoneInput).toBeVisible({ timeout: 10000 });
+
+            // when
+            await page.getByTestId('answer-later-callbacks').click();
+
+            // then
+            await expect(dnsZoneInput).toHaveCount(0, { timeout: 10000 });
+            await expect(page.getByTestId('text-input-__attributes__testEditor__.dnsServer')).toBeVisible();
+        });
+    }
+
+    test('fires the initial callback of a dropped child group again once its parent injects it anew', async ({ mount, page }) => {
+        // given
+        const firesOnMountOnly: string[] = [];
+        const answerWithoutNestedGroup = { [`__attributes__${editorId}__.dnsGroup`]: [injectedFieldDescriptor('dnsServer', 'DNS Server')] };
+        await mountWithDnsChallengeSelected(mount, firesOnMountOnly, [], answerWithoutNestedGroup);
+        await answerGroupAndNestedGroupCallbacks(page);
+        await page.getByTestId('answer-later-callbacks').click();
+        await expect(page.getByTestId('text-input-__attributes__testEditor__.dnsZone')).toHaveCount(0, { timeout: 10000 });
+
+        // when
+        await page.getByTestId(`answer-callback-__attributes__${editorId}__.dnsGroup`).click();
+
+        // then — the nested group's callback is in flight again, as the test store never answers it
+        await expect(page.getByTestId('spinner')).toBeVisible({ timeout: 10000 });
+    });
+
     // ── Helpers ───────────────────────────────────────────────────────────────
 
     const challengeTypeDescriptor = (): DataAttributeModel =>
@@ -739,10 +779,17 @@ test.describe('AttributeEditor NG group callbacks', () => {
         await expect(page.getByTestId('text-input-__attributes__testEditor__.rfc2136Server')).toBeVisible({ timeout: 10000 });
     };
 
+    const answerGroupAndNestedGroupCallbacks = async (page: Page) => {
+        await answerGroupCallback(page);
+        await page.getByTestId('answer-callbacks').click();
+        await expect(page.getByTestId('spinner')).toHaveCount(0, { timeout: 10000 });
+    };
+
     const mountWithDnsChallengeSelected = (
         mount: any,
         nestedGroupDependsOn?: string[],
         otherDescriptors: AttributeDescriptorModel[] = [],
+        laterCallbackResponses?: Record<string, unknown[]>,
     ) =>
         mountWithDnsGroupAnswers(
             mount,
@@ -755,6 +802,8 @@ test.describe('AttributeEditor NG group callbacks', () => {
                 [`__attributes__${editorId}__.endpoint`]: [{ data: 'acme.example' }],
             },
             otherDescriptors,
+            false,
+            laterCallbackResponses,
         );
 
     const mountWithDnsWriterGroup = (mount: any) =>
@@ -776,6 +825,7 @@ test.describe('AttributeEditor NG group callbacks', () => {
         callbackResponses: Record<string, unknown[]>,
         otherDescriptors: AttributeDescriptorModel[] = [],
         renderFormValidity = false,
+        laterCallbackResponses?: Record<string, unknown[]>,
     ) =>
         mount(
             <AttributeEditorTestWrapper
@@ -787,6 +837,7 @@ test.describe('AttributeEditor NG group callbacks', () => {
                 withGroupCallbackState
                 renderFormValues
                 callbackResponses={callbackResponses}
+                laterCallbackResponses={laterCallbackResponses}
                 renderFormValidity={renderFormValidity}
             />,
         );
