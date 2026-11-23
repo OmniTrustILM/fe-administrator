@@ -32,6 +32,7 @@ import CustomAttributeAddSelect from 'components/Attributes/AttributeEditor/Cust
 import {
     type AttributeSelectOption,
     collectFormAttributes,
+    firstInjectedDescriptorOfEachName,
     isFreeTextContentType,
     mapAttributeContentToOptionValue,
 } from 'utils/attributes/attributes';
@@ -76,18 +77,6 @@ function cloneForCompare<T>(value: T): T {
 const emptyAttributes: AttributeResponseModel[] = [];
 const emptyGroupAttributesCallbackAttributes: AttributeDescriptorModel[] = [];
 const noDroppedNames: ReadonlySet<string> = new Set();
-
-/** The first injected descriptor of each name, leaving out the names of the form's own attributes. */
-function firstInjectedDescriptorOfEachName(
-    injectedDescriptors: AttributeDescriptorModel[],
-    ownDescriptors: AttributeDescriptorModel[],
-): AttributeDescriptorModel[] {
-    const ownNames = new Set(ownDescriptors.map((descriptor) => descriptor.name));
-    return injectedDescriptors.filter(
-        (descriptor, index) =>
-            !ownNames.has(descriptor.name) && injectedDescriptors.findIndex((other) => other.name === descriptor.name) === index,
-    );
-}
 
 /** Form changes are collected for this long before the change-driven callback pass runs. */
 export const CALLBACK_DEBOUNCE_MS = 600;
@@ -1403,7 +1392,8 @@ function AttributeEditorInner({
             attrs.push(
                 <Widget noBorder key={group} title={group === '__' ? '' : group} busy={isRunningCb}>
                     {groupedAttributesDescriptors[group].map((descriptor, index) => (
-                        <div key={descriptor.name} className="mb-4">
+                        // Keyed by uuid too: another copy taking over an injected field starts afresh, local state included.
+                        <div key={`${descriptor.name}:${descriptor.uuid}`} className="mb-4">
                             <Attribute
                                 busy={isRunningCb}
                                 name={getAttributeEditorAttributeKey(id, descriptor.name)}
