@@ -710,13 +710,15 @@ function AttributeEditorInner({
     /**
      * Removes what a group's callback injected — its child fields, those of injected child groups, and
      * their values — along with the callback data they came from, which would otherwise restore them the
-     * next time any callback answers. Their initial callbacks may run again once they are injected anew.
+     * next time any callback answers, and any of those callbacks still in flight. Their initial callbacks
+     * may run again once they are injected anew.
      * Runs when a dependency of the group is cleared: no callback fires then to replace them.
      */
     const dropInjectedGroupChildren = useCallback(
         (groupFormAttributeName: string) => {
             const injected = injectedChildNamesRef.current;
-            if (!injected[groupFormAttributeName]) return;
+            const isPending = (callbackId: string) => !!injected[callbackId] || !!isRunningCallback[callbackId];
+            if (!isPending(groupFormAttributeName)) return;
 
             const droppedNames = new Set<string>();
             const callbackIds = [groupFormAttributeName];
@@ -727,7 +729,7 @@ function AttributeEditorInner({
                 childNames.forEach((childName) => {
                     droppedNames.add(childName);
                     const childFormAttributeName = getAttributeEditorAttributeKey(id, childName);
-                    if (injected[childFormAttributeName]) callbackIds.push(childFormAttributeName);
+                    if (isPending(childFormAttributeName)) callbackIds.push(childFormAttributeName);
                 });
             }
             if (droppedNames.size === 0) return;
@@ -746,7 +748,7 @@ function AttributeEditorInner({
                 }
             }
         },
-        [dispatch, id, setGroupAttributesCallbackAttributes, setValue],
+        [dispatch, id, isRunningCallback, setGroupAttributesCallbackAttributes, setValue],
     );
 
     /* c8 ignore start */

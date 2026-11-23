@@ -443,6 +443,18 @@ describe('connectors slice', () => {
         expect(next.callbackData.kept).toEqual([{ data: 'b' }]);
     });
 
+    test('clearCallbackDataFor supersedes the request in flight for the named callback', () => {
+        // given
+        const inFlight = { ...initialState, isRunningCallback: { cleared: true }, callbackSeq: { cleared: 3 } };
+
+        // when
+        const next = reducer(inFlight, actions.clearCallbackDataFor({ callbackId: 'cleared' }));
+
+        // then
+        expect(next.isRunningCallback.cleared).toBe(false);
+        expect(next.callbackSeq.cleared).toBe(4);
+    });
+
     test('callbackResource and clear helpers update callbackData and isRunningCallback', () => {
         let next = reducer(
             { ...initialState, callbackData: { cb: { old: true } }, isRunningCallback: {} } as any,
