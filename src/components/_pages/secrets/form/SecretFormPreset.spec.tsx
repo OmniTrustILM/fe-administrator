@@ -49,6 +49,11 @@ function settled(page: Page) {
     return page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
 }
 
+async function actionCount(page: Page, type: string) {
+    const types = ((await page.getByTestId('store-action-types').textContent()) ?? '').split('\n');
+    return types.filter((each) => each === type).length;
+}
+
 function attributeLoads(page: Page) {
     return page.evaluate(() => (globalThis as unknown as Record<string, number>).secretFormAttributeLoads ?? 0);
 }
@@ -224,10 +229,9 @@ test.describe('SecretForm preset', () => {
 
         await page.getByTestId('refresh-vault-profiles').click();
 
-        await expect(page.getByTestId('store-action-types')).toContainText('vaultProfiles/listVaultProfilesSuccess');
+        await expect.poll(() => actionCount(page, 'vaultProfiles/listVaultProfilesSuccess')).toBe(2);
         await settled(page);
-        const types = ((await page.getByTestId('store-action-types').textContent()) ?? '').split('\n');
-        expect(types.filter((type) => type === 'secrets/listSecretAttributes')).toHaveLength(1);
+        expect(await actionCount(page, 'secrets/listSecretAttributes')).toBe(1);
         await expect(page.getByText('Loading attributes...')).toHaveCount(0);
     });
 
@@ -238,7 +242,7 @@ test.describe('SecretForm preset', () => {
 
         await page.getByTestId('refresh-vault-profiles').click();
 
-        await expect(page.getByTestId('store-action-types')).toContainText('vaultProfiles/listVaultProfilesSuccess');
+        await expect.poll(() => actionCount(page, 'vaultProfiles/listVaultProfilesSuccess')).toBe(2);
         await settled(page);
         expect(await attributeLoads(page)).toBe(1);
     });
