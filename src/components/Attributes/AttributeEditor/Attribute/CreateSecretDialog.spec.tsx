@@ -17,6 +17,7 @@ async function createSecret(page: Page) {
 }
 
 const createdValue = { reference: 'new-secret', data: { uuid: CREATED_SECRET_UUID, name: 'new-secret', resource: 'secrets' } };
+const LISTED_VALUE = { reference: 'existing', data: { uuid: 'existing-uuid', name: 'existing', resource: 'secrets' } };
 
 test.describe('CreateSecretDialog', () => {
     test('createsAndSelectsSecret', async ({ mount, page }) => {
@@ -38,6 +39,14 @@ test.describe('CreateSecretDialog', () => {
         await createSecret(page);
 
         await expect(page.getByTestId('value')).toHaveText(JSON.stringify([createdValue]));
+    });
+
+    test('adds the created secret to a multi-select picker holding a single stored value', async ({ mount, page }) => {
+        await mount(<CreateSecretDialogHarness multiSelect prefilled />);
+
+        await createSecret(page);
+
+        await expect(page.getByTestId('value')).toHaveText(JSON.stringify([LISTED_VALUE, createdValue]));
     });
 
     test('reportsAwaitingApproval_andSelectsNothing', async ({ mount, page }) => {

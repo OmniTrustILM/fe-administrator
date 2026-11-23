@@ -105,8 +105,9 @@ function SecretPicker({ api, multiSelect, listed, secretType }: PickerProps) {
     );
 }
 
-function PickerForm(props: PickerProps) {
-    const methods = useForm();
+function PickerForm({ prefilled, ...props }: PickerProps & Readonly<{ prefilled: boolean }>) {
+    // A multi-select value Core stored as one item rather than a list.
+    const methods = useForm(prefilled ? { defaultValues: { [FIELD]: LISTED[0].value } } : undefined);
     return (
         <FormProvider {...methods}>
             <SecretPicker {...props} />
@@ -141,6 +142,7 @@ function OpenParentButton({ content }: Readonly<{ content: ReactNode }>) {
 export default function CreateSecretDialogHarness({
     multiSelect = false,
     sameNameListed = false,
+    prefilled = false,
     holdCreate = false,
     holdCustomAttributes = false,
     inGlobalModal = false,
@@ -150,6 +152,7 @@ export default function CreateSecretDialogHarness({
     Readonly<{
         multiSelect?: boolean;
         sameNameListed?: boolean;
+        prefilled?: boolean;
         // The create stays pending until the `resolve-create` button is clicked.
         holdCreate?: boolean;
         // The secret's custom attributes stay pending until the `resolve-custom-attributes` button is clicked.
@@ -182,7 +185,13 @@ export default function CreateSecretDialogHarness({
         [],
     );
     const picker = (
-        <PickerForm api={api} multiSelect={multiSelect} listed={sameNameListed ? LISTED_WITH_SAME_NAME : LISTED} secretType={secretType} />
+        <PickerForm
+            api={api}
+            multiSelect={multiSelect}
+            listed={sameNameListed ? LISTED_WITH_SAME_NAME : LISTED}
+            secretType={secretType}
+            prefilled={prefilled}
+        />
     );
 
     return withProviders(
