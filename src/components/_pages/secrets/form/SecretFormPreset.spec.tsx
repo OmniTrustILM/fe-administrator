@@ -44,6 +44,15 @@ async function waitForKeysExported(page: Page, count: number) {
     await expect.poll(() => page.evaluate(() => (globalThis as unknown as Record<string, number>).keysExported)).toBe(count);
 }
 
+// Two animation frames: React has committed the refreshed list and run the effects it triggers.
+function settled(page: Page) {
+    return page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+}
+
+function attributeLoads(page: Page) {
+    return page.evaluate(() => (globalThis as unknown as Record<string, number>).secretFormAttributeLoads ?? 0);
+}
+
 function createRequests(page: Page) {
     return page.evaluate(() => (globalThis as unknown as Record<string, unknown[]>).secretFormCreateRequests ?? []);
 }
@@ -206,5 +215,31 @@ test.describe('SecretForm preset', () => {
         await expect(page.locator('#secret-generic-content')).toHaveValue('abc');
         await expect(page.locator('#secret-generic-content')).toBeDisabled();
         await expect(page.getByRole('button', { name: 'Generate key' })).toHaveCount(0);
+    });
+
+    test('keeps the attribute editor when the vault profile list is refreshed through the store', async ({ mount, page }) => {
+        await mount(<SecretFormPresetHarness throughStore preset={{ type: SecretType.Generic }} />);
+        await fillNameAndVaultProfile(page);
+        await expect(page.getByTestId('store-action-types')).toContainText('secrets/listSecretAttributes');
+
+        await page.getByTestId('refresh-vault-profiles').click();
+
+        await expect(page.getByTestId('store-action-types')).toContainText('vaultProfiles/listVaultProfilesSuccess');
+        await settled(page);
+        const types = ((await page.getByTestId('store-action-types').textContent()) ?? '').split('\n');
+        expect(types.filter((type) => type === 'secrets/listSecretAttributes')).toHaveLength(1);
+        await expect(page.getByText('Loading attributes...')).toHaveCount(0);
+    });
+
+    test('loads the attributes once when the vault profile list is refreshed while creating directly', async ({ mount, page }) => {
+        await mount(<SecretFormPresetHarness preset={{ type: SecretType.Generic }} />);
+        await fillNameAndVaultProfile(page);
+        await expect.poll(() => attributeLoads(page)).toBe(1);
+
+        await page.getByTestId('refresh-vault-profiles').click();
+
+        await expect(page.getByTestId('store-action-types')).toContainText('vaultProfiles/listVaultProfilesSuccess');
+        await settled(page);
+        expect(await attributeLoads(page)).toBe(1);
     });
 });

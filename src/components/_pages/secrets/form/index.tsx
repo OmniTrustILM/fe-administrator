@@ -66,6 +66,8 @@ type SecretFormProps = Readonly<{
     loadSecretAttributes?: SecretAttributesLoader;
 }>;
 
+type SecretAttributeQuery = Readonly<{ vaultUuid: string; vaultProfileUuid: string; secretType: SecretType }>;
+
 type LocalSecretAttributes = Readonly<{ descriptors: AttributeDescriptorModel[]; loading: boolean; failed?: boolean }>;
 
 const NO_SECRET_ATTRIBUTES: LocalSecretAttributes = { descriptors: [], loading: false };
@@ -286,18 +288,26 @@ export default function SecretForm({
         setGeneratedKeyLabel(undefined);
     };
 
+    const vaultUuid = vaultProfiles.find((p) => p.uuid === watchedSourceVaultProfile)?.vaultInstance?.uuid;
+    const [attributeQuery, setAttributeQuery] = useState<SecretAttributeQuery>();
     useEffect(() => {
-        if (!watchedSourceVaultProfile || !watchedType) return;
-        const profile = vaultProfiles.find((p) => p.uuid === watchedSourceVaultProfile);
-        const vaultUuid = profile?.vaultInstance?.uuid;
-        if (!vaultUuid) return;
-        const query = { vaultUuid, vaultProfileUuid: watchedSourceVaultProfile, secretType: watchedType as SecretType };
+        if (!vaultUuid || !watchedSourceVaultProfile || !watchedType) return;
+        const secretType = watchedType as SecretType;
+        setAttributeQuery((prev) =>
+            prev?.vaultUuid === vaultUuid && prev.vaultProfileUuid === watchedSourceVaultProfile && prev.secretType === secretType
+                ? prev
+                : { vaultUuid, vaultProfileUuid: watchedSourceVaultProfile, secretType },
+        );
+    }, [vaultUuid, watchedSourceVaultProfile, watchedType]);
+
+    useEffect(() => {
+        if (!attributeQuery) return;
         if (!createsDirectly) {
-            dispatch(secretsActions.listSecretAttributes(query));
+            dispatch(secretsActions.listSecretAttributes(attributeQuery));
             return;
         }
         setLocalSecretAttributes({ descriptors: [], loading: true });
-        const loading = loadSecretAttributes(query).subscribe({
+        const loading = loadSecretAttributes(attributeQuery).subscribe({
             next: (descriptors) => setLocalSecretAttributes({ descriptors, loading: false }),
             error: () => {
                 setLocalSecretAttributes({ descriptors: [], loading: false, failed: true });
@@ -305,7 +315,7 @@ export default function SecretForm({
             },
         });
         return () => loading.unsubscribe();
-    }, [dispatch, vaultProfiles, watchedSourceVaultProfile, watchedType, createsDirectly, loadSecretAttributes]);
+    }, [dispatch, attributeQuery, createsDirectly, loadSecretAttributes]);
 
     const buildSecretContent = useCallback((values: FormValues): import('types/openapi').SecretContent => {
         const type = values.type as SecretType;
