@@ -841,6 +841,47 @@ test.describe('AttributeEditor NG group callbacks', () => {
         await expect(page.getByTestId('form-values')).not.toContainText(enteredRfc2136Server);
     });
 
+    test('drops the fields of groups that inject each other when their dependency is cleared', async ({ mount, page }) => {
+        // given
+        const dnsZoneInput = await mountWithGroupsInjectingEachOther(mount, page);
+
+        // when
+        await page.getByTestId('select-__attributes__testEditor__.challengeTypeSelect-clear').click();
+
+        // then
+        await expect(dnsZoneInput).toHaveCount(0, { timeout: 10000 });
+    });
+
+    test('keeps the new answer of a group whose dropped child group injects it back', async ({ mount, page }) => {
+        // given
+        const dnsZoneInput = await mountWithGroupsInjectingEachOther(mount, page);
+
+        // when
+        await page.getByTestId('answer-later-callbacks').click();
+
+        // then
+        await expect(dnsZoneInput).toHaveCount(0, { timeout: 10000 });
+        await expect(page.getByTestId('text-input-__attributes__testEditor__.dnsServer')).toBeVisible();
+    });
+
+    test('drops child groups that inject each other when their parent group answers without them', async ({ mount, page }) => {
+        // given
+        const answers = nestedGroupAnswers();
+        const nestedGroupCallbackId = `__attributes__${editorId}__.dnsNestedGroup`;
+        answers[nestedGroupCallbackId] = [...answers[nestedGroupCallbackId], groupDescriptor('dnsLoopGroup')];
+        answers[`__attributes__${editorId}__.dnsLoopGroup`] = [groupDescriptor('dnsNestedGroup')];
+        await mountWithDnsGroupAnswers(mount, answers, [], false, answerWithoutNestedGroup());
+        await answerGroupAndNestedGroupCallbacks(page);
+        const dnsZoneInput = page.getByTestId('text-input-__attributes__testEditor__.dnsZone');
+        await expect(dnsZoneInput).toBeVisible({ timeout: 10000 });
+
+        // when
+        await page.getByTestId('answer-later-callbacks').click();
+
+        // then
+        await expect(dnsZoneInput).toHaveCount(0, { timeout: 10000 });
+    });
+
     test('fires the initial callback of a dropped child group again once its parent injects it anew', async ({ mount, page }) => {
         // given
         const firesOnMountOnly: string[] = [];
@@ -924,6 +965,17 @@ test.describe('AttributeEditor NG group callbacks', () => {
     const answerWithoutNestedGroup = () => ({
         [`__attributes__${editorId}__.dnsGroup`]: [injectedFieldDescriptor('dnsServer', 'DNS Server')],
     });
+
+    const mountWithGroupsInjectingEachOther = async (mount: any, page: Page) => {
+        const answers = nestedGroupAnswers();
+        const nestedGroupCallbackId = `__attributes__${editorId}__.dnsNestedGroup`;
+        answers[nestedGroupCallbackId] = [...answers[nestedGroupCallbackId], groupDescriptor('dnsGroup')];
+        await mountWithDnsGroupAnswers(mount, answers, [], false, answerWithoutNestedGroup());
+        await answerGroupAndNestedGroupCallbacks(page);
+        const dnsZoneInput = page.getByTestId('text-input-__attributes__testEditor__.dnsZone');
+        await expect(dnsZoneInput).toBeVisible({ timeout: 10000 });
+        return dnsZoneInput;
+    };
 
     const mountWithDnsChallengeSelected = (
         mount: any,
