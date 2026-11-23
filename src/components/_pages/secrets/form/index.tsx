@@ -72,6 +72,9 @@ type LocalSecretAttributes = Readonly<{ descriptors: AttributeDescriptorModel[];
 
 const NO_SECRET_ATTRIBUTES: LocalSecretAttributes = { descriptors: [], loading: false };
 
+const SECRET_EDITOR_IDS = { attributes: 'secret', customAttributes: 'customSecret' } as const;
+const NEW_SECRET_EDITOR_IDS = { attributes: 'newSecret', customAttributes: 'newCustomSecret' } as const;
+
 function keyGenerationStatus(generating: boolean, generatedKeyLabel: string | undefined): string {
     if (generating) return 'Generating key...';
     return generatedKeyLabel ? `Generated ${generatedKeyLabel} key` : '';
@@ -118,6 +121,8 @@ export default function SecretForm({
     const storeSecretAttributeDescriptors = useSelector(secretsSelectors.secretCreationAttributeDescriptors);
     const isFetchingStoreSecretAttributes = useSelector(secretsSelectors.isFetchingSecretCreationAttributes);
     const createsDirectly = !!onCreate;
+    // Distinct editor ids keep this form's attribute callbacks apart from a secret form it is opened from.
+    const editorIds = createsDirectly ? NEW_SECRET_EDITOR_IDS : SECRET_EDITOR_IDS;
     const [localSecretAttributes, setLocalSecretAttributes] = useState<LocalSecretAttributes>(NO_SECRET_ATTRIBUTES);
     const secretCreationAttributeDescriptors = createsDirectly ? localSecretAttributes.descriptors : storeSecretAttributeDescriptors;
     const isFetchingSecretCreationAttributes = createsDirectly ? localSecretAttributes.loading : isFetchingStoreSecretAttributes;
@@ -390,8 +395,8 @@ export default function SecretForm({
 
             const secretContent = buildSecretContent(values);
             const allValues = getValues();
-            const attributes = collectFormAttributes('secret', secretCreationAttributeDescriptors, allValues);
-            const customAttributes = collectFormAttributes('customSecret', resourceCustomAttributes, allValues);
+            const attributes = collectFormAttributes(editorIds.attributes, secretCreationAttributeDescriptors, allValues);
+            const customAttributes = collectFormAttributes(editorIds.customAttributes, resourceCustomAttributes, allValues);
 
             if (initialSecret) {
                 // Edit mode
@@ -438,6 +443,7 @@ export default function SecretForm({
         [
             buildSecretContent,
             dispatch,
+            editorIds,
             getValues,
             initialSecret,
             onCreate,
@@ -926,7 +932,7 @@ export default function SecretForm({
                                             <div className="text-sm text-content-subtle">Loading attributes...</div>
                                         ) : (
                                             <AttributeEditor
-                                                id="secret"
+                                                id={editorIds.attributes}
                                                 attributeDescriptors={secretCreationAttributeDescriptors}
                                                 attributes={initialSecret?.attributes}
                                             />
@@ -936,7 +942,7 @@ export default function SecretForm({
                                         title: 'Custom Attributes',
                                         content: (
                                             <AttributeEditor
-                                                id="customSecret"
+                                                id={editorIds.customAttributes}
                                                 attributeDescriptors={resourceCustomAttributes}
                                                 attributes={initialSecret?.customAttributes}
                                             />

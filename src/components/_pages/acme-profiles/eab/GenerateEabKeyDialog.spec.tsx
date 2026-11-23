@@ -115,7 +115,7 @@ test.describe('GenerateEabKeyDialog', () => {
 
         await fillEabSecretForm(page, 'acme-eab');
         await expect(createButton(page)).toBeDisabled();
-        const path = page.getByTestId('text-input-__attributes__secret__.path');
+        const path = page.getByTestId('text-input-__attributes__newSecret__.path');
         await path.click();
         await path.fill('acme/eab');
         await createButton(page).click();

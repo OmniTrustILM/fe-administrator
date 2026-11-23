@@ -199,7 +199,7 @@ test.describe('SecretForm preset', () => {
 
         await fillNameAndVaultProfile(page);
 
-        await expect(page.getByTestId('text-input-__attributes__secret__.path')).toBeVisible();
+        await expect(page.getByTestId('text-input-__attributes__newSecret__.path')).toBeVisible();
         await expect(page.getByTestId('store-action-types')).toContainText('vaultProfiles/listVaultProfiles');
         await expect(page.getByTestId('store-action-types')).not.toContainText('secrets/listSecretAttributes');
     });
