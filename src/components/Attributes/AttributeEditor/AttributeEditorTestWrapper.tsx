@@ -25,7 +25,8 @@ export type AttributeEditorTestWrapperProps = {
      *  parent re-render or a resolved group callback does. */
     withDescriptorRefresh?: boolean;
     /** Keeps groupAttributesCallbackAttributes in wrapper state, the way a form page does, so the editor can
-     *  add and remove callback-injected fields. */
+     *  add and remove callback-injected fields, and renders a button that resets them the way a page does when its
+     *  context changes: clearing all callback data and the injected fields. */
     withGroupCallbackState?: boolean;
     /** Renders buttons that answer every callbackId, or one, with a deep copy of its data, as a response off the
      *  wire would be, standing in for the callback epic. */
@@ -125,6 +126,18 @@ export function AttributeEditorTestWrapper({
                         kind={kind}
                         withRemoveAction={withRemoveAction}
                     />
+                    {withGroupCallbackState && (
+                        <button
+                            type="button"
+                            data-testid="reset-callback-state"
+                            onClick={() => {
+                                store.dispatch(connectorActions.clearCallbackData());
+                                setGroupCallbackState([]);
+                            }}
+                        >
+                            Reset callback state
+                        </button>
+                    )}
                     {withDescriptorRefresh && (
                         <button type="button" data-testid="refresh-descriptors" onClick={() => setRefreshCount((count) => count + 1)}>
                             Refresh descriptors

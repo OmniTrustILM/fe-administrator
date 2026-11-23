@@ -1112,6 +1112,26 @@ test.describe('AttributeEditor NG group callbacks', () => {
         await expect(page.getByTestId('form-values')).toContainText(enteredZone);
     });
 
+    test('leaves out the fields injected before the page cleared all callback data once another callback answers', async ({
+        mount,
+        page,
+    }) => {
+        // given
+        await mountWithDnsChallengeSelected(mount, undefined, [endpointDescriptor()]);
+        await answerGroupAndNestedGroupCallbacks(page);
+        const dnsServerInput = page.getByTestId('text-input-__attributes__testEditor__.dnsServer');
+        await expect(dnsServerInput).toBeVisible();
+        await page.getByTestId('reset-callback-state').click();
+        await expect(dnsServerInput).toHaveCount(0);
+
+        // when
+        await page.getByTestId(`answer-callback-__attributes__${editorId}__.endpoint`).click();
+
+        // then
+        await page.waitForTimeout(CALLBACK_DEBOUNCE_MS * 2); // NOSONAR(S2925)
+        await expect(dnsServerInput).toHaveCount(0);
+    });
+
     test('fires the initial callback of a dropped child group again once its parent injects it anew', async ({ mount, page }) => {
         // given
         const firesOnMountOnly: string[] = [];

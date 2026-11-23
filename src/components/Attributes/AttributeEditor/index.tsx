@@ -1243,6 +1243,13 @@ function AttributeEditorInner({
         // The callback data of every attribute editor on the page shares one store; this editor reads only its own.
         const ownCallbackIdPrefix = getAttributeEditorAttributeKey(id, '');
         const ownCallbackData = Object.entries(callbackData).filter(([callbackId]) => callbackId.startsWith(ownCallbackIdPrefix));
+        // A request leaves its callback's key in the store; a page that clears all callback data removes the keys, and
+        // with them what those callbacks injected.
+        for (const callbackId of Object.keys(injectedDescriptorsRef.current)) {
+            if (callbackId in callbackData) continue;
+            delete injectedDescriptorsRef.current[callbackId];
+            delete injectedChildNamesRef.current[callbackId];
+        }
         for (const [callbackId, data] of ownCallbackData) {
             if (data !== previousCallbackData[callbackId] && Array.isArray(data)) {
                 injectedDescriptorsRef.current[callbackId] = data.filter(isAttributeDescriptorModel);
