@@ -717,15 +717,13 @@ function AttributeEditorInner({
 
     /** Names of the descriptors this editor's callbacks inject, apart from those of the given callbacks. */
     const collectNamesInjectedByThisEditor = useCallback(
-        (excludedCallbackIds: readonly string[]): ReadonlySet<string> => {
-            const ownCallbackIdPrefix = getAttributeEditorAttributeKey(id, '');
-            return new Set(
+        (excludedCallbackIds: readonly string[]): ReadonlySet<string> =>
+            new Set(
                 Object.entries(injectedChildNamesRef.current)
-                    .filter(([callbackId]) => callbackId.startsWith(ownCallbackIdPrefix) && !excludedCallbackIds.includes(callbackId))
+                    .filter(([callbackId]) => !excludedCallbackIds.includes(callbackId))
                     .flatMap(([, childNames]) => childNames),
-            );
-        },
-        [id],
+            ),
+        [],
     );
 
     /**
@@ -1171,8 +1169,11 @@ function AttributeEditorInner({
             }
         }
 
+        // The callback data of every attribute editor on the page shares one store; this editor reads only its own.
+        const ownCallbackIdPrefix = getAttributeEditorAttributeKey(id, '');
+        const ownCallbackData = Object.entries(callbackData).filter(([callbackId]) => callbackId.startsWith(ownCallbackIdPrefix));
         const droppedChildNames: string[] = [];
-        for (const callbackId in callbackData) {
+        for (const [callbackId] of ownCallbackData) {
             if (callbackData[callbackId] === previousCallbackData[callbackId]) continue;
             if (!callbackData[callbackId]) continue;
             if (!Array.isArray(callbackData[callbackId])) continue;
@@ -1223,7 +1224,8 @@ function AttributeEditorInner({
 
             // Set groupAttributesCallbackDescriptors inside the loop, to only run this if the callbackData fields have actually been changed.
             if (callbackDescriptor) {
-                const newGroupCallbackDescriptors = Object.values(callbackData)
+                const newGroupCallbackDescriptors = ownCallbackData
+                    .map(([, data]) => data)
                     .filter(Array.isArray)
                     .flatMap((callbackDataArray) => callbackDataArray.filter(isAttributeDescriptorModel));
 

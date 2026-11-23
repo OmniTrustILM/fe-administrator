@@ -803,6 +803,21 @@ test.describe('AttributeEditor NG group callbacks', () => {
         });
     }
 
+    test('leaves out the fields a group of another editor injects', async ({ mount, page }) => {
+        // given
+        const anotherEditorsAnswer = {
+            '__attributes__otherEditor__.otherGroup': [injectedFieldDescriptor('foreignField', 'Foreign Field')],
+        };
+        await mountWithDnsGroupAnswers(mount, { ...nestedGroupAnswers(), ...anotherEditorsAnswer });
+
+        // when
+        await answerGroupAndNestedGroupCallbacks(page);
+
+        // then
+        await expect(page.getByTestId('text-input-__attributes__testEditor__.dnsZone')).toBeVisible({ timeout: 10000 });
+        await expect(page.getByTestId('text-input-__attributes__testEditor__.foreignField')).toHaveCount(0);
+    });
+
     test('fires the initial callback of a dropped child group again once its parent injects it anew', async ({ mount, page }) => {
         // given
         const firesOnMountOnly: string[] = [];
