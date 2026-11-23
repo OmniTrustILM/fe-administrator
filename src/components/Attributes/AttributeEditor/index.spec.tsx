@@ -734,30 +734,46 @@ test.describe('AttributeEditor NG group callbacks', () => {
         await expect(dnsZoneInput).toBeVisible();
     });
 
-    test('keeps a child group and its field values while another group of the form still injects it', async ({ mount, page }) => {
-        // given
-        await mountWithDnsGroupAnswers(
+    for (const { condition, parentAlsoInjectsField, dropTestId } of [
+        { condition: 'when its parent group answers without it', parentAlsoInjectsField: false, dropTestId: 'answer-later-callbacks' },
+        {
+            condition: "when its parent group, which also injects the child group's field, has its dependency cleared",
+            parentAlsoInjectsField: true,
+            dropTestId: 'select-__attributes__testEditor__.challengeTypeSelect-clear',
+        },
+    ]) {
+        test(`keeps a child group and its field values while another group of the form still injects it ${condition}`, async ({
             mount,
-            { ...nestedGroupAnswers(), [`__attributes__${editorId}__.sharedGroup`]: [groupDescriptor('dnsNestedGroup')] },
-            [groupDescriptor('sharedGroup', ['challengeType'])],
-            false,
-            answerWithoutNestedGroup(),
-        );
-        await answerGroupAndNestedGroupCallbacks(page);
-        const dnsZoneInput = page.getByTestId('text-input-__attributes__testEditor__.dnsZone');
-        const enteredDnsZone = 'example.com';
-        await dnsZoneInput.click(); // TextInput stays read-only until focused, which keeps autofill out
-        await dnsZoneInput.fill(enteredDnsZone);
-        await expect(page.getByTestId('form-values')).toContainText(enteredDnsZone);
+            page,
+        }) => {
+            // given
+            const dnsGroupCallbackId = `__attributes__${editorId}__.dnsGroup`;
+            const answers = nestedGroupAnswers();
+            if (parentAlsoInjectsField)
+                answers[dnsGroupCallbackId] = [...answers[dnsGroupCallbackId], injectedFieldDescriptor('dnsZone', 'DNS Zone')];
+            await mountWithDnsGroupAnswers(
+                mount,
+                { ...answers, [`__attributes__${editorId}__.sharedGroup`]: [groupDescriptor('dnsNestedGroup')] },
+                [groupDescriptor('sharedGroup')],
+                false,
+                answerWithoutNestedGroup(),
+            );
+            await answerGroupAndNestedGroupCallbacks(page);
+            const dnsZoneInput = page.getByTestId('text-input-__attributes__testEditor__.dnsZone').first();
+            const enteredDnsZone = 'example.com';
+            await dnsZoneInput.click(); // TextInput stays read-only until focused, which keeps autofill out
+            await dnsZoneInput.fill(enteredDnsZone);
+            await expect(page.getByTestId('form-values')).toContainText(enteredDnsZone);
 
-        // when
-        await page.getByTestId('answer-later-callbacks').click();
+            // when
+            await page.getByTestId(dropTestId).click();
 
-        // then — a removal would land after the answer is applied, so outlast the change pass that follows it
-        await page.waitForTimeout(CALLBACK_DEBOUNCE_MS * 2); // NOSONAR(S2925)
-        await expect(dnsZoneInput).toBeVisible();
-        await expect(page.getByTestId('form-values')).toContainText(enteredDnsZone);
-    });
+            // then — a removal would land after the answer is applied, so outlast the change pass that follows it
+            await page.waitForTimeout(CALLBACK_DEBOUNCE_MS * 2); // NOSONAR(S2925)
+            await expect(dnsZoneInput).toBeVisible();
+            await expect(page.getByTestId('form-values')).toContainText(enteredDnsZone);
+        });
+    }
 
     for (const { condition, dropTestId } of [
         { condition: 'when its parent group answers without it', dropTestId: 'answer-later-callbacks' },
