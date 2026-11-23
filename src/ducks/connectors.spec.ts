@@ -35,6 +35,18 @@ describe('connectors slice', () => {
         expect(next.connectInfo).toBeUndefined();
     });
 
+    test('clearCallbackDataWithPrefix drops only the callback data under the prefix', () => {
+        // given
+        const otherEditorsData = { y: 2 };
+        const state = { ...initialState, callbackData: { '__attributes__a__.cb': { x: 1 }, '__attributes__b__.cb': otherEditorsData } };
+
+        // when
+        const next = reducer(state, actions.clearCallbackDataWithPrefix({ prefix: '__attributes__a__.' }));
+
+        // then
+        expect(next.callbackData).toEqual({ '__attributes__b__.cb': otherEditorsData });
+    });
+
     test('clearCallbackData resets callbackData', () => {
         const next = reducer({ ...initialState, callbackData: { cb1: { x: 1 }, cb2: { y: 2 } } }, actions.clearCallbackData());
         expect(next.callbackData).toEqual({});

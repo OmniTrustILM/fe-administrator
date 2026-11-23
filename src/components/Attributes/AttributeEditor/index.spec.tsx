@@ -1132,6 +1132,33 @@ test.describe('AttributeEditor NG group callbacks', () => {
         await expect(dnsServerInput).toHaveCount(0);
     });
 
+    test('keeps the injected fields when another editor of the page mounts and a callback answers', async ({ mount, page }) => {
+        // given
+        await mount(
+            <AttributeEditorTestWrapper
+                id={editorId}
+                attributeDescriptors={[challengeTypeDescriptor(), groupDescriptor('dnsGroup', ['challengeType']), endpointDescriptor()]}
+                attributes={[{ name: 'challengeType', uuid: 'challenge-type-uuid', content: [{ data: 'dns-01' }] }] as any}
+                connectorUuid="conn-1"
+                kind="k"
+                withGroupCallbackState
+                callbackResponses={{ ...nestedGroupAnswers(), [`__attributes__${editorId}__.endpoint`]: [{ data: 'acme.example' }] }}
+                secondEditorDescriptors={[dataDescriptor({ name: 'contact', uuid: 'contact-uuid' })]}
+            />,
+        );
+        await answerGroupAndNestedGroupCallbacks(page);
+        const dnsServerInput = page.getByTestId('text-input-__attributes__testEditor__.dnsServer');
+        await expect(dnsServerInput).toBeVisible();
+        await page.getByTestId('show-second-editor').click();
+
+        // when
+        await page.getByTestId(`answer-callback-__attributes__${editorId}__.endpoint`).click();
+
+        // then
+        await page.waitForTimeout(CALLBACK_DEBOUNCE_MS * 2); // NOSONAR(S2925)
+        await expect(dnsServerInput).toBeVisible();
+    });
+
     test('fires the initial callback of a dropped child group again once its parent injects it anew', async ({ mount, page }) => {
         // given
         const firesOnMountOnly: string[] = [];

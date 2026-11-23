@@ -167,9 +167,10 @@ function AttributeEditorInner({
     // multiple effects can modify opts during single render call
     let opts: { [attributeName: string]: AttributeSelectOption[] } = {};
 
+    // The callback data of every attribute editor on a page shares one store; an editor clears only its own.
     useEffect(() => {
-        dispatch(connectorActions.clearCallbackData());
-    }, [dispatch]);
+        dispatch(connectorActions.clearCallbackDataWithPrefix({ prefix: getAttributeEditorAttributeKey(id, '') }));
+    }, [dispatch, id]);
     /**
      * Handles deletion of an attribute from the grouped attributes
      */
@@ -521,7 +522,7 @@ function AttributeEditorInner({
         keysToClear.forEach((key) => {
             setValue(key, undefined, { shouldDirty: false, shouldValidate: false });
         });
-        dispatch(connectorActions.clearCallbackData());
+        dispatch(connectorActions.clearCallbackDataWithPrefix({ prefix: getAttributeEditorAttributeKey(id, '') }));
         injectedChildNamesRef.current = {};
         injectedDescriptorsRef.current = {};
     }, [descriptorsKey, attributesKey, dispatch, setValue, watch, id]);

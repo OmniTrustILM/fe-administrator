@@ -36,6 +36,9 @@ export type AttributeEditorTestWrapperProps = {
     laterCallbackResponses?: Record<string, unknown[]>;
     /** Validates on change, as form pages do, and renders the form's validity. */
     renderFormValidity?: boolean;
+    /** Renders a button that mounts a second editor with these descriptors in the same form and store, as pages with
+     *  several editors do. */
+    secondEditorDescriptors?: AttributeDescriptorModel[];
 };
 
 function FormValidityProbe() {
@@ -87,9 +90,11 @@ export function AttributeEditorTestWrapper({
     callbackResponses,
     laterCallbackResponses,
     renderFormValidity = false,
+    secondEditorDescriptors,
 }: Readonly<AttributeEditorTestWrapperProps>) {
     const store = useMemo(() => createMockStore(preloadedState), [preloadedState]);
     const [refreshCount, setRefreshCount] = useState(0);
+    const [secondEditorShown, setSecondEditorShown] = useState(false);
     const [groupCallbackState, setGroupCallbackState] = useState<AttributeDescriptorModel[]>(groupAttributesCallbackAttributes);
     const currentDescriptors = useMemo(
         () => (refreshCount === 0 ? attributeDescriptors : [...attributeDescriptors]),
@@ -172,6 +177,19 @@ export function AttributeEditorTestWrapper({
                         >
                             Answer callbacks again
                         </button>
+                    )}
+                    {secondEditorDescriptors && (
+                        <button type="button" data-testid="show-second-editor" onClick={() => setSecondEditorShown(true)}>
+                            Show second editor
+                        </button>
+                    )}
+                    {secondEditorDescriptors && secondEditorShown && (
+                        <AttributeEditor
+                            id="secondEditor"
+                            attributeDescriptors={secondEditorDescriptors}
+                            connectorUuid={connectorUuid}
+                            kind={kind}
+                        />
                     )}
                     {renderFormValues && <FormValuesProbe />}
                     {renderFormValidity && <FormValidityProbe />}
