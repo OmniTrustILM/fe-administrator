@@ -1,7 +1,10 @@
 import CredentialForm from 'components/_pages/credentials/form';
 import type { CustomNode, LegendItem } from 'components/FlowChart';
 import type { Edge } from 'reactflow';
-import { AttributeContentType } from 'types/openapi';
+import type { DataAttributeModel } from 'types/attributes';
+import { AttributeContentType, AttributeResource } from 'types/openapi';
+import type { AttributeSelectOption } from 'utils/attributes/attributes';
+import CreateSecretDialog from 'components/Attributes/AttributeEditor/Attribute/CreateSecretDialog';
 import type { ModalIcon, ModalSize } from 'components/Dialog';
 
 export enum LockTypeEnum {
@@ -157,7 +160,11 @@ export interface GlobalModalModel {
 export interface AddNewAttributeType {
     name: string;
     contentType: AttributeContentType;
-    content: React.ReactNode;
+    resource?: AttributeResource;
+    // Shown in the global modal, or, as a function, rendered by the picker itself while it is creating.
+    content:
+        | React.ReactNode
+        | ((descriptor: DataAttributeModel, onCreated: (option: AttributeSelectOption) => void, onClose: () => void) => React.ReactNode);
 }
 
 export interface ReactFlowUI {
@@ -173,5 +180,11 @@ export const AddNewAttributeList: AddNewAttributeType[] = [
         name: 'Credential',
         contentType: AttributeContentType.Credential,
         content: <CredentialForm usesGlobalModal />,
+    },
+    {
+        name: 'Secret',
+        contentType: AttributeContentType.Resource,
+        resource: AttributeResource.Secrets,
+        content: (descriptor, onCreated, onClose) => <CreateSecretDialog descriptor={descriptor} onCreated={onCreated} onClose={onClose} />,
     },
 ];

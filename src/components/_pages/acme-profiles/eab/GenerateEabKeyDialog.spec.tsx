@@ -98,13 +98,24 @@ test.describe('GenerateEabKeyDialog', () => {
         await expect(page.getByTestId('store-actions')).not.toContainText('abc-1');
     });
 
+    test("the secret's custom attributes are read for the form", async ({ mount, page }) => {
+        await mount(<GenerateEabKeyDialogHarness generatedKey="abc" />);
+        await page.getByTestId('open').click();
+        const dialog = page.getByTestId('generate-eab-key-dialog');
+
+        await dialog.getByText('Custom Attributes', { exact: true }).click();
+        await expect(dialog.getByText('Secret owner')).toHaveCount(1);
+        await expect(page.getByTestId('store-actions')).toContainText('vaultProfiles/listVaultProfiles');
+        await expect(page.getByTestId('store-actions')).not.toContainText('customAttributes/listResourceCustomAttributes');
+    });
+
     test("the vault profile's attributes are filled here and sent with the secret", async ({ mount, page }) => {
         await mount(<GenerateEabKeyDialogHarness vaultProfileHasAttribute />);
         await page.getByTestId('open').click();
 
         await fillEabSecretForm(page, 'acme-eab');
         await expect(createButton(page)).toBeDisabled();
-        const path = page.getByTestId('text-input-__attributes__secret__.path');
+        const path = page.getByTestId('text-input-__attributes__newSecret__.path');
         await path.click();
         await path.fill('acme/eab');
         await createButton(page).click();
@@ -203,6 +214,24 @@ test.describe('GenerateEabKeyDialog', () => {
         await fillEabSecretForm(page, 'acme-eab');
 
         await expect(page.getByText('Loading attributes...')).toBeVisible();
+        await expect(createButton(page)).toBeDisabled();
+    });
+
+    test("Create waits until the secret's custom attributes have loaded", async ({ mount, page }) => {
+        await mount(<GenerateEabKeyDialogHarness holdCustomAttributes />);
+        await page.getByTestId('open').click();
+        await fillEabSecretForm(page, 'acme-eab');
+
+        await expect(createButton(page)).toBeDisabled();
+        await page.getByTestId('resolve-custom-attributes').dispatchEvent('click');
+        await expect(createButton(page)).toBeEnabled();
+    });
+
+    test("Create stays disabled when the secret's custom attributes failed to load", async ({ mount, page }) => {
+        await mount(<GenerateEabKeyDialogHarness customAttributesFail />);
+        await page.getByTestId('open').click();
+        await fillEabSecretForm(page, 'acme-eab');
+
         await expect(createButton(page)).toBeDisabled();
     });
 
