@@ -818,6 +818,29 @@ test.describe('AttributeEditor NG group callbacks', () => {
         await expect(page.getByTestId('text-input-__attributes__testEditor__.foreignField')).toHaveCount(0);
     });
 
+    test('drops the fields of a child group whose own dependency is cleared while its parent still injects it', async ({ mount, page }) => {
+        // given
+        await mountWithDnsWriterGroup(mount);
+        await selectRfc2136Writer(page);
+        await answerWriterGroup(page);
+        // The change pass that follows the answer fires the writer group again; answer that one too.
+        await page.waitForTimeout(CALLBACK_DEBOUNCE_MS * 2); // NOSONAR(S2925)
+        await page.getByTestId(`answer-callback-__attributes__${editorId}__.dnsWriterGroup`).click();
+        await expect(page.getByTestId('spinner')).toHaveCount(0, { timeout: 10000 });
+        const rfc2136ServerInput = page.getByTestId('text-input-__attributes__testEditor__.rfc2136Server');
+        const enteredRfc2136Server = 'ns1.example.com';
+        await rfc2136ServerInput.click(); // TextInput stays read-only until focused, which keeps autofill out
+        await rfc2136ServerInput.fill(enteredRfc2136Server);
+        await expect(page.getByTestId('form-values')).toContainText(enteredRfc2136Server);
+
+        // when
+        await page.getByTestId('select-__attributes__testEditor__.dnsWriterTypeSelect-clear').click();
+
+        // then
+        await expect(rfc2136ServerInput).toHaveCount(0, { timeout: 10000 });
+        await expect(page.getByTestId('form-values')).not.toContainText(enteredRfc2136Server);
+    });
+
     test('fires the initial callback of a dropped child group again once its parent injects it anew', async ({ mount, page }) => {
         // given
         const firesOnMountOnly: string[] = [];

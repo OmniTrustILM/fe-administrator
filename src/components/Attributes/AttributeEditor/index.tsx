@@ -756,9 +756,12 @@ function AttributeEditorInner({
             // A field another callback still injects, such as one the parent group's new answer now carries itself, stays.
             const { callbackIds: allCallbackIdsBelow } = collectInjectedBelow(noDroppedNames);
             const stillInjectedNames = new Set(collectNamesInjectedByThisEditor(allCallbackIdsBelow));
-            // A kept group keeps what it injects, too. The set grows while it is iterated, which visits the added names.
+            // A kept group keeps what it injects, too, but the dropped group itself does not, even while its parent still
+            // injects it. The set grows while it is iterated, which visits the added names.
             for (const keptName of stillInjectedNames) {
-                for (const childName of injected[getAttributeEditorAttributeKey(id, keptName)] ?? []) stillInjectedNames.add(childName);
+                const keptCallbackId = getAttributeEditorAttributeKey(id, keptName);
+                if (keptCallbackId === groupFormAttributeName) continue;
+                for (const childName of injected[keptCallbackId] ?? []) stillInjectedNames.add(childName);
             }
             const { names: droppedNames, callbackIds } = collectInjectedBelow(stillInjectedNames);
             const droppedDescriptors = new Set(callbackIds.flatMap((callbackId) => callbackData[callbackId] ?? []));
