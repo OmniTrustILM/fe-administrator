@@ -708,36 +708,97 @@ function AttributeEditorInner({
         [attributeDescriptors, groupAttributesCallbackAttributes, formValues, id],
     );
 
+    /** Lets a removed attribute's initial callback run again once it is injected anew. */
+    const forgetInitialCallbackRun = useCallback((formAttributeName: string) => {
+        for (const key of initialCallbackRunRef.current) {
+            if (key.endsWith(`:${formAttributeName}`)) initialCallbackRunRef.current.delete(key);
+        }
+    }, []);
+
+    /** Names of the descriptors this editor's callbacks inject, apart from those of the given callbacks. */
+    const collectNamesInjectedByThisEditor = useCallback(
+        (excludedCallbackIds: readonly string[]): ReadonlySet<string> =>
+            new Set(
+                Object.entries(injectedChildNamesRef.current)
+                    .filter(([callbackId]) => !excludedCallbackIds.includes(callbackId))
+                    .flatMap(([, childNames]) => childNames),
+            ),
+        [],
+    );
+
+    const isPendingCallback = useCallback(
+        (callbackId: string) => !!injectedChildNamesRef.current[callbackId] || !!isRunningCallback[callbackId],
+        [isRunningCallback],
+    );
+
+    /** Names a group's callback injected, those of the groups beneath it, and the callbacks they came from. */
+    const collectInjectedBelow = useCallback(
+        (groupFormAttributeName: string, keptNames: ReadonlySet<string>) => {
+            const names = new Set<string>();
+            const callbackIds = [groupFormAttributeName];
+            for (const callbackId of callbackIds) {
+                for (const childName of injectedChildNamesRef.current[callbackId] ?? []) {
+                    if (keptNames.has(childName)) continue;
+                    names.add(childName);
+                    const childFormAttributeName = getAttributeEditorAttributeKey(id, childName);
+                    // Each callback once: connector answers can make groups inject each other.
+                    if (isPendingCallback(childFormAttributeName) && !callbackIds.includes(childFormAttributeName)) {
+                        callbackIds.push(childFormAttributeName);
+                    }
+                }
+            }
+            return { names, callbackIds };
+        },
+        [id, isPendingCallback],
+    );
+
+    /**
+     * Names that stay when a group is dropped: the form's own attributes, what callbacks outside the group's subtree
+     * still inject, such as a field the parent group's new answer now carries itself, and what those kept groups inject.
+     * The dropped group passes nothing on, even while its parent still injects it.
+     */
+    const collectStillInjectedNames = useCallback(
+        (groupFormAttributeName: string): ReadonlySet<string> => {
+            const { callbackIds: callbackIdsBelow } = collectInjectedBelow(groupFormAttributeName, noDroppedNames);
+            const stillInjectedNames = new Set(collectNamesInjectedByThisEditor(callbackIdsBelow));
+            for (const descriptor of attributeDescriptors) stillInjectedNames.add(descriptor.name);
+            // The set grows while it is iterated, which visits the added names.
+            for (const keptName of stillInjectedNames) {
+                const keptCallbackId = getAttributeEditorAttributeKey(id, keptName);
+                if (keptCallbackId === groupFormAttributeName) continue;
+                for (const childName of injectedChildNamesRef.current[keptCallbackId] ?? []) stillInjectedNames.add(childName);
+            }
+            return stillInjectedNames;
+        },
+        [attributeDescriptors, collectInjectedBelow, collectNamesInjectedByThisEditor, id],
+    );
+
     /**
      * Removes what a group's callback injected — its child fields, those of injected child groups, and
      * their values — along with the callback data they came from, which would otherwise restore them the
      * next time any callback answers, and any of those callbacks still in flight. Their initial callbacks
      * may run again once they are injected anew.
-     * Runs when a dependency of the group is cleared: no callback fires then to replace them. Returns the
-     * names of the removed fields.
+     * Runs when a dependency of the group is cleared, as no callback fires then to replace them, and when the
+     * group's parent answers without it. Returns the names of the removed fields.
      */
     const dropInjectedGroupChildren = useCallback(
         (groupFormAttributeName: string): ReadonlySet<string> => {
             const injected = injectedChildNamesRef.current;
-            const isPending = (callbackId: string) => !!injected[callbackId] || !!isRunningCallback[callbackId];
-            if (!isPending(groupFormAttributeName)) return noDroppedNames;
+            if (!isPendingCallback(groupFormAttributeName)) return noDroppedNames;
 
-            const droppedNames = new Set<string>();
-            const callbackIds = [groupFormAttributeName];
+            const stillInjectedNames = collectStillInjectedNames(groupFormAttributeName);
+            const { names: droppedNames, callbackIds } = collectInjectedBelow(groupFormAttributeName, stillInjectedNames);
+            const droppedDescriptors = new Set(callbackIds.flatMap((callbackId) => callbackData[callbackId] ?? []));
             for (const callbackId of callbackIds) {
                 dispatch(connectorActions.clearCallbackDataFor({ callbackId }));
-                const childNames = injected[callbackId] ?? [];
                 delete injected[callbackId];
-                childNames.forEach((childName) => {
-                    droppedNames.add(childName);
-                    const childFormAttributeName = getAttributeEditorAttributeKey(id, childName);
-                    if (isPending(childFormAttributeName)) callbackIds.push(childFormAttributeName);
-                });
             }
+            setGroupAttributesCallbackAttributes((prev) =>
+                prev.filter((descriptor) => !droppedNames.has(descriptor.name) && !droppedDescriptors.has(descriptor)),
+            );
             if (droppedNames.size === 0) return droppedNames;
 
             const droppedFormAttributeNames = [...droppedNames].map((childName) => getAttributeEditorAttributeKey(id, childName));
-            setGroupAttributesCallbackAttributes((prev) => prev.filter((descriptor) => !droppedNames.has(descriptor.name)));
             setOptions((prev) => {
                 const next = { ...prev };
                 for (const childFormAttributeName of droppedFormAttributeNames) delete next[childFormAttributeName];
@@ -745,13 +806,21 @@ function AttributeEditorInner({
             });
             for (const childFormAttributeName of droppedFormAttributeNames) {
                 setValue(childFormAttributeName, undefined);
-                for (const key of initialCallbackRunRef.current) {
-                    if (key.endsWith(`:${childFormAttributeName}`)) initialCallbackRunRef.current.delete(key);
-                }
+                forgetInitialCallbackRun(childFormAttributeName);
             }
             return droppedNames;
         },
-        [dispatch, id, isRunningCallback, setGroupAttributesCallbackAttributes, setValue],
+        [
+            callbackData,
+            collectInjectedBelow,
+            collectStillInjectedNames,
+            dispatch,
+            forgetInitialCallbackRun,
+            id,
+            isPendingCallback,
+            setGroupAttributesCallbackAttributes,
+            setValue,
+        ],
     );
 
     /* c8 ignore start */
@@ -1128,12 +1197,18 @@ function AttributeEditorInner({
             }
         }
 
-        for (const callbackId in callbackData) {
+        // The callback data of every attribute editor on the page shares one store; this editor reads only its own.
+        const ownCallbackIdPrefix = getAttributeEditorAttributeKey(id, '');
+        const ownCallbackData = Object.entries(callbackData).filter(([callbackId]) => callbackId.startsWith(ownCallbackIdPrefix));
+        const droppedChildNames: string[] = [];
+        for (const [callbackId] of ownCallbackData) {
             if (callbackData[callbackId] === previousCallbackData[callbackId]) continue;
             if (!callbackData[callbackId]) continue;
             if (!Array.isArray(callbackData[callbackId])) continue;
             const groupCallbackAttributes: AttributeDescriptorModel[] = callbackData[callbackId].filter(isAttributeDescriptorModel);
-            injectedChildNamesRef.current[callbackId] = groupCallbackAttributes.map((descriptor) => descriptor.name);
+            const previousChildNames = injectedChildNamesRef.current[callbackId] ?? [];
+            const childNames = groupCallbackAttributes.map((descriptor) => descriptor.name);
+            injectedChildNamesRef.current[callbackId] = childNames;
 
             const descriptors = [...attributeDescriptors, ...groupAttributesCallbackAttributes];
             const callbackDescriptor = descriptors.find((d) => getAttributeEditorAttributeKey(id, d.name) === callbackId);
@@ -1177,17 +1252,42 @@ function AttributeEditorInner({
 
             // Set groupAttributesCallbackDescriptors inside the loop, to only run this if the callbackData fields have actually been changed.
             if (callbackDescriptor) {
-                const newGroupCallbackDescriptors = Object.values(callbackData)
+                const newGroupCallbackDescriptors = ownCallbackData
+                    .map(([, data]) => data)
                     .filter(Array.isArray)
                     .flatMap((callbackDataArray) => callbackDataArray.filter(isAttributeDescriptorModel));
 
                 setGroupAttributesCallbackAttributes(newGroupCallbackDescriptors);
                 updateValueFromCallbackData(callbackId, callbackDescriptor);
+                for (const childName of previousChildNames) {
+                    if (!childNames.includes(childName)) droppedChildNames.push(childName);
+                }
             }
         }
 
+        // A child group a new answer no longer injects would keep its own callback data, and with it its fields,
+        // unless a group outside it still injects it. Dropped after the loop, as each answer above sets the fields and
+        // options from all callback data.
+        for (const childName of droppedChildNames) {
+            const childCallbackId = getAttributeEditorAttributeKey(id, childName);
+            if (collectStillInjectedNames(childCallbackId).has(childName)) continue;
+            forgetInitialCallbackRun(childCallbackId);
+            dropInjectedGroupChildren(childCallbackId);
+        }
+
         setPreviousCallbackData(callbackData);
-    }, [callbackData, options, previousCallbackData, setValue, id, attributeDescriptors, groupAttributesCallbackAttributes]);
+    }, [
+        callbackData,
+        options,
+        previousCallbackData,
+        setValue,
+        id,
+        attributeDescriptors,
+        groupAttributesCallbackAttributes,
+        collectStillInjectedNames,
+        forgetInitialCallbackRun,
+        dropInjectedGroupChildren,
+    ]);
     /* c8 ignore stop */
 
     /*
