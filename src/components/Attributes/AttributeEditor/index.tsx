@@ -715,6 +715,19 @@ function AttributeEditorInner({
         }
     }, []);
 
+    /** Names of the descriptors this editor's callbacks inject, apart from those of the given callbacks. */
+    const collectNamesInjectedByThisEditor = useCallback(
+        (excludedCallbackIds: readonly string[]): ReadonlySet<string> => {
+            const ownCallbackIdPrefix = getAttributeEditorAttributeKey(id, '');
+            return new Set(
+                Object.entries(injectedChildNamesRef.current)
+                    .filter(([callbackId]) => callbackId.startsWith(ownCallbackIdPrefix) && !excludedCallbackIds.includes(callbackId))
+                    .flatMap(([, childNames]) => childNames),
+            );
+        },
+        [id],
+    );
+
     /**
      * Removes what a group's callback injected — its child fields, those of injected child groups, and
      * their values — along with the callback data they came from, which would otherwise restore them the
@@ -744,11 +757,7 @@ function AttributeEditorInner({
             };
             // A field another callback still injects, such as one the parent group's new answer now carries itself, stays.
             const { callbackIds: allCallbackIdsBelow } = collectInjectedBelow(noDroppedNames);
-            const stillInjectedNames = new Set(
-                Object.entries(injected)
-                    .filter(([callbackId]) => !allCallbackIdsBelow.includes(callbackId))
-                    .flatMap(([, childNames]) => childNames),
-            );
+            const stillInjectedNames = collectNamesInjectedByThisEditor(allCallbackIdsBelow);
             const { names: droppedNames, callbackIds } = collectInjectedBelow(stillInjectedNames);
             const droppedDescriptors = new Set(callbackIds.flatMap((callbackId) => callbackData[callbackId] ?? []));
             for (const callbackId of callbackIds) {
@@ -772,7 +781,16 @@ function AttributeEditorInner({
             }
             return droppedNames;
         },
-        [callbackData, dispatch, forgetInitialCallbackRun, id, isRunningCallback, setGroupAttributesCallbackAttributes, setValue],
+        [
+            callbackData,
+            collectNamesInjectedByThisEditor,
+            dispatch,
+            forgetInitialCallbackRun,
+            id,
+            isRunningCallback,
+            setGroupAttributesCallbackAttributes,
+            setValue,
+        ],
     );
 
     /* c8 ignore start */
@@ -1149,7 +1167,7 @@ function AttributeEditorInner({
             }
         }
 
-        const droppedChildCallbackIds: string[] = [];
+        const droppedChildNames: string[] = [];
         for (const callbackId in callbackData) {
             if (callbackData[callbackId] === previousCallbackData[callbackId]) continue;
             if (!callbackData[callbackId]) continue;
@@ -1208,14 +1226,18 @@ function AttributeEditorInner({
                 setGroupAttributesCallbackAttributes(newGroupCallbackDescriptors);
                 updateValueFromCallbackData(callbackId, callbackDescriptor);
                 for (const childName of previousChildNames) {
-                    if (!childNames.includes(childName)) droppedChildCallbackIds.push(getAttributeEditorAttributeKey(id, childName));
+                    if (!childNames.includes(childName)) droppedChildNames.push(childName);
                 }
             }
         }
 
-        // A child group a new answer no longer injects would keep its own callback data, and with it its fields.
-        // Dropped after the loop, as each answer above sets the fields and options from all callback data.
-        for (const childCallbackId of droppedChildCallbackIds) {
+        // A child group a new answer no longer injects would keep its own callback data, and with it its fields,
+        // unless another group still injects it. Dropped after the loop, as each answer above sets the fields and
+        // options from all callback data.
+        const stillInjectedNames = collectNamesInjectedByThisEditor([]);
+        for (const childName of droppedChildNames) {
+            if (stillInjectedNames.has(childName)) continue;
+            const childCallbackId = getAttributeEditorAttributeKey(id, childName);
             forgetInitialCallbackRun(childCallbackId);
             dropInjectedGroupChildren(childCallbackId);
         }
@@ -1229,6 +1251,7 @@ function AttributeEditorInner({
         id,
         attributeDescriptors,
         groupAttributesCallbackAttributes,
+        collectNamesInjectedByThisEditor,
         forgetInitialCallbackRun,
         dropInjectedGroupChildren,
     ]);
