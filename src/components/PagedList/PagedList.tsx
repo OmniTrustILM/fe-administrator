@@ -294,7 +294,8 @@ function PagedList<TRow extends object>({
     const isStripReady = isViewStripReady(hasFreshViews, hasSettledCatalogue);
     // Applying the opening view replaces the columns and the ordering, so an edit made before the strip opens is lost.
     const [openedResource, setOpenedResource] = useState<Resource | undefined>(undefined);
-    const canEditColumns = isStripReady && openedResource === columnsResource;
+    // Not on fields a failed read left behind, which a reread after the strip opened would otherwise keep editable.
+    const canEditColumns = isStripReady && hasCatalogueForViews && openedResource === columnsResource;
 
     const totalItems = useSelector(selectors.totalItems(entity));
     const checkedRows = useSelector(selectors.checkedRows(entity));
@@ -466,11 +467,11 @@ function PagedList<TRow extends object>({
     // The warning leaves as the retry starts, so the controls coming back is announced rather than left silent.
     useEffect(() => {
         if (!isAwaitingCatalogueRetry.current) return;
-        if (canEditColumns) {
+        if (isCatalogueFailed) {
+            isAwaitingCatalogueRetry.current = false;
+        } else if (canEditColumns) {
             isAwaitingCatalogueRetry.current = false;
             setCatalogueStatus('Fields loaded. Columns and sorting can be changed again.');
-        } else if (isCatalogueFailed) {
-            isAwaitingCatalogueRetry.current = false;
         }
     }, [canEditColumns, isCatalogueFailed]);
 
@@ -866,18 +867,23 @@ function PagedList<TRow extends object>({
                 widgetLockName={pageWidgetLockName}
                 refreshAction={onRefresh}
                 refreshThroughLock={isColumnDriven && isCatalogueFailed}
-                titleNotice={isColumnDriven && isCatalogueFailed && <CatalogueFailedNotice />}
+                // In the title bar, which a widget lock leaves in place, so the announcement still lands under one.
+                titleNotice={
+                    isColumnDriven && (
+                        <>
+                            {isCatalogueFailed && <CatalogueFailedNotice />}
+                            <span role="status" className="sr-only" data-testid="paged-list-catalogue-status">
+                                {catalogueStatus}
+                            </span>
+                        </>
+                    )
+                }
                 resetViewAction={hasNonDefaultViewState ? onResetView : undefined}
                 widgetButtons={buttons}
                 titleSize="large"
                 hideWidgetButtons={hideWidgetButtons}
             >
                 {notice}
-                {isColumnDriven && (
-                    <span role="status" className="sr-only" data-testid="paged-list-catalogue-status">
-                        {catalogueStatus}
-                    </span>
-                )}
                 <CustomTable
                     headers={columnHeaders}
                     data={columnRows}

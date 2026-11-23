@@ -443,6 +443,42 @@ test.describe('PagedList · column header menu', () => {
         await expect(page.getByTestId('paged-list-catalogue-status')).toHaveText(/Columns and sorting can be changed again/);
     });
 
+    test('locks the columns again when a reread fails after the strip opened', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore rows={rows} standardColumns={standardColumns} catalogue={catalogue} withCatalogueFailureControl />,
+        );
+        await expect(grip(page, NOT_AFTER)).toBeVisible();
+
+        await page.getByTestId('fail-catalogue').click();
+
+        await expect(page.getByTestId('paged-list-catalogue-failed')).toBeVisible();
+        await expect(grip(page, NOT_AFTER)).toHaveCount(0);
+        await page.getByTestId('add-column-menu-trigger').click();
+        await expect(page.getByTestId(`add-column-menu-field-${COMMON_NAME}`)).toBeDisabled();
+        await expect(page.getByTestId('add-column-menu-reset')).toHaveCount(0);
+    });
+
+    test('announces the columns coming back while the rows are still locked', async ({ mount, page }) => {
+        await mount(
+            <PagedListColumnsWithStore
+                rows={rows}
+                standardColumns={standardColumns}
+                catalogue={catalogue}
+                failsCatalogueOnMount
+                withCatalogueControl
+                holdsCatalogueReads
+                lockedRows
+            />,
+        );
+        await expect(page.getByTestId('paged-list-catalogue-failed')).toBeVisible();
+
+        await expect(page.getByTestId('refresh-icon')).toBeEnabled();
+        await page.getByTestId('refresh-icon').click();
+        await page.getByTestId('land-catalogue').click();
+
+        await expect(page.getByTestId('paged-list-catalogue-status')).toHaveText(/Columns and sorting can be changed again/);
+    });
+
     test('reloads only the rows on a page turn after the catalogue read failed', async ({ mount, page }) => {
         await mount(
             <PagedListColumnsWithStore

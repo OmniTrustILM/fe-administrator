@@ -1,5 +1,5 @@
 import type { CellRegistry } from 'components/CustomTable/columns';
-import { type FiltersTestState, type ListViewsTestState, testReducers } from 'ducks/test-reducers';
+import { type FiltersTestState, type ListViewsTestState, testInitialState, testReducers } from 'ducks/test-reducers';
 import { actions as filterActions, EntityType } from 'ducks/filters';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
@@ -9,6 +9,7 @@ import { of } from 'rxjs';
 import type { SearchFieldListModel, SearchFilterModel, SearchRequestModel } from 'types/certificate';
 import type { ListViewModel } from 'types/listViews';
 import { FilterFieldSource, Resource } from 'types/openapi';
+import { LockTypeEnum, LockWidgetNameEnum } from 'types/user-interface';
 import type { ColumnDefinition } from 'types/tableColumns';
 import type { ColumnSort } from 'utils/tableColumns';
 import { createRecordingStore } from 'utils/test-helpers';
@@ -73,6 +74,8 @@ type Props = Readonly<{
     holdsCatalogueReads?: boolean;
     /** Mounts the host with no catalogue API, as a page without a filter widget does. */
     withoutCatalogueApi?: boolean;
+    /** Preloads the lock a failed row read leaves on the list widget. */
+    lockedRows?: boolean;
 }>;
 
 const holdingCatalogueReads: typeof testReducers = (state, action) => {
@@ -283,11 +286,25 @@ export default function PagedListColumnsWithStore({
     retypedFilters,
     holdsCatalogueReads = false,
     withoutCatalogueApi = false,
+    lockedRows = false,
 }: Props) {
     const [catalogueReads, setCatalogueReads] = useState(0);
     const [store] = useState(() =>
         createRecordingStore(
             {
+                userInterface: {
+                    ...testInitialState.userInterface,
+                    widgetLocks: lockedRows
+                        ? [
+                              {
+                                  widgetName: LockWidgetNameEnum.ListOfCertificates,
+                                  lockTitle: 'Service unavailable',
+                                  lockText: 'Try again later',
+                                  lockType: LockTypeEnum.GENERIC,
+                              },
+                          ]
+                        : [],
+                },
                 listViews: {
                     byResource: {
                         [Resource.Certificates]: { views, isFetching: withheldViews, hasLoaded: !withheldViews, isMutating: false },
@@ -375,6 +392,7 @@ export default function PagedListColumnsWithStore({
                         addHidden
                         configurableColumns={config}
                         refreshToken={refreshToken}
+                        pageWidgetLockName={LockWidgetNameEnum.ListOfCertificates}
                     />
                 )}
 
