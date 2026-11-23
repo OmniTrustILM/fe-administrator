@@ -12,13 +12,8 @@ import {
     testAttributeSetFunction,
     mapProfileAttribute,
 } from './attributes';
-import {
-    type AttributeDescriptorModel,
-    AttributeContentType,
-    AttributeType,
-    AttributeVersion,
-    ProgrammingLanguageEnum,
-} from 'types/openapi';
+import type { AttributeDescriptorModel } from 'types/attributes';
+import { AttributeContentType, AttributeType, AttributeVersion, ProgrammingLanguageEnum } from 'types/openapi';
 
 const base64Encode = (s: string) => {
     const bytes = new TextEncoder().encode(s);
