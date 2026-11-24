@@ -13,6 +13,8 @@ export interface TableHeader {
     info?: React.ReactNode;
     align?: 'left' | 'center' | 'right';
     sortable?: boolean;
+    /** Shows the column's ordering without letting it be changed, for a sortable column whose sorting is held for now. */
+    isSortHeld?: boolean;
     sort?: SortDirection;
     sortType?: 'string' | 'numeric' | 'date';
     width?: string;

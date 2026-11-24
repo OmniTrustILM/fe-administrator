@@ -1032,6 +1032,16 @@ test.describe('ViewTabs', () => {
         await expect(page.getByTestId('view-tabs-notice')).toHaveCount(0);
     });
 
+    test('keeps a filter set while the strip waited for the catalogue when Standard opens', async ({ mount, page }) => {
+        await mount(strip({ withheldCatalogue: true, driftFilter: ownFilter }));
+        await page.getByTestId('drift-filter').click();
+
+        await page.getByTestId('release-catalogue').click();
+
+        await expect(page.getByTestId('view-tabs-tab-standard')).toHaveAttribute('aria-selected', 'true');
+        expect((await appliedSlice(page)).filters).toEqual([ownFilter]);
+    });
+
     test('puts the tab back when a create from the current slice fails, without dropping what it was saving', async ({ mount, page }) => {
         await mount(strip({ driftSort: { fieldSource: FilterFieldSource.Property, fieldIdentifier: 'COMMON_NAME', direction: 'desc' } }));
 
