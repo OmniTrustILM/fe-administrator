@@ -3,7 +3,6 @@ import type { AppEpic } from 'ducks';
 import { EMPTY, merge, of, timer } from 'rxjs';
 import { AjaxError } from 'rxjs/ajax';
 import { catchError, endWith, filter, map, mergeMap, switchMap, takeUntil, takeWhile, tap, timeout } from 'rxjs/operators';
-import { BulkOperationResponseStatusEnum } from 'types/openapi';
 import { extractError, withReadableResponse } from 'utils/net';
 import { extractComplianceErrors } from 'utils/raProfileValidation';
 import { fileNameFromContentDisposition, triggerBlobDownload } from 'utils/download';
@@ -15,7 +14,7 @@ import * as slice from './certificates';
 import { transformAttributeDescriptorDtoToModel, transformAttributeRequestModelToDto } from './transform/attributes';
 
 import { store } from '../App';
-import { Resource } from 'types/openapi';
+import { BulkOperationResponseStatusEnum, Resource } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { EntityType } from './filters';
 import { actions as pagingActions, selectors as pagingSelectors } from './paging';

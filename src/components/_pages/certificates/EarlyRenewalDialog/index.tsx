@@ -30,7 +30,8 @@ const MAX_SPREAD_HOURS = 720;
 const SECONDS_PER_HOUR = 3600;
 
 const validateSpreadHours = composeValidators(
-    (value: unknown) => (value === undefined || value === null || String(value).trim() === '' ? 'Required Field' : undefined),
+    (value: unknown) =>
+        value === undefined || value === null || (typeof value === 'string' && value.trim() === '') ? 'Required Field' : undefined,
     validatePositiveInteger(),
     validateRange(MIN_SPREAD_HOURS, MAX_SPREAD_HOURS, `Value must be between ${MIN_SPREAD_HOURS} and ${MAX_SPREAD_HOURS}`),
 );

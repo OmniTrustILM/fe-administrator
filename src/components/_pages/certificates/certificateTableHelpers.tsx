@@ -387,7 +387,7 @@ export function buildCertificateDetailBaseRows(
     certificate: CertificateDetailResponseModel,
     validationResult: CertificateValidationResultDto | undefined,
     isCertificateArchived: boolean,
-    enums: { certificateKeyUsage: PlatformEnumMap; qcType: PlatformEnumMap; renewalWindowSource?: PlatformEnumMap },
+    enums: { certificateKeyUsage: PlatformEnumMap; qcType: PlatformEnumMap; renewalWindowSource: PlatformEnumMap },
     dateFormatter: (d: Date) => string,
     getEnumLabel: (e: PlatformEnumMap, key: string) => string,
     onPendingAction: (action: PendingAction) => void,

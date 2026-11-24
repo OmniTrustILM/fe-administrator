@@ -158,7 +158,7 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
 
     // The three intervals validate each other, so a change to one re-checks the others.
     const revalidateIntervals = useCallback(() => {
-        trigger(['refreshMinHours', 'refreshDefaultHours', 'refreshMaxHours']);
+        void trigger(['refreshMinHours', 'refreshDefaultHours', 'refreshMaxHours']);
     }, [trigger]);
 
     // Reset form when platformSettings change

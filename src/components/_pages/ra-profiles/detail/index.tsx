@@ -1097,32 +1097,38 @@ export default function RaProfileDetail() {
             );
         }
 
-        data.push({
-            id: 'useAuthorityRenewalInfo',
-            columns: [
-                'Use Authority Renewal Window',
-                <span key="useAuthorityRenewalInfo" className="flex items-center gap-x-3">
-                    <Switch onChange={() => {}} id="useAuthorityRenewalInfo" checked={renewalSettings.useAuthorityRenewalInfo} disabled />
-                    {!renewalSettings.authorityRenewalInfoSupported && (
-                        <span className="text-content-subtle">Not supported by the authority</span>
-                    )}
-                </span>,
-            ],
-        });
-
-        data.push({
-            id: 'autoRenewalEnabled',
-            columns: [
-                'Automatic Renewal Enabled',
-                <Switch
-                    onChange={() => {}}
-                    id="autoRenewalEnabled"
-                    key="autoRenewalEnabled"
-                    checked={renewalSettings.autoRenewalEnabled}
-                    disabled
-                />,
-            ],
-        });
+        data.push(
+            {
+                id: 'useAuthorityRenewalInfo',
+                columns: [
+                    'Use Authority Renewal Window',
+                    <span key="useAuthorityRenewalInfo" className="flex items-center gap-x-3">
+                        <Switch
+                            onChange={() => {}}
+                            id="useAuthorityRenewalInfo"
+                            checked={renewalSettings.useAuthorityRenewalInfo}
+                            disabled
+                        />
+                        {!renewalSettings.authorityRenewalInfoSupported && (
+                            <span className="text-content-subtle">Not supported by the authority</span>
+                        )}
+                    </span>,
+                ],
+            },
+            {
+                id: 'autoRenewalEnabled',
+                columns: [
+                    'Automatic Renewal Enabled',
+                    <Switch
+                        onChange={() => {}}
+                        id="autoRenewalEnabled"
+                        key="autoRenewalEnabled"
+                        checked={renewalSettings.autoRenewalEnabled}
+                        disabled
+                    />,
+                ],
+            },
+        );
         if (renewalSettings.autoRenewalEnabled) {
             data.push({ id: 'autoRenewalMaxAttempts', columns: ['Maximum Renewal Attempts', `${renewalSettings.autoRenewalMaxAttempts}`] });
         }
