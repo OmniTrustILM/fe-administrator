@@ -495,7 +495,7 @@ export default function RaProfileDetail() {
             {
                 id: 'edit',
                 icon: 'pencil',
-                disabled: false,
+                disabled: !raProfile?.authorityInstanceUuid,
                 requires: can(ResourceAction.Update),
                 tooltip: 'Edit Renewal Settings',
                 onClick: () => {

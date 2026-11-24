@@ -22,6 +22,8 @@ type Props = Readonly<{
     resourceGrants?: { resource: Resource; actions: ResourceAction[] }[];
     /** A permission scenario by name, whose profile and answer replace the two props above. */
     scenario?: string;
+    /** Loads an RA profile that has no authority. */
+    withoutAuthority?: boolean;
 }>;
 
 const raProfile = {
@@ -43,7 +45,13 @@ const raProfile = {
     },
 } as unknown as RaProfileResponseModel;
 
-export default function RaProfileDetailWithStore({ allowedActions = Object.values(ResourceAction), resourceGrants, scenario }: Props) {
+export default function RaProfileDetailWithStore({
+    allowedActions = Object.values(ResourceAction),
+    resourceGrants,
+    scenario,
+    withoutAuthority = false,
+}: Props) {
+    const loaded = withoutAuthority ? { ...raProfile, authorityInstanceUuid: undefined } : raProfile;
     const [store] = useState(() => {
         const permissions = scenario
             ? scenarioState(PERMISSION_SCENARIOS.find((candidate) => candidate.name === scenario)!, {
@@ -58,7 +66,7 @@ export default function RaProfileDetailWithStore({ allowedActions = Object.value
             resourceGrants,
             realSlices: [acmeProfilesSlice, approvalProfilesSlice, cmpProfilesSlice, estProfilesSlice, scepProfilesSlice],
             preloadedState: {
-                raprofiles: { ...raProfilesInitialState, ...testInitialState.raprofiles, raProfile },
+                raprofiles: { ...raProfilesInitialState, ...testInitialState.raprofiles, raProfile: loaded },
                 complianceProfiles: { ...complianceProfilesInitialState, ...testInitialState.complianceProfiles },
                 ...permissions,
             },

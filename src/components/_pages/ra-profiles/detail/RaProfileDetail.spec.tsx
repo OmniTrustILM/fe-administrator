@@ -49,6 +49,13 @@ test.describe('RaProfileDetail actions by permission', () => {
         await expect(page.getByTestId('check-compliance-button')).toBeDisabled();
     });
 
+    test('disables editing the renewal settings of an RA profile without an authority', async ({ mount, page }) => {
+        await mount(<RaProfileDetailWithStore withoutAuthority />);
+        await page.getByRole('tab', { name: 'Validation' }).click();
+
+        await expect(page.getByTestId('renewal-settings-widget').getByTestId('edit-button')).toBeDisabled();
+    });
+
     test('shows automatic renewal and its maximum attempts in the renewal widget', async ({ mount, page }) => {
         await mount(<RaProfileDetailWithStore />);
         await page.getByRole('tab', { name: 'Validation' }).click();
