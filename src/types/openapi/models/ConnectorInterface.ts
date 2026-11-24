@@ -29,8 +29,5 @@ export enum ConnectorInterface {
     Notification = 'notification',
     Secret = 'secret',
     SignatureFormatting = 'signatureFormatting',
-    CadesFormatting = 'cadesFormatting',
-    JadesFormatting = 'jadesFormatting',
-    PadesFormatting = 'padesFormatting',
-    XadesFormatting = 'xadesFormatting',
+    ContentSigningFormatting = 'contentSigningFormatting',
 }

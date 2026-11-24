@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest';
 import type { UnknownAction } from '@reduxjs/toolkit';
-import { BehaviorSubject, firstValueFrom, of, throwError } from 'rxjs';
+import { BehaviorSubject, firstValueFrom, of, Subject, throwError } from 'rxjs';
 import { take, toArray } from 'rxjs/operators';
 
 import { actions as signingProfileActions } from './signing-profiles';
@@ -10,7 +10,7 @@ import { actions as userInterfaceActions } from './user-interface';
 import { actions as pagingActions } from './paging';
 import { EntityType } from './filters';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { SigningWorkflowType } from 'types/openapi';
+import { ConnectorInterface, type SignatureFamilyDeclaration, SignatureLevel, SigningWorkflowType } from 'types/openapi';
 
 // Epic indices match the order of the exported `epics` array in signing-profiles-epics.ts
 enum SigningProfilesEpicIndex {
@@ -34,6 +34,7 @@ enum SigningProfilesEpicIndex {
     ListSignatureFormattingConnectorAttributes = 17,
     ListSignatureFormattingConnectors = 18,
     ListSigningRecords = 19,
+    ListSignatureFormattingConnectorDeclarations = 20,
 }
 
 vi.mock('../App', () => ({
@@ -76,6 +77,7 @@ async function runEpic(
         listSignatureAttributesForCertificate: () => of([{ uuid: 'a-1' }]),
         listSignatureFormattingConnectorAttributes: () => of([{ uuid: 'a-1' }]),
         listSigningRecordsForSigningProfile: () => of({ items: [], totalItems: 0 }),
+        listSignatureFormattingConnectorDeclarations: () => of([]),
     };
 
     const defaultConnectorsV2 = {
@@ -835,7 +837,31 @@ describe('signingProfiles epics', () => {
         expect(emitted[0]).toEqual(signingProfileActions.listSignatureFormattingConnectorsSuccess({ connectors: [] }));
         const filters = capturedArgs.searchRequestDto.filters;
         expect(filters.some((f: any) => f.fieldIdentifier === 'CONNECTOR_FEATURES' && f.value === 'timestamping')).toBe(true);
-        expect(filters.some((f: any) => f.fieldIdentifier === 'CONNECTOR_INTERFACE')).toBe(true);
+        expect(
+            filters.some((f: any) => f.fieldIdentifier === 'CONNECTOR_INTERFACE' && f.value === ConnectorInterface.SignatureFormatting),
+        ).toBe(true);
+    });
+
+    test('listSignatureFormattingConnectors asks for content-signing formatting connectors for content signing', async () => {
+        let capturedArgs: any;
+        await runEpic(
+            SigningProfilesEpicIndex.ListSignatureFormattingConnectors,
+            signingProfileActions.listSignatureFormattingConnectors({ workflowType: SigningWorkflowType.ContentSigning }),
+            {
+                connectorsV2: {
+                    listConnectorsV2: (args: any) => {
+                        capturedArgs = args;
+                        return of({ items: [] });
+                    },
+                },
+            },
+            1,
+        );
+
+        const filters = capturedArgs.searchRequestDto.filters;
+        expect(filters).toEqual([
+            expect.objectContaining({ fieldIdentifier: 'CONNECTOR_INTERFACE', value: ConnectorInterface.ContentSigningFormatting }),
+        ]);
     });
 
     test('listSignatureFormattingConnectors omits feature filter for unmapped workflow', async () => {
@@ -872,7 +898,7 @@ describe('signingProfiles epics', () => {
             1,
         );
 
-        expect(emitted[0].type).toBe(signingProfileActions.listSignatureFormattingConnectorsFailure.type);
+        expect(emitted[0]).toEqual(signingProfileActions.listSignatureFormattingConnectorsFailure({ reason: 'connectors failed' }));
     });
 
     test('listSigningRecordsForSigningProfile success emits listSigningRecordsSuccess', async () => {
@@ -905,5 +931,80 @@ describe('signingProfiles epics', () => {
         );
 
         expect(emitted[0].type).toBe(signingProfileActions.listSigningRecordsForSigningProfileFailure.type);
+    });
+
+    test('listSignatureFormattingConnectorDeclarations success emits the declarations', async () => {
+        const declarations = [
+            {
+                code: 'pades',
+                label: 'PAdES',
+                levels: [{ level: SignatureLevel.Signed, name: 'PAdES-B' }],
+                transferModes: [],
+            },
+        ];
+        let capturedArgs: any;
+        const emitted = await runEpic(
+            SigningProfilesEpicIndex.ListSignatureFormattingConnectorDeclarations,
+            signingProfileActions.listSignatureFormattingConnectorDeclarations({ connectorUuid: 'cn-1', signingProfileUuid: 'p-1' }),
+            {
+                signingProfiles: {
+                    listSignatureFormattingConnectorDeclarations: (args: any) => {
+                        capturedArgs = args;
+                        return of(declarations);
+                    },
+                },
+            },
+            1,
+        );
+
+        expect(capturedArgs).toEqual({ connectorUuid: 'cn-1', signingProfileUuid: 'p-1' });
+        expect(emitted[0]).toEqual(
+            signingProfileActions.listSignatureFormattingConnectorDeclarationsSuccess({ connectorUuid: 'cn-1', declarations }),
+        );
+    });
+
+    test('listSignatureFormattingConnectorDeclarations answers only the newest of overlapping requests', async () => {
+        const { default: epics } = await import('./signing-profiles-epics');
+        const answers: Record<string, Subject<SignatureFamilyDeclaration[]>> = { 'cn-old': new Subject(), 'cn-new': new Subject() };
+        const deps = {
+            apiClients: {
+                signingProfiles: {
+                    listSignatureFormattingConnectorDeclarations: ({ connectorUuid }: { connectorUuid: string }) => answers[connectorUuid],
+                },
+            },
+        };
+        const action$ = new Subject<UnknownAction>();
+        const emitted: UnknownAction[] = [];
+        const epic = (epics as any)[SigningProfilesEpicIndex.ListSignatureFormattingConnectorDeclarations];
+        epic(action$, new BehaviorSubject({ signingProfiles: {} }), deps).subscribe((action: UnknownAction) => emitted.push(action));
+
+        action$.next(signingProfileActions.listSignatureFormattingConnectorDeclarations({ connectorUuid: 'cn-old' }));
+        action$.next(signingProfileActions.listSignatureFormattingConnectorDeclarations({ connectorUuid: 'cn-new' }));
+        answers['cn-new'].next([]);
+        answers['cn-old'].next([{ code: 'old', label: 'Old', levels: [], transferModes: [] }]);
+
+        expect(emitted).toEqual([
+            signingProfileActions.listSignatureFormattingConnectorDeclarationsSuccess({ connectorUuid: 'cn-new', declarations: [] }),
+        ]);
+    });
+
+    test('listSignatureFormattingConnectorDeclarations failure names the connector and the reason', async () => {
+        const emitted = await runEpic(
+            SigningProfilesEpicIndex.ListSignatureFormattingConnectorDeclarations,
+            signingProfileActions.listSignatureFormattingConnectorDeclarations({ connectorUuid: 'cn-1' }),
+            {
+                signingProfiles: {
+                    listSignatureFormattingConnectorDeclarations: () => throwError(() => new Error('declarations failed')),
+                },
+            },
+            1,
+        );
+
+        expect(emitted[0]).toEqual(
+            signingProfileActions.listSignatureFormattingConnectorDeclarationsFailure({
+                connectorUuid: 'cn-1',
+                reason: 'declarations failed',
+            }),
+        );
     });
 });

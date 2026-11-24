@@ -270,7 +270,7 @@ export default function SigningProfileDetail() {
             {
                 id: 'connectorName',
                 columns: [
-                    'Signature Formatting Connector',
+                    'Timestamp Formatting Connector',
                     timestampingWorkflow.signatureFormattingConnector ? (
                         <Link
                             key="value"
@@ -288,7 +288,7 @@ export default function SigningProfileDetail() {
             {
                 id: 'connectorUuid',
                 columns: [
-                    'Signature Formatting Connector UUID',
+                    'Timestamp Formatting Connector UUID',
                     timestampingWorkflow.signatureFormattingConnector?.uuid ?? (
                         <span key="value" className="text-content-subtle text-sm">
                             —
@@ -654,7 +654,7 @@ export default function SigningProfileDetail() {
                                     {timestampingWorkflow?.signatureFormattingConnector &&
                                         timestampingWorkflow.signatureFormattingConnectorAttributes &&
                                         timestampingWorkflow.signatureFormattingConnectorAttributes.length > 0 && (
-                                            <Widget title="Signature Formatting Connector Attributes" titleSize="large">
+                                            <Widget title="Timestamp Formatting Connector Attributes" titleSize="large">
                                                 <AttributeViewer attributes={timestampingWorkflow.signatureFormattingConnectorAttributes} />
                                             </Widget>
                                         )}

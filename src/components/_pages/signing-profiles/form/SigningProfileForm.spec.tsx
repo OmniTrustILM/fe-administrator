@@ -200,10 +200,16 @@ test.describe('SigningProfileForm - required-field indicators (#1820)', () => {
     const TAB_TIMESTAMPING = '2 · Timestamping Properties';
     const TAB_RECORD_POLICY = '4 · Record Policy';
 
-    test('Signature Formatting Connector label shows the required asterisk', async ({ mount, page }) => {
+    test('Timestamp Formatting Connector label shows the required asterisk', async ({ mount, page }) => {
         await mount(<SigningProfileFormTestWrapper />);
         await page.getByRole('tab', { name: TAB_TIMESTAMPING }).click();
         await expect(page.getByTestId('label-signatureFormattingConnector')).toContainText('*');
+    });
+
+    test('Timestamp Formatting Connector says why its list is empty when the search failed', async ({ mount, page }) => {
+        await mount(<SigningProfileFormTestWrapper failedConnectorsFetch={{ reason: 'Core unreachable' }} />);
+        await page.getByRole('tab', { name: TAB_TIMESTAMPING }).click();
+        await expect(page.getByText('The Timestamp Formatting Connectors could not be listed. Core unreachable')).toBeVisible();
     });
 
     test('Time Quality Configuration shows the required asterisk only while Qualified Timestamp is on', async ({ mount, page }) => {

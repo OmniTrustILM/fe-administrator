@@ -70,7 +70,8 @@ const existingSigningProfile: SigningProfileDto = {
 export function SigningProfileFormTestWrapper({
     editMode = false,
     timeQualityAccuracy,
-}: Readonly<{ editMode?: boolean; timeQualityAccuracy?: string }>) {
+    failedConnectorsFetch,
+}: Readonly<{ editMode?: boolean; timeQualityAccuracy?: string; failedConnectorsFetch?: { reason?: string } }>) {
     const store = useMemo(
         () =>
             configureStore({
@@ -81,8 +82,9 @@ export function SigningProfileFormTestWrapper({
                         isFetchingDetail: false,
                         isCreating: false,
                         isUpdating: false,
-                        signatureFormattingConnectors: [{ uuid: 'c1', name: 'PAdES Connector' }],
+                        signatureFormattingConnectors: failedConnectorsFetch ? [] : [{ uuid: 'c1', name: 'PAdES Connector' }],
                         isFetchingSignatureFormattingConnectors: false,
+                        failedSignatureFormattingConnectorsFetch: failedConnectorsFetch,
                         signingCertificates: [{ uuid: 'cert1', commonName: 'Signing Cert', serialNumber: '123' }],
                         isFetchingSigningCertificates: false,
                         signingOperationAttributeDescriptors: [],
@@ -109,7 +111,7 @@ export function SigningProfileFormTestWrapper({
                 }),
                 middleware: (getDefault) => getDefault({ serializableCheck: false }),
             }),
-        [editMode, timeQualityAccuracy],
+        [editMode, timeQualityAccuracy, failedConnectorsFetch],
     );
 
     return (
