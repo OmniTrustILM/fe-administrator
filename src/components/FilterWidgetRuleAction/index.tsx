@@ -1,6 +1,6 @@
 import Widget from 'components/Widget';
 
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import type { ApiClients } from 'src/api';
 import { selectors as enumSelectors, getEnumLabel, getEnumDescription } from 'ducks/enums';
@@ -12,6 +12,7 @@ import Label from 'components/Label';
 import TextInput from 'components/TextInput';
 import DatePicker from 'components/DatePicker';
 import Badge from 'components/Badge';
+import FilterValueChips from 'components/FilterValueChips';
 import type { Observable } from 'rxjs';
 import type { SearchFieldListModel } from 'types/certificate';
 import type { PlatformEnumModel } from 'types/enums';
@@ -46,6 +47,26 @@ const toSelectableValue = (value: unknown): SelectableValue => {
     return toDisplayString(value);
 };
 
+/** An option's own readable text, or undefined where it carries only an object with no name. */
+function readableLabel(item: Record<string, unknown>): string | undefined {
+    const label = item.name ?? item.label ?? item.data;
+    if (label == null) return undefined;
+    const named = asRecord(label)?.name;
+    if (named != null) return toDisplayString(named);
+    return typeof label === 'object' ? undefined : toDisplayString(label);
+}
+
+function matchedOptionLabel(identifier: unknown, field: FieldData | undefined): string | undefined {
+    if (!Array.isArray(field?.value)) return undefined;
+    const matched = asRecord(
+        (field.value as unknown[]).find((fv) => {
+            const r = asRecord(fv);
+            return r ? r.uuid === identifier || r.value === identifier || r.reference === identifier : false;
+        }),
+    );
+    return matched ? readableLabel(matched) : undefined;
+}
+
 function formatBadgeDataValue(v: unknown, field: FieldData | undefined, platformEnums: PlatformEnumModel): string {
     if (field?.platformEnum) {
         return platformEnums[field.platformEnum]?.[String(v)]?.label ?? String(v);
@@ -57,16 +78,15 @@ function formatBadgeDataValue(v: unknown, field: FieldData | undefined, platform
             const labelStr = String(record.label ?? v);
             return field.attributeContentType === AttributeContentType.Date ? getFormattedDate(labelStr) : getFormattedDateTime(labelStr);
         }
-        return record.label == null ? String(v) : toDisplayString(record.label);
+        const own = readableLabel(record);
+        if (own !== undefined) return own;
+        // Only the identifier it was saved under: the matching option names it, else the identifier itself does.
+        const identifier = record.reference ?? record.uuid ?? record.value;
+        if (identifier == null) return toDisplayString(v);
+        return matchedOptionLabel(identifier, field) ?? toDisplayString(identifier);
     }
-    if (Array.isArray(field?.value)) {
-        const matched = (field.value as unknown[]).find((fv) => {
-            const r = asRecord(fv);
-            return r ? r.uuid === v || r.value === v || r.reference === v : false;
-        });
-        const mr = asRecord(matched);
-        if (mr) return String(mr.name ?? mr.label ?? mr.data ?? v);
-    }
+    const matched = matchedOptionLabel(v, field);
+    if (matched !== undefined) return matched;
     if (field?.attributeContentType === AttributeContentType.Date) {
         return getFormattedDate(String(v));
     }
@@ -189,6 +209,10 @@ export default function FilterWidgetRuleAction({
     const isFetchingAvailableFilters = useSelector(selectors.isFetchingFilters(entity));
 
     const [selectedFilter, setSelectedFilter] = useState<number>(-1);
+    const badgeListRef = useRef<HTMLFieldSetElement>(null);
+    // The removed chip takes its focused button with it, so focus moves to the chip now in its place.
+    const [chipFocus, setChipFocus] = useState<{ item: number; value: number } | undefined>(undefined);
+    const clearChipFocus = useCallback(() => setChipFocus(undefined), []);
 
     const [fieldSource, setFieldSource] = useState<FilterFieldSource | undefined>(undefined);
 
@@ -256,30 +280,6 @@ export default function FilterWidgetRuleAction({
         }
     }, [fieldSource, valueMode]);
 
-    const unselectAllFilters = useCallback(() => {
-        setSelectedFilter(-1);
-    }, [setSelectedFilter]);
-
-    const onUnselectFiltersClick = useCallback(
-        (e: React.MouseEvent<HTMLDivElement>) => {
-            if ((e.target as HTMLDivElement).id === 'unselectFilters') {
-                unselectAllFilters();
-            }
-        },
-        [unselectAllFilters],
-    );
-
-    const onUnselectFiltersKeyDown = useCallback(
-        (e: React.KeyboardEvent<HTMLDivElement>) => {
-            if ((e.target as HTMLElement).id !== 'unselectFilters') return;
-            if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                unselectAllFilters();
-            }
-        },
-        [unselectAllFilters],
-    );
-
     const currentFields = useMemo(() => findSearchFieldData(availableFilters, fieldSource), [availableFilters, fieldSource]);
 
     const clearFilterInputs = useCallback(() => {
@@ -314,13 +314,6 @@ export default function FilterWidgetRuleAction({
         }
     }, [sourceAvailableFilters, sourceCurrentFields, sourceFilterField]);
 
-    const notifyActionsUpdate = useCallback(
-        (next: ExecutionItemRequestModel[]) => {
-            onActionsUpdate?.(next.map((a) => mapActionToExecutionItem(a, availableFilters)));
-        },
-        [onActionsUpdate, availableFilters],
-    );
-
     const currentField = useMemo(() => currentFields?.find((f) => f.fieldIdentifier === filterField), [filterField, currentFields]);
 
     const normalizeSelectValue = useCallback((value: unknown): SelectableValue => {
@@ -341,6 +334,17 @@ export default function FilterWidgetRuleAction({
 
         return toSelectableValue(record.name ?? record.label ?? value);
     }, []);
+
+    const notifyActionsUpdate = useCallback(
+        (next: ExecutionItemRequestModel[]) => {
+            onActionsUpdate?.(
+                next
+                    .map((a) => (Array.isArray(a.data) ? { ...a, data: a.data.map(normalizeSelectValue) } : a))
+                    .map((a) => mapActionToExecutionItem(a, availableFilters)),
+            );
+        },
+        [onActionsUpdate, availableFilters, normalizeSelectValue],
+    );
 
     const mapActionDataToSelectValue = useCallback(
         (field: FieldData, actionData: unknown) => {
@@ -503,6 +507,27 @@ export default function FilterWidgetRuleAction({
             setSelectedFilter(-1);
         },
         [actions, onActionsUpdate, notifyActionsUpdate],
+    );
+
+    const onRemoveActionValueClick = useCallback(
+        (index: number, valueIndex: number) => {
+            const action = actions[index];
+            if (!Array.isArray(action?.data) || action.data.length <= 1) {
+                // The badge goes with its last value, so focus lands on the list rather than on nothing.
+                badgeListRef.current?.focus();
+                onRemoveFilterClick(index);
+                return;
+            }
+            setChipFocus({ item: index, value: valueIndex });
+            const updated = { ...action, data: action.data.filter((_, i) => i !== valueIndex) };
+            const newActions = actions.map((a, i) => (i === index ? updated : a));
+            setActions(newActions);
+            if (onActionsUpdate) {
+                notifyActionsUpdate(newActions);
+            }
+            setSelectedFilter(-1);
+        },
+        [actions, onActionsUpdate, notifyActionsUpdate, onRemoveFilterClick],
     );
 
     const toggleFilter = useCallback(
@@ -741,35 +766,30 @@ export default function FilterWidgetRuleAction({
     );
 
     const renderBadgeContent = useCallback(
-        (itemNumber: number, value: string, label?: string, fieldSource?: string, isMapped?: boolean) => (
+        (itemNumber: number, value: string, chips: React.ReactNode, label?: string, fieldSource?: string, isMapped?: boolean) => (
             <React.Fragment key={itemNumber}>
-                <b>{fieldSource && getEnumLabel(searchGroupEnum, fieldSource)}&nbsp;</b>'{label}
-                '&nbsp;to&nbsp;
-                {isMapped ? <i>{value}</i> : value}
+                <button
+                    type="button"
+                    className="cursor-pointer rounded-sm focus-visible:outline-2 focus-visible:outline-current"
+                    onClick={() => toggleFilter(itemNumber)}
+                >
+                    <b>{fieldSource && getEnumLabel(searchGroupEnum, fieldSource)}&nbsp;</b>'{label}
+                    '&nbsp;to{value && <>&nbsp;{isMapped ? <i>{value}</i> : value}</>}
+                </button>
+                {chips}
                 {!disableBadgeRemove && (
-                    // biome-ignore lint/a11y/useSemanticElements: can't be a <button> — this remove control is rendered inside the badge's own <button>, and nested buttons are invalid HTML; role="button" with key handling keeps it accessible.
-                    <span // NOSONAR(S6819)
-                        onClick={(event) => {
-                            event.stopPropagation();
-                            onRemoveFilterClick(itemNumber);
-                        }}
-                        role="button"
-                        tabIndex={0}
+                    <button
+                        type="button"
                         aria-label="Remove filter"
-                        onKeyDown={(event) => {
-                            if (event.key === 'Enter' || event.key === ' ') {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                onRemoveFilterClick(itemNumber);
-                            }
-                        }}
+                        className="cursor-pointer rounded-sm focus-visible:outline-2 focus-visible:outline-current"
+                        onClick={() => onRemoveFilterClick(itemNumber)}
                     >
                         &times;
-                    </span>
+                    </button>
                 )}
             </React.Fragment>
         ),
-        [onRemoveFilterClick, searchGroupEnum, disableBadgeRemove],
+        [onRemoveFilterClick, searchGroupEnum, disableBadgeRemove, toggleFilter],
     );
 
     const isUpdateButtonDisabled = useMemo(() => {
@@ -851,14 +871,7 @@ export default function FilterWidgetRuleAction({
 
     return (
         <Widget title={title} busy={isFetchingAvailableFilters} titleSize="large">
-            {/* biome-ignore lint/a11y/useSemanticElements: can't be a <button> — it wraps the filter form's inputs and badges (interactive content is invalid inside a button); role="button" is the closest accessible fit for the click/keyboard "deselect on empty background" behaviour. */}
-            <div // NOSONAR(S6819)
-                id="unselectFilters"
-                role="button"
-                tabIndex={0}
-                onClick={onUnselectFiltersClick}
-                onKeyDown={onUnselectFiltersKeyDown}
-            >
+            <div>
                 {mappingSupported && isMappingTargetCustom && (
                     <div className="flex flex-row gap-4 mb-3 text-sm">
                         <label className="flex items-center gap-2 cursor-pointer">
@@ -975,39 +988,45 @@ export default function FilterWidgetRuleAction({
                     </div>
                 </div>
 
-                <div className="flex gap-2 flex-wrap">
+                <fieldset ref={badgeListRef} tabIndex={-1} className="m-0 flex min-w-0 flex-wrap gap-2 border-0 p-0">
+                    <legend className="sr-only">Applied actions</legend>
                     {actions.map((f, i) => {
                         const field = findFieldDef(availableFilters, f.fieldSource, f.fieldIdentifier);
                         const label = field ? field.fieldLabel : f.fieldIdentifier;
                         const isMapped = !!f.sourceFieldSource && !!f.sourceFieldIdentifier;
-                        let value: string;
+                        let value = '';
+                        let chips: React.ReactNode = null;
                         if (isMapped) {
                             const sourceField = findFieldDef(sourceAvailableFilters, f.sourceFieldSource, f.sourceFieldIdentifier);
                             const sourceLabel = sourceField?.fieldLabel ?? f.sourceFieldIdentifier;
                             value = `${getEnumLabel(searchGroupEnum, f.sourceFieldSource!)} '${sourceLabel}'`;
-                        } else {
-                            const nonArrayValue = f.data ? `'${formatBadgeDataValue(f.data, field, platformEnums)}'` : '';
-                            const arrayOrScalarValue = Array.isArray(f.data)
-                                ? f.data.map((v) => `'${formatBadgeDataValue(v, field, platformEnums)}'`).join(', ')
-                                : nonArrayValue;
-                            value =
-                                field?.type === FilterFieldType.Boolean
-                                    ? `'${booleanOptions.find((b) => !!f.data === b.value)?.label}'`
-                                    : arrayOrScalarValue;
+                        } else if (field?.type === FilterFieldType.Boolean) {
+                            value = `'${booleanOptions.find((b) => !!f.data === b.value)?.label}'`;
+                        } else if (Array.isArray(f.data)) {
+                            chips = (
+                                <FilterValueChips
+                                    values={f.data.map((v) => formatBadgeDataValue(v, field, platformEnums))}
+                                    filterLabel={label}
+                                    onRemoveValue={disableBadgeRemove ? undefined : (valueIndex) => onRemoveActionValueClick(i, valueIndex)}
+                                    focusIndex={chipFocus?.item === i ? chipFocus.value : undefined}
+                                    onFocusPlaced={clearChipFocus}
+                                />
+                            );
+                        } else if (f.data) {
+                            value = `'${formatBadgeDataValue(f.data, field, platformEnums)}'`;
                         }
                         return (
                             <Badge
                                 key={`${i}-${f.fieldSource}-${f.fieldIdentifier}`}
-                                onClick={() => toggleFilter(i)}
                                 color={selectedFilter === i ? 'primary' : 'secondary'}
                             >
                                 {!isFetchingAvailableFilters && !busyBadges && (
-                                    <>{renderBadgeContent(i, value, label, f.fieldSource, isMapped)}</>
+                                    <>{renderBadgeContent(i, value, chips, label, f.fieldSource, isMapped)}</>
                                 )}
                             </Badge>
                         );
                     })}
-                </div>
+                </fieldset>
             </div>
         </Widget>
     );
