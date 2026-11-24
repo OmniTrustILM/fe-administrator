@@ -53,7 +53,7 @@ function readableLabel(item: Record<string, unknown>): string | undefined {
     if (label == null) return undefined;
     const named = asRecord(label)?.name;
     if (named != null) return toDisplayString(named);
-    return typeof label === 'object' ? undefined : String(label);
+    return typeof label === 'object' ? undefined : toDisplayString(label);
 }
 
 function matchedOptionLabel(identifier: unknown, field: FieldData | undefined): string | undefined {
@@ -83,7 +83,7 @@ function formatBadgeDataValue(v: unknown, field: FieldData | undefined, platform
         // Only the identifier it was saved under: the matching option names it, else the identifier itself does.
         const identifier = record.reference ?? record.uuid ?? record.value;
         if (identifier == null) return toDisplayString(v);
-        return matchedOptionLabel(identifier, field) ?? String(identifier);
+        return matchedOptionLabel(identifier, field) ?? toDisplayString(identifier);
     }
     const matched = matchedOptionLabel(v, field);
     if (matched !== undefined) return matched;
@@ -209,7 +209,7 @@ export default function FilterWidgetRuleAction({
     const isFetchingAvailableFilters = useSelector(selectors.isFetchingFilters(entity));
 
     const [selectedFilter, setSelectedFilter] = useState<number>(-1);
-    const badgeListRef = useRef<HTMLDivElement>(null);
+    const badgeListRef = useRef<HTMLFieldSetElement>(null);
     // The removed chip takes its focused button with it, so focus moves to the chip now in its place.
     const [chipFocus, setChipFocus] = useState<{ item: number; value: number } | undefined>(undefined);
     const clearChipFocus = useCallback(() => setChipFocus(undefined), []);
@@ -279,19 +279,6 @@ export default function FilterWidgetRuleAction({
             setSourceFilterField(undefined);
         }
     }, [fieldSource, valueMode]);
-
-    const unselectAllFilters = useCallback(() => {
-        setSelectedFilter(-1);
-    }, [setSelectedFilter]);
-
-    const onUnselectFiltersClick = useCallback(
-        (e: React.MouseEvent<HTMLDivElement>) => {
-            if ((e.target as HTMLDivElement).id === 'unselectFilters') {
-                unselectAllFilters();
-            }
-        },
-        [unselectAllFilters],
-    );
 
     const currentFields = useMemo(() => findSearchFieldData(availableFilters, fieldSource), [availableFilters, fieldSource]);
 
@@ -884,9 +871,7 @@ export default function FilterWidgetRuleAction({
 
     return (
         <Widget title={title} busy={isFetchingAvailableFilters} titleSize="large">
-            {/* biome-ignore lint/a11y/noStaticElementInteractions: deselecting by clicking the empty background is a pointer shortcut; keyboard users deselect with the selected badge's own button. */}
-            {/* biome-ignore lint/a11y/useKeyWithClickEvents: same pointer-only shortcut as above. */}
-            <div id="unselectFilters" onClick={onUnselectFiltersClick}>
+            <div>
                 {mappingSupported && isMappingTargetCustom && (
                     <div className="flex flex-row gap-4 mb-3 text-sm">
                         <label className="flex items-center gap-2 cursor-pointer">
@@ -1003,8 +988,8 @@ export default function FilterWidgetRuleAction({
                     </div>
                 </div>
 
-                {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would announce the badges as form controls; this is only a labelled focus target for the list. */}
-                <div ref={badgeListRef} role="group" aria-label="Applied actions" tabIndex={-1} className="flex gap-2 flex-wrap">
+                <fieldset ref={badgeListRef} tabIndex={-1} className="m-0 flex min-w-0 flex-wrap gap-2 border-0 p-0">
+                    <legend className="sr-only">Applied actions</legend>
                     {actions.map((f, i) => {
                         const field = findFieldDef(availableFilters, f.fieldSource, f.fieldIdentifier);
                         const label = field ? field.fieldLabel : f.fieldIdentifier;
@@ -1041,7 +1026,7 @@ export default function FilterWidgetRuleAction({
                             </Badge>
                         );
                     })}
-                </div>
+                </fieldset>
             </div>
         </Widget>
     );

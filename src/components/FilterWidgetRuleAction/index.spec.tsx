@@ -165,6 +165,19 @@ function buildMappedItem(overrides: Partial<ExecutionItemModel> = {}): Execution
     };
 }
 
+/** A Mode action holding alpha and beta beside a Custom Attr action holding r1 and r2. */
+const mountWithTwoListActions = (mount: Parameters<typeof mountWithActions>[0]) =>
+    mountWithActions(mount, {
+        availableFilters: [
+            ...makeSearchFieldList(FilterFieldSource.Meta, [{ ...modeFieldDef, multiValue: true, value: ['alpha', 'beta', 'gamma'] }]),
+            ...makeSearchFieldList(FilterFieldSource.Custom, [{ ...customAttrFieldDef, multiValue: true }]),
+        ],
+        ExecutionsList: [
+            { fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'mode', data: ['alpha', 'beta'] },
+            { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'customAttr', data: ['r1', 'r2'] },
+        ],
+    });
+
 test.describe('FilterWidgetRuleAction', () => {
     test('renders Widget with title and Field Source / Field / Value controls', async ({ mount, page }) => {
         await mount(<FilterWidgetRuleActionTestWrapper title="Rule actions" />);
@@ -643,16 +656,7 @@ test.describe('FilterWidgetRuleAction', () => {
     });
 
     test('drops the action when its last value is removed, and keeps focus on the action list', async ({ mount, page }) => {
-        const actions = await mountWithActions(mount, {
-            availableFilters: [
-                ...makeSearchFieldList(FilterFieldSource.Meta, [{ ...modeFieldDef, multiValue: true, value: ['alpha', 'beta', 'gamma'] }]),
-                ...makeSearchFieldList(FilterFieldSource.Custom, [{ ...customAttrFieldDef, multiValue: true }]),
-            ],
-            ExecutionsList: [
-                { fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'mode', data: ['alpha', 'beta'] },
-                { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'customAttr', data: ['r1', 'r2'] },
-            ],
-        });
+        const actions = await mountWithTwoListActions(mount);
 
         await page.getByRole('button', { name: 'Remove alpha from Mode', exact: true }).focus();
         await page.keyboard.press('Enter');
@@ -666,16 +670,7 @@ test.describe('FilterWidgetRuleAction', () => {
     });
 
     test('emits the identifiers of every other saved list action when a value is removed', async ({ mount, page }) => {
-        const actions = await mountWithActions(mount, {
-            availableFilters: [
-                ...makeSearchFieldList(FilterFieldSource.Meta, [{ ...modeFieldDef, multiValue: true, value: ['alpha', 'beta', 'gamma'] }]),
-                ...makeSearchFieldList(FilterFieldSource.Custom, [{ ...customAttrFieldDef, multiValue: true }]),
-            ],
-            ExecutionsList: [
-                { fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'mode', data: ['alpha', 'beta'] },
-                { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'customAttr', data: ['r1', 'r2'] },
-            ],
-        });
+        const actions = await mountWithTwoListActions(mount);
 
         await page.getByRole('button', { name: 'Remove alpha from Mode', exact: true }).click();
 
@@ -775,12 +770,6 @@ test.describe('FilterWidgetRuleAction', () => {
             await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeVisible();
         });
     }
-
-    test('offers no keyboard stop on the editor background', async ({ mount, page }) => {
-        await mount(<FilterWidgetRuleActionTestWrapper onActionsUpdate={() => {}} />);
-        await expect(page.locator('#unselectFilters')).not.toHaveAttribute('tabindex');
-        await expect(page.locator('#unselectFilters')).not.toHaveAttribute('role');
-    });
 
     for (const data of ['true', true] as const) {
         test(`boolean execution item hydrates true when backend sends ${typeof data} true`, async ({ mount, page }) => {

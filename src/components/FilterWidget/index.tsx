@@ -189,7 +189,7 @@ export default function FilterWidget({
     const isFetchingAvailableFilters = useSelector(selectors.isFetchingFilters(entity));
 
     const [selectedFilter, setSelectedFilter] = useState<number>(-1);
-    const badgeListRef = useRef<HTMLDivElement>(null);
+    const badgeListRef = useRef<HTMLFieldSetElement>(null);
     // The removed chip takes its focused button with it, so focus moves to the chip now in its place.
     const [chipFocus, setChipFocus] = useState<{ item: number; value: number } | undefined>(undefined);
     const clearChipFocus = useCallback(() => setChipFocus(undefined), []);
@@ -854,8 +854,8 @@ export default function FilterWidget({
                         {selectedFilter === -1 ? 'Apply' : 'Update'}
                     </Button>
                 </div>
-                {/* biome-ignore lint/a11y/useSemanticElements: a fieldset would announce the badges as form controls; this is only a labelled focus target for the list. */}
-                <div ref={badgeListRef} role="group" aria-label="Applied filters" tabIndex={-1} className="flex gap-2 flex-wrap">
+                <fieldset ref={badgeListRef} tabIndex={-1} className="m-0 flex min-w-0 flex-wrap gap-2 border-0 p-0">
+                    <legend className="sr-only">Applied filters</legend>
                     {currentFilters.map((f, i) => {
                         const field = availableFilters
                             .find((a) => a.filterFieldSource === f.fieldSource)
@@ -875,7 +875,7 @@ export default function FilterWidget({
                             </Badge>
                         );
                     })}
-                </div>
+                </fieldset>
             </div>
             {extraFilterComponent && (
                 <>
