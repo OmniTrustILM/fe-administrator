@@ -48,4 +48,15 @@ test.describe('RaProfileDetail actions by permission', () => {
 
         await expect(page.getByTestId('check-compliance-button')).toBeDisabled();
     });
+
+    test('shows automatic renewal and its maximum attempts in the renewal widget', async ({ mount, page }) => {
+        await mount(<RaProfileDetailWithStore />);
+        await page.getByRole('tab', { name: 'Validation' }).click();
+
+        const widget = page.getByTestId('renewal-settings-widget');
+        await expect(widget.getByText('Automatic Renewal Enabled')).toBeVisible();
+        await expect(widget.locator('#autoRenewalEnabled')).toBeChecked();
+        await expect(widget.getByText('Maximum Renewal Attempts')).toBeVisible();
+        await expect(widget.getByText('7', { exact: true })).toBeVisible();
+    });
 });

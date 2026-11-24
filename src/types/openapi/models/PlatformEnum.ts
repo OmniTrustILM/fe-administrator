@@ -46,6 +46,7 @@ export enum PlatformEnum {
     CertificateSubjectType = 'CertificateSubjectType',
     CertificateKeyUsage = 'CertificateKeyUsage',
     CertificateRelationType = 'CertificateRelationType',
+    RenewalWindowSource = 'RenewalWindowSource',
     OidCategory = 'OidCategory',
     KeyAlgorithm = 'KeyAlgorithm',
     KeyFormat = 'KeyFormat',

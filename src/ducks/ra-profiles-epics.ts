@@ -18,6 +18,7 @@ import {
     transformRaProfileActivateScepRequestModelToDto,
     transformRaProfileAddRequestModelToDto,
     transformRaProfileCertificateValidationSettingsUpdateModelToDto,
+    transformRaProfileRenewalSettingsUpdateModelToDto,
     transformRaProfileCmpDetailResponseDtoToModel,
     transformRaProfileEditRequestModelToDto,
     transformRaProfileEstDetailResponseDtoToModel,
@@ -185,6 +186,71 @@ const updateRaProfileCertificateValidation: AppEpic = (action$, state$, deps) =>
                                 error: extractError(err, 'Failed to update profile validation settings'),
                             }),
                             alertActions.error(extractError(err, 'Failed to update profile validation settings')),
+                        ),
+                    ),
+                ),
+        ),
+    );
+};
+
+const updateRaProfileRenewalSettings: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.updateRaProfileRenewalSettings.match),
+        switchMap((action) =>
+            deps.apiClients.raProfiles
+                .updateRaProfileRenewalSettings({
+                    raProfileUuid: action.payload.profileUuid,
+                    authorityUuid: action.payload.authorityInstanceUuid,
+                    raProfileRenewalSettingsUpdateDto: transformRaProfileRenewalSettingsUpdateModelToDto(action.payload.renewalSettings),
+                })
+                .pipe(
+                    mergeMap((raProfileDto) =>
+                        of(
+                            slice.actions.updateRaProfileRenewalSettingsSuccess({
+                                raProfile: transformRaProfileResponseDtoToModel(raProfileDto),
+                            }),
+                        ),
+                    ),
+
+                    catchError((err) =>
+                        of(
+                            slice.actions.updateRaProfileRenewalSettingsFailure({
+                                error: extractError(err, 'Failed to update renewal settings'),
+                            }),
+                            alertActions.error(extractError(err, 'Failed to update renewal settings')),
+                        ),
+                    ),
+                ),
+        ),
+    );
+};
+
+const requestRaProfileEarlyRenewal: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.requestRaProfileEarlyRenewal.match),
+        switchMap((action) =>
+            deps.apiClients.raProfiles
+                .requestRaProfileEarlyRenewal({
+                    authorityUuid: action.payload.authorityUuid,
+                    raProfileUuid: action.payload.raProfileUuid,
+                    earlyRenewalRequestDto: action.payload.request,
+                })
+                .pipe(
+                    mergeMap(({ certificatesAffected }) =>
+                        of(
+                            slice.actions.requestRaProfileEarlyRenewalSuccess({ certificatesAffected }),
+                            alertActions.success(
+                                `Early renewal requested for ${certificatesAffected} ${certificatesAffected === 1 ? 'certificate' : 'certificates'}`,
+                            ),
+                        ),
+                    ),
+
+                    catchError((err) =>
+                        of(
+                            slice.actions.requestRaProfileEarlyRenewalFailure({
+                                error: extractError(err, 'Failed to request early renewal'),
+                            }),
+                            alertActions.error(extractError(err, 'Failed to request early renewal')),
                         ),
                     ),
                 ),
@@ -884,6 +950,8 @@ const epics = [
     createRaProfile,
     updateRaProfile,
     updateRaProfileCertificateValidation,
+    updateRaProfileRenewalSettings,
+    requestRaProfileEarlyRenewal,
     updateRaProfileRequestAttributes,
     enableRaProfile,
     disableRaProfile,

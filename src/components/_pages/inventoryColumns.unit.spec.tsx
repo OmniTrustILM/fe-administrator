@@ -66,6 +66,7 @@ const inventories = [
             'ALT_PUBLIC_KEY_ALGORITHM',
             'HYBRID_CERTIFICATE',
             'TRUSTED_CA',
+            'RENEWAL_WINDOW_START',
         ],
         displayOnly: [],
     },

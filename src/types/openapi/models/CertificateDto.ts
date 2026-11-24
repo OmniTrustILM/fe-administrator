@@ -74,6 +74,12 @@ export interface CertificateDto {
      */
     notAfter?: string;
     /**
+     * Start of the renewal window; empty when the certificate has no renewal window
+     * @type {string}
+     * @memberof CertificateDto
+     */
+    renewalWindowStart?: string;
+    /**
      * Public key algorithm
      * @type {string}
      * @memberof CertificateDto

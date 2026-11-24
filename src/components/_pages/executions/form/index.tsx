@@ -52,6 +52,11 @@ const ExecutionForm = () => {
                 label: getEnumLabel(executionTypeEnum, ExecutionType.SendNotification),
                 description: getEnumDescription(executionTypeEnum, ExecutionType.SendNotification),
             },
+            {
+                value: ExecutionType.RenewCertificate,
+                label: getEnumLabel(executionTypeEnum, ExecutionType.RenewCertificate),
+                description: getEnumDescription(executionTypeEnum, ExecutionType.RenewCertificate),
+            },
         ];
     }, [executionTypeEnum]);
 
@@ -129,6 +134,19 @@ const ExecutionForm = () => {
                         }),
                     );
                     break;
+                case ExecutionType.RenewCertificate:
+                    dispatch(
+                        rulesActions.createExecution({
+                            executionRequestModel: {
+                                items: [],
+                                type: values.type,
+                                name: values.name,
+                                description: values.description,
+                                resource: Resource.Certificates,
+                            },
+                        }),
+                    );
+                    break;
             }
         },
         [dispatch],
@@ -194,7 +212,10 @@ const ExecutionForm = () => {
                                             value={field.value || ''}
                                             onChange={(value) => {
                                                 field.onChange(value);
-                                                setValue('resource', Resource.Any);
+                                                setValue(
+                                                    'resource',
+                                                    value === ExecutionType.RenewCertificate ? Resource.Certificates : Resource.Any,
+                                                );
                                             }}
                                             options={executionTypeOptions}
                                             placeholder="Select Execution Type"
@@ -231,7 +252,10 @@ const ExecutionForm = () => {
                                             options={resourceOptionsWithRuleEvaluator || []}
                                             placeholder="Select Resource"
                                             minWidth={180}
-                                            disabled={watchedType === ExecutionType.SendNotification}
+                                            isDisabled={
+                                                watchedType === ExecutionType.SendNotification ||
+                                                watchedType === ExecutionType.RenewCertificate
+                                            }
                                             placement="bottom"
                                         />
                                         {fieldState.error && fieldState.isTouched && (
@@ -279,7 +303,9 @@ const ExecutionForm = () => {
                                         isSubmitting ||
                                         !isValid ||
                                         isBusy ||
-                                        (!formValues.items?.length && !formValues.notificationProfileItems?.length)
+                                        (formValues.type !== ExecutionType.RenewCertificate &&
+                                            !formValues.items?.length &&
+                                            !formValues.notificationProfileItems?.length)
                                     }
                                     type="submit"
                                 />

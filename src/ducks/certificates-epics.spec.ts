@@ -1323,6 +1323,57 @@ describe('certificates epics', () => {
         });
     });
 
+    describe('bulkRequestEarlyRenewal', () => {
+        const body = { uuids: ['c-1', 'c-2'], spreadSeconds: 7200, explanationUrl: 'https://example.com/why' };
+
+        async function run(bulkRequestEarlyRenewal: (args: any) => any) {
+            const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+            const calls: any[] = [];
+            const deps = {
+                apiClients: {
+                    certificates: {
+                        bulkRequestEarlyRenewal: (args: any) => {
+                            calls.push(args);
+                            return bulkRequestEarlyRenewal(args);
+                        },
+                    },
+                },
+            };
+            const output$ = epics[findEpicIndex('bulkRequestEarlyRenewal')](
+                of(certificatesActions.bulkRequestEarlyRenewal(body)),
+                of({}) as any,
+                deps as any,
+            );
+            return { emitted: await firstValueFrom(output$.pipe(take(2), toArray())), calls };
+        }
+
+        test('sends the body and alerts success with the message', async () => {
+            const response = { status: 'SUCCESS', failedItem: 0, message: 'Done' };
+            const { emitted, calls } = await run(() => of(response));
+
+            expect(calls[0]).toEqual({ bulkEarlyRenewalRequestDto: body });
+            expect(emitted[0]).toEqual(certificatesActions.bulkRequestEarlyRenewalSuccess({ response: response as any }));
+            expect(emitted[1].type).toBe(alertActions.success.type);
+            expect((emitted[1] as any).payload).toBe('Early renewal SUCCESS, 0 failed: Done');
+        });
+
+        test('a partial result is reported as info and a failed one as error', async () => {
+            const partial = await run(() => of({ status: 'PARTIAL', failedItem: 1, message: 'Skipped' }));
+            expect(partial.emitted[1].type).toBe(alertActions.info.type);
+            expect((partial.emitted[1] as any).payload).toBe('Early renewal PARTIAL, 1 failed: Skipped');
+
+            const failed = await run(() => of({ status: 'FAILED', failedItem: 2, message: 'None eligible' }));
+            expect(failed.emitted[1].type).toBe(alertActions.error.type);
+        });
+
+        test('emits Failure and an error alert on API error', async () => {
+            const { emitted } = await run(() => throwError(() => coreError(422, { message: 'bad url' })));
+
+            expect(emitted[0].type).toBe(certificatesActions.bulkRequestEarlyRenewalFailure.type);
+            expect(emitted[1].type).toBe(alertActions.error.type);
+        });
+    });
+
     describe('bulkDelete re-reads the list until the deleted certificates are gone', () => {
         beforeEach(() => {
             vi.useFakeTimers();

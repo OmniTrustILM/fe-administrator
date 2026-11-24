@@ -8,7 +8,22 @@ import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import { actions, selectors } from 'ducks/settings';
 import { useAreDefaultValuesSame, useRunOnSuccessfulFinish } from 'utils/common-hooks';
-import { validateNonZeroInteger, validatePositiveInteger } from 'utils/validators';
+import {
+    renewalInfoFormValuesFromDto,
+    renewalInfoUpdateDtoFromFormValues,
+    refreshIntervalHoursError,
+    refreshRecheckDaysError,
+    type RenewalInfoFormValues,
+} from 'ducks/transform/renewal-info-settings';
+import {
+    composeValidators,
+    validateFloat,
+    validateNonZeroInteger,
+    validatePositiveInteger,
+    validateRange,
+    validateRequired,
+    validateWholeNumber,
+} from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 
 type FormValues = {
@@ -18,7 +33,25 @@ type FormValues = {
     defaultIssuanceWindowDays?: string;
     maxFailedAttempts?: string;
     automaticOwnership: boolean;
-};
+} & RenewalInfoFormValues;
+
+const INTERVAL_FIELDS = [
+    {
+        name: 'refreshMinHours',
+        label: 'Refresh Minimum Interval (hours)',
+        help: 'Lower bound for the delay between two refreshes of a renewal window.',
+    },
+    {
+        name: 'refreshMaxHours',
+        label: 'Refresh Maximum Interval (hours)',
+        help: 'Upper bound for the delay between two refreshes of a renewal window.',
+    },
+    {
+        name: 'refreshDefaultHours',
+        label: 'Refresh Default Interval (hours)',
+        help: 'Delay between refreshes when the CA gives no retry-after.',
+    },
+] as const;
 
 interface CertificateSettingsFormProps {
     onCancel?: () => void;
@@ -61,6 +94,8 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
             automaticOwnership: platformSettings?.certificates?.upload?.automaticOwnership ?? false,
         };
 
+        const renewalInfoDefaults = renewalInfoFormValuesFromDto(platformSettings?.certificates?.renewalInfo);
+
         if (!validationSettings) {
             return {
                 enabled: false,
@@ -68,6 +103,7 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                 frequency: DEFAULT_FREQUENCY,
                 ...registrationDefaults,
                 ...uploadDefaults,
+                ...renewalInfoDefaults,
             };
         }
 
@@ -77,8 +113,14 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
             frequency: validationSettings.frequency?.toString() || DEFAULT_FREQUENCY,
             ...registrationDefaults,
             ...uploadDefaults,
+            ...renewalInfoDefaults,
         };
-    }, [platformSettings?.certificates?.validation, platformSettings?.certificates?.registration, platformSettings?.certificates?.upload]);
+    }, [
+        platformSettings?.certificates?.validation,
+        platformSettings?.certificates?.registration,
+        platformSettings?.certificates?.upload,
+        platformSettings?.certificates?.renewalInfo,
+    ]);
 
     const methods = useForm<FormValues>({
         defaultValues,
@@ -90,6 +132,8 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
         control,
         formState: { isSubmitting },
         reset,
+        getValues,
+        trigger,
     } = methods;
 
     const watchedEnabled = useWatch({
@@ -98,6 +142,24 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
     });
 
     const formValues = useWatch({ control });
+
+    const intervalRules = useMemo(
+        () => ({
+            validate: (value: string) => {
+                const error = composeValidators(validateRequired(), validateFloat())(value) ?? refreshIntervalHoursError(value);
+                if (error) return error;
+                const { refreshMinHours, refreshDefaultHours, refreshMaxHours } = getValues();
+                const [low, middle, high] = [refreshMinHours, refreshDefaultHours, refreshMaxHours].map(Number);
+                return low <= middle && middle <= high ? undefined : 'Minimum must not exceed default, and default must not exceed maximum';
+            },
+        }),
+        [getValues],
+    );
+
+    // The three intervals validate each other, so a change to one re-checks the others.
+    const revalidateIntervals = useCallback(() => {
+        trigger(['refreshMinHours', 'refreshDefaultHours', 'refreshMaxHours']);
+    }, [trigger]);
 
     // Reset form when platformSettings change
     useEffect(() => {
@@ -123,6 +185,7 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                         upload: {
                             automaticOwnership: values.automaticOwnership,
                         },
+                        renewalInfo: renewalInfoUpdateDtoFromFormValues(values),
                     },
                 }),
             );
@@ -251,6 +314,76 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                             The user who uploads a certificate, or imports it from a file, becomes its owner. An owner set by an upload
                             trigger takes precedence. The owner has full rights over the certificate, such as updating, archiving and
                             deleting it.
+                        </p>
+                    </div>
+                </div>
+                <div className="rounded-xl border border-divider p-4 md:p-5 shadow-2xs bg-surface-raised space-y-4">
+                    <h3 className="text-lg font-bold text-content">Renewal Information</h3>
+                    {INTERVAL_FIELDS.map(({ name, label, help }) => (
+                        <div key={name}>
+                            <Controller
+                                name={name}
+                                control={control}
+                                rules={intervalRules}
+                                render={({ field, fieldState }) => (
+                                    <TextInput
+                                        {...field}
+                                        onChange={(value) => {
+                                            field.onChange(value);
+                                            revalidateIntervals();
+                                        }}
+                                        id={name}
+                                        type="number"
+                                        label={label}
+                                        invalid={fieldState.error && fieldState.isTouched}
+                                        error={getFieldErrorMessage(fieldState)}
+                                    />
+                                )}
+                            />
+                            <p className="text-sm text-content-subtle mt-2">{help}</p>
+                        </div>
+                    ))}
+                    <div>
+                        <Controller
+                            name="refreshBatchSize"
+                            control={control}
+                            rules={buildValidationRules([validateRequired(), validateWholeNumber(), validateRange(1, 50)])}
+                            render={({ field, fieldState }) => (
+                                <TextInput
+                                    {...field}
+                                    id="refreshBatchSize"
+                                    type="number"
+                                    label="Refresh Batch Size"
+                                    invalid={fieldState.error && fieldState.isTouched}
+                                    error={getFieldErrorMessage(fieldState)}
+                                />
+                            )}
+                        />
+                        <p className="text-sm text-content-subtle mt-2">
+                            Certificates asked about per request to the connector, from 1 to 50.
+                        </p>
+                    </div>
+                    <div>
+                        <Controller
+                            name="refreshRecheckDays"
+                            control={control}
+                            rules={{
+                                validate: (value: string) =>
+                                    composeValidators(validateRequired(), validateFloat())(value) ?? refreshRecheckDaysError(value),
+                            }}
+                            render={({ field, fieldState }) => (
+                                <TextInput
+                                    {...field}
+                                    id="refreshRecheckDays"
+                                    type="number"
+                                    label="Refresh Re-check Interval (days)"
+                                    invalid={fieldState.error && fieldState.isTouched}
+                                    error={getFieldErrorMessage(fieldState)}
+                                />
+                            )}
+                        />
+                        <p className="text-sm text-content-subtle mt-2">
+                            Days before certificates the CA answered unknown or not supported for are checked again.
                         </p>
                     </div>
                 </div>

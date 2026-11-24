@@ -25,6 +25,8 @@ import type {
 import type { LocationResponseModel } from 'types/locations';
 import type {
     ApprovalDto,
+    BulkEarlyRenewalRequestDto,
+    BulkOperationResponse,
     CertificateImportRequestDto,
     CertificateImportResultDto,
     CertificateKeystoreRequestDto,
@@ -146,6 +148,7 @@ export type State = {
 
     isDeleting: boolean;
     isBulkDeleting: boolean;
+    isRequestingEarlyRenewal: boolean;
 
     isUpdatingGroup: boolean;
     isUpdatingRaProfile: boolean;
@@ -225,6 +228,7 @@ export const initialState: State = {
 
     isDeleting: false,
     isBulkDeleting: false,
+    isRequestingEarlyRenewal: false,
 
     isUpdatingGroup: false,
     isUpdatingRaProfile: false,
@@ -943,6 +947,19 @@ export const slice = createSlice({
             state.listRefreshToken += 1;
         },
 
+        bulkRequestEarlyRenewal: (state, action: PayloadAction<BulkEarlyRenewalRequestDto>) => {
+            state.isRequestingEarlyRenewal = true;
+        },
+
+        bulkRequestEarlyRenewalSuccess: (state, action: PayloadAction<{ response: BulkOperationResponse }>) => {
+            state.isRequestingEarlyRenewal = false;
+            state.listRefreshToken += 1;
+        },
+
+        bulkRequestEarlyRenewalFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isRequestingEarlyRenewal = false;
+        },
+
         refreshListInBackground: (state) => {
             state.listBackgroundRefreshToken += 1;
         },
@@ -1320,6 +1337,7 @@ const rekeyErrorMessage = createSelector(state, (state) => state.rekeyErrorMessa
 
 const isDeleting = createSelector(state, (state) => state.isDeleting);
 const isBulkDeleting = createSelector(state, (state) => state.isBulkDeleting);
+const isRequestingEarlyRenewal = createSelector(state, (state) => state.isRequestingEarlyRenewal);
 
 const isUpdatingGroup = createSelector(state, (state) => state.isUpdatingGroup);
 const isUpdatingRaProfile = createSelector(state, (state) => state.isUpdatingRaProfile);
@@ -1407,6 +1425,7 @@ export const selectors = {
     rekeyErrorMessage,
     isDeleting,
     isBulkDeleting,
+    isRequestingEarlyRenewal,
     isUpdatingTrustedStatus,
     isUpdatingGroup,
     isUpdatingRaProfile,

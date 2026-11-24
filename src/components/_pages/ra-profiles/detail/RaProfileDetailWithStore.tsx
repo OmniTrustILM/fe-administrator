@@ -32,6 +32,15 @@ const raProfile = {
     authorityInstanceName: 'Authority',
     attributes: [],
     certificateValidationSettings: { usePlatformSettings: true },
+    renewalSettings: {
+        windowEnabled: false,
+        windowStartPercent: 67,
+        windowEndPercent: 80,
+        useAuthorityRenewalInfo: false,
+        authorityRenewalInfoSupported: true,
+        autoRenewalEnabled: true,
+        autoRenewalMaxAttempts: 7,
+    },
 } as unknown as RaProfileResponseModel;
 
 export default function RaProfileDetailWithStore({ allowedActions = Object.values(ResourceAction), resourceGrants, scenario }: Props) {

@@ -45,6 +45,8 @@ import PreauthorizedIdentifiersFields, {
     type IdentifierPolicyFormValues,
 } from 'components/_pages/acme-profiles/identifiers/PreauthorizedIdentifiersFields';
 import { policyFormValues, policyRequestFields } from 'utils/acme-identifier-policy';
+import { type AcmeRenewalInfoFormValues, renewalInfoRequestFields, renewalInfoValues } from 'utils/acme-renewal-info';
+import AcmeRenewalInfoFields from 'components/_pages/acme-profiles/renewal/AcmeRenewalInfoFields';
 
 type AcmeProfileFormProps = {
     acmeProfileId?: string;
@@ -71,6 +73,7 @@ type FormValues = {
     groups: { value: string; label: string }[];
     deletedAttributes: string[];
 } & IdentifierPolicyFormValues &
+    AcmeRenewalInfoFormValues &
     Record<`__attributes__${string}`, unknown>;
 
 export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: Readonly<AcmeProfileFormProps>) {
@@ -216,6 +219,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                     : '',
             eabSecretUuids: getValue(acmeProfile?.eabSecretUuids, []),
             ...policyFormValues(editMode ? acmeProfile : undefined),
+            ...renewalInfoValues(editMode ? acmeProfile : undefined),
             owner: editMode ? buildOwner(userOptions, acmeProfile?.certificateAssociations?.ownerUuid)?.value || '' : '',
             groups: editMode ? buildGroups(groupOptions, acmeProfile?.certificateAssociations?.groupUuids) : [],
             deletedAttributes: [],
@@ -284,7 +288,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                 request.raProfileUuid = values.raProfile;
             }
             const filled = editMode ? filledValuesRef.current : undefined;
-            Object.assign(request, eabRequestFields(values, filled), policyRequestFields(values, filled));
+            Object.assign(request, eabRequestFields(values, filled), policyRequestFields(values, filled), renewalInfoRequestFields(values));
             if (editMode) {
                 dispatch(acmeProfileActions.updateAcmeProfile({ uuid: id!, updateAcmeRequest: request }));
             } else {
@@ -401,6 +405,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                     raProfile: optionsForRaProfiles.find((ra) => ra.value === acmeProfile.raProfile?.uuid)?.value || '',
                     eabSecretUuids: acmeProfile.eabSecretUuids ?? [],
                     ...policyFormValues(acmeProfile),
+                    ...renewalInfoValues(acmeProfile),
                     owner: buildOwner(userOptions, acmeProfile.certificateAssociations?.ownerUuid)?.value || '',
                     groups: buildGroups(groupOptions, acmeProfile.certificateAssociations?.groupUuids) || [],
                     deletedAttributes: [],
@@ -431,6 +436,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                     raProfile: '',
                     eabSecretUuids: [],
                     ...policyFormValues(undefined),
+                    ...renewalInfoValues(undefined),
                     owner: '',
                     groups: [],
                     deletedAttributes: [],
@@ -693,6 +699,10 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                                     />
                                 )}
                             />
+                        </Widget>
+
+                        <Widget title="Renewal information" noBorder>
+                            <AcmeRenewalInfoFields disabled={isBusy} />
                         </Widget>
 
                         <Widget title="Pre-authorized identifiers" noBorder>

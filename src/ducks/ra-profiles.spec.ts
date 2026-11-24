@@ -779,4 +779,42 @@ describe('raProfiles selectors', () => {
         expect(selectors.isActivatingScep(state)).toBe(true);
         expect(selectors.isDeactivatingScep(state)).toBe(true);
     });
+
+    test('updateRaProfileRenewalSettings / success keeps loaded attributes / failure', () => {
+        let next = reducer(
+            { ...initialState, raProfile: { uuid: 'ra-1', attributes: [{ uuid: 'kept' }] } as any },
+            actions.updateRaProfileRenewalSettings({
+                profileUuid: 'ra-1',
+                authorityInstanceUuid: 'a-1',
+                renewalSettings: {} as any,
+            }),
+        );
+        expect(next.isUpdating).toBe(true);
+
+        const renewalSettings = { windowEnabled: true } as any;
+        next = reducer(
+            next,
+            actions.updateRaProfileRenewalSettingsSuccess({ raProfile: { uuid: 'ra-1', attributes: [], renewalSettings } as any }),
+        );
+        expect(next.isUpdating).toBe(false);
+        expect(next.raProfile?.renewalSettings).toEqual(renewalSettings);
+        expect(next.raProfile?.attributes).toEqual([{ uuid: 'kept' }]);
+
+        next = reducer({ ...next, isUpdating: true }, actions.updateRaProfileRenewalSettingsFailure({ error: 'err' }));
+        expect(next.isUpdating).toBe(false);
+    });
+
+    test('requestRaProfileEarlyRenewal / success / failure update isUpdating', () => {
+        let next = reducer(
+            initialState,
+            actions.requestRaProfileEarlyRenewal({ authorityUuid: 'a-1', raProfileUuid: 'ra-1', request: { spreadSeconds: 3600 } }),
+        );
+        expect(next.isUpdating).toBe(true);
+
+        next = reducer(next, actions.requestRaProfileEarlyRenewalSuccess({ certificatesAffected: 3 }));
+        expect(next.isUpdating).toBe(false);
+
+        next = reducer({ ...next, isUpdating: true }, actions.requestRaProfileEarlyRenewalFailure({ error: 'err' }));
+        expect(next.isUpdating).toBe(false);
+    });
 });

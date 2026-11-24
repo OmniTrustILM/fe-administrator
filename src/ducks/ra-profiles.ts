@@ -4,7 +4,12 @@ import type { AppState } from 'ducks';
 import type { ProfileApprovalModel } from 'types/approval-profiles';
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type { BulkActionModel } from 'types/connectors';
-import type { RaProfileCertificateRequestAttributesDto, RaProfileCertificateRequestAttributesUpdateDto, Resource } from 'types/openapi';
+import type {
+    EarlyRenewalRequestDto,
+    RaProfileCertificateRequestAttributesDto,
+    RaProfileCertificateRequestAttributesUpdateDto,
+    Resource,
+} from 'types/openapi';
 import type {
     ComplianceProfileSimplifiedModel,
     RaProfileAcmeDetailResponseModel,
@@ -14,6 +19,7 @@ import type {
     RaProfileActivateScepRequestModel,
     RaProfileAddRequestModel,
     RaProfileCertificateValidationSettingsUpdateModel,
+    RaProfileRenewalSettingsUpdateModel,
     RaProfileCmpDetailResponseModel,
     RaProfileEditRequestModel,
     RaProfileEstDetailResponseModel,
@@ -257,6 +263,45 @@ export const slice = createSlice({
         },
 
         updateRaProfileCertificateValidationFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isUpdating = false;
+        },
+
+        updateRaProfileRenewalSettings: (
+            state,
+            action: PayloadAction<{
+                profileUuid: string;
+                authorityInstanceUuid: string;
+                renewalSettings: RaProfileRenewalSettingsUpdateModel;
+            }>,
+        ) => {
+            state.isUpdating = true;
+        },
+
+        updateRaProfileRenewalSettingsSuccess: (state, action: PayloadAction<{ raProfile: RaProfileResponseModel }>) => {
+            state.isUpdating = false;
+            state.raProfile = {
+                ...action.payload.raProfile,
+                attributes: state.raProfile?.attributes ?? action.payload.raProfile.attributes,
+                customAttributes: state.raProfile?.customAttributes ?? action.payload.raProfile.customAttributes,
+            };
+        },
+
+        updateRaProfileRenewalSettingsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isUpdating = false;
+        },
+
+        requestRaProfileEarlyRenewal: (
+            state,
+            action: PayloadAction<{ authorityUuid: string; raProfileUuid: string; request: EarlyRenewalRequestDto }>,
+        ) => {
+            state.isUpdating = true;
+        },
+
+        requestRaProfileEarlyRenewalSuccess: (state, action: PayloadAction<{ certificatesAffected: number }>) => {
+            state.isUpdating = false;
+        },
+
+        requestRaProfileEarlyRenewalFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isUpdating = false;
         },
 

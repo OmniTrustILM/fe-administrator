@@ -28,6 +28,7 @@ describe('certificates slice', () => {
         ['bulkUpdateRaProfileSuccess', () => actions.bulkUpdateRaProfileSuccess({ uuids: ['c1'] })],
         ['importCertificatesSuccess', () => actions.importCertificatesSuccess({ results: [] })],
         ['bulkDeleteSuccess', () => actions.bulkDeleteSuccess({ response: {} as any })],
+        ['bulkRequestEarlyRenewalSuccess', () => actions.bulkRequestEarlyRenewalSuccess({ response: {} as any })],
     ])('%s bumps listRefreshToken so the page refetches through the host', (_name, action) => {
         const next = reducer(initialState, action());
 
@@ -586,6 +587,17 @@ describe('certificates slice', () => {
 
         next = reducer({ ...next, isBulkUpdatingOwner: true }, actions.bulkDeleteOwnerFailure({ error: 'err' }));
         expect(next.isBulkUpdatingOwner).toBe(false);
+    });
+
+    test('bulkRequestEarlyRenewal / success / failure update isRequestingEarlyRenewal', () => {
+        let next = reducer(initialState, actions.bulkRequestEarlyRenewal({ uuids: ['c-1'], spreadSeconds: 3600 }));
+        expect(next.isRequestingEarlyRenewal).toBe(true);
+
+        next = reducer(next, actions.bulkRequestEarlyRenewalSuccess({ response: {} as any }));
+        expect(next.isRequestingEarlyRenewal).toBe(false);
+
+        next = reducer({ ...next, isRequestingEarlyRenewal: true }, actions.bulkRequestEarlyRenewalFailure({ error: 'err' }));
+        expect(next.isRequestingEarlyRenewal).toBe(false);
     });
 
     test('bulkDelete / success / failure update isBulkDeleting', () => {

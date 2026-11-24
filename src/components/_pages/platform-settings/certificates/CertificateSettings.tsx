@@ -2,6 +2,7 @@ import { useMemo } from 'react';
 import type { SettingsPlatformModel } from 'types/settings';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Switch from 'components/Switch';
+import { renewalInfoFormValuesFromDto } from 'ducks/transform/renewal-info-settings';
 import { renderExpiringThresholdLabel, renderValidationFrequencyLabel } from 'utils/certificate-validation';
 
 type Props = {
@@ -98,6 +99,18 @@ const CertificateSettings = ({ platformSettings }: Props) => {
         return rows;
     }, [platformSettings]);
 
+    const renewalInfoData: TableDataRow[] = useMemo(() => {
+        const renewalInfo = renewalInfoFormValuesFromDto(platformSettings?.certificates?.renewalInfo);
+
+        return [
+            { id: 'refreshMinHours', columns: ['Refresh Minimum Interval', `${renewalInfo.refreshMinHours} (hours)`] },
+            { id: 'refreshMaxHours', columns: ['Refresh Maximum Interval', `${renewalInfo.refreshMaxHours} (hours)`] },
+            { id: 'refreshDefaultHours', columns: ['Refresh Default Interval', `${renewalInfo.refreshDefaultHours} (hours)`] },
+            { id: 'refreshBatchSize', columns: ['Refresh Batch Size', renewalInfo.refreshBatchSize] },
+            { id: 'refreshRecheckDays', columns: ['Refresh Re-check Interval', `${renewalInfo.refreshRecheckDays} (days)`] },
+        ];
+    }, [platformSettings]);
+
     return (
         <div style={{ paddingTop: '1.5em', paddingBottom: '1.5em' }} className="space-y-6">
             <div className="space-y-2">
@@ -111,6 +124,10 @@ const CertificateSettings = ({ platformSettings }: Props) => {
             <div className="space-y-2">
                 <h3 className="text-lg font-bold text-content">Upload</h3>
                 <CustomTable headers={headers} data={uploadData} />
+            </div>
+            <div className="space-y-2">
+                <h3 className="text-lg font-bold text-content">Renewal Information</h3>
+                <CustomTable headers={headers} data={renewalInfoData} />
             </div>
         </div>
     );

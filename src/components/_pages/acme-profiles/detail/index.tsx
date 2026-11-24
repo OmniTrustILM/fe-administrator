@@ -194,6 +194,17 @@ export default function AdministratorDetail() {
                           columns: ['Retry Interval', `${acmeProfile.retryInterval || 'N/A'} (seconds)`],
                       },
                       {
+                          id: 'renewalInfoEnabled',
+                          columns: [
+                              'Renewal Information',
+                              <StatusBadge key="renewalInfoEnabled" enabled={acmeProfile.renewalInfoEnabled ?? false} />,
+                          ],
+                      },
+                      {
+                          id: 'renewalInfoRetryAfter',
+                          columns: ['Renewal Information Retry-After', `${acmeProfile.renewalInfoRetryAfter ?? 'N/A'} (seconds)`],
+                      },
+                      {
                           id: 'orderValidity',
                           columns: ['Order Validity', `${acmeProfile.validity || 'N/A'} (seconds)`],
                       },

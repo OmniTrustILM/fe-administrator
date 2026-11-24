@@ -339,4 +339,12 @@ describe('execution-badges', () => {
             expect(html).toContain("'orphan|STRING'");
         });
     });
+
+    describe('renew certificate executions', () => {
+        it.each(['badge', 'small'] as const)('renders no items for an empty item list in the %s variant', (variant) => {
+            const html = renderItems([], ExecutionType.RenewCertificate, [], {}, searchGroupEnum, variant);
+
+            expect(html).toBe('');
+        });
+    });
 });

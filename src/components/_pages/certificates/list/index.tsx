@@ -27,6 +27,7 @@ import { useActionAvailability } from 'utils/useActionAvailability';
 import CertificateGroupDialog from '../CertificateGroupDialog';
 import CertificateImportDialog from '../CertificateImportDialog';
 import CertificateOwnerDialog from '../CertificateOwnerDialog';
+import EarlyRenewalDialog from '../EarlyRenewalDialog';
 import CertificateRAProfileDialog from '../CertificateRAProfileDialog';
 import { ArrowDownToLine } from 'lucide-react';
 import Switch from 'components/Switch';
@@ -79,6 +80,7 @@ export default function CertificateList({
     const [updateGroup, setUpdateGroup] = useState<boolean>(false);
     const [updateOwner, setUpdateOwner] = useState<boolean>(false);
     const [updateRaProfile, setUpdateRaProfile] = useState<boolean>(false);
+    const [earlyRenewal, setEarlyRenewal] = useState<boolean>(false);
     const [appliedFilters, setAppliedFilters] = useState<SearchRequestModel>();
     const [pendingAction, setPendingAction] = useState<PendingAction | null>(null);
 
@@ -202,6 +204,17 @@ export default function CertificateList({
                           tooltip: 'Download',
                           custom: downloadDropDown,
                           onClick: () => {},
+                      },
+                      {
+                          id: 'early-renewal',
+                          icon: 'retweet',
+                          disabled: checkedRows.length === 0,
+                          tooltip: 'Request early renewal',
+                          'aria-label': 'Request early renewal',
+                          requires: can(ResourceAction.Renew, { onObjects: true }),
+                          onClick: () => {
+                              setEarlyRenewal(true);
+                          },
                       },
                       {
                           icon: 'archive',
@@ -385,6 +398,21 @@ export default function CertificateList({
                 buttons={[]}
                 size="md"
                 icon="shield-check"
+            />
+
+            <Dialog
+                isOpen={earlyRenewal}
+                caption="Request early renewal"
+                body={
+                    <EarlyRenewalDialog
+                        target={{ kind: 'selection', uuids: checkedRows.map(String) }}
+                        onClose={() => setEarlyRenewal(false)}
+                    />
+                }
+                toggle={() => setEarlyRenewal(false)}
+                buttons={[]}
+                size="md"
+                icon="refresh"
             />
 
             <PendingActionDialogs action={pendingAction} onClose={() => setPendingAction(null)} />
