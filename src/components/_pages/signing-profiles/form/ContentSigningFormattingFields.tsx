@@ -53,14 +53,16 @@ export default function ContentSigningFormattingFields({ value, onChange, signin
     const familyOptions = connectorDeclarations.map((declaration) => ({ value: declaration.code, label: declaration.label }));
     const levelOptions = (familyDeclaration?.levels ?? []).map((declared) => ({ value: declared.level, label: declared.name }));
 
-    let connectorError = formattingConnectorListError(connectorLabel, failedConnectorsFetch);
+    let declarationsError: string | undefined;
     if (connectorUuid && failedDeclarationsFetch?.connectorUuid === connectorUuid) {
-        connectorError = `The declarations of ${connectorName} could not be read. ${failedDeclarationsFetch.reason ?? ''}`.trim();
+        declarationsError = `The declarations of ${connectorName} could not be read. ${failedDeclarationsFetch.reason ?? ''}`.trim();
     } else if (declarationsLoaded && connectorDeclarations.length === 0) {
-        connectorError = `${connectorName} declares no signature family.`;
+        declarationsError = `${connectorName} declares no signature family.`;
     }
+    const connectorErrors = [formattingConnectorListError(connectorLabel, failedConnectorsFetch), declarationsError].filter(Boolean);
+    const connectorError = connectorErrors.length > 0 ? connectorErrors.join(' ') : undefined;
     const familyError =
-        declarationsLoaded && familyCode && connectorDeclarations.length > 0 && !familyDeclaration
+        declarationsLoaded && familyCode && !familyDeclaration
             ? `${connectorName} no longer declares the family ${familyCode}.`
             : undefined;
     const levelError =

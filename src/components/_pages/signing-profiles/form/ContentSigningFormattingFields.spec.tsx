@@ -230,6 +230,36 @@ test.describe('ContentSigningFormattingFields', () => {
         await expectDraft(page, {});
     });
 
+    test('names a saved family when the connector now declares none', async ({ mount, page }) => {
+        await mount(
+            <ContentSigningFormattingFieldsTestWrapper
+                connectors={connectors}
+                declarationsByConnector={declarationsByConnector}
+                initialDraft={{ connectorUuid: 'c-empty', familyCode: 'pades' }}
+            />,
+        );
+
+        await expect(page.getByText('Empty Connector declares no signature family.')).toBeVisible();
+        await expect(page.getByText('Empty Connector no longer declares the family pades.')).toBeVisible();
+    });
+
+    test('keeps the list failure beside the saved connector declarations failure', async ({ mount, page }) => {
+        await mount(
+            <ContentSigningFormattingFieldsTestWrapper
+                connectors={[]}
+                declarationsByConnector={declarationsByConnector}
+                initialDraft={{ connectorUuid: 'c-broken' }}
+                failedConnectorsFetch={{ reason: 'Core unreachable' }}
+            />,
+        );
+
+        await expect(
+            page.getByText(
+                'The Content Signing Formatting Connectors could not be listed. Core unreachable The declarations of c-broken could not be read. Connector unreachable',
+            ),
+        ).toBeVisible();
+    });
+
     test('says why the connector list is empty when the search failed', async ({ mount, page }) => {
         await mount(
             <ContentSigningFormattingFieldsTestWrapper
