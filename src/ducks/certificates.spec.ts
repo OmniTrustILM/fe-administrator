@@ -1,4 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
+import { BulkOperationResponseStatusEnum } from 'types/openapi';
 import reducer, { actions, initialState, selectors } from './certificates';
 
 vi.mock('utils/download', () => ({
@@ -28,7 +29,10 @@ describe('certificates slice', () => {
         ['bulkUpdateRaProfileSuccess', () => actions.bulkUpdateRaProfileSuccess({ uuids: ['c1'] })],
         ['importCertificatesSuccess', () => actions.importCertificatesSuccess({ results: [] })],
         ['bulkDeleteSuccess', () => actions.bulkDeleteSuccess({ response: {} as any })],
-        ['bulkRequestEarlyRenewalSuccess', () => actions.bulkRequestEarlyRenewalSuccess({ response: {} as any })],
+        [
+            'bulkRequestEarlyRenewalSuccess',
+            () => actions.bulkRequestEarlyRenewalSuccess({ response: { status: BulkOperationResponseStatusEnum.Success } as any }),
+        ],
     ])('%s bumps listRefreshToken so the page refetches through the host', (_name, action) => {
         const next = reducer(initialState, action());
 
@@ -41,6 +45,16 @@ describe('certificates slice', () => {
         expect(next.listBackgroundRefreshToken).toBe(initialState.listBackgroundRefreshToken + 1);
         expect(next.listRefreshToken).toBe(initialState.listRefreshToken);
     });
+
+    test.each([BulkOperationResponseStatusEnum.Partial, BulkOperationResponseStatusEnum.Failed])(
+        'bulkRequestEarlyRenewalSuccess with %s keeps the selection and refreshes in the background',
+        (status) => {
+            const next = reducer(initialState, actions.bulkRequestEarlyRenewalSuccess({ response: { status } as any }));
+
+            expect(next.listRefreshToken).toBe(initialState.listRefreshToken);
+            expect(next.listBackgroundRefreshToken).toBe(initialState.listBackgroundRefreshToken + 1);
+        },
+    );
 
     test('a mutation that reports no success leaves listRefreshToken alone', () => {
         const next = reducer(initialState, actions.bulkUpdateGroupFailure({ error: 'nope' }));
@@ -593,7 +607,10 @@ describe('certificates slice', () => {
         let next = reducer(initialState, actions.bulkRequestEarlyRenewal({ uuids: ['c-1'], spreadSeconds: 3600 }));
         expect(next.isRequestingEarlyRenewal).toBe(true);
 
-        next = reducer(next, actions.bulkRequestEarlyRenewalSuccess({ response: {} as any }));
+        next = reducer(
+            next,
+            actions.bulkRequestEarlyRenewalSuccess({ response: { status: BulkOperationResponseStatusEnum.Success } as any }),
+        );
         expect(next.isRequestingEarlyRenewal).toBe(false);
 
         next = reducer({ ...next, isRequestingEarlyRenewal: true }, actions.bulkRequestEarlyRenewalFailure({ error: 'err' }));

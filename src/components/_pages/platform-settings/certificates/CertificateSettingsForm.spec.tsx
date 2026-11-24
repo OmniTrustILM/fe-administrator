@@ -254,6 +254,17 @@ test.describe('CertificateSettingsForm - Renewal information subsection', () => 
         );
     });
 
+    test('saves a fractional hour value when Enter is pressed in the field', async ({ mount, page }) => {
+        await mount(<CertificateSettingsFormTestWrapper preloadedState={withRenewalInfo(stored)} />);
+
+        const input = page.locator('#refreshMaxHours');
+        await input.click();
+        await input.fill('48.5');
+        await input.press('Enter');
+
+        await expect(page.getByTestId('update-platform-settings')).toContainText('"refreshMaxInterval":174600');
+    });
+
     test('refuses a batch size outside 1 to 50', async ({ mount, page }) => {
         await mount(<CertificateSettingsFormTestWrapper preloadedState={withRenewalInfo(stored)} />);
 

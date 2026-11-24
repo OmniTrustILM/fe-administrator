@@ -789,32 +789,46 @@ describe('raProfiles selectors', () => {
                 renewalSettings: {} as any,
             }),
         );
-        expect(next.isUpdating).toBe(true);
+        expect(next.isUpdatingRenewalSettings).toBe(true);
 
         const renewalSettings = { windowEnabled: true } as any;
         next = reducer(
             next,
             actions.updateRaProfileRenewalSettingsSuccess({ raProfile: { uuid: 'ra-1', attributes: [], renewalSettings } as any }),
         );
-        expect(next.isUpdating).toBe(false);
+        expect(next.isUpdatingRenewalSettings).toBe(false);
         expect(next.raProfile?.renewalSettings).toEqual(renewalSettings);
         expect(next.raProfile?.attributes).toEqual([{ uuid: 'kept' }]);
 
-        next = reducer({ ...next, isUpdating: true }, actions.updateRaProfileRenewalSettingsFailure({ error: 'err' }));
-        expect(next.isUpdating).toBe(false);
+        next = reducer({ ...next, isUpdatingRenewalSettings: true }, actions.updateRaProfileRenewalSettingsFailure({ error: 'err' }));
+        expect(next.isUpdatingRenewalSettings).toBe(false);
     });
 
-    test('requestRaProfileEarlyRenewal / success / failure update isUpdating', () => {
+    test('renewal settings and early renewal leave isUpdating and updateRaProfileSucceeded alone', () => {
+        const base = { ...initialState, updateRaProfileSucceeded: true };
+        let next = reducer(
+            base,
+            actions.updateRaProfileRenewalSettings({ profileUuid: 'ra-1', authorityInstanceUuid: 'a-1', renewalSettings: {} as any }),
+        );
+        next = reducer(next, actions.updateRaProfileRenewalSettingsFailure({ error: 'err' }));
+        next = reducer(next, actions.requestRaProfileEarlyRenewal({ authorityUuid: 'a-1', raProfileUuid: 'ra-1', request: {} as any }));
+        next = reducer(next, actions.requestRaProfileEarlyRenewalFailure({ error: 'err' }));
+
+        expect(next.isUpdating).toBe(false);
+        expect(next.updateRaProfileSucceeded).toBe(true);
+    });
+
+    test('requestRaProfileEarlyRenewal / success / failure update isRequestingEarlyRenewal', () => {
         let next = reducer(
             initialState,
             actions.requestRaProfileEarlyRenewal({ authorityUuid: 'a-1', raProfileUuid: 'ra-1', request: { spreadSeconds: 3600 } }),
         );
-        expect(next.isUpdating).toBe(true);
+        expect(next.isRequestingEarlyRenewal).toBe(true);
 
         next = reducer(next, actions.requestRaProfileEarlyRenewalSuccess({ certificatesAffected: 3 }));
-        expect(next.isUpdating).toBe(false);
+        expect(next.isRequestingEarlyRenewal).toBe(false);
 
-        next = reducer({ ...next, isUpdating: true }, actions.requestRaProfileEarlyRenewalFailure({ error: 'err' }));
-        expect(next.isUpdating).toBe(false);
+        next = reducer({ ...next, isRequestingEarlyRenewal: true }, actions.requestRaProfileEarlyRenewalFailure({ error: 'err' }));
+        expect(next.isRequestingEarlyRenewal).toBe(false);
     });
 });

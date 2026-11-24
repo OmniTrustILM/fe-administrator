@@ -4,6 +4,8 @@ import TextInput from 'components/TextInput';
 import {
     RENEWAL_INFO_RETRY_AFTER_MAX,
     RENEWAL_INFO_RETRY_AFTER_MIN,
+    DEFAULT_RENEWAL_INFO_RETRY_AFTER,
+    renewalInfoRetryAfterError,
     renewalInfoRetryAfterRules,
     type AcmeRenewalInfoFormValues,
 } from 'utils/acme-renewal-info';
@@ -14,8 +16,16 @@ type Props = Readonly<{
 }>;
 
 export default function AcmeRenewalInfoFields({ disabled = false }: Props) {
-    const { control } = useFormContext<AcmeRenewalInfoFormValues>();
+    const { control, getValues, setValue, formState } = useFormContext<AcmeRenewalInfoFormValues>();
     const enabled = useWatch({ control, name: 'renewalInfoEnabled' });
+
+    const handleEnabledChange = (checked: boolean) => {
+        if (!checked && renewalInfoRetryAfterError(getValues('renewalInfoRetryAfter'))) {
+            const stored = formState.defaultValues?.renewalInfoRetryAfter;
+            const fallback = stored && !renewalInfoRetryAfterError(stored) ? stored : DEFAULT_RENEWAL_INFO_RETRY_AFTER;
+            setValue('renewalInfoRetryAfter', fallback, { shouldValidate: true });
+        }
+    };
 
     return (
         <div className="space-y-4">
@@ -26,7 +36,10 @@ export default function AcmeRenewalInfoFields({ disabled = false }: Props) {
                     <Switch
                         id="renewalInfoEnabled"
                         checked={field.value}
-                        onChange={field.onChange}
+                        onChange={(checked) => {
+                            handleEnabledChange(checked);
+                            field.onChange(checked);
+                        }}
                         disabled={disabled}
                         label="Enable renewal information"
                     />

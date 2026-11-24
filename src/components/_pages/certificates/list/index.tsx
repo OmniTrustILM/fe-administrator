@@ -73,6 +73,7 @@ export default function CertificateList({
     const isBulkUpdatingGroup = useSelector(selectors.isBulkUpdatingGroup);
     const isBulkUpdatingRaProfile = useSelector(selectors.isBulkUpdatingRaProfile);
     const isBulkUpdatingOwner = useSelector(selectors.isBulkUpdatingOwner);
+    const isRequestingEarlyRenewal = useSelector(selectors.isRequestingEarlyRenewal);
     const isImporting = useSelector(selectors.isImporting);
     const certificateTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateType));
     const isIncludeArchived = useSelector(selectors.isIncludeArchived);
@@ -95,7 +96,8 @@ export default function CertificateList({
         isUpdatingOwner ||
         isBulkUpdatingGroup ||
         isBulkUpdatingRaProfile ||
-        isBulkUpdatingOwner;
+        isBulkUpdatingOwner ||
+        isRequestingEarlyRenewal;
 
     useEffect(() => {
         dispatch(actions.clearDeleteErrorMessages());

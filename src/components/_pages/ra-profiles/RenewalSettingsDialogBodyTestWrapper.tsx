@@ -36,7 +36,14 @@ export function RenewalSettingsDialogBodyTestWrapper({
             middleware: (getDefaultMiddleware) => getDefaultMiddleware({ serializableCheck: false }).concat(captureMiddleware),
             preloadedState: {
                 ...testInitialState,
-                raprofiles: { isUpdating, isCreating: false, createRaProfileSucceeded: false, createdRaProfileUuid: null, raProfiles: [] },
+                raprofiles: {
+                    isUpdating: false,
+                    isUpdatingRenewalSettings: isUpdating,
+                    isCreating: false,
+                    createRaProfileSucceeded: false,
+                    createdRaProfileUuid: null,
+                    raProfiles: [],
+                },
             },
         });
     }, [isUpdating, onUpdateRenewalSettings]);

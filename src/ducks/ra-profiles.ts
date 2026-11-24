@@ -67,6 +67,8 @@ export type State = {
     isDeleting: boolean;
     isBulkDeleting: boolean;
     isUpdating: boolean;
+    isUpdatingRenewalSettings: boolean;
+    isRequestingEarlyRenewal: boolean;
     updateRaProfileSucceeded: boolean;
     isEnabling: boolean;
     isBulkEnabling: boolean;
@@ -114,6 +116,8 @@ export const initialState: State = {
     isDeleting: false,
     isBulkDeleting: false,
     isUpdating: false,
+    isUpdatingRenewalSettings: false,
+    isRequestingEarlyRenewal: false,
     updateRaProfileSucceeded: false,
     isEnabling: false,
     isDisabling: false,
@@ -274,11 +278,11 @@ export const slice = createSlice({
                 renewalSettings: RaProfileRenewalSettingsUpdateModel;
             }>,
         ) => {
-            state.isUpdating = true;
+            state.isUpdatingRenewalSettings = true;
         },
 
         updateRaProfileRenewalSettingsSuccess: (state, action: PayloadAction<{ raProfile: RaProfileResponseModel }>) => {
-            state.isUpdating = false;
+            state.isUpdatingRenewalSettings = false;
             state.raProfile = {
                 ...action.payload.raProfile,
                 attributes: state.raProfile?.attributes ?? action.payload.raProfile.attributes,
@@ -287,22 +291,22 @@ export const slice = createSlice({
         },
 
         updateRaProfileRenewalSettingsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
-            state.isUpdating = false;
+            state.isUpdatingRenewalSettings = false;
         },
 
         requestRaProfileEarlyRenewal: (
             state,
             action: PayloadAction<{ authorityUuid: string; raProfileUuid: string; request: EarlyRenewalRequestDto }>,
         ) => {
-            state.isUpdating = true;
+            state.isRequestingEarlyRenewal = true;
         },
 
         requestRaProfileEarlyRenewalSuccess: (state, action: PayloadAction<{ certificatesAffected: number }>) => {
-            state.isUpdating = false;
+            state.isRequestingEarlyRenewal = false;
         },
 
         requestRaProfileEarlyRenewalFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
-            state.isUpdating = false;
+            state.isRequestingEarlyRenewal = false;
         },
 
         updateRaProfileRequestAttributes: (
@@ -838,6 +842,8 @@ const createdRaProfileUuid = createSelector(state, (state: State) => state.creat
 const isDeleting = createSelector(state, (state: State) => state.isDeleting);
 const isBulkDeleting = createSelector(state, (state: State) => state.isBulkDeleting);
 const isUpdating = createSelector(state, (state: State) => state.isUpdating);
+const isUpdatingRenewalSettings = createSelector(state, (state: State) => state.isUpdatingRenewalSettings);
+const isRequestingEarlyRenewal = createSelector(state, (state: State) => state.isRequestingEarlyRenewal);
 const updateRaProfileSucceeded = createSelector(state, (state: State) => state.updateRaProfileSucceeded);
 const isEnabling = createSelector(state, (state: State) => state.isEnabling);
 const isBulkEnabling = createSelector(state, (state: State) => state.isBulkEnabling);
@@ -889,6 +895,8 @@ export const selectors = {
     isDeleting,
     isBulkDeleting,
     isUpdating,
+    isUpdatingRenewalSettings,
+    isRequestingEarlyRenewal,
     updateRaProfileSucceeded,
     isEnabling,
     isBulkEnabling,

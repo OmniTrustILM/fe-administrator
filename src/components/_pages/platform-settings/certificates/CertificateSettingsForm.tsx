@@ -333,7 +333,8 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                                             revalidateIntervals();
                                         }}
                                         id={name}
-                                        type="number"
+                                        type="text"
+                                        inputMode="decimal"
                                         label={label}
                                         invalid={fieldState.error && fieldState.isTouched}
                                         error={getFieldErrorMessage(fieldState)}

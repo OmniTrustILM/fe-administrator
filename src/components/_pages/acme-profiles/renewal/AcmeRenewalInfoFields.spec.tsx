@@ -41,4 +41,30 @@ test.describe('AcmeRenewalInfoFields', () => {
         await expect(page.locator('#renewalInfoRetryAfter')).toBeDisabled();
         await expect(page.getByTestId('request')).toHaveText('{"renewalInfoEnabled":false,"renewalInfoRetryAfter":7200}');
     });
+
+    test('restores the stored retry-after when switched off after an invalid edit', async ({ mount, page }) => {
+        await mount(<AcmeRenewalInfoFieldsHarness profile={{ renewalInfoEnabled: true, renewalInfoRetryAfter: 7200 }} />);
+
+        const input = page.locator('#renewalInfoRetryAfter');
+        await input.click();
+        await input.fill('');
+        await expect(page.getByTestId('valid')).toHaveText('false');
+
+        await page.getByText('Enable renewal information').click();
+
+        await expect(page.getByTestId('valid')).toHaveText('true');
+        await expect(input).toHaveValue('7200');
+        await expect(page.getByTestId('request')).toHaveText('{"renewalInfoEnabled":false,"renewalInfoRetryAfter":7200}');
+    });
+
+    test('keeps a valid edit when switched off', async ({ mount, page }) => {
+        await mount(<AcmeRenewalInfoFieldsHarness profile={{ renewalInfoEnabled: true, renewalInfoRetryAfter: 7200 }} />);
+
+        const input = page.locator('#renewalInfoRetryAfter');
+        await input.click();
+        await input.fill('600');
+        await page.getByText('Enable renewal information').click();
+
+        await expect(page.getByTestId('request')).toHaveText('{"renewalInfoEnabled":false,"renewalInfoRetryAfter":600}');
+    });
 });

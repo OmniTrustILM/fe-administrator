@@ -41,7 +41,7 @@ const isValidWindow = (start?: number, end?: number) => !validatePercent(start) 
 
 export default function RenewalSettingsDialogBody({ raProfile, onClose }: Props) {
     const dispatch = useDispatch();
-    const isUpdating = useSelector(selectors.isUpdating);
+    const isUpdating = useSelector(selectors.isUpdatingRenewalSettings);
 
     const renewalSettings = raProfile?.renewalSettings;
     const authorityRenewalInfoSupported = !!renewalSettings?.authorityRenewalInfoSupported;

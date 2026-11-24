@@ -23,6 +23,7 @@ import type {
     ValidationCertificateResultModel,
 } from 'types/certificate';
 import type { LocationResponseModel } from 'types/locations';
+import { BulkOperationResponseStatusEnum } from 'types/openapi';
 import type {
     ApprovalDto,
     BulkEarlyRenewalRequestDto,
@@ -953,7 +954,11 @@ export const slice = createSlice({
 
         bulkRequestEarlyRenewalSuccess: (state, action: PayloadAction<{ response: BulkOperationResponse }>) => {
             state.isRequestingEarlyRenewal = false;
-            state.listRefreshToken += 1;
+            if (action.payload.response.status === BulkOperationResponseStatusEnum.Success) {
+                state.listRefreshToken += 1;
+            } else {
+                state.listBackgroundRefreshToken += 1;
+            }
         },
 
         bulkRequestEarlyRenewalFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {

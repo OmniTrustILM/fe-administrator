@@ -48,7 +48,7 @@ const validateExplanationUrl = (value: string) => {
 
 export default function EarlyRenewalDialog({ target, onClose }: Props) {
     const dispatch = useDispatch();
-    const isRaProfileBusy = useSelector(raProfileSelectors.isUpdating);
+    const isRaProfileBusy = useSelector(raProfileSelectors.isRequestingEarlyRenewal);
     const isBulkBusy = useSelector(certificateSelectors.isRequestingEarlyRenewal);
     const isBusy = target.kind === 'raProfile' ? isRaProfileBusy : isBulkBusy;
 
