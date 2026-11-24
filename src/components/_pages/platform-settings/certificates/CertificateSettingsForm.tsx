@@ -376,7 +376,8 @@ const CertificateSettingsForm = ({ onCancel, onSuccess }: CertificateSettingsFor
                                 <TextInput
                                     {...field}
                                     id="refreshRecheckDays"
-                                    type="number"
+                                    type="text"
+                                    inputMode="decimal"
                                     label="Refresh Re-check Interval (days)"
                                     invalid={fieldState.error && fieldState.isTouched}
                                     error={getFieldErrorMessage(fieldState)}

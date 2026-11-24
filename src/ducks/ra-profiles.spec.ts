@@ -804,6 +804,24 @@ describe('raProfiles selectors', () => {
         expect(next.isUpdatingRenewalSettings).toBe(false);
     });
 
+    test('ignores a renewal settings response for another RA profile than the one loaded', () => {
+        const loaded = { uuid: 'ra-2', attributes: [] } as any;
+        const next = reducer(
+            { ...initialState, raProfile: loaded, isUpdatingRenewalSettings: true },
+            actions.updateRaProfileRenewalSettingsSuccess({ raProfile: { uuid: 'ra-1', attributes: [] } as any }),
+        );
+        expect(next.isUpdatingRenewalSettings).toBe(false);
+        expect(next.raProfile).toEqual(loaded);
+    });
+
+    test('does not repopulate a cleared RA profile with a renewal settings response', () => {
+        const next = reducer(
+            { ...initialState, raProfile: undefined, isUpdatingRenewalSettings: true },
+            actions.updateRaProfileRenewalSettingsSuccess({ raProfile: { uuid: 'ra-1', attributes: [] } as any }),
+        );
+        expect(next.raProfile).toBeUndefined();
+    });
+
     test('renewal settings and early renewal leave isUpdating and updateRaProfileSucceeded alone', () => {
         const base = { ...initialState, updateRaProfileSucceeded: true };
         let next = reducer(
