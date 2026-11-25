@@ -1,9 +1,9 @@
 import { configureStore, type Middleware, type UnknownAction } from '@reduxjs/toolkit';
 import { useState } from 'react';
-import { Provider } from 'react-redux';
+import { Provider, useSelector } from 'react-redux';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { actions as acmeProfilesActions, slice as acmeProfilesSlice } from 'ducks/acme-profiles';
-import { actions as raProfilesActions, slice as raProfilesSlice } from 'ducks/ra-profiles';
+import { actions as raProfilesActions, selectors as raProfilesSelectors, slice as raProfilesSlice } from 'ducks/ra-profiles';
 import { slice as secretsSlice } from 'ducks/secrets';
 import { actions as customAttributesActions, slice as customAttributesSlice } from 'ducks/customAttributes';
 import { AttributeContentType, AttributeType, Resource } from 'types/openapi';
@@ -123,8 +123,8 @@ export default function AcmeProfileFormHarness({
         });
         return { store, getRequest: () => request, onUpdate: (callback: () => void) => (render = callback) };
     });
-    const [, setTick] = useState(0);
-    state.onUpdate(() => setTick((tick) => tick + 1));
+    const [updates, setUpdates] = useState(0);
+    state.onUpdate(() => setUpdates((count) => count + 1));
 
     return (
         <Provider store={state.store}>
@@ -133,7 +133,15 @@ export default function AcmeProfileFormHarness({
                     <Route path="/acmeprofiles/edit/:id" element={<AcmeProfileForm acmeProfileId={UUID} />} />
                 </Routes>
             </MemoryRouter>
-            <pre data-testid="update-request">{JSON.stringify(state.getRequest() ?? null)}</pre>
+            <pre data-testid="update-request" data-updates={updates}>
+                {JSON.stringify(state.getRequest() ?? null)}
+            </pre>
+            <LoadedRaProfiles />
         </Provider>
     );
+}
+
+function LoadedRaProfiles() {
+    const raProfiles = useSelector(raProfilesSelectors.raProfiles);
+    return <span data-testid="loaded-ra-profiles">{raProfiles.length}</span>;
 }

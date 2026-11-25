@@ -61,7 +61,7 @@ test.describe('AcmeProfileForm without RA profile options', () => {
         const select = page.locator('#raProfileSelect');
         await expect(select).toContainText('RA profile');
         await page.locator('#description').fill('Edited');
-        await page.waitForTimeout(1000);
+        await expect(page.getByTestId('loaded-ra-profiles')).toHaveText('1');
         await expect(select).toContainText('RA profile');
         await page.getByRole('button', { name: 'Update' }).click();
 
