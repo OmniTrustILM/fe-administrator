@@ -12,6 +12,8 @@ import type {
     RaProfileCmpDetailResponseDto,
     RaProfileDto,
     RaProfileEstDetailResponseDto,
+    RaProfileRenewalSettingsDto,
+    RaProfileRenewalSettingsUpdateDto,
     RaProfileScepDetailResponseDto,
 } from './openapi';
 
@@ -30,6 +32,8 @@ export type {
     SimplifiedRaProfileDto as RaProfileSimplifiedDto,
     SimplifiedRaProfileDto as RaProfileSimplifiedModel,
     RaProfileCertificateValidationSettingsDto,
+    RaProfileRenewalSettingsDto,
+    RaProfileRenewalSettingsUpdateDto,
     RaProfileDto as RaProfileResponseDto,
     SimplifiedComplianceProfileDto as ComplianceProfileSimplifiedDto,
     SimplifiedComplianceProfileDto as ComplianceProfileSimplifiedModel,
@@ -96,6 +100,10 @@ export type RaProfileCertificateValidationSettingsModel = Omit<RaProfileCertific
     usePlatformSettings: boolean;
     enabled: boolean;
 };
+
+export type RaProfileRenewalSettingsModel = RaProfileRenewalSettingsDto;
+
+export type RaProfileRenewalSettingsUpdateModel = Required<RaProfileRenewalSettingsUpdateDto>;
 
 export type RaProfileResponseModel = Omit<RaProfileDto, 'attributes' | 'customAttributes' | 'certificateValidationSettings'> & {
     attributes: Array<AttributeResponseModel>;

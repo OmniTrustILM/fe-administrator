@@ -20,6 +20,7 @@ export enum ResourceEvent {
     CertificateActionPerformed = 'certificate_action_performed',
     CertificateDiscovered = 'certificate_discovered',
     CertificateExpiring = 'certificate_expiring',
+    CertificateRenewalDue = 'certificate_renewal_due',
     CertificateNotCompliant = 'certificate_not_compliant',
     CertificateUploaded = 'certificate_uploaded',
     CertificateRegistered = 'certificate_registered',

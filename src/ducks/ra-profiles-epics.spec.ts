@@ -59,6 +59,23 @@ async function runUpdateValidationEpic(action: UnknownAction, updateRaProfileVal
     return firstValueFrom(output$.pipe(take(4), toArray()));
 }
 
+async function runUpdateRenewalSettingsEpic(action: UnknownAction, updateRaProfileRenewalSettings: (args: any) => any) {
+    const calls: any[] = [];
+    const deps = {
+        apiClients: {
+            raProfiles: {
+                updateRaProfileRenewalSettings: (args: any) => {
+                    calls.push(args);
+                    return updateRaProfileRenewalSettings(args);
+                },
+            },
+        },
+    };
+    const output$ = selectEpic('updateRaProfileRenewalSettings')(of(action), of({}) as any, deps as any);
+    const emitted = await firstValueFrom(output$.pipe(take(4), toArray()));
+    return { emitted, calls };
+}
+
 describe('ra-profiles epics', () => {
     const updateAction = raProfilesActions.updateRaProfileRequestAttributes({
         profileUuid: 'ra-1',
@@ -93,6 +110,94 @@ describe('ra-profiles epics', () => {
         expect(emitted).toHaveLength(2);
         expect(emitted[0].type).toBe(raProfilesActions.updateRaProfileRequestAttributesFailure.type);
         expect(emitted[1].type).toBe(alertActions.error.type);
+    });
+
+    describe('updateRaProfileRenewalSettings', () => {
+        const renewalSettings = {
+            windowEnabled: true,
+            windowStartPercent: 60,
+            windowEndPercent: 85,
+            useAuthorityRenewalInfo: false,
+            autoRenewalEnabled: true,
+            autoRenewalMaxAttempts: 7,
+        };
+        const action = raProfilesActions.updateRaProfileRenewalSettings({
+            profileUuid: 'ra-1',
+            authorityInstanceUuid: 'auth-1',
+            renewalSettings,
+        });
+
+        test('sends the settings, including the auto renewal values, and emits Success', async () => {
+            const returnedProfile = { uuid: 'ra-1', name: 'Profile', attributes: [], renewalSettings };
+            const { emitted, calls } = await runUpdateRenewalSettingsEpic(action, () => of(returnedProfile));
+
+            expect(calls[0]).toEqual({
+                raProfileUuid: 'ra-1',
+                authorityUuid: 'auth-1',
+                raProfileRenewalSettingsUpdateDto: renewalSettings,
+            });
+            expect(emitted).toHaveLength(1);
+            expect(emitted[0].type).toBe(raProfilesActions.updateRaProfileRenewalSettingsSuccess.type);
+            expect((emitted[0] as any).payload.raProfile.renewalSettings).toEqual(renewalSettings);
+        });
+
+        test('emits Failure and an error alert on API error', async () => {
+            const { emitted } = await runUpdateRenewalSettingsEpic(action, () =>
+                throwError(() => ({ status: 422, response: { message: 'bad' } })),
+            );
+
+            expect(emitted.map((a) => a.type)).toEqual([
+                raProfilesActions.updateRaProfileRenewalSettingsFailure.type,
+                alertActions.error.type,
+            ]);
+        });
+    });
+
+    describe('requestRaProfileEarlyRenewal', () => {
+        const request = { spreadSeconds: 86400, explanationUrl: 'https://example.com/why' };
+        const action = raProfilesActions.requestRaProfileEarlyRenewal({ authorityUuid: 'auth-1', raProfileUuid: 'ra-1', request });
+
+        async function run(requestRaProfileEarlyRenewal: (args: any) => any) {
+            const calls: any[] = [];
+            const deps = {
+                apiClients: {
+                    raProfiles: {
+                        requestRaProfileEarlyRenewal: (args: any) => {
+                            calls.push(args);
+                            return requestRaProfileEarlyRenewal(args);
+                        },
+                    },
+                },
+            };
+            const output$ = selectEpic('requestRaProfileEarlyRenewal')(of(action), of({}) as any, deps as any);
+            return { emitted: await firstValueFrom(output$.pipe(take(4), toArray())), calls };
+        }
+
+        test('sends the request and alerts with the number of certificates', async () => {
+            const { emitted, calls } = await run(() => of({ certificatesAffected: 4 }));
+
+            expect(calls[0]).toEqual({ authorityUuid: 'auth-1', raProfileUuid: 'ra-1', earlyRenewalRequestDto: request });
+            expect(emitted.map((a) => a.type)).toEqual([
+                raProfilesActions.requestRaProfileEarlyRenewalSuccess.type,
+                alertActions.success.type,
+            ]);
+            expect((emitted[0] as any).payload).toEqual({ certificatesAffected: 4 });
+            expect((emitted[1] as any).payload).toBe('Early renewal requested for 4 certificates');
+        });
+
+        test('uses the singular for one certificate', async () => {
+            const { emitted } = await run(() => of({ certificatesAffected: 1 }));
+            expect((emitted[1] as any).payload).toBe('Early renewal requested for 1 certificate');
+        });
+
+        test('emits Failure and an error alert on API error', async () => {
+            const { emitted } = await run(() => throwError(() => ({ status: 422, response: { message: 'bad' } })));
+
+            expect(emitted.map((a) => a.type)).toEqual([
+                raProfilesActions.requestRaProfileEarlyRenewalFailure.type,
+                alertActions.error.type,
+            ]);
+        });
     });
 
     test('createRaProfile emits Success AND a redirect when deferRedirect is not set', async () => {

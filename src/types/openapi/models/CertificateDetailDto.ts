@@ -18,6 +18,7 @@ import type {
     CertificateProtocolDto,
     CertificateQcStatementsDto,
     CertificateRegistrationDetailDto,
+    CertificateRenewalInfoDto,
     CertificateRequestDto,
     CertificateState,
     CertificateSubjectType,
@@ -361,4 +362,10 @@ export interface CertificateDetailDto {
      * @memberof CertificateDetailDto
      */
     qcStatements?: CertificateQcStatementsDto;
+    /**
+     * Renewal window of the Certificate; absent when the certificate has no renewal window
+     * @type {CertificateRenewalInfoDto}
+     * @memberof CertificateDetailDto
+     */
+    renewalInfo?: CertificateRenewalInfoDto;
 }

@@ -1019,6 +1019,7 @@ function raProfileRequestAttributesTestReducer(
 
 export type RaProfilesTestState = {
     isUpdating: boolean;
+    isUpdatingRenewalSettings?: boolean;
     isCreating: boolean;
     createRaProfileSucceeded: boolean;
     createdRaProfileUuid: string | null;

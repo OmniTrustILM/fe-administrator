@@ -18,6 +18,7 @@ import type {
     ApprovalResponseDto,
     AuthenticationServiceExceptionDto,
     BaseAttributeDto,
+    BulkEarlyRenewalRequestDto,
     BulkOperationResponse,
     CertificateChainDownloadResponseDto,
     CertificateChainResponseDto,
@@ -62,6 +63,10 @@ export interface BulkArchiveCertificateRequest {
 
 export interface BulkDeleteCertificateRequest {
     removeCertificateDto: RemoveCertificateDto;
+}
+
+export interface BulkRequestEarlyRenewalRequest {
+    bulkEarlyRenewalRequestDto: BulkEarlyRenewalRequestDto;
 }
 
 export interface BulkUnarchiveCertificateRequest {
@@ -266,6 +271,36 @@ export class CertificateInventoryApi extends BaseAPI {
                 method: 'POST',
                 headers,
                 body: removeCertificateDto,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Marks the certificates with the provided UUIDs for early renewal, spread over the requested period
+     * Request early renewal of multiple certificates
+     */
+    bulkRequestEarlyRenewal({ bulkEarlyRenewalRequestDto }: BulkRequestEarlyRenewalRequest): Observable<BulkOperationResponse>;
+    bulkRequestEarlyRenewal(
+        { bulkEarlyRenewalRequestDto }: BulkRequestEarlyRenewalRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<BulkOperationResponse>>;
+    bulkRequestEarlyRenewal(
+        { bulkEarlyRenewalRequestDto }: BulkRequestEarlyRenewalRequest,
+        opts?: OperationOpts,
+    ): Observable<BulkOperationResponse | AjaxResponse<BulkOperationResponse>> {
+        throwIfNullOrUndefined(bulkEarlyRenewalRequestDto, 'bulkEarlyRenewalRequestDto', 'bulkRequestEarlyRenewal');
+
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        return this.request<BulkOperationResponse>(
+            {
+                url: '/v1/certificates/earlyRenewal',
+                method: 'POST',
+                headers,
+                body: bulkEarlyRenewalRequestDto,
             },
             opts?.responseOpts,
         );

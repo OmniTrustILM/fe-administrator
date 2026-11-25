@@ -11,8 +11,18 @@ import {
 } from 'components/_pages/test-utils/permissionScenarios';
 import CertificateListWithStore from './CertificateListWithStore';
 
-const controls = ['add-certificate', 'upload', 'group', 'user-check', 'shield-check', 'archive', 'unarchive', 'delete'] as const;
-const onSelection = ['group', 'user-check', 'shield-check', 'archive', 'unarchive', 'delete'] as const;
+const controls = [
+    'add-certificate',
+    'upload',
+    'group',
+    'user-check',
+    'shield-check',
+    'early-renewal',
+    'archive',
+    'unarchive',
+    'delete',
+] as const;
+const onSelection = ['group', 'user-check', 'shield-check', 'early-renewal', 'archive', 'unarchive', 'delete'] as const;
 
 // Certificates have owners and the bulk endpoints filter by what each caller may touch, so the server decides every
 // action on the selection and only creating and importing follow the profile.

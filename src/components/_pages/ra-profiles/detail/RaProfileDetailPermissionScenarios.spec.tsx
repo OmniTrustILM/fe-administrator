@@ -21,4 +21,17 @@ test.describe('RaProfileDetail actions by permission scenario', () => {
             await expectOnlyOffered(component, controls, offered);
         });
     }
+
+    for (const { scenario, offered } of expectations) {
+        const widgetControls = ['edit', 'early-renewal'] as const;
+        const offeredEdit = offered.includes('edit') ? [...widgetControls] : [];
+        test(`renewal widget actions: ${offeredTitle({ scenario, offered: offeredEdit })}`, async ({ mount, page }) => {
+            const component = await mount(<RaProfileDetailWithStore scenario={scenario.name} />);
+            await page.getByRole('tab', { name: 'Validation' }).click();
+
+            await expectOnlyOffered(component, widgetControls, offeredEdit, (root, control) =>
+                root.getByTestId('renewal-settings-widget').getByTestId(`${control}-button`),
+            );
+        });
+    }
 });

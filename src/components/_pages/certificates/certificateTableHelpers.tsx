@@ -3,6 +3,8 @@ import { Link } from 'react-router';
 import Badge from 'components/Badge';
 import { KeyRound } from 'lucide-react';
 import {
+    AutoRenewalMode,
+    type CertificateAutoRenewalDto,
     CertificateProtocol,
     type CertificateProtocolDto,
     CertificateState,
@@ -226,6 +228,10 @@ export function buildCertificateCellRegistry(opts: BuildCertificateRowColumnsOpt
         'property:PUBLIC_KEY_ALGORITHM': (certificate) => certificate.publicKeyAlgorithm,
         'property:ISSUER_COMMON_NAME': (certificate) => buildIssuerCell(certificate, isLinkDisabled),
         'property:CERTIFICATE_TYPE': (certificate) => buildCertTypeCell(certificate, certificateTypeEnum, getEnumLabel),
+        'property:RENEWAL_WINDOW_START': (certificate) =>
+            certificate.renewalWindowStart ? (
+                <span className="whitespace-nowrap">{dateFormatter(new Date(certificate.renewalWindowStart))}</span>
+            ) : null,
         'property:ARCHIVED': (certificate) => (
             <Badge color={certificate.archived ? 'gray' : 'success'} size="small">
                 {certificate.archived ? 'Yes' : 'No'}
@@ -304,11 +310,84 @@ function buildQcStatementRows(
     return rows;
 }
 
+function isWebUrl(value: string): boolean {
+    try {
+        const { protocol } = new URL(value);
+        return protocol === 'http:' || protocol === 'https:';
+    } catch {
+        return false;
+    }
+}
+
+const AUTO_RENEWAL_MODE_LABELS: Record<AutoRenewalMode, string> = {
+    [AutoRenewalMode.Location]: 'Per location',
+    [AutoRenewalMode.IlmKey]: 'With the key held by ILM',
+    [AutoRenewalMode.None]: 'Not possible',
+};
+
+function getAutoRenewalText(autoRenewal: CertificateAutoRenewalDto): string {
+    if (autoRenewal.mode === AutoRenewalMode.None && autoRenewal.blockedReason) return autoRenewal.blockedReason;
+    return AUTO_RENEWAL_MODE_LABELS[autoRenewal.mode] ?? autoRenewal.mode;
+}
+
+function buildRenewalRows(
+    renewalInfo: NonNullable<CertificateDetailResponseModel['renewalInfo']>,
+    sourceEnum: PlatformEnumMap,
+    dateFormatter: (d: Date) => string,
+    getEnumLabel: (e: PlatformEnumMap, key: string) => string,
+): TableDataRow[] {
+    const formatDate = (value: string) => <span style={{ whiteSpace: 'nowrap' }}>{dateFormatter(new Date(value))}</span>;
+
+    return [
+        {
+            id: 'renewalWindow',
+            columns: [
+                'Renewal Window',
+                <span key="renewalWindow" style={{ whiteSpace: 'nowrap' }}>
+                    {dateFormatter(new Date(renewalInfo.windowStart))} - {dateFormatter(new Date(renewalInfo.windowEnd))}
+                </span>,
+            ],
+        },
+        { id: 'renewalWindowSource', columns: ['Renewal Window Source', getEnumLabel(sourceEnum, renewalInfo.source)] },
+        {
+            id: 'renewalExplanation',
+            columns: [
+                'Renewal Explanation',
+                renewalInfo.explanationUrl && isWebUrl(renewalInfo.explanationUrl) ? (
+                    <a key="renewalExplanation" href={renewalInfo.explanationUrl} target="_blank" rel="noopener noreferrer">
+                        {renewalInfo.explanationUrl}
+                    </a>
+                ) : (
+                    (renewalInfo.explanationUrl ?? '')
+                ),
+            ],
+        },
+        { id: 'renewalWindowUpdatedAt', columns: ['Renewal Window Changed', formatDate(renewalInfo.updatedAt)] },
+        {
+            id: 'renewalDue',
+            columns: ['Renewal Due', renewalInfo.due ? <Badge key="renewalDue">Renewal due</Badge> : ''],
+        },
+        ...(renewalInfo.autoRenewal
+            ? [
+                  {
+                      id: 'autoRenewal',
+                      columns: [
+                          'Automatic Renewal',
+                          <span key="autoRenewal" className="whitespace-normal break-words">
+                              {getAutoRenewalText(renewalInfo.autoRenewal)}
+                          </span>,
+                      ],
+                  },
+              ]
+            : []),
+    ];
+}
+
 export function buildCertificateDetailBaseRows(
     certificate: CertificateDetailResponseModel,
     validationResult: CertificateValidationResultDto | undefined,
     isCertificateArchived: boolean,
-    enums: { certificateKeyUsage: PlatformEnumMap; qcType: PlatformEnumMap },
+    enums: { certificateKeyUsage: PlatformEnumMap; qcType: PlatformEnumMap; renewalWindowSource: PlatformEnumMap },
     dateFormatter: (d: Date) => string,
     getEnumLabel: (e: PlatformEnumMap, key: string) => string,
     onPendingAction: (action: PendingAction) => void,
@@ -370,6 +449,9 @@ export function buildCertificateDetailBaseRows(
                 certificate.notAfter ? <span style={{ whiteSpace: 'nowrap' }}>{dateFormatter(new Date(certificate.notAfter))}</span> : '',
             ],
         },
+        ...(certificate.renewalInfo
+            ? buildRenewalRows(certificate.renewalInfo, enums.renewalWindowSource, dateFormatter, getEnumLabel)
+            : []),
         { id: 'publicKeyAlgorithm', columns: ['Public Key Algorithm', certificate.publicKeyAlgorithm] },
     );
     if (certificate.hybridCertificate) {

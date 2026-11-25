@@ -21,6 +21,10 @@ import type {
     RaProfileEditRequestModel,
     RaProfileEstDetailResponseDto,
     RaProfileEstDetailResponseModel,
+    RaProfileRenewalSettingsDto,
+    RaProfileRenewalSettingsModel,
+    RaProfileRenewalSettingsUpdateDto,
+    RaProfileRenewalSettingsUpdateModel,
     RaProfileResponseDto,
     RaProfileResponseModel,
     RaProfileScepDetailResponseDto,
@@ -44,12 +48,30 @@ export function transformRaProfileCertificateValidationSettingsDtoToModel(
     };
 }
 
+export function transformRaProfileRenewalSettingsDtoToModel(renewalSettings: RaProfileRenewalSettingsDto): RaProfileRenewalSettingsModel {
+    return { ...renewalSettings };
+}
+
+export function transformRaProfileRenewalSettingsUpdateModelToDto(
+    renewalSettings: RaProfileRenewalSettingsUpdateModel,
+): RaProfileRenewalSettingsUpdateDto {
+    return {
+        windowEnabled: renewalSettings.windowEnabled,
+        windowStartPercent: renewalSettings.windowStartPercent,
+        windowEndPercent: renewalSettings.windowEndPercent,
+        useAuthorityRenewalInfo: renewalSettings.useAuthorityRenewalInfo,
+        autoRenewalEnabled: renewalSettings.autoRenewalEnabled,
+        autoRenewalMaxAttempts: renewalSettings.autoRenewalMaxAttempts,
+    };
+}
+
 export function transformRaProfileResponseDtoToModel(raResponse: RaProfileResponseDto): RaProfileResponseModel {
     return {
         ...raResponse,
         certificateValidationSettings: transformRaProfileCertificateValidationSettingsDtoToModel(raResponse.certificateValidationSettings),
         attributes: raResponse?.attributes?.length ? raResponse.attributes.map(transformAttributeResponseDtoToModel) : [],
         customAttributes: raResponse.customAttributes?.map(transformAttributeResponseDtoToModel),
+        renewalSettings: raResponse.renewalSettings ? transformRaProfileRenewalSettingsDtoToModel(raResponse.renewalSettings) : undefined,
     };
 }
 
