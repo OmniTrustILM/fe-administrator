@@ -41,6 +41,7 @@ import type { CertificateListResponseModel } from 'types/certificate';
 import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
 import { selectors as authSelectors } from 'ducks/auth';
 import { actions as resourceActions } from 'ducks/resource';
+import type { Availability } from 'utils/availability';
 import { useActionAvailability } from 'utils/useActionAvailability';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { collectFormAttributes } from 'utils/attributes/attributes';
@@ -83,6 +84,7 @@ type LocationPushFormProps = Readonly<{
     setGroupAttributesCallbackAttributes: React.Dispatch<React.SetStateAction<AttributeDescriptorModel[]>>;
     onCancel: () => void;
     isPushing: boolean;
+    requires: Availability;
 }>;
 
 function LocationPushForm({
@@ -96,6 +98,7 @@ function LocationPushForm({
     setGroupAttributesCallbackAttributes,
     onCancel,
     isPushing,
+    requires,
 }: LocationPushFormProps) {
     const methods = useForm({
         mode: 'onTouched',
@@ -163,6 +166,7 @@ function LocationPushForm({
                         inProgressTitle="Pushing..."
                         inProgress={isPushing}
                         disabled={selectLocationsCheckedRows.length === 0 || !formState.isValid}
+                        requires={requires}
                     />
                 </Container>
             </form>
@@ -188,11 +192,12 @@ export default function CertificateDetail() {
 
     const users = useSelector(userSelectors.users);
     const can = useActionAvailability(Resource.Certificates, id);
-    const canOnLocations = useActionAvailability(Resource.Locations);
     const mayListLocations = useSelector(authSelectors.profile)?.permissions.allowedListings.includes(Resource.Locations) ?? false;
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
     const eventHistory = useSelector(selectors.certificateHistory);
     const certLocations = useSelector(selectors.certificateLocations);
+    const certLocationUuids = useMemo(() => certLocations?.map((location) => location.uuid) ?? [], [certLocations]);
+    const canOnLocations = useActionAvailability(Resource.Locations, certLocationUuids);
     const approvals = useSelector(selectors.approvals);
     const currentFilters = useSelector(filterSelectors.currentFilters(EntityType.CERTIFICATE));
 
@@ -232,7 +237,19 @@ export default function CertificateDetail() {
     const deviceType = useDeviceType();
     const [currentInfoId, setCurrentInfoId] = useState('');
 
-    const [locationsCheckedRows, setLocationsCheckedRows] = useState<string[]>([]);
+    const [checkedLocationRows, setCheckedLocationRows] = useState<string[]>([]);
+    // The table drops a removed location from its own selection without reporting it, so a location pushed back later
+    // would otherwise return to the page's selection while its checkbox stays clear.
+    useEffect(() => {
+        setCheckedLocationRows((rows) =>
+            rows.every((uuid) => certLocationUuids.includes(uuid)) ? rows : rows.filter((uuid) => certLocationUuids.includes(uuid)),
+        );
+    }, [certLocationUuids]);
+    // Derived in render so the commit that drops a location never hands a stale UUID to the availability check.
+    const locationsCheckedRows = useMemo(
+        () => checkedLocationRows.filter((uuid) => certLocationUuids.includes(uuid)),
+        [checkedLocationRows, certLocationUuids],
+    );
     const [selectLocationsCheckedRows, setSelectLocationsCheckedRows] = useState<string[]>([]);
 
     const [locationToEntityMap, setLocationToEntityMap] = useState<{ [key: string]: string }>({});
@@ -395,7 +412,7 @@ export default function CertificateDetail() {
     // The hook asks for the allowed actions once on mount; a later refetch has to ask again or the answer goes stale.
     const refreshCertificateDetail = useCallback(() => {
         getFreshCertificateDetail();
-        if (id) dispatch(resourceActions.listObjectAllowedActions({ resource: Resource.Certificates, uuid: id }));
+        if (id) dispatch(resourceActions.listObjectAllowedActions({ resource: Resource.Certificates, uuids: [id] }));
     }, [dispatch, id, getFreshCertificateDetail]);
 
     const getFreshCertificateValidations = useCallback(() => {
@@ -491,7 +508,7 @@ export default function CertificateDetail() {
             {
                 icon: 'plus',
                 disabled: isCertificateArchived,
-                requires: canOnLocations(ResourceAction.Update, { onObjects: true }),
+                requires: canOnLocations(ResourceAction.Update, { onObjects: true, objects: [] }),
                 tooltip: 'Push to location',
                 onClick: () => {
                     dispatch(locationActions.listLocations({}));
@@ -502,14 +519,14 @@ export default function CertificateDetail() {
             {
                 icon: 'trash',
                 disabled: locationsCheckedRows.length === 0,
-                requires: canOnLocations(ResourceAction.Update, { onObjects: true }),
+                requires: canOnLocations(ResourceAction.Update, { onObjects: true, objects: locationsCheckedRows }),
                 tooltip: 'Remove',
                 onClick: () => {
                     setConfirmRemove(true);
                 },
             },
         ],
-        [locationsCheckedRows.length, isCertificateArchived, dispatch, canOnLocations],
+        [locationsCheckedRows, isCertificateArchived, dispatch, canOnLocations],
     );
 
     const historyHeaders: TableHeader[] = useMemo(
@@ -1131,6 +1148,12 @@ export default function CertificateDetail() {
         [certLocations, locations],
     );
 
+    const pushableLocationUuids = useMemo(
+        () => (addCertToLocation ? selectLocationsData.map((row) => String(row.id)) : []),
+        [addCertToLocation, selectLocationsData],
+    );
+    const canOnPushableLocations = useActionAvailability(Resource.Locations, pushableLocationUuids);
+
     const approvalsHeader: TableHeader[] = useMemo(
         () => [
             {
@@ -1360,7 +1383,7 @@ export default function CertificateDetail() {
                                         headers={locationsHeaders}
                                         data={locationsData}
                                         hasCheckboxes
-                                        onCheckedRowsChanged={(rows) => setLocationsCheckedRows(rows as string[])}
+                                        onCheckedRowsChanged={(rows) => setCheckedLocationRows(rows as string[])}
                                     />
                                 </Widget>
                             ),
@@ -1530,6 +1553,10 @@ export default function CertificateDetail() {
                             setGroupAttributesCallbackAttributes={setGroupAttributesCallbackAttributes}
                             onCancel={() => setAddCertToLocation(false)}
                             isPushing={isPushingCertificate || isFetchingLocationPushAttributeDescriptors}
+                            requires={canOnPushableLocations(ResourceAction.Update, {
+                                onObjects: true,
+                                objects: selectLocationsCheckedRows,
+                            })}
                         />
 
                         <Spinner active={isPushingCertificate || isFetchingLocationPushAttributeDescriptors} />

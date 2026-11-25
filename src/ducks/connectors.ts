@@ -138,6 +138,13 @@ export const slice = createSlice({
             state.callbackData = {};
         },
 
+        /** Drops the callback data under a key prefix, such as one attribute editor's, and leaves the rest. */
+        clearCallbackDataWithPrefix: (state, action: PayloadAction<{ prefix: string }>) => {
+            for (const callbackId of Object.keys(state.callbackData)) {
+                if (callbackId.startsWith(action.payload.prefix)) delete state.callbackData[callbackId];
+            }
+        },
+
         /** Drops a callback's data and supersedes a request still in flight, so its late response is discarded. */
         clearCallbackDataFor: (state, action: PayloadAction<{ callbackId: string }>) => {
             const { callbackId } = action.payload;

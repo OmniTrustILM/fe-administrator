@@ -634,7 +634,8 @@ const deleteCertificate: AppEpic = (action$, state, deps) => {
 };
 
 // Core answers a certificate's allowed actions from its owner, groups and RA profile, so a change to them invalidates the answer.
-const refreshAllowedActions = (uuid: string) => resourceActions.listObjectAllowedActions({ resource: Resource.Certificates, uuid });
+const refreshAllowedActions = (uuid: string) =>
+    resourceActions.listObjectAllowedActions({ resource: Resource.Certificates, uuids: [uuid] });
 
 const updateGroup: AppEpic = (action$, state, deps) => {
     return action$.pipe(

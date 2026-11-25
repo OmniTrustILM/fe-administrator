@@ -25,6 +25,7 @@ import type {
     SearchFieldDataByGroupDto,
     SearchRequestDto,
     SignatureFamily,
+    SignatureFamilyDeclaration,
     SignatureLevel,
     SigningProfileDto,
     SigningProfileRequestDto,
@@ -99,6 +100,11 @@ export interface ListSignatureAttributesForCertificateRequest {
 }
 
 export interface ListSignatureFormattingConnectorAttributesRequest {
+    connectorUuid: string;
+    signingProfileUuid?: string;
+}
+
+export interface ListSignatureFormattingConnectorDeclarationsRequest {
     connectorUuid: string;
     signingProfileUuid?: string;
 }
@@ -528,6 +534,43 @@ export class SigningProfileManagementApi extends BaseAPI {
         return this.request<Array<BaseAttributeDto>>(
             {
                 url: '/v1/signingProfiles/signatureFormattingConnectors/{connectorUuid}/formattingAttributes'.replace(
+                    '{connectorUuid}',
+                    encodeURI(connectorUuid),
+                ),
+                method: 'GET',
+                queryParams,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Returns the family declarations of the formatting connector, as Core stored them when it last connected or reconnected the connector; the list is empty for a connector serving no content signing. The signingProfileUuid parameter is used for authorization only and does not affect the returned declarations.
+     * List formatting connector declarations
+     */
+    listSignatureFormattingConnectorDeclarations({
+        connectorUuid,
+        signingProfileUuid,
+    }: ListSignatureFormattingConnectorDeclarationsRequest): Observable<Array<SignatureFamilyDeclaration>>;
+    listSignatureFormattingConnectorDeclarations(
+        { connectorUuid, signingProfileUuid }: ListSignatureFormattingConnectorDeclarationsRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<SignatureFamilyDeclaration>>>;
+    listSignatureFormattingConnectorDeclarations(
+        { connectorUuid, signingProfileUuid }: ListSignatureFormattingConnectorDeclarationsRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<SignatureFamilyDeclaration> | AjaxResponse<Array<SignatureFamilyDeclaration>>> {
+        throwIfNullOrUndefined(connectorUuid, 'connectorUuid', 'listSignatureFormattingConnectorDeclarations');
+
+        const queryParams: HttpQuery = {};
+
+        if (signingProfileUuid != null) {
+            queryParams['signingProfileUuid'] = signingProfileUuid;
+        }
+
+        return this.request<Array<SignatureFamilyDeclaration>>(
+            {
+                url: '/v1/signingProfiles/signatureFormattingConnectors/{connectorUuid}/declarations'.replace(
                     '{connectorUuid}',
                     encodeURI(connectorUuid),
                 ),

@@ -1238,7 +1238,9 @@ describe('certificates epics', () => {
 
             const emitted = await firstValueFrom(epics[findEpicIndex(epicName)](of(action), of({}) as any, deps as any).pipe(toArray()));
 
-            expect(emitted).toContainEqual(resourceActions.listObjectAllowedActions({ resource: Resource.Certificates, uuid: 'cert-1' }));
+            expect(emitted).toContainEqual(
+                resourceActions.listObjectAllowedActions({ resource: Resource.Certificates, uuids: ['cert-1'] }),
+            );
         });
     });
 

@@ -25,13 +25,22 @@ export type AttributeEditorTestWrapperProps = {
      *  parent re-render or a resolved group callback does. */
     withDescriptorRefresh?: boolean;
     /** Keeps groupAttributesCallbackAttributes in wrapper state, the way a form page does, so the editor can
-     *  add and remove callback-injected fields. */
+     *  add and remove callback-injected fields, and renders buttons that reset them the way a page does when its
+     *  context changes (clearing all callback data and the injected fields) and that clear all callback data alone, as
+     *  a page does when another of its editors changes context, and that replaces the editor with a new one on a fresh
+     *  page in one render, as leaving a page and coming back to it does. */
     withGroupCallbackState?: boolean;
     /** Renders buttons that answer every callbackId, or one, with a deep copy of its data, as a response off the
      *  wire would be, standing in for the callback epic. */
     callbackResponses?: Record<string, unknown[]>;
+    /** Renders a button that answers every callbackId with this data instead, as a later answer that differs from
+     *  the first. */
+    laterCallbackResponses?: Record<string, unknown[]>;
     /** Validates on change, as form pages do, and renders the form's validity. */
     renderFormValidity?: boolean;
+    /** Renders a button that mounts a second editor with these descriptors in the same form and store, as pages with
+     *  several editors do. */
+    secondEditorDescriptors?: AttributeDescriptorModel[];
 };
 
 function FormValidityProbe() {
@@ -81,10 +90,14 @@ export function AttributeEditorTestWrapper({
     withDescriptorRefresh = false,
     withGroupCallbackState = false,
     callbackResponses,
+    laterCallbackResponses,
     renderFormValidity = false,
+    secondEditorDescriptors,
 }: Readonly<AttributeEditorTestWrapperProps>) {
     const store = useMemo(() => createMockStore(preloadedState), [preloadedState]);
     const [refreshCount, setRefreshCount] = useState(0);
+    const [secondEditorShown, setSecondEditorShown] = useState(false);
+    const [editorKey, setEditorKey] = useState(0);
     const [groupCallbackState, setGroupCallbackState] = useState<AttributeDescriptorModel[]>(groupAttributesCallbackAttributes);
     const currentDescriptors = useMemo(
         () => (refreshCount === 0 ? attributeDescriptors : [...attributeDescriptors]),
@@ -94,9 +107,9 @@ export function AttributeEditorTestWrapper({
         () => ({ ...buildAttributeDefaultValues(id, attributeDescriptors, attributes) }),
         [id, attributeDescriptors, attributes],
     );
-    const answerCallbacks = (callbackIds: string[]) => {
+    const answerCallbacks = (callbackIds: string[], responses = callbackResponses) => {
         for (const callbackId of callbackIds) {
-            const data = structuredClone(callbackResponses?.[callbackId] ?? []);
+            const data = structuredClone(responses?.[callbackId] ?? []);
             store.dispatch(connectorActions.callbackSuccess({ callbackId, data }));
         }
     };
@@ -109,6 +122,7 @@ export function AttributeEditorTestWrapper({
             <MemoryRouter>
                 <ReactHookForm.FormProvider {...methods}>
                     <AttributeEditor
+                        key={editorKey}
                         id={id}
                         attributeDescriptors={currentDescriptors}
                         attributes={attributes}
@@ -121,6 +135,39 @@ export function AttributeEditorTestWrapper({
                         kind={kind}
                         withRemoveAction={withRemoveAction}
                     />
+                    {withGroupCallbackState && (
+                        <button
+                            type="button"
+                            data-testid="reset-callback-state"
+                            onClick={() => {
+                                store.dispatch(connectorActions.clearCallbackData());
+                                setGroupCallbackState([]);
+                            }}
+                        >
+                            Reset callback state
+                        </button>
+                    )}
+                    {withGroupCallbackState && (
+                        <button
+                            type="button"
+                            data-testid="leave-and-return"
+                            onClick={() => {
+                                setEditorKey((key) => key + 1);
+                                setGroupCallbackState([]);
+                            }}
+                        >
+                            Leave and return
+                        </button>
+                    )}
+                    {withGroupCallbackState && (
+                        <button
+                            type="button"
+                            data-testid="clear-callback-data"
+                            onClick={() => store.dispatch(connectorActions.clearCallbackData())}
+                        >
+                            Clear callback data
+                        </button>
+                    )}
                     {withDescriptorRefresh && (
                         <button type="button" data-testid="refresh-descriptors" onClick={() => setRefreshCount((count) => count + 1)}>
                             Refresh descriptors
@@ -146,6 +193,28 @@ export function AttributeEditorTestWrapper({
                                 </button>
                             ))}
                         </>
+                    )}
+                    {laterCallbackResponses && (
+                        <button
+                            type="button"
+                            data-testid="answer-later-callbacks"
+                            onClick={() => answerCallbacks(Object.keys(laterCallbackResponses), laterCallbackResponses)}
+                        >
+                            Answer callbacks again
+                        </button>
+                    )}
+                    {secondEditorDescriptors && (
+                        <button type="button" data-testid="show-second-editor" onClick={() => setSecondEditorShown(true)}>
+                            Show second editor
+                        </button>
+                    )}
+                    {secondEditorDescriptors && secondEditorShown && (
+                        <AttributeEditor
+                            id="secondEditor"
+                            attributeDescriptors={secondEditorDescriptors}
+                            connectorUuid={connectorUuid}
+                            kind={kind}
+                        />
                     )}
                     {renderFormValues && <FormValuesProbe />}
                     {renderFormValidity && <FormValidityProbe />}

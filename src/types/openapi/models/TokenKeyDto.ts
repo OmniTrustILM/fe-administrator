@@ -84,4 +84,10 @@ export interface TokenKeyDto {
      * @memberof TokenKeyDto
      */
     diagnostic?: string;
+    /**
+     * Name of the key\'s standardized parameters: the curve of an ECDSA key or the parameter set of a post-quantum key, such as P-256 or ML-DSA-65; absent for RSA and AES keys, whose `length` gives their size, and for a key the platform cannot name.
+     * @type {string}
+     * @memberof TokenKeyDto
+     */
+    parameterSet?: string | null;
 }

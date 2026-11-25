@@ -374,6 +374,7 @@ models/DiscoveryStatus.ts
 models/DiscoverySupportedResourceDto.ts
 models/DiscoveryWindowDto.ts
 models/DiscoveryWindowMode.ts
+models/DocumentTransferMode.ts
 models/EarlyRenewalRequestDto.ts
 models/EditKeyItemDto.ts
 models/EditKeyRequestDto.ts
@@ -455,6 +456,7 @@ models/JwtTokenSecretContent.ts
 models/KeyAlgorithm.ts
 models/KeyAssociationDto.ts
 models/KeyCompromiseReason.ts
+models/KeyDescriptionDto.ts
 models/KeyDetailDto.ts
 models/KeyDto.ts
 models/KeyEventHistoryDto.ts
@@ -680,9 +682,12 @@ models/SecretUpdateRequestDto.ts
 models/SecretVersionDto.ts
 models/SignDataRequestDto.ts
 models/SignDataResponseDto.ts
+models/SignatureAlgorithm.ts
 models/SignatureFamily.ts
+models/SignatureFamilyDeclaration.ts
 models/SignatureFamilyParameterGroups.ts
 models/SignatureLevel.ts
+models/SignatureLevelDeclaration.ts
 models/SignatureParameterGroup.ts
 models/SignatureParameterGroupFields.ts
 models/SignatureParameters.ts

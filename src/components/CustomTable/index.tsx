@@ -718,6 +718,15 @@ function CustomTable({
                             // toggletip trigger inside it would nest one interactive element in another, which
                             // is invalid and leaves the keyboard and screen-reader behaviour of both undefined.
                             const headingSide = (() => {
+                                if (header.sortable && header.isSortHeld) {
+                                    return (
+                                        <span className={cn('flex w-full min-w-0 items-center gap-1', alignment)}>
+                                            {headingContent}
+                                            {header.sort && getSortIcon(header.sort)}
+                                            {header.info}
+                                        </span>
+                                    );
+                                }
                                 if (header.sortable) {
                                     return (
                                         <span className={cn('flex w-full min-w-0 items-center gap-1', alignment)}>

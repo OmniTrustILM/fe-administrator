@@ -20,7 +20,7 @@ import {
     isDataAttributeModel,
 } from 'types/attributes';
 import { type AttributeContentType, FunctionGroupCode } from 'types/openapi';
-import { collectFormAttributes } from 'utils/attributes/attributes';
+import { collectFormAttributes, firstInjectedDescriptorOfEachName } from 'utils/attributes/attributes';
 import type { FieldValues, Path } from 'react-hook-form';
 import { validateAlphaNumericWithoutAccents, validateLength, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
@@ -370,7 +370,10 @@ const NotificationInstanceForm = ({ notificationInstanceId, onCancel, onSuccess 
             return false;
         };
 
-        const allDescriptors = [...notificationProviderAttributesDescriptors, ...groupAttributesCallbackAttributes];
+        const allDescriptors = [
+            ...notificationProviderAttributesDescriptors,
+            ...firstInjectedDescriptorOfEachName(groupAttributesCallbackAttributes, notificationProviderAttributesDescriptors),
+        ];
 
         for (const descriptor of allDescriptors) {
             if ((isDataAttributeModel(descriptor) || isCustomAttributeModel(descriptor)) && descriptor.properties?.required) {

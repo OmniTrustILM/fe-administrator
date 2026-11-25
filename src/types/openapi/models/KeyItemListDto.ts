@@ -120,7 +120,7 @@ export interface KeyItemListDto {
      */
     format: KeyFormat;
     /**
-     * Key length in bits. Required for RSA, ECDSA and AES; optional otherwise.
+     * Key length in bits; absent when the platform cannot size the key.
      * @type {number}
      * @memberof KeyItemListDto
      */
@@ -155,6 +155,12 @@ export interface KeyItemListDto {
      * @memberof KeyItemListDto
      */
     attributeValues?: { [key: string]: { [key: string]: Array<BaseAttributeContentDtoV3> } };
+    /**
+     * Name of the key\'s standardized parameters: the curve of an ECDSA key or the parameter set of a post-quantum key, such as P-256 or ML-DSA-65; absent for RSA and AES keys, whose `length` gives their size, and for a key the platform cannot name.
+     * @type {string}
+     * @memberof KeyItemListDto
+     */
+    parameterSet?: string | null;
     /**
      * Whether the key this item belongs to meets the conditions for removal from the inventory
      * @type {boolean}

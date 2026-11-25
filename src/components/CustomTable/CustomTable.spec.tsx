@@ -1284,6 +1284,18 @@ test.describe('CustomTable', () => {
             await expect(component.locator('th[data-id="email"]')).toHaveAttribute('aria-sort', 'ascending');
         });
 
+        test('shows a held ordering without offering the heading as a sort control', async ({ mount }) => {
+            const held: TableHeader[] = [
+                { id: 'name', content: 'Name', sortable: true, isSortHeld: true },
+                { id: 'email', content: 'Email', sortable: true, isSortHeld: true, sort: 'desc' },
+            ];
+            const component = await mount(withProviders(<CustomTable headers={held} data={mockData} />));
+
+            await expect(component.getByRole('button', { name: 'Email' })).toHaveCount(0);
+            await expect(component.locator('th[data-id="email"]')).toHaveAttribute('aria-sort', 'descending');
+            await expect(component.locator('th[data-id="email"] [data-testid="sort-indicator"]')).toHaveAttribute('data-direction', 'desc');
+        });
+
         // A restored sort suppresses local sorting and paints the arrow. Without announcing it, the
         // caller fetches its own default ordering and the indicator describes rows that never arrived.
         // The store has to be built browser-side (CustomTableWithStore): a store created here in the

@@ -165,6 +165,19 @@ function buildMappedItem(overrides: Partial<ExecutionItemModel> = {}): Execution
     };
 }
 
+/** A Mode action holding alpha and beta beside a Custom Attr action holding r1 and r2. */
+const mountWithTwoListActions = (mount: Parameters<typeof mountWithActions>[0]) =>
+    mountWithActions(mount, {
+        availableFilters: [
+            ...makeSearchFieldList(FilterFieldSource.Meta, [{ ...modeFieldDef, multiValue: true, value: ['alpha', 'beta', 'gamma'] }]),
+            ...makeSearchFieldList(FilterFieldSource.Custom, [{ ...customAttrFieldDef, multiValue: true }]),
+        ],
+        ExecutionsList: [
+            { fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'mode', data: ['alpha', 'beta'] },
+            { fieldSource: FilterFieldSource.Custom, fieldIdentifier: 'customAttr', data: ['r1', 'r2'] },
+        ],
+    });
+
 test.describe('FilterWidgetRuleAction', () => {
     test('renders Widget with title and Field Source / Field / Value controls', async ({ mount, page }) => {
         await mount(<FilterWidgetRuleActionTestWrapper title="Rule actions" />);
@@ -565,6 +578,121 @@ test.describe('FilterWidgetRuleAction', () => {
         expect(actions.current).toHaveLength(1);
     });
 
+    test('renders each value of a multi-value action as its own chip and removes one at a time', async ({ mount, page }) => {
+        const updates: unknown[][] = [];
+        await mountWithExecution(mount, {
+            source: FilterFieldSource.Property,
+            fieldDef: tagsFieldDef,
+            fieldIdentifier: 'tags',
+            data: [
+                { uuid: 't1', name: 'Tag One' },
+                { uuid: 't2', name: 'Tag Two' },
+            ],
+            extraProps: { onActionsUpdate: (actions) => updates.push(actions) },
+        });
+        const chips = page.getByTestId('filter-value-chip');
+        await expect(chips).toHaveText(['Tag One', 'Tag Two']);
+        await expect(page.locator('button button, button [tabindex]')).toHaveCount(0);
+
+        await page.getByRole('button', { name: 'Remove Tag One from Tags', exact: true }).click();
+
+        await expect(chips).toHaveText(['Tag Two']);
+        await expect.poll(() => updates.length).toBeGreaterThan(0);
+        const last = JSON.stringify(updates.at(-1));
+        expect(last).not.toContain('t1');
+        expect(last).toContain('t2');
+    });
+
+    test('emits the remaining identifiers when a value is removed from a saved string list', async ({ mount, page }) => {
+        const updates: unknown[][] = [];
+        await mountWithExecution(mount, {
+            source: FilterFieldSource.Meta,
+            fieldDef: { ...modeFieldDef, multiValue: true, value: ['alpha', 'beta', 'gamma'] },
+            fieldIdentifier: 'mode',
+            data: ['alpha', 'beta'],
+            extraProps: { onActionsUpdate: (actions) => updates.push(actions) },
+        });
+
+        await page.getByRole('button', { name: 'Remove alpha from Mode', exact: true }).click();
+
+        await expect.poll(() => updates.length).toBeGreaterThan(0);
+        expect(firstAction(updates.at(-1)!).data).toEqual(['beta']);
+    });
+
+    test('emits the remaining references when a value is removed from a saved reference list', async ({ mount, page }) => {
+        const updates: unknown[][] = [];
+        await mountWithExecution(mount, {
+            source: FilterFieldSource.Custom,
+            fieldDef: { ...customAttrFieldDef, multiValue: true },
+            fieldIdentifier: 'customAttr',
+            data: ['r1', 'r2'],
+            extraProps: { onActionsUpdate: (actions) => updates.push(actions) },
+        });
+
+        await expect(page.getByTestId('filter-value-chip')).toHaveText(['Option One', 'Option Two']);
+        await page.getByRole('button', { name: 'Remove Option One from Custom Attr', exact: true }).click();
+
+        await expect.poll(() => updates.length).toBeGreaterThan(0);
+        expect(firstAction(updates.at(-1)!).data).toEqual(['r2']);
+    });
+
+    test('names a saved value by its identifier when its matched option carries no readable label', async ({ mount, page }) => {
+        await mountWithExecution(mount, {
+            source: FilterFieldSource.Custom,
+            fieldDef: {
+                ...customAttrFieldDef,
+                multiValue: true,
+                value: [
+                    { reference: 'r1', data: { code: 1 } },
+                    { reference: 'r2', data: { code: 2 } },
+                ],
+            },
+            fieldIdentifier: 'customAttr',
+            data: ['r1', 'r2'],
+        });
+
+        await expect(page.getByTestId('filter-value-chip')).toHaveText(['r1', 'r2']);
+        await expect(page.getByRole('button', { name: 'Remove r1 from Custom Attr', exact: true })).toBeVisible();
+    });
+
+    test('drops the action when its last value is removed, and keeps focus on the action list', async ({ mount, page }) => {
+        const actions = await mountWithTwoListActions(mount);
+
+        await page.getByRole('button', { name: 'Remove alpha from Mode', exact: true }).focus();
+        await page.keyboard.press('Enter');
+        await expect(page.getByRole('button', { name: 'Remove beta from Mode', exact: true })).toBeFocused();
+        await page.keyboard.press('Enter');
+
+        await expect(page.getByTestId('badge').filter({ hasText: 'Mode' })).toHaveCount(0);
+        await expect(page.getByRole('group', { name: 'Applied actions' })).toBeFocused();
+        await expect.poll(() => actions.current.length).toBe(1);
+        expect((actions.current as Record<string, unknown>[]).map((a) => a.fieldIdentifier)).toEqual(['customAttr']);
+    });
+
+    test('emits the identifiers of every other saved list action when a value is removed', async ({ mount, page }) => {
+        const actions = await mountWithTwoListActions(mount);
+
+        await page.getByRole('button', { name: 'Remove alpha from Mode', exact: true }).click();
+
+        await expect.poll(() => actions.current.length).toBe(2);
+        expect((actions.current as Record<string, unknown>[]).map((a) => a.data)).toEqual([['beta'], ['r1', 'r2']]);
+    });
+
+    test('offers no per-value removal on a read-only action badge', async ({ mount, page }) => {
+        await mountWithExecution(mount, {
+            source: FilterFieldSource.Property,
+            fieldDef: tagsFieldDef,
+            fieldIdentifier: 'tags',
+            data: [
+                { uuid: 't1', name: 'Tag One' },
+                { uuid: 't2', name: 'Tag Two' },
+            ],
+            extraProps: { disableBadgeRemove: true },
+        });
+        await expect(page.getByTestId('filter-value-chip')).toHaveText(['Tag One', 'Tag Two']);
+        await expect(page.getByRole('button', { name: /^Remove Tag/ })).toHaveCount(0);
+    });
+
     test('multi-value list execution item with array of objects hydrates as array', async ({ mount, page }) => {
         await mountWithExecution(mount, {
             source: FilterFieldSource.Property,
@@ -632,12 +760,12 @@ test.describe('FilterWidgetRuleAction', () => {
     });
 
     for (const key of ['Enter', 'Space'] as const) {
-        test(`unselectFilters via keyboard ${key} clears selection`, async ({ mount, page }) => {
+        test(`the selected badge's own button deselects it with ${key}`, async ({ mount, page }) => {
             await mount(<FilterWidgetRuleActionTestWrapper onActionsUpdate={() => {}} />);
             await addStringAction(page, 'Status', key);
             await page.getByText("'Status'").click();
             await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeVisible();
-            await page.locator('#unselectFilters').focus();
+            await page.getByTestId('badge').filter({ hasText: 'Status' }).getByRole('button').first().focus();
             await page.keyboard.press(key);
             await expect(page.getByRole('button', { name: 'Add', exact: true })).toBeVisible();
         });
@@ -661,7 +789,7 @@ test.describe('FilterWidgetRuleAction', () => {
         });
 
         const statusBadge = page.getByTestId('badge').filter({ hasText: 'Status' });
-        await statusBadge.getByRole('button').click();
+        await statusBadge.getByRole('button', { name: 'Remove filter' }).click();
         expect(actions.current).toHaveLength(1);
         expect(firstAction(actions.current).fieldIdentifier).toBe('tags');
         expect(firstAction(actions.current).data[0]).toBe('t1');

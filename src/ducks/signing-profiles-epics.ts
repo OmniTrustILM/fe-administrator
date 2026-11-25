@@ -1,7 +1,7 @@
 import type { AppEpic } from 'ducks';
 import { of } from 'rxjs';
 import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
-import { extractError } from 'utils/net';
+import { extractError, extractErrorReason } from 'utils/net';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { actions as alertActions } from './alerts';
@@ -460,22 +460,26 @@ const listSigningRecordsForSigningProfile: AppEpic = (action$, state$, deps) => 
     );
 };
 
-const workflowTypeToConnectorFeature: Partial<Record<SigningWorkflowType, string>> = {
-    [SigningWorkflowType.Timestamping]: 'timestamping',
+/** A workflow without an entry, such as raw signing, has no formatting connector. */
+const formattingConnectorSearch: Partial<Record<SigningWorkflowType, { connectorInterface: ConnectorInterface; feature?: string }>> = {
+    [SigningWorkflowType.Timestamping]: { connectorInterface: ConnectorInterface.SignatureFormatting, feature: 'timestamping' },
+    [SigningWorkflowType.ContentSigning]: { connectorInterface: ConnectorInterface.ContentSigningFormatting },
 };
 
 const listSignatureFormattingConnectors: AppEpic = (action$, _state$, deps) => {
     return action$.pipe(
         filter(slice.actions.listSignatureFormattingConnectors.match),
         switchMap((action) => {
-            const featureValue = workflowTypeToConnectorFeature[action.payload.workflowType];
-            const featureFilter = featureValue
+            const search = formattingConnectorSearch[action.payload.workflowType];
+            if (!search) return of(slice.actions.listSignatureFormattingConnectorsSuccess({ connectors: [] }));
+            const { connectorInterface, feature } = search;
+            const featureFilter = feature
                 ? [
                       {
                           fieldSource: FilterFieldSource.Property,
                           fieldIdentifier: 'CONNECTOR_FEATURES',
                           condition: FilterConditionOperator.Equals,
-                          value: featureValue,
+                          value: feature,
                       },
                   ]
                 : [];
@@ -490,7 +494,7 @@ const listSignatureFormattingConnectors: AppEpic = (action$, _state$, deps) => {
                                 fieldSource: FilterFieldSource.Property,
                                 fieldIdentifier: 'CONNECTOR_INTERFACE',
                                 condition: FilterConditionOperator.Equals,
-                                value: ConnectorInterface.SignatureFormatting,
+                                value: connectorInterface,
                             },
                         ],
                     },
@@ -502,13 +506,29 @@ const listSignatureFormattingConnectors: AppEpic = (action$, _state$, deps) => {
                         }),
                     ),
                     catchError((error) =>
-                        of(
-                            slice.actions.listSignatureFormattingConnectorsFailure({
-                                error: extractError(error, 'Failed to get signature formatting connectors'),
-                            }),
-                        ),
+                        of(slice.actions.listSignatureFormattingConnectorsFailure({ reason: extractErrorReason(error) })),
                     ),
                 );
+        }),
+    );
+};
+
+const listSignatureFormattingConnectorDeclarations: AppEpic = (action$, _state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.listSignatureFormattingConnectorDeclarations.match),
+        switchMap((action) => {
+            const { connectorUuid, signingProfileUuid } = action.payload;
+            return deps.apiClients.signingProfiles.listSignatureFormattingConnectorDeclarations({ connectorUuid, signingProfileUuid }).pipe(
+                map((declarations) => slice.actions.listSignatureFormattingConnectorDeclarationsSuccess({ connectorUuid, declarations })),
+                catchError((error) =>
+                    of(
+                        slice.actions.listSignatureFormattingConnectorDeclarationsFailure({
+                            connectorUuid,
+                            reason: extractErrorReason(error),
+                        }),
+                    ),
+                ),
+            );
         }),
     );
 };
@@ -534,6 +554,7 @@ const epics = [
     listSignatureFormattingConnectorAttributes,
     listSignatureFormattingConnectors,
     listSigningRecordsForSigningProfile,
+    listSignatureFormattingConnectorDeclarations,
 ];
 
 export default epics;

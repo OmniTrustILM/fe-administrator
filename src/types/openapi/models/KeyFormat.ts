@@ -21,4 +21,5 @@ export enum KeyFormat {
     PrivateKeyInfo = 'PrivateKeyInfo',
     EncryptedPrivateKeyInfo = 'EncryptedPrivateKeyInfo',
     Custom = 'Custom',
+    AlgorithmIdentifier = 'AlgorithmIdentifier',
 }

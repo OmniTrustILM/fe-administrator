@@ -71,14 +71,34 @@ describe('keyCells', () => {
         await act(async () => root.render(<div>{cells}</div>));
     };
 
-    it('names the type, algorithm and format the way the platform names them', async () => {
+    it('labels the key from what the provider reported and names its type and format the way the platform does', async () => {
         await render(keyItem());
 
         expect(container.querySelector('[data-testid="key-type"]')?.textContent).toBe('Public key');
-        expect(container.querySelector('[data-testid="key-algorithm"]')?.textContent).toBe('RSA');
+        expect(container.querySelector('[data-testid="key-algorithm"]')?.textContent).toBe('RSA 2048');
         expect(container.querySelector('[data-testid="key-format"]')?.textContent).toBe('SPKI');
-        expect(container.querySelector('[data-testid="key-length"]')?.textContent).toBe('2048');
         expect(container.querySelector('[data-testid="key-fingerprint"]')?.textContent).toBe('e3b0c44298fc1c14');
+    });
+
+    it.each([
+        ['an RSA key by its size', { algorithm: KeyAlgorithm.Rsa, length: 3072 }, 'RSA 3072'],
+        ['an ECDSA key by its curve', { algorithm: KeyAlgorithm.Ecdsa, parameterSet: 'P-256', length: 256 }, 'ECDSA P-256'],
+        [
+            'a post-quantum key by its parameter set',
+            { algorithm: KeyAlgorithm.MlDsa, parameterSet: 'ML-DSA-44', length: 10496 },
+            'ML-DSA-44',
+        ],
+        ['an unsized key by its algorithm alone', { algorithm: KeyAlgorithm.MlKem }, 'ML-KEM'],
+    ])('labels %s from the platform description in place of what the provider reported', async (_case, keyDescription, algorithm) => {
+        await render({ ...keyItem({ algorithm: KeyAlgorithm.Unknown, length: 2048 }), keyDescription });
+
+        expect(container.querySelector('[data-testid="key-algorithm"]')?.textContent).toBe(algorithm);
+    });
+
+    it('labels a key the provider reported unsized by its algorithm alone', async () => {
+        await render(keyItem({ type: KeyType.Private, length: undefined, publicKey: undefined, publicKeyFormat: undefined }));
+
+        expect(container.querySelector('[data-testid="key-algorithm"]')?.textContent).toBe('RSA');
     });
 
     it('leaves the public key cells empty for a key whose material is never reported', async () => {
@@ -93,7 +113,7 @@ describe('keyCells', () => {
         await render({ uuid: 'item-1', payload: undefined });
 
         // Each cell has to be there and be empty: a missing one would read as empty too, and the row would lose a column.
-        for (const testId of ['key-type', 'key-algorithm', 'key-length', 'key-format', 'key-fingerprint']) {
+        for (const testId of ['key-type', 'key-algorithm', 'key-format', 'key-fingerprint']) {
             const cell = container.querySelector(`[data-testid="${testId}"]`);
             expect(cell, testId).not.toBeNull();
             expect(cell?.textContent, testId).toBe('');

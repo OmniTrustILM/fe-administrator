@@ -22,6 +22,7 @@ import Dialog from 'components/Dialog';
 import FilterWidget from 'components/FilterWidget';
 import ViewTabs, { isViewStripReady, ViewStripOpeningPlaceholder } from 'components/ViewTabs';
 import Widget from 'components/Widget';
+import CatalogueFailedNotice, { useRetryFailedCatalogue } from './CatalogueFailedNotice';
 import type { ReactNode, RefObject } from 'react';
 import { selectors as listViewSelectors } from 'ducks/listViews';
 import type { ViewSlice } from 'types/listViews';
@@ -289,7 +290,12 @@ function PagedList<TRow extends object>({
     const hasLoadedViews = useSelector(selectHasLoadedViews);
     const isFetchingViews = useSelector(selectIsFetchingViews);
     const isStaleViews = useSelector(selectIsStaleViews);
-    const isStripReady = isViewStripReady(hasLoadedViews && !isFetchingViews && !isStaleViews, hasSettledCatalogue);
+    const hasFreshViews = hasLoadedViews && !isFetchingViews && !isStaleViews;
+    const isStripReady = isViewStripReady(hasFreshViews, hasSettledCatalogue);
+    // Applying the opening view replaces the columns and the ordering, so an edit made before the strip opens is lost.
+    const [openedResource, setOpenedResource] = useState<Resource | undefined>(undefined);
+    // Not on fields a failed read left behind, which a reread after the strip opened would otherwise keep editable.
+    const canEditColumns = isStripReady && hasCatalogueForViews && openedResource === columnsResource;
 
     const totalItems = useSelector(selectors.totalItems(entity));
     const checkedRows = useSelector(selectors.checkedRows(entity));
@@ -355,8 +361,9 @@ function PagedList<TRow extends object>({
                     shippedColumns={sortableStandardColumns}
                     // Both withheld until the strip is up: applying the opening view replaces the column
                     // set wholesale, so a change made before that would be wiped without a trace.
-                    onToggle={isStripReady ? onToggleColumn : undefined}
-                    onReset={isStripReady ? onResetColumns : undefined}
+                    onToggle={canEditColumns ? onToggleColumn : undefined}
+                    onReset={canEditColumns ? onResetColumns : undefined}
+                    isCatalogueFailed={isCatalogueFailed}
                     isStorable={isStorable}
                 />
             ) : undefined,
@@ -364,11 +371,12 @@ function PagedList<TRow extends object>({
             isColumnDriven,
             catalogueFields,
             hasLoadedCatalogue,
+            isCatalogueFailed,
             appliedColumns,
             sortableStandardColumns,
             onToggleColumn,
             onResetColumns,
-            isStripReady,
+            canEditColumns,
             isStorable,
         ],
     );
@@ -438,10 +446,34 @@ function PagedList<TRow extends object>({
         onListCallback(listRequestRef.current);
     }, [onListCallback]);
 
+    const retryFailedCatalogue = useRetryFailedCatalogue(entity, getAvailableFiltersApi);
+
     const getFreshData = useCallback(() => {
         requestList();
         onCheckedRowsChanged([]);
     }, [requestList, onCheckedRowsChanged]);
+
+    // Only the refresh button retries the catalogue: `getFreshData` also runs on every page turn and filter edit.
+    const isAwaitingCatalogueRetry = useRef(false);
+    const [catalogueStatus, setCatalogueStatus] = useState('');
+    const onRefresh = useCallback(() => {
+        if (retryFailedCatalogue()) {
+            isAwaitingCatalogueRetry.current = true;
+            setCatalogueStatus('');
+        }
+        getFreshData();
+    }, [retryFailedCatalogue, getFreshData]);
+
+    // The warning leaves as the retry starts, so the controls coming back is announced rather than left silent.
+    useEffect(() => {
+        if (!isAwaitingCatalogueRetry.current) return;
+        if (isCatalogueFailed) {
+            isAwaitingCatalogueRetry.current = false;
+        } else if (canEditColumns) {
+            isAwaitingCatalogueRetry.current = false;
+            setCatalogueStatus('Fields loaded. Columns and sorting can be changed again.');
+        }
+    }, [canEditColumns, isCatalogueFailed]);
 
     const onPageSizeChanged = useCallback(
         (pageSize: number) => {
@@ -564,7 +596,8 @@ function PagedList<TRow extends object>({
                     label={getColumnName(column)}
                     heading={getColumnHeading(column)}
                     columnKeys={columnKeys}
-                    sortable={column.sortable === true}
+                    sortable={canEditColumns && column.sortable === true}
+                    canEdit={canEditColumns}
                     hasCatalogueFailed={hasCatalogueFailed}
                     onSort={(direction) => onSortChanged(header.id, direction)}
                     onMove={onMoveColumn}
@@ -578,6 +611,7 @@ function PagedList<TRow extends object>({
         },
         [
             isStripReady,
+            canEditColumns,
             appliedColumns,
             columnKeys,
             hasCatalogueFailed,
@@ -592,7 +626,7 @@ function PagedList<TRow extends object>({
 
     const renderHeaderLead = useCallback(
         (header: TableHeader) => {
-            if (!isStripReady) return undefined;
+            if (!canEditColumns) return undefined;
 
             const column = appliedColumns.find((candidate) => getColumnKey(candidate) === header.id);
             if (!column) return undefined;
@@ -607,13 +641,14 @@ function PagedList<TRow extends object>({
                 />
             );
         },
-        [isStripReady, appliedColumns, columnKeys, onMoveColumn],
+        [canEditColumns, appliedColumns, columnKeys, onMoveColumn],
     );
 
-    const columnHeaders = useMemo(
-        () => (isColumnDriven ? buildColumnHeaders(appliedColumns, { sort: appliedSort, info: headerInfo }) : (headers ?? EMPTY_HEADERS)),
-        [isColumnDriven, appliedColumns, appliedSort, headerInfo, headers],
-    );
+    const columnHeaders = useMemo(() => {
+        if (!isColumnDriven) return headers ?? EMPTY_HEADERS;
+        const built = buildColumnHeaders(appliedColumns, { sort: appliedSort, info: headerInfo });
+        return canEditColumns ? built : built.map((header) => ({ ...header, isSortHeld: true }));
+    }, [isColumnDriven, canEditColumns, appliedColumns, appliedSort, headerInfo, headers]);
 
     const heldRows = useHeldRows(columnsRows, isFetchingList, projectedKeys);
 
@@ -811,6 +846,7 @@ function PagedList<TRow extends object>({
                     handedIn={handedIn}
                     onPositionChange={onViewPositionChange}
                     onApply={onApplyView}
+                    onOpened={setOpenedResource}
                 />
             )}
 
@@ -829,7 +865,19 @@ function PagedList<TRow extends object>({
                 disableRefresh={isBusy || isFetchingList}
                 enableBusyOverlay
                 widgetLockName={pageWidgetLockName}
-                refreshAction={getFreshData}
+                refreshAction={onRefresh}
+                refreshThroughLock={isColumnDriven && isCatalogueFailed}
+                // In the title bar, which a widget lock leaves in place, so the announcement still lands under one.
+                titleNotice={
+                    isColumnDriven && (
+                        <>
+                            {isCatalogueFailed && <CatalogueFailedNotice />}
+                            <span role="status" className="sr-only" data-testid="paged-list-catalogue-status">
+                                {catalogueStatus}
+                            </span>
+                        </>
+                    )
+                }
                 resetViewAction={hasNonDefaultViewState ? onResetView : undefined}
                 widgetButtons={buttons}
                 titleSize="large"

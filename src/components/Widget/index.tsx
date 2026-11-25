@@ -37,8 +37,12 @@ type Props = {
     widgetLock?: WidgetLockErrorModel;
     refreshAction?: () => void;
     resetViewAction?: () => void;
+    /** Keeps refresh live under a store lock, for a refresh that also retries something the lock does not cover. */
+    refreshThroughLock?: boolean;
     widgetButtons?: WidgetButtonProps[];
     widgetExtraTopNode?: React.ReactNode;
+    /** Shown right after the refresh button, for a status that refreshing resolves. */
+    titleNotice?: React.ReactNode;
     hideWidgetButtons?: boolean;
     lockSize?: 'small' | 'normal' | 'large';
     widgetInfoCard?: WidgetInfoCard;
@@ -65,7 +69,9 @@ function Widget({
     widgetLock: ownLock,
     refreshAction,
     resetViewAction,
+    refreshThroughLock = false,
     widgetExtraTopNode,
+    titleNotice,
     hideWidgetButtons = false,
     lockSize = 'normal',
     widgetInfoCard,
@@ -125,7 +131,7 @@ function Widget({
                 variant="transparent"
                 title="Refresh"
                 aria-label="Refresh"
-                disabled={busy || disableRefresh || !!storeLock}
+                disabled={busy || disableRefresh || (!!storeLock && !refreshThroughLock)}
             >
                 <RefreshCw size={16} />
             </Button>
@@ -166,8 +172,8 @@ function Widget({
         const hasTitle = !!title;
         const hasRefreshButton = !!refreshAction;
         const hasButtons = !!(widgetButtons?.length || widgetInfoCard) && !hideWidgetButtons;
-        return !!(hasTitle || hasRefreshButton || effectiveResetViewAction || hasButtons || widgetExtraTopNode);
-    }, [title, refreshAction, effectiveResetViewAction, widgetButtons, widgetInfoCard, hideWidgetButtons, widgetExtraTopNode]);
+        return !!(hasTitle || hasRefreshButton || effectiveResetViewAction || hasButtons || widgetExtraTopNode || titleNotice);
+    }, [title, refreshAction, effectiveResetViewAction, widgetButtons, widgetInfoCard, hideWidgetButtons, widgetExtraTopNode, titleNotice]);
 
     return (
         <section
@@ -186,6 +192,7 @@ function Widget({
                     <div className="flex items-center gap-1">
                         {renderTitle()}
                         {renderRefreshButton()}
+                        {titleNotice}
                         {renderResetViewButton()}
                     </div>
 

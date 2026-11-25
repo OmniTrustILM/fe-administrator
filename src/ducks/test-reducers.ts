@@ -532,9 +532,16 @@ function connectorsTestReducer(state: ConnectorsTestState = connectorsTestInitia
         const connectAction = action as { type: string; payload?: { connectInfo?: ConnectInfoDto[] } };
         return { ...state, connectInfo: connectAction.payload?.connectInfo };
     }
-    const a = action as { type: string; payload?: { callbackId: string; data?: unknown } };
+    const a = action as { type: string; payload?: { callbackId: string; data?: unknown; prefix?: string } };
     if (a.type === 'connectors/clearCallbackData') {
         return { ...state, callbackData: {} };
+    }
+    if (a.type === 'connectors/clearCallbackDataWithPrefix' && a.payload?.prefix !== undefined) {
+        const prefix = a.payload.prefix;
+        return {
+            ...state,
+            callbackData: Object.fromEntries(Object.entries(state.callbackData).filter(([callbackId]) => !callbackId.startsWith(prefix))),
+        };
     }
     if (a.type === 'connectors/clearCallbackDataFor' && a.payload?.callbackId) {
         return {

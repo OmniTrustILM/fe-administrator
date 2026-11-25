@@ -209,6 +209,20 @@ describe('Widget caller-owned lock', () => {
         expect((harness.container.querySelector('[data-testid="refresh-icon"]') as HTMLButtonElement).disabled).toBe(true);
     });
 
+    it('keeps the refresh button live under a store lock when the refresh also retries something the lock does not cover', async () => {
+        mockState = {
+            userInterface: { widgetLocks: [{ widgetName: 'certificateDetails', lockTitle: 'Access Denied', lockText: 'x', lockType: 2 }] },
+            tablePagination: { byKey: {} },
+        };
+
+        await renderInto(
+            harness.root,
+            <Widget title="Locked" refreshAction={() => {}} refreshThroughLock widgetLockName={'certificateDetails' as never} />,
+        );
+
+        expect((harness.container.querySelector('[data-testid="refresh-icon"]') as HTMLButtonElement).disabled).toBe(false);
+    });
+
     it('renders the children when no lock is passed and none is registered globally', async () => {
         await renderInto(
             harness.root,

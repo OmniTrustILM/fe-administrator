@@ -39,6 +39,7 @@ import { collectFormAttributes, mapProfileAttribute, transformAttributes } from 
 import { transformAttributeDescriptorDtoToModel } from 'ducks/transform/attributes';
 import { validateAlphaNumericWithoutAccents, validateLength, validateOid, validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
+import { formattingConnectorListError } from './formattingConnectorListError';
 
 // ─── Label Helpers ────────────────────────────────────────────────────────────
 
@@ -117,6 +118,8 @@ interface FormValues {
 
 const WORKFLOW_TYPE = SigningWorkflowType.Timestamping;
 
+const timestampFormattingConnectorLabel = 'Timestamp Formatting Connector';
+
 // Tailwind classes for a selectable option card (signing scheme / managed signing type).
 function optionCardClassName(isSupported: boolean, isSelected: boolean): string {
     if (isSupported) {
@@ -146,6 +149,7 @@ export default function SigningProfileForm() {
 
     const connectors = useSelector(signingProfileSelectors.signatureFormattingConnectors);
     const isFetchingConnectors = useSelector(signingProfileSelectors.isFetchingSignatureFormattingConnectors);
+    const failedConnectorsFetch = useSelector(signingProfileSelectors.failedSignatureFormattingConnectorsFetch);
 
     const timeQualityConfigurations = useSelector(tqcSelectors.timeQualityConfigurations);
     const isFetchingTqcList = useSelector(tqcSelectors.isFetchingList);
@@ -615,22 +619,29 @@ export default function SigningProfileForm() {
                 render={({ field, fieldState }) => (
                     <Select
                         id="signatureFormattingConnector"
-                        label="Signature Formatting Connector"
+                        label={timestampFormattingConnectorLabel}
                         required
                         value={field.value || ''}
                         onChange={field.onChange}
                         options={connectorOptions}
                         placeholder="Select a connector…"
                         isClearable
-                        disabled={isFetchingConnectors}
+                        isDisabled={isFetchingConnectors}
                         placement="bottom"
-                        error={getFieldErrorMessage(fieldState)}
+                        error={
+                            formattingConnectorListError(timestampFormattingConnectorLabel, failedConnectorsFetch) ??
+                            getFieldErrorMessage(fieldState)
+                        }
                     />
                 )}
             />
 
             {signatureFormattingConnectorUuidValue && (
-                <Widget title="Signature Formatting Connector Attributes" noBorder busy={isFetchingSignatureFormattingConnectorAttributes}>
+                <Widget
+                    title={`${timestampFormattingConnectorLabel} Attributes`}
+                    noBorder
+                    busy={isFetchingSignatureFormattingConnectorAttributes}
+                >
                     {signatureFormattingConnectorAttributeDescriptors.length > 0 ? (
                         <AttributeEditor
                             id="signatureFormattingConnectorAttrs"
