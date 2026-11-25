@@ -44,6 +44,7 @@ export default function SigningProfileForm() {
     const isUpdating = useSelector(signingProfileSelectors.isUpdating);
     const isFetchingConnectors = useSelector(timestampingConnectorList).isFetching;
     const isFetchingSigningCertificates = useSelector(signingProfileSelectors.isFetchingSigningCertificates);
+    const isFetchingTimestampSources = useSelector(signingProfileSelectors.isFetchingTimestampSourceCandidates);
     const isFetchingSignatureAttributes = useSelector(signingProfileSelectors.isFetchingSignatureAttributes);
     const isFetchingCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
     const customAttributeDescriptors = useSelector(signingProfileCustomAttributes);
@@ -167,7 +168,12 @@ export default function SigningProfileForm() {
                                 inProgressTitle={editMode ? 'Updating...' : 'Creating...'}
                                 inProgress={isSubmitting || isCreating || isUpdating}
                                 disabled={
-                                    !isDirty || isSubmitting || !isValid || !formattingAttributesListed || isFetchingSigningCertificates
+                                    !isDirty ||
+                                    isSubmitting ||
+                                    !isValid ||
+                                    !formattingAttributesListed ||
+                                    isFetchingSigningCertificates ||
+                                    isFetchingTimestampSources
                                 }
                                 type="submit"
                             />

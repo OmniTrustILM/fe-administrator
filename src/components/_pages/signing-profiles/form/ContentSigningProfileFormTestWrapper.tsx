@@ -50,6 +50,8 @@ export interface CoreAnswers {
         ineligible?: NameAndUuidDto[];
         unreadable: NameAndUuidDto[];
     };
+    /** Leaves the timestamp-source listing unanswered. */
+    timestampSourcesPending?: boolean;
     /** Profile the detail fetch returns. */
     editedProfile?: SigningProfileDto;
     /** Profile the route edits while its detail fetch stays unanswered. */
@@ -103,6 +105,7 @@ function answer(core: CoreAnswers, action: UnknownAction): UnknownAction | undef
         });
     }
     if (actions.listTimestampSourceCandidates.match(action)) {
+        if (core.timestampSourcesPending) return undefined;
         const { candidates, ineligible = [], unreadable } = core.timestampSources ?? { candidates: [], unreadable: [] };
         return actions.listTimestampSourceCandidatesSuccess({ candidates: candidates as SigningProfileDto[], ineligible, unreadable });
     }

@@ -417,6 +417,16 @@ test.describe('SigningProfileForm - content signing workflow', () => {
         await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeDisabled();
     });
 
+    test('keeps Update disabled while the timestamp sources are pending', async ({ mount, page }) => {
+        await mount(
+            <ContentSigningProfileFormTestWrapper core={{ ...core, editedProfile: savedProfile, timestampSourcesPending: true }} />,
+        );
+        await editDescription(page);
+        await expect.poll(() => requests(page, 'listContentSigningProfileAttributes')).not.toHaveLength(0);
+
+        await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeDisabled();
+    });
+
     test('keeps Update disabled when the formatting attributes cannot be listed', async ({ mount, page }) => {
         await mount(
             <ContentSigningProfileFormTestWrapper
