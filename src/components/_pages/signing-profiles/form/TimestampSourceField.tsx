@@ -1,8 +1,8 @@
 import { type ReactElement, useEffect, useRef } from 'react';
 import { useController, useFormContext } from 'react-hook-form';
-import { useSelector } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import Select from 'components/Select';
-import { selectors as signingProfileSelectors } from 'ducks/signing-profiles';
+import { actions as signingProfileActions, selectors as signingProfileSelectors } from 'ducks/signing-profiles';
 import type { NameAndUuidDto, SigningProfileDto } from 'types/openapi';
 import { validateRequired } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
@@ -24,6 +24,7 @@ const ineligibleMessage = (source: NameAndUuidDto) => `${source.name} no longer 
  * A saved source read and found ineligible blocks the save; one this account cannot list is left for Core to judge.
  */
 export default function TimestampSourceField({ savedSource, signingProfileUuid }: Readonly<Props>): ReactElement {
+    const dispatch = useDispatch();
     const candidates = useSelector(signingProfileSelectors.timestampSourceCandidates);
     const ineligible = useSelector(signingProfileSelectors.ineligibleTimestampSourceCandidates);
     const unreadable = useSelector(signingProfileSelectors.unreadableTimestampSourceCandidates);
@@ -43,6 +44,10 @@ export default function TimestampSourceField({ savedSource, signingProfileUuid }
         name: 'timestampSourceProfileUuid',
         rules: buildValidationRules([validateRequired(), eligibleOrUnknown]),
     });
+
+    useEffect(() => {
+        dispatch(signingProfileActions.listTimestampSourceCandidates());
+    }, [dispatch]);
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: the source is re-validated whenever a listing reports ineligible sources.
     useEffect(() => {

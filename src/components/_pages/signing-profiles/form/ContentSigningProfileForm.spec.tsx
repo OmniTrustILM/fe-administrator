@@ -207,6 +207,18 @@ test.describe('SigningProfileForm - content signing workflow', () => {
         await expect(page.getByText('Hidden TSA could not be read, so it is not offered.')).toBeVisible();
     });
 
+    test('lists the timestamp sources only for a level that embeds a timestamp', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={core} />);
+        await chooseWorkflow(page, 'Content Signing');
+
+        await chooseFormatting(page, 'PAdES-B');
+        await expect.poll(() => requests(page, 'listSignatureFormattingConnectors')).not.toHaveLength(0);
+        expect(await requests(page, 'listTimestampSourceCandidates')).toHaveLength(0);
+
+        await choose(page, 'signatureLevel', 'PAdES-B-T');
+        await expect.poll(() => requests(page, 'listTimestampSourceCandidates')).toHaveLength(1);
+    });
+
     test('offers no profile as its own timestamp source', async ({ mount, page }) => {
         await mount(<ContentSigningProfileFormTestWrapper core={{ ...core, editedProfile: savedProfile }} />);
         await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();

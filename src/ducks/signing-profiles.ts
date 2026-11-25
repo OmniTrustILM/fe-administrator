@@ -21,12 +21,13 @@ import type { BulkActionMessageDto } from 'types/openapi/models/BulkActionMessag
 import type { SearchRequestModel } from 'types/certificate';
 import type { ConnectorResponseModel } from 'types/connectors';
 
-/** A workflow's formatting connectors with the state of their fetch. */
+/** The protocols Core supports for a workflow, and the failure of their listing. */
 export interface SupportedProtocolList {
     protocols: SigningProtocol[];
     failure?: { reason?: string };
 }
 
+/** A workflow's formatting connectors with the state of their fetch. */
 export interface SignatureFormattingConnectorList {
     connectors: ConnectorResponseModel[];
     isFetching: boolean;

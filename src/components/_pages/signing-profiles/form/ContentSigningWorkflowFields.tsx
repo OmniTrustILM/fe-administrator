@@ -136,7 +136,6 @@ export default function ContentSigningWorkflowFields({ signingProfileUuid, saved
 
     useEffect(() => {
         dispatch(signingProfileActions.listSignatureFormattingConnectors({ workflowType: SigningWorkflowType.ContentSigning }));
-        dispatch(signingProfileActions.listTimestampSourceCandidates());
     }, [dispatch]);
 
     useEffect(() => {
