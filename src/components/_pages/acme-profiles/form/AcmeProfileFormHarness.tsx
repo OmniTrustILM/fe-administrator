@@ -11,8 +11,10 @@ import AcmeProfileForm from './index';
 
 type Props = Readonly<{
     profile: Partial<AcmeProfileResponseModel>;
-    /** When the RA profile list answers, with one RA profile; it never does when omitted. */
+    /** When the RA profile list answers; it never does when omitted. */
     raProfilesDelayMs?: number;
+    /** How the RA profile list answers: with one RA profile (default), with none, or with a failure. */
+    raProfilesResult?: 'one' | 'empty' | 'fail';
 }>;
 
 const UUID = 'acme-profile-1';
@@ -21,7 +23,7 @@ const UUID = 'acme-profile-1';
  * The form editing one ACME profile that the store serves on request, with the RA profile list left empty as it is
  * while the list is still loading. The update request the form dispatches is rendered as JSON.
  */
-export default function AcmeProfileFormHarness({ profile, raProfilesDelayMs }: Props) {
+export default function AcmeProfileFormHarness({ profile, raProfilesDelayMs, raProfilesResult = 'one' }: Props) {
     const [state] = useState(() => {
         const loaded = { uuid: UUID, name: 'ACME profile', enabled: true, ...profile } as AcmeProfileResponseModel;
         let request: unknown;
@@ -33,8 +35,12 @@ export default function AcmeProfileFormHarness({ profile, raProfilesDelayMs }: P
                 setTimeout(() => api.dispatch(acmeProfilesActions.getAcmeProfileSuccess({ acmeProfile: loaded })), 0);
             }
             if (type === raProfilesActions.listRaProfiles.type && raProfilesDelayMs !== undefined) {
-                const raProfiles = [{ uuid: 'ra-1', name: 'RA profile', enabled: true }] as never;
-                setTimeout(() => api.dispatch(raProfilesActions.listRaProfilesSuccess({ raProfiles })), raProfilesDelayMs);
+                const raProfiles = (raProfilesResult === 'one' ? [{ uuid: 'ra-1', name: 'RA profile', enabled: true }] : []) as never;
+                const answer =
+                    raProfilesResult === 'fail'
+                        ? raProfilesActions.listRaProfilesFailure({ error: 'Failed' })
+                        : raProfilesActions.listRaProfilesSuccess({ raProfiles });
+                setTimeout(() => api.dispatch(answer), raProfilesDelayMs);
             }
             if (type === acmeProfilesActions.updateAcmeProfile.type) {
                 request = (action as ReturnType<typeof acmeProfilesActions.updateAcmeProfile>).payload.updateAcmeRequest;

@@ -164,14 +164,18 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
         }
     }, [dispatch, raProfile]);
 
-    const optionsForRaProfiles = useMemo(
-        () =>
-            raProfiles.map((raProfile) => ({
-                value: raProfile.uuid,
-                label: raProfile.name,
-            })),
-        [raProfiles],
-    );
+    // The profile's own RA profile stays an option while the list is loading, has failed or does not contain it.
+    const optionsForRaProfiles = useMemo(() => {
+        const options = raProfiles.map((raProfile) => ({
+            value: raProfile.uuid,
+            label: raProfile.name,
+        }));
+        const stored = editMode ? acmeProfile?.raProfile : undefined;
+        if (stored && !options.some((option) => option.value === stored.uuid)) {
+            options.push({ value: stored.uuid, label: stored.name });
+        }
+        return options;
+    }, [raProfiles, editMode, acmeProfile?.raProfile]);
 
     const getValue = useCallback(
         <T,>(value: T | undefined | null, fallback: T): T => {
@@ -213,10 +217,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
             disableOrders: getValue(acmeProfile?.termsOfServiceChangeDisable, false),
             requireTermsOfService: getValue(acmeProfile?.requireTermsOfService, false),
             requireContact: getValue(acmeProfile?.requireContact, false),
-            raProfile:
-                editMode && acmeProfile?.raProfile
-                    ? optionsForRaProfiles.find((ra) => ra.value === acmeProfile.raProfile?.uuid)?.value || ''
-                    : '',
+            raProfile: getValue(acmeProfile?.raProfile?.uuid, ''),
             eabSecretUuids: getValue(acmeProfile?.eabSecretUuids, []),
             ...policyFormValues(editMode ? acmeProfile : undefined),
             ...renewalInfoValues(editMode ? acmeProfile : undefined),
@@ -226,7 +227,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
             ...transformedInitialAssociatedAttributes,
             ...transformedInitialCustomAttributes,
         };
-    }, [editMode, acmeProfile, optionsForRaProfiles, userOptions, groupOptions, getValue, multipleResourceCustomAttributes]);
+    }, [editMode, acmeProfile, userOptions, groupOptions, getValue, multipleResourceCustomAttributes]);
 
     const methods = useForm<FormValues>({
         defaultValues,
@@ -366,22 +367,9 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
     const lastResetProfileIdRef = useRef<string | undefined>(undefined);
     const lastResetEditModeRef = useRef<boolean | undefined>(undefined);
 
-    const lastRenewalInitIdRef = useRef<string | undefined>(undefined);
-
-    // The renewal information fields initialise from the loaded profile on their own, so an edit never submits their defaults
-    // while the RA profile options the full reset waits for are empty or still loading.
-    useEffect(() => {
-        if (editMode && id && acmeProfile?.uuid === id && !isFetchingDetail && lastRenewalInitIdRef.current !== id) {
-            const { renewalInfoEnabled, renewalInfoRetryAfter } = renewalInfoValues(acmeProfile);
-            setValue('renewalInfoEnabled', renewalInfoEnabled);
-            setValue('renewalInfoRetryAfter', renewalInfoRetryAfter);
-            lastRenewalInitIdRef.current = id;
-        }
-    }, [editMode, id, acmeProfile, isFetchingDetail, setValue]);
-
     // Reset form values when acmeProfile is loaded in edit mode
     useEffect(() => {
-        if (editMode && id && acmeProfile?.uuid === id && !isFetchingDetail && optionsForRaProfiles.length > 0) {
+        if (editMode && id && acmeProfile?.uuid === id && !isFetchingDetail) {
             // Only reset if the profile ID changed or we haven't reset yet
             if (lastResetProfileIdRef.current !== id || lastResetEditModeRef.current !== editMode) {
                 const initialAssociatedAttributes = mapProfileAttribute(
@@ -416,7 +404,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                     disableOrders: acmeProfile.termsOfServiceChangeDisable || false,
                     requireTermsOfService: acmeProfile.requireTermsOfService || false,
                     requireContact: acmeProfile.requireContact || false,
-                    raProfile: optionsForRaProfiles.find((ra) => ra.value === acmeProfile.raProfile?.uuid)?.value || '',
+                    raProfile: acmeProfile.raProfile?.uuid ?? '',
                     eabSecretUuids: acmeProfile.eabSecretUuids ?? [],
                     ...policyFormValues(acmeProfile),
                     ...renewalInfoValues(acmeProfile),
@@ -460,17 +448,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                 lastResetEditModeRef.current = editMode;
             }
         }
-    }, [
-        editMode,
-        acmeProfile,
-        id,
-        reset,
-        isFetchingDetail,
-        optionsForRaProfiles,
-        multipleResourceCustomAttributes,
-        userOptions,
-        groupOptions,
-    ]);
+    }, [editMode, acmeProfile, id, reset, isFetchingDetail, multipleResourceCustomAttributes, userOptions, groupOptions]);
 
     useRunOnSuccessfulFinish(isCreating, createAcmeProfileSucceeded, onSuccess);
     useRunOnSuccessfulFinish(isUpdating, updateAcmeProfileSucceeded, onSuccess);
