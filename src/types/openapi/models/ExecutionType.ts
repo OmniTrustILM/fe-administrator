@@ -18,4 +18,5 @@
 export enum ExecutionType {
     SetField = 'setField',
     SendNotification = 'sendNotification',
+    RenewCertificate = 'renewCertificate',
 }

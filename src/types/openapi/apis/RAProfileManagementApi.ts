@@ -24,6 +24,7 @@ import type {
     AuthenticationServiceExceptionDto,
     BaseAttributeDto,
     CertificateDetailDto,
+    EarlyRenewalRequestDto,
     EditRaProfileRequestDto,
     ErrorMessageDto,
     RaProfileAcmeDetailResponseDto,
@@ -31,7 +32,9 @@ import type {
     RaProfileCertificateValidationSettingsUpdateDto,
     RaProfileCmpDetailResponseDto,
     RaProfileDto,
+    RaProfileEarlyRenewalResponseDto,
     RaProfileEstDetailResponseDto,
+    RaProfileRenewalSettingsUpdateDto,
     RaProfileScepDetailResponseDto,
     SimplifiedComplianceProfileDto,
     UuidDto,
@@ -209,6 +212,18 @@ export interface ListRaProfileRevokeCertificateAttributesRequest {
 
 export interface ListRaProfilesRequest {
     enabled?: boolean;
+}
+
+export interface RequestRaProfileEarlyRenewalRequest {
+    authorityUuid: string;
+    raProfileUuid: string;
+    earlyRenewalRequestDto: EarlyRenewalRequestDto;
+}
+
+export interface UpdateRaProfileRenewalSettingsRequest {
+    authorityUuid: string;
+    raProfileUuid: string;
+    raProfileRenewalSettingsUpdateDto: RaProfileRenewalSettingsUpdateDto;
 }
 
 export interface UpdateRaProfileRequestAttributesConfigurationRequest {
@@ -1175,6 +1190,80 @@ export class RAProfileManagementApi extends BaseAPI {
                 url: '/v1/raProfiles',
                 method: 'GET',
                 queryParams,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Request early renewal of the certificates of RA Profile
+     */
+    requestRaProfileEarlyRenewal({
+        authorityUuid,
+        raProfileUuid,
+        earlyRenewalRequestDto,
+    }: RequestRaProfileEarlyRenewalRequest): Observable<RaProfileEarlyRenewalResponseDto>;
+    requestRaProfileEarlyRenewal(
+        { authorityUuid, raProfileUuid, earlyRenewalRequestDto }: RequestRaProfileEarlyRenewalRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<RaProfileEarlyRenewalResponseDto>>;
+    requestRaProfileEarlyRenewal(
+        { authorityUuid, raProfileUuid, earlyRenewalRequestDto }: RequestRaProfileEarlyRenewalRequest,
+        opts?: OperationOpts,
+    ): Observable<RaProfileEarlyRenewalResponseDto | AjaxResponse<RaProfileEarlyRenewalResponseDto>> {
+        throwIfNullOrUndefined(authorityUuid, 'authorityUuid', 'requestRaProfileEarlyRenewal');
+        throwIfNullOrUndefined(raProfileUuid, 'raProfileUuid', 'requestRaProfileEarlyRenewal');
+        throwIfNullOrUndefined(earlyRenewalRequestDto, 'earlyRenewalRequestDto', 'requestRaProfileEarlyRenewal');
+
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        return this.request<RaProfileEarlyRenewalResponseDto>(
+            {
+                url: '/v1/authorities/{authorityUuid}/raProfiles/{raProfileUuid}/earlyRenewal'
+                    .replace('{authorityUuid}', encodeURI(authorityUuid))
+                    .replace('{raProfileUuid}', encodeURI(raProfileUuid)),
+                method: 'POST',
+                headers,
+                body: earlyRenewalRequestDto,
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Update renewal window settings of RA Profile
+     */
+    updateRaProfileRenewalSettings({
+        authorityUuid,
+        raProfileUuid,
+        raProfileRenewalSettingsUpdateDto,
+    }: UpdateRaProfileRenewalSettingsRequest): Observable<RaProfileDto>;
+    updateRaProfileRenewalSettings(
+        { authorityUuid, raProfileUuid, raProfileRenewalSettingsUpdateDto }: UpdateRaProfileRenewalSettingsRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<RaProfileDto>>;
+    updateRaProfileRenewalSettings(
+        { authorityUuid, raProfileUuid, raProfileRenewalSettingsUpdateDto }: UpdateRaProfileRenewalSettingsRequest,
+        opts?: OperationOpts,
+    ): Observable<RaProfileDto | AjaxResponse<RaProfileDto>> {
+        throwIfNullOrUndefined(authorityUuid, 'authorityUuid', 'updateRaProfileRenewalSettings');
+        throwIfNullOrUndefined(raProfileUuid, 'raProfileUuid', 'updateRaProfileRenewalSettings');
+        throwIfNullOrUndefined(raProfileRenewalSettingsUpdateDto, 'raProfileRenewalSettingsUpdateDto', 'updateRaProfileRenewalSettings');
+
+        const headers: HttpHeaders = {
+            'Content-Type': 'application/json',
+        };
+
+        return this.request<RaProfileDto>(
+            {
+                url: '/v1/authorities/{authorityUuid}/raProfiles/{raProfileUuid}/renewal'
+                    .replace('{authorityUuid}', encodeURI(authorityUuid))
+                    .replace('{raProfileUuid}', encodeURI(raProfileUuid)),
+                method: 'PATCH',
+                headers,
+                body: raProfileRenewalSettingsUpdateDto,
             },
             opts?.responseOpts,
         );

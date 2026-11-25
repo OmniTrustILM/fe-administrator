@@ -35,7 +35,7 @@ import {
 } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import { Resource } from '../../../../types/openapi';
-import useAttributeEditor, { buildGroups, buildOwner } from 'utils/widget';
+import useAttributeEditor, { buildGroups } from 'utils/widget';
 import CertificateAssociationsFormWidget from 'components/CertificateAssociationsFormWidget/CertificateAssociationsFormWidget';
 import { collectFormAttributes, transformAttributes, mapProfileAttribute } from 'utils/attributes/attributes';
 import { deepEqual } from 'utils/deep-equal';
@@ -45,6 +45,16 @@ import PreauthorizedIdentifiersFields, {
     type IdentifierPolicyFormValues,
 } from 'components/_pages/acme-profiles/identifiers/PreauthorizedIdentifiersFields';
 import { policyFormValues, policyRequestFields } from 'utils/acme-identifier-policy';
+import { type AcmeRenewalInfoFormValues, renewalInfoRequestFields, renewalInfoValues } from 'utils/acme-renewal-info';
+import AcmeRenewalInfoFields from 'components/_pages/acme-profiles/renewal/AcmeRenewalInfoFields';
+
+type Option = { value: string; label: string };
+
+// Options for stored UUIDs missing from a list that is loading, has failed or omits them; labelled with the UUID until it arrives.
+function withStoredOptions(options: Option[], storedUuids: string[]): Option[] {
+    const missing = storedUuids.filter((uuid) => !options.some((option) => option.value === uuid));
+    return missing.length ? [...options, ...missing.map((uuid) => ({ value: uuid, label: uuid }))] : options;
+}
 
 type AcmeProfileFormProps = {
     acmeProfileId?: string;
@@ -71,6 +81,7 @@ type FormValues = {
     groups: { value: string; label: string }[];
     deletedAttributes: string[];
 } & IdentifierPolicyFormValues &
+    AcmeRenewalInfoFormValues &
     Record<`__attributes__${string}`, unknown>;
 
 export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: Readonly<AcmeProfileFormProps>) {
@@ -114,6 +125,15 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
     const [userOptions, setUserOptions] = useState<{ value: string; label: string }[]>([]);
     const [groupOptions, setGroupOptions] = useState<{ value: string; label: string }[]>([]);
 
+    const storedAssociations = editMode ? acmeProfile?.certificateAssociations : undefined;
+    const storedOwnerUuid = storedAssociations?.ownerUuid;
+    const storedGroupUuids = storedAssociations?.groupUuids;
+    const ownerOptions = useMemo(
+        () => withStoredOptions(userOptions, storedOwnerUuid ? [storedOwnerUuid] : []),
+        [userOptions, storedOwnerUuid],
+    );
+    const groupSelectOptions = useMemo(() => withStoredOptions(groupOptions, storedGroupUuids ?? []), [groupOptions, storedGroupUuids]);
+
     useEffect(() => {
         dispatch(
             customAttributesActions.loadMultipleResourceCustomAttributes([
@@ -149,6 +169,9 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
 
     useEffect(() => {
         if (raProfile?.authorityInstanceUuid) {
+            // Descriptors left from another RA profile must not stand in for these while they load or after they fail.
+            dispatch(raProfileActions.clearIssuanceAttributesDescriptors());
+            dispatch(raProfileActions.clearRevocationAttributesDescriptors());
             dispatch(
                 raProfileActions.listIssuanceAttributeDescriptors({ authorityUuid: raProfile.authorityInstanceUuid, uuid: raProfile.uuid }),
             );
@@ -161,14 +184,18 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
         }
     }, [dispatch, raProfile]);
 
-    const optionsForRaProfiles = useMemo(
-        () =>
-            raProfiles.map((raProfile) => ({
-                value: raProfile.uuid,
-                label: raProfile.name,
-            })),
-        [raProfiles],
-    );
+    // The profile's own RA profile stays an option while the list is loading, has failed or does not contain it.
+    const optionsForRaProfiles = useMemo(() => {
+        const options = raProfiles.map((raProfile) => ({
+            value: raProfile.uuid,
+            label: raProfile.name,
+        }));
+        const stored = editMode ? acmeProfile?.raProfile : undefined;
+        if (stored && !options.some((option) => option.value === stored.uuid)) {
+            options.push({ value: stored.uuid, label: stored.name });
+        }
+        return options;
+    }, [raProfiles, editMode, acmeProfile?.raProfile]);
 
     const getValue = useCallback(
         <T,>(value: T | undefined | null, fallback: T): T => {
@@ -210,19 +237,17 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
             disableOrders: getValue(acmeProfile?.termsOfServiceChangeDisable, false),
             requireTermsOfService: getValue(acmeProfile?.requireTermsOfService, false),
             requireContact: getValue(acmeProfile?.requireContact, false),
-            raProfile:
-                editMode && acmeProfile?.raProfile
-                    ? optionsForRaProfiles.find((ra) => ra.value === acmeProfile.raProfile?.uuid)?.value || ''
-                    : '',
+            raProfile: getValue(acmeProfile?.raProfile?.uuid, ''),
             eabSecretUuids: getValue(acmeProfile?.eabSecretUuids, []),
             ...policyFormValues(editMode ? acmeProfile : undefined),
-            owner: editMode ? buildOwner(userOptions, acmeProfile?.certificateAssociations?.ownerUuid)?.value || '' : '',
-            groups: editMode ? buildGroups(groupOptions, acmeProfile?.certificateAssociations?.groupUuids) : [],
+            ...renewalInfoValues(editMode ? acmeProfile : undefined),
+            owner: storedOwnerUuid ?? '',
+            groups: buildGroups(groupSelectOptions, storedGroupUuids),
             deletedAttributes: [],
             ...transformedInitialAssociatedAttributes,
             ...transformedInitialCustomAttributes,
         };
-    }, [editMode, acmeProfile, optionsForRaProfiles, userOptions, groupOptions, getValue, multipleResourceCustomAttributes]);
+    }, [editMode, acmeProfile, storedOwnerUuid, storedGroupUuids, groupSelectOptions, getValue, multipleResourceCustomAttributes]);
 
     const methods = useForm<FormValues>({
         defaultValues,
@@ -284,7 +309,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                 request.raProfileUuid = values.raProfile;
             }
             const filled = editMode ? filledValuesRef.current : undefined;
-            Object.assign(request, eabRequestFields(values, filled), policyRequestFields(values, filled));
+            Object.assign(request, eabRequestFields(values, filled), policyRequestFields(values, filled), renewalInfoRequestFields(values));
             if (editMode) {
                 dispatch(acmeProfileActions.updateAcmeProfile({ uuid: id!, updateAcmeRequest: request }));
             } else {
@@ -357,13 +382,25 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
     const isEqual = useMemo(() => deepEqual<unknown>(defaultValues, allFormValues), [defaultValues, allFormValues]);
 
     const isSaving = isSubmitting || isCreating || isUpdating;
+    // An edit sends every attribute list in full and the API clears an omitted one, so it waits for all their descriptors.
+    const raAttributeDescriptorsLoaded =
+        !raProfile?.authorityInstanceUuid ||
+        (!isFetchingIssuanceAttributes &&
+            !isFetchingRevocationAttributes &&
+            raProfileIssuanceAttrDescs !== undefined &&
+            raProfileRevocationAttrDescs !== undefined);
+    const attributeDescriptorsLoaded =
+        raAttributeDescriptorsLoaded &&
+        multipleResourceCustomAttributes[Resource.AcmeProfiles] !== undefined &&
+        multipleResourceCustomAttributes[Resource.Certificates] !== undefined;
+    const [initializedProfileId, setInitializedProfileId] = useState<string>();
 
     const lastResetProfileIdRef = useRef<string | undefined>(undefined);
     const lastResetEditModeRef = useRef<boolean | undefined>(undefined);
 
     // Reset form values when acmeProfile is loaded in edit mode
     useEffect(() => {
-        if (editMode && id && acmeProfile?.uuid === id && !isFetchingDetail && optionsForRaProfiles.length > 0) {
+        if (editMode && id && acmeProfile?.uuid === id && !isFetchingDetail) {
             // Only reset if the profile ID changed or we haven't reset yet
             if (lastResetProfileIdRef.current !== id || lastResetEditModeRef.current !== editMode) {
                 const initialAssociatedAttributes = mapProfileAttribute(
@@ -398,11 +435,12 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                     disableOrders: acmeProfile.termsOfServiceChangeDisable || false,
                     requireTermsOfService: acmeProfile.requireTermsOfService || false,
                     requireContact: acmeProfile.requireContact || false,
-                    raProfile: optionsForRaProfiles.find((ra) => ra.value === acmeProfile.raProfile?.uuid)?.value || '',
+                    raProfile: acmeProfile.raProfile?.uuid ?? '',
                     eabSecretUuids: acmeProfile.eabSecretUuids ?? [],
                     ...policyFormValues(acmeProfile),
-                    owner: buildOwner(userOptions, acmeProfile.certificateAssociations?.ownerUuid)?.value || '',
-                    groups: buildGroups(groupOptions, acmeProfile.certificateAssociations?.groupUuids) || [],
+                    ...renewalInfoValues(acmeProfile),
+                    owner: acmeProfile.certificateAssociations?.ownerUuid ?? '',
+                    groups: buildGroups(groupSelectOptions, acmeProfile.certificateAssociations?.groupUuids),
                     deletedAttributes: [],
                     ...transformedInitialAssociatedAttributes,
                     ...transformedInitialCustomAttributes,
@@ -411,6 +449,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                 filledValuesRef.current = newDefaultValues;
                 lastResetProfileIdRef.current = id;
                 lastResetEditModeRef.current = editMode;
+                setInitializedProfileId(id);
             }
         } else if (!editMode) {
             // Reset form when switching to create mode (only if we were in edit mode before)
@@ -431,6 +470,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                     raProfile: '',
                     eabSecretUuids: [],
                     ...policyFormValues(undefined),
+                    ...renewalInfoValues(undefined),
                     owner: '',
                     groups: [],
                     deletedAttributes: [],
@@ -439,17 +479,16 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                 lastResetEditModeRef.current = editMode;
             }
         }
-    }, [
-        editMode,
-        acmeProfile,
-        id,
-        reset,
-        isFetchingDetail,
-        optionsForRaProfiles,
-        multipleResourceCustomAttributes,
-        userOptions,
-        groupOptions,
-    ]);
+    }, [editMode, acmeProfile, id, reset, isFetchingDetail, multipleResourceCustomAttributes, groupSelectOptions]);
+
+    // Selected groups carry their label, so they take the group names once the group list arrives.
+    useEffect(() => {
+        const current = getValues('groups') ?? [];
+        const relabeled = current.map((group) => groupSelectOptions.find((option) => option.value === group.value) ?? group);
+        if (relabeled.some((group, index) => group.label !== current[index].label)) {
+            setValue('groups', relabeled);
+        }
+    }, [groupSelectOptions, getValues, setValue]);
 
     useRunOnSuccessfulFinish(isCreating, createAcmeProfileSucceeded, onSuccess);
     useRunOnSuccessfulFinish(isUpdating, updateAcmeProfileSucceeded, onSuccess);
@@ -695,6 +734,10 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                             />
                         </Widget>
 
+                        <Widget title="Renewal information" noBorder>
+                            <AcmeRenewalInfoFields disabled={isBusy} />
+                        </Widget>
+
                         <Widget title="Pre-authorized identifiers" noBorder>
                             <PreauthorizedIdentifiersFields disabled={isBusy} />
                         </Widget>
@@ -774,8 +817,8 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
 
                         <CertificateAssociationsFormWidget
                             renderCustomAttributes={renderCertificateAssociatedAttributesEditor}
-                            userOptions={userOptions}
-                            groupOptions={groupOptions}
+                            userOptions={ownerOptions}
+                            groupOptions={groupSelectOptions}
                             setUserOptions={setUserOptions}
                             setGroupOptions={setGroupOptions}
                         />
@@ -788,7 +831,12 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                                 title={editMode ? 'Update' : 'Create'}
                                 inProgressTitle={editMode ? 'Updating...' : 'Creating...'}
                                 inProgress={isSaving}
-                                disabled={isSaving || !isValid || isEqual}
+                                disabled={
+                                    isSaving ||
+                                    !isValid ||
+                                    isEqual ||
+                                    (editMode && (initializedProfileId !== id || !attributeDescriptorsLoaded))
+                                }
                                 type="submit"
                             />
                         </Container>

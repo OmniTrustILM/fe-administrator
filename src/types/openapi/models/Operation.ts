@@ -126,6 +126,7 @@ export enum Operation {
     GetAssociations = 'getAssociations',
     ListVersions = 'listVersions',
     GetProxyInstallation = 'getProxyInstallation',
+    RequestEarlyRenewal = 'requestEarlyRenewal',
     ListCertificateProfiles = 'listCertificateProfiles',
     ListCas = 'listCas',
 }

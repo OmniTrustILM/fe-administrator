@@ -12,6 +12,7 @@
 
 import type {
     CertificateRegistrationSettingsDto,
+    CertificateRenewalInfoSettingsDto,
     CertificateRequestAttributesSettingsDto,
     CertificateUploadSettingsDto,
     CertificateValidationSettingsDto,
@@ -43,4 +44,10 @@ export interface CertificateSettingsDto {
      * @memberof CertificateSettingsDto
      */
     upload?: CertificateUploadSettingsDto;
+    /**
+     * Settings of the refresh of certificate renewal information obtained from authorities
+     * @type {CertificateRenewalInfoSettingsDto}
+     * @memberof CertificateSettingsDto
+     */
+    renewalInfo?: CertificateRenewalInfoSettingsDto;
 }

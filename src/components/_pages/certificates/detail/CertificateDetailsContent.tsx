@@ -77,6 +77,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
     const users = useSelector(userSelectors.users);
     const certificateKeyUsageEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateKeyUsage));
     const qcTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.QcType));
+    const renewalWindowSourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.RenewalWindowSource));
     const certificateProtocol = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateProtocol));
     const isArchiving = useSelector(selectors.isArchiving);
     const isUpdatingTrustedStatus = useSelector(selectors.isUpdatingTrustedStatus);
@@ -421,7 +422,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                   certificate,
                   validationResult,
                   isCertificateArchived,
-                  { certificateKeyUsage: certificateKeyUsageEnum, qcType: qcTypeEnum },
+                  { certificateKeyUsage: certificateKeyUsageEnum, qcType: qcTypeEnum, renewalWindowSource: renewalWindowSourceEnum },
                   dateFormatter,
                   getEnumLabel,
                   setPendingAction,
@@ -474,6 +475,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
         validationResult,
         isCertificateArchived,
         certificateKeyUsageEnum,
+        renewalWindowSourceEnum,
         isUpdatingTrustedStatus,
         switchCallback,
         canUpdate,

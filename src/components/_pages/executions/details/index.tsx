@@ -152,6 +152,8 @@ const ExecutionDetails = () => {
                         />
                     </div>
                 );
+            case ExecutionType.RenewCertificate:
+                return null;
         }
     }, [executionDetails, isUpdatingDetails, onUpdateSendNotificationExecutionItems, can]);
 

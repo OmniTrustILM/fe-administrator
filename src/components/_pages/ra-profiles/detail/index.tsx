@@ -30,6 +30,8 @@ import AssociateComplianceProfileDialogBody from '../AssociateComplianceProfileD
 import ProtocolActivationDialogBody, { Protocol } from '../ProtocolActivationDialogBody';
 import TabLayout from 'components/Layout/TabLayout';
 import CertificateValidationDialogBody from 'components/_pages/ra-profiles/CertificateValidationDialogBody';
+import EarlyRenewalDialog from 'components/_pages/certificates/EarlyRenewalDialog';
+import RenewalSettingsDialogBody from 'components/_pages/ra-profiles/RenewalSettingsDialogBody';
 import RequestValidationDialogBody from 'components/_pages/ra-profiles/RequestValidationDialogBody';
 import { renderExpiringThresholdLabel, renderValidationFrequencyLabel } from 'utils/certificate-validation';
 import {
@@ -116,6 +118,8 @@ export default function RaProfileDetail() {
 
     const [certificateValidationDialog, setCertificateValidationDialog] = useState<boolean>(false);
     const [requestValidationDialog, setRequestValidationDialog] = useState<boolean>(false);
+    const [renewalSettingsDialog, setRenewalSettingsDialog] = useState<boolean>(false);
+    const [earlyRenewalDialog, setEarlyRenewalDialog] = useState<boolean>(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState<boolean>(false);
 
     const isBusy = useMemo(
@@ -484,6 +488,33 @@ export default function RaProfileDetail() {
             },
         ],
         [can],
+    );
+
+    const renewalSettingsButtons: WidgetButtonProps[] = useMemo(
+        () => [
+            {
+                id: 'edit',
+                icon: 'pencil',
+                disabled: !raProfile?.authorityInstanceUuid,
+                requires: can(ResourceAction.Update),
+                tooltip: 'Edit Renewal Settings',
+                onClick: () => {
+                    setRenewalSettingsDialog(true);
+                },
+            },
+            {
+                id: 'early-renewal',
+                icon: 'retweet',
+                disabled: !raProfile?.authorityInstanceUuid,
+                requires: can(ResourceAction.Update),
+                tooltip: 'Request early renewal',
+                'aria-label': 'Request early renewal',
+                onClick: () => {
+                    setEarlyRenewalDialog(true);
+                },
+            },
+        ],
+        [can, raProfile?.authorityInstanceUuid],
     );
 
     const approvalProfilesHeaders: TableHeader[] = useMemo(
@@ -1039,6 +1070,72 @@ export default function RaProfileDetail() {
         ];
     }, [raProfile, platformSettings]);
 
+    const renewalSettingsData: TableDataRow[] = useMemo(() => {
+        const renewalSettings = raProfile?.renewalSettings;
+        if (!renewalSettings) return [];
+
+        const data: TableDataRow[] = [
+            {
+                id: 'windowEnabled',
+                columns: [
+                    'Renewal Window Enabled',
+                    <Switch
+                        onChange={() => {}}
+                        id="renewalWindowEnabled"
+                        key="renewalWindowEnabled"
+                        checked={renewalSettings.windowEnabled}
+                        disabled
+                    />,
+                ],
+            },
+        ];
+
+        if (renewalSettings.windowEnabled) {
+            data.push(
+                { id: 'windowStartPercent', columns: ['Window Start', `${renewalSettings.windowStartPercent} %`] },
+                { id: 'windowEndPercent', columns: ['Window End', `${renewalSettings.windowEndPercent} %`] },
+            );
+        }
+
+        data.push(
+            {
+                id: 'useAuthorityRenewalInfo',
+                columns: [
+                    'Use Authority Renewal Window',
+                    <span key="useAuthorityRenewalInfo" className="flex items-center gap-x-3">
+                        <Switch
+                            onChange={() => {}}
+                            id="useAuthorityRenewalInfo"
+                            checked={renewalSettings.useAuthorityRenewalInfo}
+                            disabled
+                        />
+                        {!renewalSettings.authorityRenewalInfoSupported && (
+                            <span className="text-content-subtle">Not supported by the authority</span>
+                        )}
+                    </span>,
+                ],
+            },
+            {
+                id: 'autoRenewalEnabled',
+                columns: [
+                    'Automatic Renewal Enabled',
+                    <Switch
+                        onChange={() => {}}
+                        id="autoRenewalEnabled"
+                        key="autoRenewalEnabled"
+                        checked={renewalSettings.autoRenewalEnabled}
+                        disabled
+                    />,
+                ],
+            },
+        );
+        if (renewalSettings.autoRenewalEnabled) {
+            data.push({ id: 'autoRenewalMaxAttempts', columns: ['Maximum Renewal Attempts', `${renewalSettings.autoRenewalMaxAttempts}`] });
+        }
+
+        return data;
+    }, [raProfile]);
+
     return (
         <div>
             {isFetchingProfile ? (
@@ -1194,6 +1291,18 @@ export default function RaProfileDetail() {
                                                 dataTestId="request-validation-widget"
                                             >
                                                 <CustomTable headers={certificateValidationHeaders} data={requestValidationData} />
+                                            </Widget>
+                                            <Widget
+                                                title="Renewal"
+                                                widgetButtons={renewalSettingsButtons}
+                                                titleSize="large"
+                                                refreshAction={getFreshRaProfileDetail}
+                                                widgetLockName={LockWidgetNameEnum.PlatformSettings}
+                                                lockSize="large"
+                                                className="w-full lg:flex-1 lg:min-w-0"
+                                                dataTestId="renewal-settings-widget"
+                                            >
+                                                <CustomTable headers={certificateValidationHeaders} data={renewalSettingsData} />
                                             </Widget>
                                         </Container>
                                     ),
@@ -1402,6 +1511,36 @@ export default function RaProfileDetail() {
                     />
                 }
                 toggle={() => setRequestValidationDialog(false)}
+                buttons={[]}
+                size="md"
+            />
+
+            <Dialog
+                isOpen={renewalSettingsDialog}
+                caption="Edit Renewal Settings"
+                body={<RenewalSettingsDialogBody onClose={() => setRenewalSettingsDialog(false)} raProfile={raProfile} />}
+                toggle={() => setRenewalSettingsDialog(false)}
+                buttons={[]}
+                size="md"
+            />
+
+            <Dialog
+                isOpen={earlyRenewalDialog}
+                caption="Request early renewal"
+                body={
+                    raProfile?.authorityInstanceUuid && (
+                        <EarlyRenewalDialog
+                            target={{
+                                kind: 'raProfile',
+                                authorityUuid: raProfile.authorityInstanceUuid,
+                                raProfileUuid: raProfile.uuid,
+                                name: raProfile.name,
+                            }}
+                            onClose={() => setEarlyRenewalDialog(false)}
+                        />
+                    )
+                }
+                toggle={() => setEarlyRenewalDialog(false)}
                 buttons={[]}
                 size="md"
             />

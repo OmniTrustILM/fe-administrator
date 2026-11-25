@@ -29,6 +29,8 @@ function RaProfileList() {
     const isDeleting = useSelector(selectors.isDeleting);
     const isBulkDeleting = useSelector(selectors.isBulkDeleting);
     const isUpdating = useSelector(selectors.isUpdating);
+    const isUpdatingRenewalSettings = useSelector(selectors.isUpdatingRenewalSettings);
+    const isRequestingEarlyRenewal = useSelector(selectors.isRequestingEarlyRenewal);
     const isCreating = useSelector(selectors.isCreating);
     const createRaProfileSucceeded = useSelector(selectors.createRaProfileSucceeded);
     const updateRaProfileSucceeded = useSelector(selectors.updateRaProfileSucceeded);
@@ -36,7 +38,16 @@ function RaProfileList() {
     const isBulkEnabling = useSelector(selectors.isBulkEnabling);
     const isBulkDisabling = useSelector(selectors.isBulkDisabling);
 
-    const isBusy = isFetching || isDeleting || isUpdating || isBulkDeleting || isEnabling || isBulkEnabling || isBulkDisabling;
+    const isBusy =
+        isFetching ||
+        isDeleting ||
+        isUpdating ||
+        isUpdatingRenewalSettings ||
+        isRequestingEarlyRenewal ||
+        isBulkDeleting ||
+        isEnabling ||
+        isBulkEnabling ||
+        isBulkDisabling;
 
     const [confirmDelete, setConfirmDelete] = useState<boolean>(false);
     const [complianceCheck, setComplianceCheck] = useState<boolean>(false);
