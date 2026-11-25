@@ -864,25 +864,17 @@ describe('signingProfiles epics', () => {
         ]);
     });
 
-    test('listSignatureFormattingConnectors omits feature filter for unmapped workflow', async () => {
-        let capturedArgs: any;
-        await runEpic(
+    test('listSignatureFormattingConnectors answers raw signing with no connector and calls nothing', async () => {
+        const listConnectorsV2 = vi.fn();
+        const emitted = await runEpic(
             SigningProfilesEpicIndex.ListSignatureFormattingConnectors,
             signingProfileActions.listSignatureFormattingConnectors({ workflowType: SigningWorkflowType.RawSigning }),
-            {
-                connectorsV2: {
-                    listConnectorsV2: (args: any) => {
-                        capturedArgs = args;
-                        return of({ items: [] });
-                    },
-                },
-            },
+            { connectorsV2: { listConnectorsV2 } },
             1,
         );
 
-        const filters = capturedArgs.searchRequestDto.filters;
-        expect(filters.some((f: any) => f.fieldIdentifier === 'CONNECTOR_FEATURES')).toBe(false);
-        expect(filters.some((f: any) => f.fieldIdentifier === 'CONNECTOR_INTERFACE')).toBe(true);
+        expect(emitted).toEqual([signingProfileActions.listSignatureFormattingConnectorsSuccess({ connectors: [] })]);
+        expect(listConnectorsV2).not.toHaveBeenCalled();
     });
 
     test('listSignatureFormattingConnectors failure emits failure action', async () => {

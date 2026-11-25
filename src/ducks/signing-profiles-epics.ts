@@ -460,17 +460,19 @@ const listSigningRecordsForSigningProfile: AppEpic = (action$, state$, deps) => 
     );
 };
 
-const formattingConnectorSearch: Record<SigningWorkflowType, { connectorInterface: ConnectorInterface; feature?: string }> = {
+/** A workflow without an entry, such as raw signing, has no formatting connector. */
+const formattingConnectorSearch: Partial<Record<SigningWorkflowType, { connectorInterface: ConnectorInterface; feature?: string }>> = {
     [SigningWorkflowType.Timestamping]: { connectorInterface: ConnectorInterface.SignatureFormatting, feature: 'timestamping' },
     [SigningWorkflowType.ContentSigning]: { connectorInterface: ConnectorInterface.ContentSigningFormatting },
-    [SigningWorkflowType.RawSigning]: { connectorInterface: ConnectorInterface.SignatureFormatting },
 };
 
 const listSignatureFormattingConnectors: AppEpic = (action$, _state$, deps) => {
     return action$.pipe(
         filter(slice.actions.listSignatureFormattingConnectors.match),
         switchMap((action) => {
-            const { connectorInterface, feature } = formattingConnectorSearch[action.payload.workflowType];
+            const search = formattingConnectorSearch[action.payload.workflowType];
+            if (!search) return of(slice.actions.listSignatureFormattingConnectorsSuccess({ connectors: [] }));
+            const { connectorInterface, feature } = search;
             const featureFilter = feature
                 ? [
                       {
