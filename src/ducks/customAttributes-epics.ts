@@ -21,7 +21,13 @@ import {
 import { actions as vaultProfileActions } from './vault-profiles';
 import { actions as secretActions } from './secrets';
 import { actions as vaultActions } from './vaults';
-import type { AttributeRequestModel, AttributeResponseDto, AttributeResponseModel, BaseAttributeContentDtoV3 } from 'types/attributes';
+import type {
+    AttributeRequestModel,
+    AttributeResponseDto,
+    AttributeResponseModel,
+    BaseAttributeContentDtoV3,
+    CustomAttributeModel,
+} from 'types/attributes';
 
 const normalizeAttributeVersion = (version: unknown): AttributeVersion => {
     if (version === AttributeVersion.V3 || version === 'v3' || version === '3' || version === 3) {
@@ -510,21 +516,30 @@ const loadMultipleResourceCustomAttributes: AppEpic = (action$, state$, deps) =>
         switchMap((action) => {
             const resourceObservables = action.payload.map(({ resource }) =>
                 deps.apiClients.customAttributes.getResourceCustomAttributes({ resource }).pipe(
-                    map((list) => ({
+                    map((list): { resource: Resource; customAttributes: CustomAttributeModel[]; error?: Error } => ({
                         resource,
                         customAttributes: list.map(transformCustomAttributeDtoToModel),
                     })),
-                    catchError(() => {
-                        return of({
-                            resource,
-                            customAttributes: [],
-                        });
-                    }),
+                    // Stored as empty, as every form expects, but marked failed so a form can tell it from an empty list.
+                    catchError((error: Error) => of({ resource, customAttributes: [], error })),
                 ),
             );
 
             return forkJoin(resourceObservables).pipe(
-                map((results) => slice.actions.receiveMultipleResourceCustomAttributes(results)),
+                mergeMap((results) =>
+                    of(
+                        slice.actions.receiveMultipleResourceCustomAttributes(
+                            results.map(({ resource, customAttributes, error }) => ({
+                                resource,
+                                customAttributes,
+                                ...(error && { failed: true }),
+                            })),
+                        ),
+                        ...results.flatMap(({ error }) =>
+                            error ? [appRedirectActions.fetchError({ error, message: 'Failed to get custom attributes' })] : [],
+                        ),
+                    ),
+                ),
                 catchError((err) =>
                     of(
                         slice.actions.listResourceCustomAttributesFailure({

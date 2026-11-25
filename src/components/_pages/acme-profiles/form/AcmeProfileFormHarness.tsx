@@ -23,6 +23,8 @@ type Props = Readonly<{
     associationsDelayMs?: number;
     /** When the attribute descriptors answer: the custom attribute 'customField' for ACME profiles and the RA profile's issue attribute 'issueField'. */
     descriptorsDelayMs?: number;
+    /** Whether the ACME profile custom attribute descriptors load (default) or their request fails. */
+    customAttributesResult?: 'loaded' | 'fail';
 }>;
 
 const stringProperties = { required: false, readOnly: false, visible: true, list: false, multiSelect: false };
@@ -54,6 +56,7 @@ export default function AcmeProfileFormHarness({
     raProfilesResult = 'one',
     associationsDelayMs,
     descriptorsDelayMs = 0,
+    customAttributesResult = 'loaded',
 }: Props) {
     const [state] = useState(() => {
         const loaded = { uuid: UUID, name: 'ACME profile', enabled: true, ...profile } as AcmeProfileResponseModel;
@@ -85,8 +88,12 @@ export default function AcmeProfileFormHarness({
                 setTimeout(() => api.dispatch(groupsActions.listGroupsSuccess({ groups })), associationsDelayMs);
             }
             if (type === customAttributesActions.loadMultipleResourceCustomAttributes.type) {
+                const acmeProfileAttributes =
+                    customAttributesResult === 'loaded'
+                        ? { resource: Resource.AcmeProfiles, customAttributes: [customDescriptor] as never }
+                        : { resource: Resource.AcmeProfiles, customAttributes: [], failed: true };
                 const answer = customAttributesActions.receiveMultipleResourceCustomAttributes([
-                    { resource: Resource.AcmeProfiles, customAttributes: [customDescriptor] as never },
+                    acmeProfileAttributes,
                     { resource: Resource.Certificates, customAttributes: [] },
                 ]);
                 setTimeout(() => api.dispatch(answer), descriptorsDelayMs);

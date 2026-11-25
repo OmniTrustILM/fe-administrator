@@ -124,4 +124,17 @@ test.describe('AcmeProfileForm attribute descriptors', () => {
             customAttributes: [{ name: 'customField', content: [{ data: 'stored custom' }] }],
         });
     });
+
+    test('cannot be saved when the custom attribute descriptors fail to load', async ({ mount, page }) => {
+        await mount(<AcmeProfileFormHarness raProfilesDelayMs={0} customAttributesResult="fail" profile={profile} />);
+
+        await expect(page.locator('#name')).toHaveValue('ACME profile');
+        await page.locator('#description').fill('Edited');
+        await expect(page.getByText('Issue Field')).toBeVisible();
+        const update = page.getByRole('button', { name: 'Update' });
+        await expect(update).toBeDisabled();
+        await update.click({ force: true });
+
+        await expect(page.getByTestId('update-request')).toHaveText('null');
+    });
 });
