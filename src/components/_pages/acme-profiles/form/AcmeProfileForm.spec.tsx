@@ -69,3 +69,32 @@ test.describe('AcmeProfileForm without RA profile options', () => {
         expect(request).toMatchObject({ description: 'Edited', raProfileUuid: 'ra-1' });
     });
 });
+
+test.describe('AcmeProfileForm stored certificate associations', () => {
+    const profile = { certificateAssociations: { ownerUuid: 'user-1', groupUuids: ['group-1', 'group-2'] } };
+
+    for (const associationsDelayMs of [undefined, 800]) {
+        test(`submits the stored owner and groups when their lists ${associationsDelayMs ? 'load late' : 'stay empty'}`, async ({
+            mount,
+            page,
+        }) => {
+            await mount(<AcmeProfileFormHarness raProfilesDelayMs={0} associationsDelayMs={associationsDelayMs} profile={profile} />);
+
+            await expect(page.locator('#name')).toHaveValue('ACME profile');
+            await expect(page.locator('#owner')).toContainText('user-1');
+            await page.locator('#description').fill('Edited');
+            if (associationsDelayMs) {
+                await expect(page.locator('#owner')).toContainText('Alice');
+                await expect(page.locator('#groups')).toContainText('Admins');
+                await expect(page.locator('#groups')).toContainText('Ops');
+            }
+            await page.getByRole('button', { name: 'Update' }).click();
+
+            const request = JSON.parse((await page.getByTestId('update-request').textContent()) ?? 'null');
+            expect(request).toMatchObject({
+                description: 'Edited',
+                certificateAssociations: { ownerUuid: 'user-1', groupUuids: ['group-1', 'group-2'] },
+            });
+        });
+    }
+});

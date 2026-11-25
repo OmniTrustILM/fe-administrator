@@ -35,7 +35,7 @@ import {
 } from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import { Resource } from '../../../../types/openapi';
-import useAttributeEditor, { buildGroups, buildOwner } from 'utils/widget';
+import useAttributeEditor, { buildGroups } from 'utils/widget';
 import CertificateAssociationsFormWidget from 'components/CertificateAssociationsFormWidget/CertificateAssociationsFormWidget';
 import { collectFormAttributes, transformAttributes, mapProfileAttribute } from 'utils/attributes/attributes';
 import { deepEqual } from 'utils/deep-equal';
@@ -47,6 +47,14 @@ import PreauthorizedIdentifiersFields, {
 import { policyFormValues, policyRequestFields } from 'utils/acme-identifier-policy';
 import { type AcmeRenewalInfoFormValues, renewalInfoRequestFields, renewalInfoValues } from 'utils/acme-renewal-info';
 import AcmeRenewalInfoFields from 'components/_pages/acme-profiles/renewal/AcmeRenewalInfoFields';
+
+type Option = { value: string; label: string };
+
+// Options for stored UUIDs missing from a list that is loading, has failed or omits them; labelled with the UUID until it arrives.
+function withStoredOptions(options: Option[], storedUuids: string[]): Option[] {
+    const missing = storedUuids.filter((uuid) => !options.some((option) => option.value === uuid));
+    return missing.length ? [...options, ...missing.map((uuid) => ({ value: uuid, label: uuid }))] : options;
+}
 
 type AcmeProfileFormProps = {
     acmeProfileId?: string;
@@ -116,6 +124,15 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
 
     const [userOptions, setUserOptions] = useState<{ value: string; label: string }[]>([]);
     const [groupOptions, setGroupOptions] = useState<{ value: string; label: string }[]>([]);
+
+    const storedAssociations = editMode ? acmeProfile?.certificateAssociations : undefined;
+    const storedOwnerUuid = storedAssociations?.ownerUuid;
+    const storedGroupUuids = storedAssociations?.groupUuids;
+    const ownerOptions = useMemo(
+        () => withStoredOptions(userOptions, storedOwnerUuid ? [storedOwnerUuid] : []),
+        [userOptions, storedOwnerUuid],
+    );
+    const groupSelectOptions = useMemo(() => withStoredOptions(groupOptions, storedGroupUuids ?? []), [groupOptions, storedGroupUuids]);
 
     useEffect(() => {
         dispatch(
@@ -221,13 +238,13 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
             eabSecretUuids: getValue(acmeProfile?.eabSecretUuids, []),
             ...policyFormValues(editMode ? acmeProfile : undefined),
             ...renewalInfoValues(editMode ? acmeProfile : undefined),
-            owner: editMode ? buildOwner(userOptions, acmeProfile?.certificateAssociations?.ownerUuid)?.value || '' : '',
-            groups: editMode ? buildGroups(groupOptions, acmeProfile?.certificateAssociations?.groupUuids) : [],
+            owner: storedOwnerUuid ?? '',
+            groups: buildGroups(groupSelectOptions, storedGroupUuids),
             deletedAttributes: [],
             ...transformedInitialAssociatedAttributes,
             ...transformedInitialCustomAttributes,
         };
-    }, [editMode, acmeProfile, userOptions, groupOptions, getValue, multipleResourceCustomAttributes]);
+    }, [editMode, acmeProfile, storedOwnerUuid, storedGroupUuids, groupSelectOptions, getValue, multipleResourceCustomAttributes]);
 
     const methods = useForm<FormValues>({
         defaultValues,
@@ -408,8 +425,8 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                     eabSecretUuids: acmeProfile.eabSecretUuids ?? [],
                     ...policyFormValues(acmeProfile),
                     ...renewalInfoValues(acmeProfile),
-                    owner: buildOwner(userOptions, acmeProfile.certificateAssociations?.ownerUuid)?.value || '',
-                    groups: buildGroups(groupOptions, acmeProfile.certificateAssociations?.groupUuids) || [],
+                    owner: acmeProfile.certificateAssociations?.ownerUuid ?? '',
+                    groups: buildGroups(groupSelectOptions, acmeProfile.certificateAssociations?.groupUuids),
                     deletedAttributes: [],
                     ...transformedInitialAssociatedAttributes,
                     ...transformedInitialCustomAttributes,
@@ -448,7 +465,16 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                 lastResetEditModeRef.current = editMode;
             }
         }
-    }, [editMode, acmeProfile, id, reset, isFetchingDetail, multipleResourceCustomAttributes, userOptions, groupOptions]);
+    }, [editMode, acmeProfile, id, reset, isFetchingDetail, multipleResourceCustomAttributes, groupSelectOptions]);
+
+    // Selected groups carry their label, so they take the group names once the group list arrives.
+    useEffect(() => {
+        const current = getValues('groups') ?? [];
+        const relabeled = current.map((group) => groupSelectOptions.find((option) => option.value === group.value) ?? group);
+        if (relabeled.some((group, index) => group.label !== current[index].label)) {
+            setValue('groups', relabeled);
+        }
+    }, [groupSelectOptions, getValues, setValue]);
 
     useRunOnSuccessfulFinish(isCreating, createAcmeProfileSucceeded, onSuccess);
     useRunOnSuccessfulFinish(isUpdating, updateAcmeProfileSucceeded, onSuccess);
@@ -777,8 +803,8 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
 
                         <CertificateAssociationsFormWidget
                             renderCustomAttributes={renderCertificateAssociatedAttributesEditor}
-                            userOptions={userOptions}
-                            groupOptions={groupOptions}
+                            userOptions={ownerOptions}
+                            groupOptions={groupSelectOptions}
                             setUserOptions={setUserOptions}
                             setGroupOptions={setGroupOptions}
                         />
