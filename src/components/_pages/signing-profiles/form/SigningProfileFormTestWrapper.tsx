@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import { useMemo } from 'react';
 import connectorsReducer from 'ducks/connectors';
 import userInterfaceReducer from 'ducks/user-interface';
+import { initialState as signingProfilesInitialState } from 'ducks/signing-profiles';
 import {
     CertificateRelationType,
     CertificateState,
@@ -78,11 +79,13 @@ export function SigningProfileFormTestWrapper({
                 reducer: combineReducers({
                     enums: identity({ platformEnums: {} }),
                     signingProfiles: identity({
+                        ...signingProfilesInitialState,
                         signingProfile: editMode ? existingSigningProfile : undefined,
                         isFetchingDetail: false,
                         isCreating: false,
                         isUpdating: false,
                         signatureFormattingConnectors: failedConnectorsFetch ? [] : [{ uuid: 'c1', name: 'PAdES Connector' }],
+                        signatureFormattingConnectorsWorkflowType: SigningWorkflowType.Timestamping,
                         isFetchingSignatureFormattingConnectors: false,
                         failedSignatureFormattingConnectorsFetch: failedConnectorsFetch,
                         signingCertificates: [{ uuid: 'cert1', commonName: 'Signing Cert', serialNumber: '123' }],

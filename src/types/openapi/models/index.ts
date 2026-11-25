@@ -227,6 +227,7 @@ export * from './ConnectorSummaryDto';
 export * from './ConnectorUpdateRequestDto';
 export * from './ConnectorUpdateRequestDtoV2';
 export * from './ConnectorVersion';
+export * from './ContentSigningFormattingAttributes';
 export * from './ContentSigningWorkflowDto';
 export * from './ContentSigningWorkflowRequestDto';
 export * from './CoreInfoResponseDto';

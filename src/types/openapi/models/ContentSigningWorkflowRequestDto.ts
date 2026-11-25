@@ -10,15 +10,7 @@
  * Do not edit the class manually.
  */
 
-import type {
-    RequestAttribute,
-    SignatureFamily,
-    SignatureLevel,
-    SignatureParameterGroup,
-    SignatureParameters,
-    SigningWorkflowType,
-    TimestampSourceRequestDto,
-} from './';
+import type { RequestAttribute, SignatureLevel, SigningWorkflowType, TimestampSourceRequestDto } from './';
 
 /**
  * Content signing workflow configuration request. The validation material that LONG_TERM and ARCHIVAL embed is fetched by the Signature Formatting Provider and needs no configuration here.
@@ -39,19 +31,19 @@ export interface ContentSigningWorkflowRequestDto {
      */
     signatureFormattingConnectorUuid?: string;
     /**
-     * Attributes for the Signature Formatting Provider that control DTBS construction for the content signing workflow. Must be omitted for delegated signing. These attributes carry operator-only settings; a request supplies signature parameters only in the groups that allowedRequestParameterGroups lists.
+     * Values of the Signature Formatting Provider\'s profile attributes and request attributes, which control DTBS construction for the content-signing workflow; a request attribute\'s value here is the one a signing request inherits. Must be omitted for delegated signing.
      * @type {Array<RequestAttribute>}
      * @memberof ContentSigningWorkflowRequestDto
      */
     signatureFormattingConnectorAttributes?: Array<RequestAttribute>;
     /**
-     * Signature family this profile produces. Required for ILM-managed signing; must be omitted for delegated signing.
-     * @type {SignatureFamily}
+     * Signature family this profile produces: a code the selected formatting connector declares. Required for ILM-managed signing; must be omitted for delegated signing.
+     * @type {string}
      * @memberof ContentSigningWorkflowRequestDto
      */
-    family?: SignatureFamily;
+    family?: string;
     /**
-     * Signature level at which the profile signs every document. Required for ILM-managed signing; must be omitted for delegated signing.
+     * Signature level at which the profile signs every document: a level the selected formatting connector declares for the family. Required for ILM-managed signing; must be omitted for delegated signing.
      * @type {SignatureLevel}
      * @memberof ContentSigningWorkflowRequestDto
      */
@@ -62,12 +54,6 @@ export interface ContentSigningWorkflowRequestDto {
      * @memberof ContentSigningWorkflowRequestDto
      */
     timestampSource?: TimestampSourceRequestDto;
-    /**
-     * Largest document accepted for signing, in bytes. Enforced when an ILM-managed signing request arrives. When omitted, no profile-level cap applies.
-     * @type {number}
-     * @memberof ContentSigningWorkflowRequestDto
-     */
-    documentSizeCap?: number;
     /**
      * Demand the nonRepudiation key-usage bit specifically, for commitment-grade profiles. Applies to ILM-managed signing only. For delegated signing, omit it or send false; an echoed false from a response is accepted, true is rejected.
      * @type {boolean}
@@ -81,15 +67,9 @@ export interface ContentSigningWorkflowRequestDto {
      */
     requiredExtendedKeyUsageOids?: Array<string>;
     /**
-     * Signature parameter groups a signing request may supply; every group must apply to the profile\'s family. Must be omitted for delegated signing. Membership is the only permission mechanism. A request carrying any field of a group absent from this list is rejected, even when the value matches the profile\'s own. Omitted or empty means no request-supplied group is accepted. Allowing a group and defaulting it are separate decisions.
-     * @type {Array<SignatureParameterGroup>}
+     * Names of the request-attribute groups and ungrouped request attributes a signing request may set, each declared by the formatting connector; a request setting any other request attribute is refused, even when its value matches the profile value. Empty allows none; must be omitted for delegated signing.
+     * @type {Array<string>}
      * @memberof ContentSigningWorkflowRequestDto
      */
-    allowedRequestParameterGroups?: Array<SignatureParameterGroup>;
-    /**
-     * Signature parameters this profile applies when a request does not override them; their family must match the profile\'s family. Must be omitted for delegated signing. Merged field by field with the request winning; list-typed fields, and a placement in a different addressing mode, replace the default wholesale.
-     * @type {SignatureParameters}
-     * @memberof ContentSigningWorkflowRequestDto
-     */
-    defaultSignatureParameters?: SignatureParameters;
+    allowedRequestAttributes?: Array<string>;
 }

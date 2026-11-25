@@ -1,12 +1,15 @@
 import { createSelector, createSlice, type PayloadAction } from '@reduxjs/toolkit';
 import type { AppState } from 'ducks';
 import { resetSliceState } from 'ducks/reducerUtils';
+import { transformAttributeDescriptorDtoToModel } from 'ducks/transform/attributes';
 import {
     type BaseAttributeDto,
     type CertificateDto,
+    type NameAndUuidDto,
     type PaginationResponseDtoSigningRecordListDto,
     type SearchFieldDataByGroupDto,
     type SignatureFamilyDeclaration,
+    type SignatureLevel,
     type SigningProfileDto,
     type SigningProfileListDto,
     type SigningProfileRequestDto,
@@ -18,6 +21,33 @@ import type { BulkActionMessageDto } from 'types/openapi/models/BulkActionMessag
 import type { SearchRequestModel } from 'types/certificate';
 import type { ConnectorResponseModel } from 'types/connectors';
 
+/** A workflow's formatting connectors with the state of their fetch. */
+export interface SupportedProtocolList {
+    protocols: SigningProtocol[];
+    failure?: { reason?: string };
+}
+
+export interface SignatureFormattingConnectorList {
+    connectors: ConnectorResponseModel[];
+    isFetching: boolean;
+    failure?: { reason?: string };
+}
+
+/** Connector, family and level whose formatting attributes Core lists for a content-signing profile. */
+export interface ContentSigningFormattingSelection {
+    connectorUuid: string;
+    family: string;
+    level: SignatureLevel;
+}
+
+/** Filters `listSigningCertificates` applies: the workflow's floor and the profile's certificate purpose. */
+export interface SigningCertificatesQuery {
+    workflowType: SigningWorkflowType;
+    qualifiedTimestamp?: boolean;
+    requireNonRepudiation?: boolean;
+    requiredExtendedKeyUsageOids?: string[];
+}
+
 export type State = {
     deleteErrorMessage: string;
     bulkDeleteErrorMessages: BulkActionMessageDto[];
@@ -27,14 +57,26 @@ export type State = {
 
     tspActivationDetails?: TspActivationDetailDto;
     supportedProtocols: SigningProtocol[];
+    supportedProtocolsWorkflowType?: SigningWorkflowType;
+    failedSupportedProtocolsFetch?: { reason?: string };
     signingCertificates: CertificateDto[];
+    signingCertificatesListed: boolean;
     signingOperationAttributeDescriptors: BaseAttributeDto[];
     signatureFormattingConnectorAttributeDescriptors: BaseAttributeDto[];
+    contentSigningProfileAttributeDescriptors: BaseAttributeDto[];
+    contentSigningRequestAttributeDescriptors: BaseAttributeDto[];
+    contentSigningAttributesSelection?: ContentSigningFormattingSelection;
+    failedContentSigningProfileAttributesFetch?: { reason?: string };
     signatureFormattingConnectors: ConnectorResponseModel[];
+    signatureFormattingConnectorsWorkflowType?: SigningWorkflowType;
     signatureFormattingConnectorDeclarations?: { connectorUuid: string; declarations: SignatureFamilyDeclaration[] };
     failedSignatureFormattingConnectorsFetch?: { reason?: string };
     failedSignatureFormattingConnectorDeclarationsFetch?: { connectorUuid: string; reason?: string };
     signingRecords?: PaginationResponseDtoSigningRecordListDto;
+    timestampSourceCandidates: SigningProfileDto[];
+    ineligibleTimestampSourceCandidates: NameAndUuidDto[];
+    unreadableTimestampSourceCandidates: NameAndUuidDto[];
+    failedTimestampSourceCandidatesFetch?: { reason?: string };
 
     searchableFields?: SearchFieldDataByGroupDto[];
 
@@ -44,11 +86,14 @@ export type State = {
     isFetchingTspActivationDetails: boolean;
     isFetchingSupportedProtocols: boolean;
     isFetchingSigningCertificates: boolean;
+    failedSigningCertificatesFetch?: { reason?: string };
     isFetchingSignatureAttributes: boolean;
     isFetchingSignatureFormattingConnectorAttributes: boolean;
+    isFetchingContentSigningProfileAttributes: boolean;
     isFetchingSignatureFormattingConnectors: boolean;
     isFetchingSignatureFormattingConnectorDeclarations: boolean;
     isFetchingSigningRecords: boolean;
+    isFetchingTimestampSourceCandidates: boolean;
     isCreating: boolean;
     isDeleting: boolean;
     isUpdating: boolean;
@@ -59,6 +104,8 @@ export type State = {
     isBulkDisabling: boolean;
     isActivatingTsp: boolean;
     isDeactivatingTsp: boolean;
+    isActivatingIlmNative: boolean;
+    isDeactivatingIlmNative: boolean;
 };
 
 export const initialState: State = {
@@ -69,9 +116,15 @@ export const initialState: State = {
 
     supportedProtocols: [],
     signingCertificates: [],
+    signingCertificatesListed: false,
     signingOperationAttributeDescriptors: [],
     signatureFormattingConnectorAttributeDescriptors: [],
+    contentSigningProfileAttributeDescriptors: [],
+    contentSigningRequestAttributeDescriptors: [],
     signatureFormattingConnectors: [],
+    timestampSourceCandidates: [],
+    ineligibleTimestampSourceCandidates: [],
+    unreadableTimestampSourceCandidates: [],
 
     isFetchingList: false,
     isFetchingDetail: false,
@@ -81,9 +134,11 @@ export const initialState: State = {
     isFetchingSigningCertificates: false,
     isFetchingSignatureAttributes: false,
     isFetchingSignatureFormattingConnectorAttributes: false,
+    isFetchingContentSigningProfileAttributes: false,
     isFetchingSignatureFormattingConnectors: false,
     isFetchingSignatureFormattingConnectorDeclarations: false,
     isFetchingSigningRecords: false,
+    isFetchingTimestampSourceCandidates: false,
     isCreating: false,
     isDeleting: false,
     isUpdating: false,
@@ -94,6 +149,8 @@ export const initialState: State = {
     isBulkDisabling: false,
     isActivatingTsp: false,
     isDeactivatingTsp: false,
+    isActivatingIlmNative: false,
+    isDeactivatingIlmNative: false,
 };
 
 export const slice = createSlice({
@@ -337,6 +394,42 @@ export const slice = createSlice({
             state.isDeactivatingTsp = false;
         },
 
+        // ILM_NATIVE activation
+        activateIlmNative: (state, action: PayloadAction<{ uuid: string }>) => {
+            state.isActivatingIlmNative = true;
+        },
+
+        activateIlmNativeSuccess: (state, action: PayloadAction<{ uuid: string }>) => {
+            state.isActivatingIlmNative = false;
+            if (
+                state.signingProfile?.uuid === action.payload.uuid &&
+                !state.signingProfile.enabledProtocols?.includes(SigningProtocol.IlmNative)
+            ) {
+                state.signingProfile.enabledProtocols = [...(state.signingProfile.enabledProtocols ?? []), SigningProtocol.IlmNative];
+            }
+        },
+
+        activateIlmNativeFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isActivatingIlmNative = false;
+        },
+
+        deactivateIlmNative: (state, action: PayloadAction<{ uuid: string }>) => {
+            state.isDeactivatingIlmNative = true;
+        },
+
+        deactivateIlmNativeSuccess: (state, action: PayloadAction<{ uuid: string }>) => {
+            state.isDeactivatingIlmNative = false;
+            if (state.signingProfile?.uuid === action.payload.uuid) {
+                state.signingProfile.enabledProtocols = state.signingProfile.enabledProtocols?.filter(
+                    (p) => p !== SigningProtocol.IlmNative,
+                );
+            }
+        },
+
+        deactivateIlmNativeFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
+            state.isDeactivatingIlmNative = false;
+        },
+
         getTspActivationDetails: (state, action: PayloadAction<{ uuid: string }>) => {
             state.isFetchingTspActivationDetails = true;
             state.tspActivationDetails = undefined;
@@ -355,6 +448,9 @@ export const slice = createSlice({
         // Supported protocols
         listSupportedProtocols: (state, action: PayloadAction<{ workflowType: SigningWorkflowType }>) => {
             state.isFetchingSupportedProtocols = true;
+            state.supportedProtocols = [];
+            state.supportedProtocolsWorkflowType = action.payload.workflowType;
+            state.failedSupportedProtocolsFetch = undefined;
         },
 
         listSupportedProtocolsSuccess: (state, action: PayloadAction<{ supportedProtocols: SigningProtocol[] }>) => {
@@ -364,20 +460,26 @@ export const slice = createSlice({
 
         listSupportedProtocolsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isFetchingSupportedProtocols = false;
+            state.failedSupportedProtocolsFetch = { reason: action.payload.error };
         },
 
         // Signing certificates
-        listSigningCertificates: (state, action: PayloadAction<{ workflowType: SigningWorkflowType; qualifiedTimestamp?: boolean }>) => {
+        listSigningCertificates: (state, action: PayloadAction<SigningCertificatesQuery>) => {
             state.isFetchingSigningCertificates = true;
+            state.signingCertificatesListed = false;
+            state.failedSigningCertificatesFetch = undefined;
         },
 
         listSigningCertificatesSuccess: (state, action: PayloadAction<{ signingCertificates: CertificateDto[] }>) => {
             state.isFetchingSigningCertificates = false;
             state.signingCertificates = action.payload.signingCertificates;
+            state.signingCertificatesListed = true;
         },
 
         listSigningCertificatesFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {
             state.isFetchingSigningCertificates = false;
+            state.signingCertificates = [];
+            state.failedSigningCertificatesFetch = { reason: action.payload.error };
         },
 
         // Signing operation attribute descriptors (for a selected certificate)
@@ -413,10 +515,38 @@ export const slice = createSlice({
             state.isFetchingSignatureFormattingConnectorAttributes = false;
         },
 
+        // Content-signing profile attributes of the chosen connector, family and level
+        listContentSigningProfileAttributes: (
+            state,
+            action: PayloadAction<ContentSigningFormattingSelection & { signingProfileUuid?: string }>,
+        ) => {
+            const { connectorUuid, family, level } = action.payload;
+            state.isFetchingContentSigningProfileAttributes = true;
+            state.contentSigningProfileAttributeDescriptors = [];
+            state.contentSigningRequestAttributeDescriptors = [];
+            state.contentSigningAttributesSelection = { connectorUuid, family, level };
+            state.failedContentSigningProfileAttributesFetch = undefined;
+        },
+
+        listContentSigningProfileAttributesSuccess: (
+            state,
+            action: PayloadAction<{ profileAttributes: BaseAttributeDto[]; requestAttributes: BaseAttributeDto[] }>,
+        ) => {
+            state.isFetchingContentSigningProfileAttributes = false;
+            state.contentSigningProfileAttributeDescriptors = action.payload.profileAttributes;
+            state.contentSigningRequestAttributeDescriptors = action.payload.requestAttributes;
+        },
+
+        listContentSigningProfileAttributesFailure: (state, action: PayloadAction<{ reason: string | undefined }>) => {
+            state.isFetchingContentSigningProfileAttributes = false;
+            state.failedContentSigningProfileAttributesFetch = action.payload;
+        },
+
         // Signature Formatting Connectors
         listSignatureFormattingConnectors: (state, action: PayloadAction<{ workflowType: SigningWorkflowType }>) => {
             state.isFetchingSignatureFormattingConnectors = true;
             state.signatureFormattingConnectors = [];
+            state.signatureFormattingConnectorsWorkflowType = action.payload.workflowType;
             state.failedSignatureFormattingConnectorsFetch = undefined;
         },
 
@@ -456,6 +586,30 @@ export const slice = createSlice({
             state.failedSignatureFormattingConnectorDeclarationsFetch = action.payload;
         },
 
+        // Timestamp sources: TIMESTAMPING profiles a content-signing profile can name
+        listTimestampSourceCandidates: (state, action: PayloadAction<void>) => {
+            state.isFetchingTimestampSourceCandidates = true;
+            state.timestampSourceCandidates = [];
+            state.ineligibleTimestampSourceCandidates = [];
+            state.unreadableTimestampSourceCandidates = [];
+            state.failedTimestampSourceCandidatesFetch = undefined;
+        },
+
+        listTimestampSourceCandidatesSuccess: (
+            state,
+            action: PayloadAction<{ candidates: SigningProfileDto[]; ineligible: NameAndUuidDto[]; unreadable: NameAndUuidDto[] }>,
+        ) => {
+            state.isFetchingTimestampSourceCandidates = false;
+            state.timestampSourceCandidates = action.payload.candidates;
+            state.ineligibleTimestampSourceCandidates = action.payload.ineligible;
+            state.unreadableTimestampSourceCandidates = action.payload.unreadable;
+        },
+
+        listTimestampSourceCandidatesFailure: (state, action: PayloadAction<{ reason: string | undefined }>) => {
+            state.isFetchingTimestampSourceCandidates = false;
+            state.failedTimestampSourceCandidatesFetch = action.payload;
+        },
+
         // Signing records
         listSigningRecordsForSigningProfile: (state, action: PayloadAction<{ uuid: string }>) => {
             state.isFetchingSigningRecords = true;
@@ -481,13 +635,24 @@ const signingProfile = createSelector(state, (state) => state.signingProfile);
 const signingProfiles = createSelector(state, (state) => state.signingProfiles);
 const tspActivationDetails = createSelector(state, (state) => state.tspActivationDetails);
 const supportedProtocols = createSelector(state, (state) => state.supportedProtocols);
+const supportedProtocolsWorkflowType = createSelector(state, (state) => state.supportedProtocolsWorkflowType);
+const failedSupportedProtocolsFetch = createSelector(state, (state) => state.failedSupportedProtocolsFetch);
 const signingCertificates = createSelector(state, (state) => state.signingCertificates);
+const signingCertificatesListed = createSelector(state, (state) => state.signingCertificatesListed);
+const failedSigningCertificatesFetch = createSelector(state, (state) => state.failedSigningCertificatesFetch);
 const signingOperationAttributeDescriptors = createSelector(state, (state) => state.signingOperationAttributeDescriptors);
 const signatureFormattingConnectorAttributeDescriptors = createSelector(
     state,
     (state) => state.signatureFormattingConnectorAttributeDescriptors,
 );
+const signingOperationAttributeModels = createSelector(signingOperationAttributeDescriptors, (descriptors) =>
+    descriptors.map(transformAttributeDescriptorDtoToModel),
+);
+const signatureFormattingConnectorAttributeModels = createSelector(signatureFormattingConnectorAttributeDescriptors, (descriptors) =>
+    descriptors.map(transformAttributeDescriptorDtoToModel),
+);
 const signatureFormattingConnectors = createSelector(state, (state) => state.signatureFormattingConnectors);
+const signatureFormattingConnectorsWorkflowType = createSelector(state, (state) => state.signatureFormattingConnectorsWorkflowType);
 const failedSignatureFormattingConnectorsFetch = createSelector(state, (state) => state.failedSignatureFormattingConnectorsFetch);
 const signatureFormattingConnectorDeclarations = createSelector(state, (state) => state.signatureFormattingConnectorDeclarations);
 const failedSignatureFormattingConnectorDeclarationsFetch = createSelector(
@@ -495,6 +660,23 @@ const failedSignatureFormattingConnectorDeclarationsFetch = createSelector(
     (state) => state.failedSignatureFormattingConnectorDeclarationsFetch,
 );
 const signingRecords = createSelector(state, (state) => state.signingRecords);
+const contentSigningProfileAttributeDescriptors = createSelector(state, (state) => state.contentSigningProfileAttributeDescriptors);
+const contentSigningProfileAttributeModels = createSelector(contentSigningProfileAttributeDescriptors, (descriptors) =>
+    descriptors.map(transformAttributeDescriptorDtoToModel),
+);
+const contentSigningRequestAttributeDescriptors = createSelector(state, (state) => state.contentSigningRequestAttributeDescriptors);
+const isFetchingContentSigningProfileAttributes = createSelector(state, (state) => state.isFetchingContentSigningProfileAttributes);
+const failedContentSigningProfileAttributesFetch = createSelector(state, (state) => state.failedContentSigningProfileAttributesFetch);
+/** The selection whose formatting attributes Core listed, or nothing while a listing is pending or after it failed. */
+const contentSigningAttributesListedFor = createSelector([state], (state): ContentSigningFormattingSelection | undefined =>
+    state.isFetchingContentSigningProfileAttributes || state.failedContentSigningProfileAttributesFetch
+        ? undefined
+        : state.contentSigningAttributesSelection,
+);
+const timestampSourceCandidates = createSelector(state, (state) => state.timestampSourceCandidates);
+const ineligibleTimestampSourceCandidates = createSelector(state, (state) => state.ineligibleTimestampSourceCandidates);
+const unreadableTimestampSourceCandidates = createSelector(state, (state) => state.unreadableTimestampSourceCandidates);
+const failedTimestampSourceCandidatesFetch = createSelector(state, (state) => state.failedTimestampSourceCandidatesFetch);
 const searchableFields = createSelector(state, (state) => state.searchableFields);
 const deleteErrorMessage = createSelector(state, (state) => state.deleteErrorMessage);
 const bulkDeleteErrorMessages = createSelector(state, (state) => state.bulkDeleteErrorMessages);
@@ -516,6 +698,7 @@ const isFetchingSignatureFormattingConnectorDeclarations = createSelector(
     (state) => state.isFetchingSignatureFormattingConnectorDeclarations,
 );
 const isFetchingSigningRecords = createSelector(state, (state) => state.isFetchingSigningRecords);
+const isFetchingTimestampSourceCandidates = createSelector(state, (state) => state.isFetchingTimestampSourceCandidates);
 const isCreating = createSelector(state, (state) => state.isCreating);
 const isDeleting = createSelector(state, (state) => state.isDeleting);
 const isUpdating = createSelector(state, (state) => state.isUpdating);
@@ -526,6 +709,33 @@ const isBulkEnabling = createSelector(state, (state) => state.isBulkEnabling);
 const isBulkDisabling = createSelector(state, (state) => state.isBulkDisabling);
 const isActivatingTsp = createSelector(state, (state) => state.isActivatingTsp);
 const isDeactivatingTsp = createSelector(state, (state) => state.isDeactivatingTsp);
+const isActivatingIlmNative = createSelector(state, (state) => state.isActivatingIlmNative);
+const isDeactivatingIlmNative = createSelector(state, (state) => state.isDeactivatingIlmNative);
+
+const noProtocols: SupportedProtocolList = { protocols: [] };
+
+/** The protocols Core supports for the given workflow and the failure of their listing, or none while another workflow's are stored. */
+const supportedProtocolListFor = (workflowType: SigningWorkflowType | undefined) =>
+    createSelector(
+        [supportedProtocols, failedSupportedProtocolsFetch, supportedProtocolsWorkflowType],
+        (protocols, failure, listedFor): SupportedProtocolList =>
+            workflowType !== undefined && listedFor === workflowType ? { protocols, failure } : noProtocols,
+    );
+
+const notListed: SignatureFormattingConnectorList = { connectors: [], isFetching: false };
+
+/** The formatting-connector list and fetch state of the given workflow, or an empty list while another workflow's is stored. */
+const signatureFormattingConnectorListFor = (workflowType: SigningWorkflowType) =>
+    createSelector(
+        [
+            signatureFormattingConnectors,
+            isFetchingSignatureFormattingConnectors,
+            failedSignatureFormattingConnectorsFetch,
+            signatureFormattingConnectorsWorkflowType,
+        ],
+        (connectors, isFetching, failure, listedFor): SignatureFormattingConnectorList =>
+            listedFor === workflowType ? { connectors, isFetching, failure } : notListed,
+    );
 
 export const selectors = {
     state,
@@ -534,15 +744,27 @@ export const selectors = {
     signingProfile,
     signingProfiles,
     tspActivationDetails,
-    supportedProtocols,
+    supportedProtocolListFor,
     signingCertificates,
+    signingCertificatesListed,
+    failedSigningCertificatesFetch,
     signingOperationAttributeDescriptors,
+    signingOperationAttributeModels,
     signatureFormattingConnectorAttributeDescriptors,
-    signatureFormattingConnectors,
-    failedSignatureFormattingConnectorsFetch,
+    signatureFormattingConnectorAttributeModels,
+    signatureFormattingConnectorListFor,
     signatureFormattingConnectorDeclarations,
     failedSignatureFormattingConnectorDeclarationsFetch,
     signingRecords,
+    contentSigningProfileAttributeModels,
+    contentSigningRequestAttributeDescriptors,
+    contentSigningAttributesListedFor,
+    isFetchingContentSigningProfileAttributes,
+    failedContentSigningProfileAttributesFetch,
+    timestampSourceCandidates,
+    ineligibleTimestampSourceCandidates,
+    unreadableTimestampSourceCandidates,
+    failedTimestampSourceCandidatesFetch,
     searchableFields,
     isFetchingList,
     isFetchingDetail,
@@ -552,9 +774,9 @@ export const selectors = {
     isFetchingSigningCertificates,
     isFetchingSignatureAttributes,
     isFetchingSignatureFormattingConnectorAttributes,
-    isFetchingSignatureFormattingConnectors,
     isFetchingSignatureFormattingConnectorDeclarations,
     isFetchingSigningRecords,
+    isFetchingTimestampSourceCandidates,
     isCreating,
     isDeleting,
     isUpdating,
@@ -565,6 +787,8 @@ export const selectors = {
     isBulkDisabling,
     isActivatingTsp,
     isDeactivatingTsp,
+    isActivatingIlmNative,
+    isDeactivatingIlmNative,
 };
 
 export const actions = slice.actions;

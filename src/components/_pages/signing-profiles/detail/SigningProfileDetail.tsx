@@ -15,6 +15,7 @@ import type { WidgetButtonProps } from 'components/WidgetButtons';
 import CustomAttributeWidget from 'components/Attributes/CustomAttributeWidget';
 import AttributeViewer from 'components/Attributes/AttributeViewer';
 import TabLayout from 'components/Layout/TabLayout';
+import ContentSigningWorkflowDetail from './ContentSigningWorkflowDetail';
 
 import { actions, selectors } from 'ducks/signing-profiles';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
@@ -34,7 +35,7 @@ import {
     type StaticKeyManagedSigningDto,
     type TimestampingWorkflowDto,
 } from 'types/openapi';
-import { isStaticKeyManagedSigning, isTimestampingWorkflow } from 'utils/type-guards';
+import { isContentSigningWorkflow, isStaticKeyManagedSigning, isTimestampingWorkflow } from 'utils/type-guards';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import { useActionAvailability } from 'utils/useActionAvailability';
@@ -94,6 +95,8 @@ export default function SigningProfileDetail() {
     const isFetchingTspActivationDetails = useSelector(selectors.isFetchingTspActivationDetails);
     const isActivatingTsp = useSelector(selectors.isActivatingTsp);
     const isDeactivatingTsp = useSelector(selectors.isDeactivatingTsp);
+    const isActivatingIlmNative = useSelector(selectors.isActivatingIlmNative);
+    const isDeactivatingIlmNative = useSelector(selectors.isDeactivatingIlmNative);
 
     const tspProfiles = useSelector(tspProfileSelectors.tspProfiles);
 
@@ -103,6 +106,8 @@ export default function SigningProfileDetail() {
 
     const [confirmDelete, setConfirmDelete] = useState(false);
     const [confirmDeactivateTsp, setConfirmDeactivateTsp] = useState(false);
+    const [ilmNativeDeactivationTarget, setIlmNativeDeactivationTarget] = useState<string>();
+    if (ilmNativeDeactivationTarget !== undefined && ilmNativeDeactivationTarget !== id) setIlmNativeDeactivationTarget(undefined);
     const [activateTspDialog, setActivateTspDialog] = useState(false);
     const [selectedTspProfileUuid, setSelectedTspProfileUuid] = useState<string | undefined>(undefined);
 
@@ -113,15 +118,23 @@ export default function SigningProfileDetail() {
         [isFetchingDetail, isDeleting, isEnabling, isDisabling],
     );
 
-    const timestampingWorkflow = useMemo((): TimestampingWorkflowDto | undefined => {
-        if (!signingProfile || !isTimestampingWorkflow(signingProfile.workflow)) return undefined;
-        return signingProfile.workflow;
-    }, [signingProfile]);
+    const loadedProfile = signingProfile?.uuid === id ? signingProfile : undefined;
 
-    const workflowTabTitle = useMemo((): string => {
-        const type = signingProfile?.workflow?.type;
-        return type ? `${workflowTypeLabels[type] ?? 'Signing Workflow'} Properties` : 'Signing Workflow Properties';
-    }, [signingProfile]);
+    const timestampingWorkflow = useMemo((): TimestampingWorkflowDto | undefined => {
+        if (!loadedProfile || !isTimestampingWorkflow(loadedProfile.workflow)) return undefined;
+        return loadedProfile.workflow;
+    }, [loadedProfile]);
+
+    const workflowType = loadedProfile?.workflow?.type;
+    const ilmNativeEnabled = loadedProfile?.enabledProtocols?.includes(SigningProtocol.IlmNative) ?? false;
+    const ilmNativeRefused = !ilmNativeEnabled && loadedProfile?.signingScheme?.signingScheme === SigningScheme.Delegated;
+    const supportedProtocolList = useMemo(() => selectors.supportedProtocolListFor(workflowType), [workflowType]);
+    const { protocols: supportedProtocols, failure: failedSupportedProtocolsFetch } = useSelector(supportedProtocolList);
+    const isFetchingSupportedProtocols = useSelector(selectors.isFetchingSupportedProtocols);
+
+    const workflowTabTitle = workflowType
+        ? `${workflowTypeLabels[workflowType] ?? 'Signing Workflow'} Properties`
+        : 'Signing Workflow Properties';
 
     const staticKeyScheme = useMemo((): StaticKeyManagedSigningDto | undefined => {
         if (!signingProfile || !isStaticKeyManagedSigning(signingProfile.signingScheme)) return undefined;
@@ -130,15 +143,28 @@ export default function SigningProfileDetail() {
 
     // ── Data fetching ──────────────────────────────────────────────────────────
 
-    const getFreshData = useCallback(() => {
-        if (!id) return;
-        dispatch(actions.getSigningProfile({ uuid: id }));
-        dispatch(actions.getTspActivationDetails({ uuid: id }));
+    const getProtocols = useCallback(() => {
+        if (!id || !workflowType) return;
+        if (workflowType === SigningWorkflowType.Timestamping) dispatch(actions.getTspActivationDetails({ uuid: id }));
+        dispatch(actions.listSupportedProtocols({ workflowType }));
+    }, [dispatch, id, workflowType]);
+
+    const getProfile = useCallback(() => {
+        if (id) dispatch(actions.getSigningProfile({ uuid: id }));
     }, [dispatch, id]);
 
+    const getFreshData = useCallback(() => {
+        getProfile();
+        getProtocols();
+    }, [getProfile, getProtocols]);
+
     useEffect(() => {
-        getFreshData();
-    }, [getFreshData]);
+        getProfile();
+    }, [getProfile]);
+
+    useEffect(() => {
+        getProtocols();
+    }, [getProtocols]);
 
     // ── Actions ────────────────────────────────────────────────────────────────
 
@@ -541,50 +567,80 @@ export default function SigningProfileDetail() {
         [],
     );
 
-    const availableProtocolsData: TableDataRow[] = useMemo(
-        () => [
-            {
-                id: 'tsp',
-                columns: [
-                    'Timestamping Protocol (TSA)',
-                    <StatusBadge key="status" enabled={tspActivationDetails?.available ?? false} />,
-                    <ProgressButton
-                        key="actions"
-                        type="button"
-                        requires={can(ResourceAction.Update)}
-                        title={tspActivationDetails?.available ? 'Deactivate' : 'Activate'}
-                        inProgressTitle={tspActivationDetails?.available ? 'Deactivating...' : 'Activating...'}
-                        inProgress={isActivatingTsp || isDeactivatingTsp}
-                        onClick={() => {
-                            if (tspActivationDetails?.available) {
-                                setConfirmDeactivateTsp(true);
-                            } else {
-                                setSelectedTspProfileUuid(undefined);
-                                dispatch(tspProfileActions.listTspProfiles());
-                                setActivateTspDialog(true);
-                            }
-                        }}
-                    />,
-                ],
-                detailColumns: [
-                    <></>,
-                    <></>,
-                    <></>,
-                    tspActivationDetails?.available ? (
-                        <>
-                            <b>Protocol settings</b>
-                            <br />
-                            <br />
-                            <CustomTable hasHeader={false} headers={detailHeaders} data={tspActivationData} />
-                        </>
-                    ) : (
-                        <>Timestamping Protocol is not activated on this profile.</>
-                    ),
-                ],
-            },
-        ],
+    const tspRow: TableDataRow = useMemo(
+        () => ({
+            id: 'tsp',
+            columns: [
+                'Timestamping Protocol (TSA)',
+                <StatusBadge key="status" enabled={tspActivationDetails?.available ?? false} />,
+                <ProgressButton
+                    key="actions"
+                    type="button"
+                    requires={can(ResourceAction.Update)}
+                    title={tspActivationDetails?.available ? 'Deactivate' : 'Activate'}
+                    inProgressTitle={tspActivationDetails?.available ? 'Deactivating...' : 'Activating...'}
+                    inProgress={isActivatingTsp || isDeactivatingTsp}
+                    onClick={() => {
+                        if (tspActivationDetails?.available) {
+                            setConfirmDeactivateTsp(true);
+                        } else {
+                            setSelectedTspProfileUuid(undefined);
+                            dispatch(tspProfileActions.listTspProfiles());
+                            setActivateTspDialog(true);
+                        }
+                    }}
+                />,
+            ],
+            detailColumns: [
+                <></>,
+                <></>,
+                <></>,
+                tspActivationDetails?.available ? (
+                    <>
+                        <b>Protocol settings</b>
+                        <br />
+                        <br />
+                        <CustomTable hasHeader={false} headers={detailHeaders} data={tspActivationData} />
+                    </>
+                ) : (
+                    <>Timestamping Protocol is not activated on this profile.</>
+                ),
+            ],
+        }),
         [tspActivationDetails?.available, isActivatingTsp, isDeactivatingTsp, detailHeaders, tspActivationData, dispatch, can],
     );
+
+    const ilmNativeRow: TableDataRow = useMemo(
+        () => ({
+            id: 'ilmNative',
+            columns: [
+                protocolLabels[SigningProtocol.IlmNative],
+                <StatusBadge key="status" enabled={ilmNativeEnabled} />,
+                <ProgressButton
+                    key="actions"
+                    type="button"
+                    requires={can(ResourceAction.Update)}
+                    title={ilmNativeEnabled ? 'Deactivate' : 'Activate'}
+                    inProgressTitle={ilmNativeEnabled ? 'Deactivating...' : 'Activating...'}
+                    inProgress={isActivatingIlmNative || isDeactivatingIlmNative}
+                    disabled={isFetchingDetail || ilmNativeRefused}
+                    disabledTooltip={ilmNativeRefused ? 'ILM Native needs a key ILM manages. This profile delegates signing.' : undefined}
+                    onClick={() => {
+                        if (ilmNativeEnabled) setIlmNativeDeactivationTarget(id);
+                        else if (id) dispatch(actions.activateIlmNative({ uuid: id }));
+                    }}
+                />,
+            ],
+        }),
+        [ilmNativeEnabled, ilmNativeRefused, isFetchingDetail, isActivatingIlmNative, isDeactivatingIlmNative, id, dispatch, can],
+    );
+
+    const availableProtocolsData: TableDataRow[] = useMemo(() => {
+        const rows: TableDataRow[] = [];
+        if (supportedProtocols.includes(SigningProtocol.Tsp)) rows.push(tspRow);
+        if (supportedProtocols.includes(SigningProtocol.IlmNative)) rows.push(ilmNativeRow);
+        return rows;
+    }, [supportedProtocols, tspRow, ilmNativeRow]);
 
     // ─────────────────────────────────────────────────────────────────────────
     // Render
@@ -642,16 +698,12 @@ export default function SigningProfileDetail() {
                             // otherwise change the URL slug and break links captured before load.
                             tabKey: 'workflow',
                             title: workflowTabTitle,
-                            content: (
+                            content: timestampingWorkflow ? (
                                 <>
                                     <Widget title="Timestamping Workflow Configuration" titleSize="large">
-                                        {workflowData.length > 0 ? (
-                                            <CustomTable headers={detailHeaders} data={workflowData} />
-                                        ) : (
-                                            <p className="text-content-subtle text-sm">No workflow configuration available.</p>
-                                        )}
+                                        <CustomTable headers={detailHeaders} data={workflowData} />
                                     </Widget>
-                                    {timestampingWorkflow?.signatureFormattingConnector &&
+                                    {timestampingWorkflow.signatureFormattingConnector &&
                                         timestampingWorkflow.signatureFormattingConnectorAttributes &&
                                         timestampingWorkflow.signatureFormattingConnectorAttributes.length > 0 && (
                                             <Widget title="Timestamp Formatting Connector Attributes" titleSize="large">
@@ -659,6 +711,12 @@ export default function SigningProfileDetail() {
                                             </Widget>
                                         )}
                                 </>
+                            ) : loadedProfile && isContentSigningWorkflow(loadedProfile.workflow) ? (
+                                <ContentSigningWorkflowDetail workflow={loadedProfile.workflow} signingProfileUuid={loadedProfile.uuid} />
+                            ) : (
+                                <Widget title="Signing Workflow Configuration" titleSize="large">
+                                    <p className="text-content-subtle text-sm">No workflow configuration available.</p>
+                                </Widget>
                             ),
                         },
                         {
@@ -696,10 +754,23 @@ export default function SigningProfileDetail() {
                             content: (
                                 <Widget
                                     title="Available Protocols"
-                                    busy={isFetchingTspActivationDetails || isActivatingTsp || isDeactivatingTsp}
+                                    busy={
+                                        isFetchingSupportedProtocols ||
+                                        isFetchingTspActivationDetails ||
+                                        isActivatingTsp ||
+                                        isDeactivatingTsp ||
+                                        isActivatingIlmNative ||
+                                        isDeactivatingIlmNative
+                                    }
                                     titleSize="large"
                                     refreshAction={getFreshData}
                                 >
+                                    {failedSupportedProtocolsFetch && (
+                                        <p className="mb-3 text-sm text-danger">
+                                            Failed to list the supported protocols
+                                            {failedSupportedProtocolsFetch.reason ? `: ${failedSupportedProtocolsFetch.reason}` : ''}
+                                        </p>
+                                    )}
                                     <CustomTable hasDetails={true} headers={availableProtocolsHeaders} data={availableProtocolsData} />
                                 </Widget>
                             ),
@@ -766,6 +837,25 @@ export default function SigningProfileDetail() {
                         body: 'Deactivate',
                     },
                     { color: 'secondary', variant: 'outline', onClick: () => setConfirmDeactivateTsp(false), body: 'Cancel' },
+                ]}
+            />
+
+            <Dialog
+                isOpen={ilmNativeDeactivationTarget !== undefined}
+                caption="Deactivate ILM Native Protocol"
+                body="Are you sure you want to deactivate the ILM Native Protocol on this Signing Profile?"
+                toggle={() => setIlmNativeDeactivationTarget(undefined)}
+                icon="warning"
+                buttons={[
+                    {
+                        color: 'danger',
+                        onClick: () => {
+                            if (ilmNativeDeactivationTarget) dispatch(actions.deactivateIlmNative({ uuid: ilmNativeDeactivationTarget }));
+                            setIlmNativeDeactivationTarget(undefined);
+                        },
+                        body: 'Deactivate',
+                    },
+                    { color: 'secondary', variant: 'outline', onClick: () => setIlmNativeDeactivationTarget(undefined), body: 'Cancel' },
                 ]}
             />
 

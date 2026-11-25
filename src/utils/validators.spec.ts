@@ -33,6 +33,7 @@ import {
 const REQUIRED_FIELD_MSG = 'Required Field';
 const INVALID_IP_MSG = 'Value must be a valid ip address';
 const INVALID_OID_MSG = 'Must be a dot-separated numeric OID (e.g. 1.2.840.113549.1.1.11)';
+const INVALID_ROOT_ARCS_MSG = 'The second arc must be 0 to 39 when the first arc is 0 or 1';
 const UNSUPPORTED_REGEX_TOKEN_MSG = 'Unsupported regex token';
 
 describe('validators', () => {
@@ -600,6 +601,16 @@ describe('validators', () => {
 
         test('should reject OIDs with leading zero in a non-first segment', () => {
             expect(validateOid()('1.01.2')).toBe(INVALID_OID_MSG);
+        });
+
+        test('should reject a second arc above 39 under the first arc 0 or 1, as Core does', () => {
+            expect(validateOid()('1.50.1')).toBe(INVALID_ROOT_ARCS_MSG);
+            expect(validateOid()('0.40')).toBe(INVALID_ROOT_ARCS_MSG);
+        });
+
+        test('should accept a second arc up to 39 under the first arc 1, and any under the first arc 2', () => {
+            expect(validateOid()('1.39.1')).toBeUndefined();
+            expect(validateOid()('2.999.1')).toBeUndefined();
         });
     });
 
