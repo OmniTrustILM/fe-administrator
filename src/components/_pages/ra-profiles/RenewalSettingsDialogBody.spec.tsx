@@ -92,7 +92,7 @@ test.describe('RenewalSettingsDialogBody', () => {
     test('disables the authority switch and explains why when the authority does not support renewal information', async ({ mount }) => {
         const component = await mountDialog(mount, { raProfile: buildRaProfile({ authorityRenewalInfoSupported: false }) });
 
-        await expect(component.locator('#useAuthorityRenewalInfo')).toBeDisabled();
+        await expect(component.locator('#renewal-dialog-useAuthorityRenewalInfo')).toBeDisabled();
         await expect(component.getByTestId('authority-renewal-info-unsupported')).toBeVisible();
     });
 
@@ -103,10 +103,10 @@ test.describe('RenewalSettingsDialogBody', () => {
             onUpdateRenewalSettings: (payload) => payloads.push(payload),
         });
 
-        await expect(component.locator('#useAuthorityRenewalInfo')).toBeEnabled();
+        await expect(component.locator('#renewal-dialog-useAuthorityRenewalInfo')).toBeEnabled();
         await component.getByText('Use Renewal Window From Certificate Authority').click();
         await expect(component.getByTestId('authority-renewal-info-unsupported')).toBeVisible();
-        await expect(component.locator('#useAuthorityRenewalInfo')).toBeDisabled();
+        await expect(component.locator('#renewal-dialog-useAuthorityRenewalInfo')).toBeDisabled();
         await component.getByRole('button', { name: 'Save' }).click();
 
         await expect.poll(() => payloads.length).toBe(1);
@@ -116,7 +116,7 @@ test.describe('RenewalSettingsDialogBody', () => {
     test('enables the authority switch without a hint when the authority supports renewal information', async ({ mount }) => {
         const component = await mountDialog(mount);
 
-        await expect(component.locator('#useAuthorityRenewalInfo')).toBeEnabled();
+        await expect(component.locator('#renewal-dialog-useAuthorityRenewalInfo')).toBeEnabled();
         await expect(component.getByTestId('authority-renewal-info-unsupported')).not.toBeVisible();
     });
 
@@ -155,7 +155,7 @@ test.describe('RenewalSettingsDialogBody', () => {
     test('shows the stored automatic renewal values', async ({ mount }) => {
         const component = await mountDialog(mount);
 
-        await expect(component.locator('#autoRenewalEnabled')).toBeChecked();
+        await expect(component.locator('#renewal-dialog-autoRenewalEnabled')).toBeChecked();
         await expect(component.getByTestId('text-input-autoRenewalMaxAttempts')).toHaveValue('9');
     });
 

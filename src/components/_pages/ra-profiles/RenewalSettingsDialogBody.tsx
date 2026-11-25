@@ -115,7 +115,7 @@ export default function RenewalSettingsDialogBody({ raProfile, onClose }: Props)
                         control={control}
                         render={({ field }) => (
                             <Switch
-                                id="windowEnabled"
+                                id="renewal-dialog-windowEnabled"
                                 secondaryLabel="Enable Renewal Window"
                                 checked={field.value}
                                 onChange={field.onChange}
@@ -181,7 +181,7 @@ export default function RenewalSettingsDialogBody({ raProfile, onClose }: Props)
                         control={control}
                         render={({ field }) => (
                             <Switch
-                                id="useAuthorityRenewalInfo"
+                                id="renewal-dialog-useAuthorityRenewalInfo"
                                 secondaryLabel="Use Renewal Window From Certificate Authority"
                                 checked={field.value}
                                 onChange={field.onChange}
@@ -200,7 +200,7 @@ export default function RenewalSettingsDialogBody({ raProfile, onClose }: Props)
                         control={control}
                         render={({ field }) => (
                             <Switch
-                                id="autoRenewalEnabled"
+                                id="renewal-dialog-autoRenewalEnabled"
                                 secondaryLabel="Enable Automatic Renewal"
                                 checked={field.value}
                                 onChange={field.onChange}

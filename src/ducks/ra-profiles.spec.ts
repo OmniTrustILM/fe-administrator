@@ -804,6 +804,18 @@ describe('raProfiles selectors', () => {
         expect(next.isUpdatingRenewalSettings).toBe(false);
     });
 
+    test('merges only the renewal settings of the response into the loaded RA profile', () => {
+        const loaded = { uuid: 'ra-1', name: 'Loaded', enabled: true, attributes: [{ uuid: 'kept' }] } as any;
+        const renewalSettings = { windowEnabled: true } as any;
+        const next = reducer(
+            { ...initialState, raProfile: loaded },
+            actions.updateRaProfileRenewalSettingsSuccess({
+                raProfile: { uuid: 'ra-1', name: 'Other', enabled: false, attributes: [], renewalSettings } as any,
+            }),
+        );
+        expect(next.raProfile).toEqual({ ...loaded, renewalSettings });
+    });
+
     test('ignores a renewal settings response for another RA profile than the one loaded', () => {
         const loaded = { uuid: 'ra-2', attributes: [] } as any;
         const next = reducer(

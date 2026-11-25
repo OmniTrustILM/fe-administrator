@@ -66,4 +66,17 @@ test.describe('RaProfileDetail actions by permission', () => {
         await expect(widget.getByText('Maximum Renewal Attempts')).toBeVisible();
         await expect(widget.getByText('7', { exact: true })).toBeVisible();
     });
+
+    test('clicking a renewal dialog switch label toggles it and leaves the read-only widget switch alone', async ({ mount, page }) => {
+        await mount(<RaProfileDetailWithStore />);
+        await page.getByRole('tab', { name: 'Validation' }).click();
+        await page.getByTestId('renewal-settings-widget').getByTestId('edit-button').click();
+
+        const dialogSwitch = page.locator('#renewal-dialog-autoRenewalEnabled');
+        await expect(dialogSwitch).toBeChecked();
+        await page.getByText('Enable Automatic Renewal').click();
+
+        await expect(dialogSwitch).not.toBeChecked();
+        await expect(page.getByTestId('renewal-settings-widget').locator('#autoRenewalEnabled')).toBeChecked();
+    });
 });

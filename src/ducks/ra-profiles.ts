@@ -284,11 +284,7 @@ export const slice = createSlice({
         updateRaProfileRenewalSettingsSuccess: (state, action: PayloadAction<{ raProfile: RaProfileResponseModel }>) => {
             state.isUpdatingRenewalSettings = false;
             if (state.raProfile?.uuid !== action.payload.raProfile.uuid) return;
-            state.raProfile = {
-                ...action.payload.raProfile,
-                attributes: state.raProfile?.attributes ?? action.payload.raProfile.attributes,
-                customAttributes: state.raProfile?.customAttributes ?? action.payload.raProfile.customAttributes,
-            };
+            state.raProfile.renewalSettings = action.payload.raProfile.renewalSettings;
         },
 
         updateRaProfileRenewalSettingsFailure: (state, action: PayloadAction<{ error: string | undefined }>) => {

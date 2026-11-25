@@ -361,9 +361,23 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
     const isEqual = useMemo(() => deepEqual<unknown>(defaultValues, allFormValues), [defaultValues, allFormValues]);
 
     const isSaving = isSubmitting || isCreating || isUpdating;
+    const [initializedProfileId, setInitializedProfileId] = useState<string>();
 
     const lastResetProfileIdRef = useRef<string | undefined>(undefined);
     const lastResetEditModeRef = useRef<boolean | undefined>(undefined);
+
+    const lastRenewalInitIdRef = useRef<string | undefined>(undefined);
+
+    // The renewal information fields initialise from the loaded profile on their own, so an edit never submits their defaults
+    // while the RA profile options the full reset waits for are empty or still loading.
+    useEffect(() => {
+        if (editMode && id && acmeProfile?.uuid === id && !isFetchingDetail && lastRenewalInitIdRef.current !== id) {
+            const { renewalInfoEnabled, renewalInfoRetryAfter } = renewalInfoValues(acmeProfile);
+            setValue('renewalInfoEnabled', renewalInfoEnabled);
+            setValue('renewalInfoRetryAfter', renewalInfoRetryAfter);
+            lastRenewalInitIdRef.current = id;
+        }
+    }, [editMode, id, acmeProfile, isFetchingDetail, setValue]);
 
     // Reset form values when acmeProfile is loaded in edit mode
     useEffect(() => {
@@ -416,6 +430,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                 filledValuesRef.current = newDefaultValues;
                 lastResetProfileIdRef.current = id;
                 lastResetEditModeRef.current = editMode;
+                setInitializedProfileId(id);
             }
         } else if (!editMode) {
             // Reset form when switching to create mode (only if we were in edit mode before)
@@ -798,7 +813,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                                 title={editMode ? 'Update' : 'Create'}
                                 inProgressTitle={editMode ? 'Updating...' : 'Creating...'}
                                 inProgress={isSaving}
-                                disabled={isSaving || !isValid || isEqual}
+                                disabled={isSaving || !isValid || isEqual || (editMode && initializedProfileId !== id)}
                                 type="submit"
                             />
                         </Container>
