@@ -1,4 +1,5 @@
 import { expect, test } from '../../../../../playwright/ct-test';
+import { Resource } from 'types/openapi';
 import AcmeProfileFormHarness from './AcmeProfileFormHarness';
 
 test.describe('AcmeProfileForm renewal information', () => {
@@ -124,4 +125,18 @@ test.describe('AcmeProfileForm attribute descriptors', () => {
             customAttributes: [{ name: 'customField', content: [{ data: 'stored custom' }] }],
         });
     });
+
+    for (const failedCustomAttributes of [Resource.AcmeProfiles, Resource.Certificates] as const) {
+        test(`cannot be saved when the ${failedCustomAttributes} custom attribute descriptors fail to load`, async ({ mount, page }) => {
+            await mount(<AcmeProfileFormHarness raProfilesDelayMs={0} failedCustomAttributes={failedCustomAttributes} profile={profile} />);
+
+            await expect(page.locator('#name')).toHaveValue('ACME profile');
+            await page.locator('#description').fill('Edited');
+            await expect(page.getByText('Issue Field')).toBeVisible();
+            const update = page.getByRole('button', { name: 'Update' });
+            await expect(update).toBeDisabled();
+
+            await expect(page.getByTestId('update-request')).toHaveText('null');
+        });
+    }
 });

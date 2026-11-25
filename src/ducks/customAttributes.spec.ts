@@ -345,6 +345,30 @@ describe('customAttributes slice', () => {
         expect(next.resourceCustomAttributesContents).toHaveLength(1);
         expect(next.resourceCustomAttributesContents[0].customAttributes[0].uuid).toBe('new');
     });
+
+    test('receiveMultipleResourceCustomAttributes records a failed resource as empty until a later lookup succeeds', () => {
+        const cached = reducer(
+            initialState,
+            actions.receiveMultipleResourceCustomAttributes([
+                { resource: Resource.Certificates, customAttributes: [{ uuid: 'c1', name: 'c1', version: 2 }] as any },
+            ]),
+        );
+        const failed = reducer(
+            cached,
+            actions.receiveMultipleResourceCustomAttributes([
+                { resource: Resource.Certificates, customAttributes: [], failed: true },
+                { resource: Resource.Secrets, customAttributes: [] },
+            ]),
+        );
+        expect(failed.failedMultipleResourceCustomAttributes).toEqual([Resource.Certificates]);
+        expect(failed.resourceCustomAttributesContents[0].customAttributes).toEqual([]);
+
+        const recovered = reducer(
+            failed,
+            actions.receiveMultipleResourceCustomAttributes([{ resource: Resource.Certificates, customAttributes: [] }]),
+        );
+        expect(recovered.failedMultipleResourceCustomAttributes).toEqual([]);
+    });
 });
 
 describe('customAttributes selectors', () => {
@@ -434,5 +458,10 @@ describe('customAttributes selectors', () => {
 
         const result = selectors.multipleResourceCustomAttributes([Resource.Certificates])(state);
         expect(result[Resource.Certificates]).toHaveLength(1);
+    });
+
+    test('failedMultipleResourceCustomAttributes selector returns the resources whose lookup failed', () => {
+        const state = { customAttributes: { ...initialState, failedMultipleResourceCustomAttributes: [Resource.Secrets] } } as any;
+        expect(selectors.failedMultipleResourceCustomAttributes(state)).toEqual([Resource.Secrets]);
     });
 });

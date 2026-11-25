@@ -110,6 +110,7 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
     const isFetchingIssuanceAttributes = useSelector(raProfileSelectors.isFetchingIssuanceAttributes);
     const isFetchingRevocationAttributes = useSelector(raProfileSelectors.isFetchingRevocationAttributes);
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
+    const failedCustomAttributeResources = useSelector(customAttributesSelectors.failedMultipleResourceCustomAttributes);
     const secrets = useSelector(secretsSelectors.secretOptions);
     const isFetchingSecrets = useSelector(secretsSelectors.isFetchingSecretOptions);
     const secretsListError = useSelector(secretsSelectors.secretOptionsError);
@@ -382,7 +383,8 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
     const isEqual = useMemo(() => deepEqual<unknown>(defaultValues, allFormValues), [defaultValues, allFormValues]);
 
     const isSaving = isSubmitting || isCreating || isUpdating;
-    // An edit sends every attribute list in full and the API clears an omitted one, so it waits for all their descriptors.
+    // An edit sends every attribute list in full and the API clears an omitted or empty one, so it waits for all their descriptors;
+    // a failed lookup is stored as empty and must not pass for loaded.
     const raAttributeDescriptorsLoaded =
         !raProfile?.authorityInstanceUuid ||
         (!isFetchingIssuanceAttributes &&
@@ -391,8 +393,9 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
             raProfileRevocationAttrDescs !== undefined);
     const attributeDescriptorsLoaded =
         raAttributeDescriptorsLoaded &&
-        multipleResourceCustomAttributes[Resource.AcmeProfiles] !== undefined &&
-        multipleResourceCustomAttributes[Resource.Certificates] !== undefined;
+        [Resource.AcmeProfiles, Resource.Certificates].every(
+            (resource) => multipleResourceCustomAttributes[resource] !== undefined && !failedCustomAttributeResources.includes(resource),
+        );
     const [initializedProfileId, setInitializedProfileId] = useState<string>();
 
     const lastResetProfileIdRef = useRef<string | undefined>(undefined);
