@@ -135,7 +135,6 @@ test.describe('AcmeProfileForm attribute descriptors', () => {
             await expect(page.getByText('Issue Field')).toBeVisible();
             const update = page.getByRole('button', { name: 'Update' });
             await expect(update).toBeDisabled();
-            await update.click({ force: true });
 
             await expect(page.getByTestId('update-request')).toHaveText('null');
         });
