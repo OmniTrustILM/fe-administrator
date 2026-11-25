@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
+import { SigningWorkflowType } from 'types/openapi';
 import reducer, { actions, initialState, selectors } from './signing-profiles';
 
 describe('signingProfiles slice', () => {
@@ -495,12 +496,54 @@ describe('signingProfiles slice', () => {
         expect(next.signatureFormattingConnectors).toEqual(connectors);
     });
 
-    test('listSignatureFormattingConnectorsFailure clears flag', () => {
+    test('listSignatureFormattingConnectorsFailure clears the flag and records the reason', () => {
         const next = reducer(
             { ...initialState, isFetchingSignatureFormattingConnectors: true },
-            actions.listSignatureFormattingConnectorsFailure({ error: 'err' }),
+            actions.listSignatureFormattingConnectorsFailure({ reason: 'err' }),
         );
         expect(next.isFetchingSignatureFormattingConnectors).toBe(false);
+        expect(next.failedSignatureFormattingConnectorsFetch).toEqual({ reason: 'err' });
+    });
+
+    test('listSignatureFormattingConnectors clears the previous failure', () => {
+        const next = reducer(
+            { ...initialState, failedSignatureFormattingConnectorsFetch: { reason: 'err' } },
+            actions.listSignatureFormattingConnectors({ workflowType: SigningWorkflowType.ContentSigning }),
+        );
+        expect(next.failedSignatureFormattingConnectorsFetch).toBeUndefined();
+    });
+
+    test('listSignatureFormattingConnectorDeclarations sets the flag and clears the previous answer', () => {
+        const next = reducer(
+            {
+                ...initialState,
+                signatureFormattingConnectorDeclarations: { connectorUuid: 'cn-old', declarations: [{ code: 'old' } as any] },
+                failedSignatureFormattingConnectorDeclarationsFetch: { connectorUuid: 'cn-old', reason: 'err' },
+            },
+            actions.listSignatureFormattingConnectorDeclarations({ connectorUuid: 'cn-1' }),
+        );
+        expect(next.isFetchingSignatureFormattingConnectorDeclarations).toBe(true);
+        expect(next.signatureFormattingConnectorDeclarations).toBeUndefined();
+        expect(next.failedSignatureFormattingConnectorDeclarationsFetch).toBeUndefined();
+    });
+
+    test('listSignatureFormattingConnectorDeclarationsSuccess sets declarations and their connector', () => {
+        const declarations = [{ code: 'pades' }] as any[];
+        const next = reducer(
+            { ...initialState, isFetchingSignatureFormattingConnectorDeclarations: true },
+            actions.listSignatureFormattingConnectorDeclarationsSuccess({ connectorUuid: 'cn-1', declarations }),
+        );
+        expect(next.isFetchingSignatureFormattingConnectorDeclarations).toBe(false);
+        expect(next.signatureFormattingConnectorDeclarations).toEqual({ connectorUuid: 'cn-1', declarations });
+    });
+
+    test('listSignatureFormattingConnectorDeclarationsFailure records the failed connector and its reason', () => {
+        const next = reducer(
+            { ...initialState, isFetchingSignatureFormattingConnectorDeclarations: true },
+            actions.listSignatureFormattingConnectorDeclarationsFailure({ connectorUuid: 'cn-1', reason: 'err' }),
+        );
+        expect(next.isFetchingSignatureFormattingConnectorDeclarations).toBe(false);
+        expect(next.failedSignatureFormattingConnectorDeclarationsFetch).toEqual({ connectorUuid: 'cn-1', reason: 'err' });
     });
 
     test('listSigningRecordsForSigningProfile sets isFetchingSigningRecords', () => {
