@@ -36,11 +36,17 @@ const validateSpreadHours = composeValidators(
     validateRange(MIN_SPREAD_HOURS, MAX_SPREAD_HOURS, `Value must be between ${MIN_SPREAD_HOURS} and ${MAX_SPREAD_HOURS}`),
 );
 
+const MAX_EXPLANATION_URL_LENGTH = 2048;
+const EXPLANATION_URL_PATTERN = /^https?:\/\/\S+$/;
+
 const validateExplanationUrl = (value: string) => {
-    if (!value.trim()) return undefined;
+    const url = value.trim();
+    if (!url) return undefined;
+    if (url.length > MAX_EXPLANATION_URL_LENGTH) return `Value must not exceed ${MAX_EXPLANATION_URL_LENGTH} characters`;
+    if (!EXPLANATION_URL_PATTERN.test(url)) return 'Value must be an absolute http or https URL';
     try {
-        const { protocol } = new URL(value.trim());
-        return protocol === 'http:' || protocol === 'https:' ? undefined : 'Value must be an absolute http or https URL';
+        new URL(url);
+        return undefined;
     } catch {
         return 'Value must be an absolute http or https URL';
     }

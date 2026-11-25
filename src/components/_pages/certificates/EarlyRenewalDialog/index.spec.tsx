@@ -85,7 +85,7 @@ test.describe('EarlyRenewalDialog', () => {
         });
     }
 
-    for (const url of ['ftp://example.com/x', 'example.com/x', 'javascript:alert(1)']) {
+    for (const url of ['ftp://example.com/x', 'example.com/x', 'javascript:alert(1)', 'https://example.com/a b', 'HTTPS://example.com/x']) {
         test(`refuses the explanation URL "${url}"`, async ({ mount }) => {
             const dispatched: unknown[] = [];
             const component = await mount(
@@ -99,4 +99,15 @@ test.describe('EarlyRenewalDialog', () => {
             expect(dispatched).toHaveLength(0);
         });
     }
+
+    test('refuses an explanation URL longer than 2048 characters', async ({ mount }) => {
+        const dispatched: unknown[] = [];
+        const component = await mount(<EarlyRenewalDialogTestWrapper target={selectionTarget} onDispatched={(a) => dispatched.push(a)} />);
+
+        await fillField(component.getByTestId('text-input-explanationUrl'), `https://example.com/${'a'.repeat(2048)}`);
+        await component.getByRole('button', { name: 'Request early renewal' }).click();
+
+        await expect(component.getByText('Value must not exceed 2048 characters')).toBeVisible();
+        expect(dispatched).toHaveLength(0);
+    });
 });
