@@ -49,7 +49,7 @@ export default function SigningProfileForm() {
     const customAttributeDescriptors = useSelector(signingProfileCustomAttributes);
     const contentSigningAttributesListedFor = useSelector(signingProfileSelectors.contentSigningAttributesListedFor);
 
-    const savedProfile = editMode ? loadedProfile : undefined;
+    const savedProfile = editMode && loadedProfile?.uuid === id ? loadedProfile : undefined;
     const savedWorkflow = savedProfile?.workflow;
     const savedSigningScheme = savedProfile?.signingScheme;
     const savedContentSigningWorkflow = savedWorkflow && isContentSigningWorkflow(savedWorkflow) ? savedWorkflow : undefined;
@@ -151,7 +151,7 @@ export default function SigningProfileForm() {
                         label: `${getEnumLabel(resourceEnum, Resource.SigningProfiles)} Inventory`,
                         href: `/${Resource.SigningProfiles.toLowerCase()}`,
                     },
-                    { label: editMode ? loadedProfile?.name || formTitle : formTitle, href: '' },
+                    { label: savedProfile?.name || formTitle, href: '' },
                 ]}
             />
             <FormProvider {...methods}>

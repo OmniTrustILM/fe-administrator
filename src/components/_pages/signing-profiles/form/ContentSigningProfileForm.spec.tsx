@@ -465,4 +465,27 @@ test.describe('SigningProfileForm - content signing workflow', () => {
                 requiredExtendedKeyUsageOids: [DOCUMENT_SIGNING_EKU],
             });
     });
+
+    test('filters the certificates by the saved raw-signing certificate purpose', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={{ ...core, editedProfile: rawSigningProfile }} />);
+
+        await expect
+            .poll(async () => (await requests(page, 'listSigningCertificates')).at(-1))
+            .toEqual({
+                workflowType: SigningWorkflowType.RawSigning,
+                requireNonRepudiation: true,
+                requiredExtendedKeyUsageOids: [DOCUMENT_SIGNING_EKU],
+            });
+    });
+
+    test('ignores a cached profile other than the one being edited', async ({ mount, page }) => {
+        await mount(
+            <ContentSigningProfileFormTestWrapper
+                core={{ ...core, pendingProfileUuid: savedProfile.uuid, cachedProfile: { ...rawSigningProfile, uuid: 'sp-other' } }}
+            />,
+        );
+
+        await expect(page.getByText('Edit Signing Profile').first()).toBeVisible();
+        await expect(page.getByText('RawSigning')).toHaveCount(0);
+    });
 });

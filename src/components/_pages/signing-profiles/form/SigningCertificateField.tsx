@@ -21,16 +21,16 @@ const certificateOption = (certificate: CertificateDto): CertificateOption => ({
         : certificate.uuid,
 });
 
-/** The certificate filters of the workflow: the qualified-timestamp floor for timestamping, the certificate-purpose knobs for content signing. */
+/** The certificate filters of the workflow: the qualified-timestamp floor for timestamping, the certificate purpose for the signing workflows. */
 function signingCertificatesQuery(
     workflowType: SigningWorkflowType,
     qualifiedTimestamp: boolean,
     requireNonRepudiation: boolean,
     requiredExtendedKeyUsageOids: string[],
 ): SigningCertificatesQuery {
-    return workflowType === SigningWorkflowType.ContentSigning
-        ? { workflowType, requireNonRepudiation, requiredExtendedKeyUsageOids }
-        : { workflowType, qualifiedTimestamp: qualifiedTimestamp || undefined };
+    return workflowType === SigningWorkflowType.Timestamping
+        ? { workflowType, qualifiedTimestamp: qualifiedTimestamp || undefined }
+        : { workflowType, requireNonRepudiation, requiredExtendedKeyUsageOids };
 }
 
 // A string key keeps a re-render with an equal OID list from re-running the query.
@@ -56,8 +56,8 @@ function useSigningCertificateOptions(): CertificateOption[] {
 }
 
 /**
- * The selected certificate while the certificate-purpose knobs filter it out of the list, named by the last list that offered it.
- * Content signing keeps such a pick, because the knobs narrow the list after the operator chose.
+ * The selected certificate while the certificate purpose filters it out of the list, named by the last list that offered it.
+ * A signing workflow keeps such a pick, because the purpose narrows the list after the operator chose.
  */
 function useWithheldCertificate(options: CertificateOption[], certificateUuid: string): CertificateOption | undefined {
     const { control } = useFormContext<SigningProfileFormValues>();
@@ -69,7 +69,7 @@ function useWithheldCertificate(options: CertificateOption[], certificateUuid: s
         if (offered) setLastOffered(offered);
     }, [options, certificateUuid]);
 
-    if (workflowType !== SigningWorkflowType.ContentSigning || !certificateUuid) return undefined;
+    if (workflowType === SigningWorkflowType.Timestamping || !certificateUuid) return undefined;
     if (options.some((option) => option.value === certificateUuid)) return undefined;
     return { value: certificateUuid, label: lastOffered?.value === certificateUuid ? lastOffered.label : certificateUuid };
 }

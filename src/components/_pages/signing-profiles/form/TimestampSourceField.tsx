@@ -53,11 +53,7 @@ export default function TimestampSourceField({ savedSource, signingProfileUuid }
         .filter((candidate) => candidate.uuid !== signingProfileUuid)
         .map((candidate) => ({ value: candidate.uuid, label: optionLabel(candidate) }));
     const savedSourceMissing =
-        !isFetching &&
-        !failure &&
-        savedSource !== undefined &&
-        field.value === savedSource.uuid &&
-        !options.some((o) => o.value === field.value);
+        !isFetching && !failure && field.value === savedSource?.uuid && !options.some((o) => o.value === field.value);
     if (savedSourceMissing) options.push({ value: savedSource.uuid, label: savedSource.name });
     const savedSourceUnreadable = savedSourceMissing && unreadable.some((source) => source.uuid === savedSource.uuid);
     const savedSourceIneligible = savedSourceMissing && ineligible.some((source) => source.uuid === savedSource.uuid);
@@ -67,7 +63,8 @@ export default function TimestampSourceField({ savedSource, signingProfileUuid }
         error = `${savedSource.name} could not be read to check it still meets the requirements for a timestamp source.`;
     else if (savedSourceIneligible) error = ineligibleMessage(savedSource);
     else if (savedSourceMissing) error = `${savedSource.name} is not among the timestamping profiles this account can list.`;
-    else if (failure) error = `Failed to list the timestamp sources${failure.reason ? `: ${failure.reason}` : ''}`;
+    else if (failure)
+        error = failure.reason ? `Failed to list the timestamp sources: ${failure.reason}` : 'Failed to list the timestamp sources';
 
     return (
         <div className="flex flex-col gap-1">

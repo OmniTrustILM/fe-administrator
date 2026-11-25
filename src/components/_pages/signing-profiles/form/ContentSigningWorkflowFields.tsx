@@ -153,7 +153,7 @@ export default function ContentSigningWorkflowFields({ signingProfileUuid, saved
 
     // biome-ignore lint/correctness/useExhaustiveDependencies: the level is re-validated whenever the picker's verdict changes.
     useEffect(() => {
-        trigger('signatureLevel');
+        void trigger('signatureLevel');
     }, [trigger, selectionError]);
 
     const draft: ContentSigningFormattingDraft = {

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate, useParams } from 'react-router';
 
@@ -648,6 +648,33 @@ export default function SigningProfileDetail() {
 
     const pageTitle = signingProfile?.name || 'Signing Profile Details';
 
+    const workflowTabContent = (): ReactNode => {
+        if (timestampingWorkflow) {
+            return (
+                <>
+                    <Widget title="Timestamping Workflow Configuration" titleSize="large">
+                        <CustomTable headers={detailHeaders} data={workflowData} />
+                    </Widget>
+                    {timestampingWorkflow.signatureFormattingConnector &&
+                        timestampingWorkflow.signatureFormattingConnectorAttributes &&
+                        timestampingWorkflow.signatureFormattingConnectorAttributes.length > 0 && (
+                            <Widget title="Timestamp Formatting Connector Attributes" titleSize="large">
+                                <AttributeViewer attributes={timestampingWorkflow.signatureFormattingConnectorAttributes} />
+                            </Widget>
+                        )}
+                </>
+            );
+        }
+        if (loadedProfile && isContentSigningWorkflow(loadedProfile.workflow)) {
+            return <ContentSigningWorkflowDetail workflow={loadedProfile.workflow} signingProfileUuid={loadedProfile.uuid} />;
+        }
+        return (
+            <Widget title="Signing Workflow Configuration" titleSize="large">
+                <p className="text-content-subtle text-sm">No workflow configuration available.</p>
+            </Widget>
+        );
+    };
+
     return (
         <div>
             <Breadcrumb
@@ -698,26 +725,7 @@ export default function SigningProfileDetail() {
                             // otherwise change the URL slug and break links captured before load.
                             tabKey: 'workflow',
                             title: workflowTabTitle,
-                            content: timestampingWorkflow ? (
-                                <>
-                                    <Widget title="Timestamping Workflow Configuration" titleSize="large">
-                                        <CustomTable headers={detailHeaders} data={workflowData} />
-                                    </Widget>
-                                    {timestampingWorkflow.signatureFormattingConnector &&
-                                        timestampingWorkflow.signatureFormattingConnectorAttributes &&
-                                        timestampingWorkflow.signatureFormattingConnectorAttributes.length > 0 && (
-                                            <Widget title="Timestamp Formatting Connector Attributes" titleSize="large">
-                                                <AttributeViewer attributes={timestampingWorkflow.signatureFormattingConnectorAttributes} />
-                                            </Widget>
-                                        )}
-                                </>
-                            ) : loadedProfile && isContentSigningWorkflow(loadedProfile.workflow) ? (
-                                <ContentSigningWorkflowDetail workflow={loadedProfile.workflow} signingProfileUuid={loadedProfile.uuid} />
-                            ) : (
-                                <Widget title="Signing Workflow Configuration" titleSize="large">
-                                    <p className="text-content-subtle text-sm">No workflow configuration available.</p>
-                                </Widget>
-                            ),
+                            content: workflowTabContent(),
                         },
                         {
                             tabKey: 'signing-scheme',

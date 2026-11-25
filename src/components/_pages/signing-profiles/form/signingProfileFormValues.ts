@@ -17,7 +17,7 @@ import {
     type TimestampingWorkflowRequestDto,
 } from 'types/openapi';
 import { mapProfileAttribute, transformAttributes } from 'utils/attributes/attributes';
-import { isContentSigningWorkflow, isStaticKeyManagedSigning, isTimestampingWorkflow } from 'utils/type-guards';
+import { isContentSigningWorkflow, isRawSigningWorkflow, isStaticKeyManagedSigning, isTimestampingWorkflow } from 'utils/type-guards';
 import { type ContentSigningFormValues, contentSigningFormValuesOf, emptyContentSigningFormValues } from './ContentSigningWorkflowFields';
 
 /** Ids of the attribute editors, which prefix the form values `collectFormAttributes` reads. */
@@ -137,6 +137,14 @@ function recordPolicyFormValuesOf(policy: SigningRecordPolicyDto | undefined) {
     } satisfies Partial<SigningProfileFormValues>;
 }
 
+/** The certificate purpose of a saved raw workflow, which the certificate picker filters by while the workflow is kept as saved. */
+function rawSigningPurposeValuesOf(workflow: RawSigningWorkflowDto) {
+    return {
+        requireNonRepudiation: workflow.requireNonRepudiation ?? false,
+        requiredExtendedKeyUsageOids: workflow.requiredExtendedKeyUsageOids ?? [],
+    } satisfies Partial<SigningProfileFormValues>;
+}
+
 export function formValuesOf(profile: SigningProfileDto, customAttributeValues: Record<string, unknown>): SigningProfileFormValues {
     const { workflow, signingScheme } = profile;
     const staticKey = isStaticKeyManagedSigning(signingScheme) ? signingScheme : undefined;
@@ -147,6 +155,7 @@ export function formValuesOf(profile: SigningProfileDto, customAttributeValues: 
         workflowType: workflow?.type ?? SigningWorkflowType.Timestamping,
         ...(isTimestampingWorkflow(workflow) ? timestampingFormValuesOf(workflow) : {}),
         ...(isContentSigningWorkflow(workflow) ? contentSigningFormValuesOf(workflow) : {}),
+        ...(isRawSigningWorkflow(workflow) ? rawSigningPurposeValuesOf(workflow) : {}),
         signingScheme: signingScheme?.signingScheme ?? SigningScheme.Managed,
         managedSigningType: staticKey?.managedSigningType ?? ManagedSigningType.StaticKey,
         certificateUuid: staticKey?.certificate?.uuid ?? '',

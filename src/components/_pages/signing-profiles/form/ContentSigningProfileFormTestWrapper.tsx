@@ -52,6 +52,10 @@ export interface CoreAnswers {
     };
     /** Profile the detail fetch returns. */
     editedProfile?: SigningProfileDto;
+    /** Profile the route edits while its detail fetch stays unanswered. */
+    pendingProfileUuid?: string;
+    /** Profile an earlier page left in the store. */
+    cachedProfile?: SigningProfileDto;
 }
 
 /** Requests the form sends, in order, as the action type without the slice prefix and its payload. */
@@ -127,10 +131,11 @@ function coreStandIn(core: CoreAnswers, onRequest: (request: RecordedRequest) =>
 
 /** The signing-profile form over a store whose Core answers from `core`. Its requests are printed for assertions. */
 export function ContentSigningProfileFormTestWrapper({ core }: Readonly<{ core: CoreAnswers }>) {
-    const { editedProfile } = core;
+    const { editedProfile, cachedProfile } = core;
+    const editedUuid = editedProfile?.uuid ?? core.pendingProfileUuid;
     const [requests, setRequests] = useState<RecordedRequest[]>([]);
-    const [store] = useState(() =>
-        configureStore({
+    const [store] = useState(() => {
+        const configured = configureStore({
             reducer: combineReducers({
                 enums: identity({ platformEnums: {} }),
                 signingProfiles: signingProfilesReducer,
@@ -143,11 +148,13 @@ export function ContentSigningProfileFormTestWrapper({ core }: Readonly<{ core: 
                 getDefaultMiddleware({ serializableCheck: false }).concat(
                     coreStandIn(core, (request) => setRequests((previous) => [...previous, request])),
                 ),
-        }),
-    );
+        });
+        if (cachedProfile) configured.dispatch(actions.getSigningProfileSuccess({ signingProfile: cachedProfile }));
+        return configured;
+    });
     return (
         <Provider store={store}>
-            <MemoryRouter initialEntries={[editedProfile ? `/signingprofiles/edit/${editedProfile.uuid}` : '/signingprofiles/add']}>
+            <MemoryRouter initialEntries={[editedUuid ? `/signingprofiles/edit/${editedUuid}` : '/signingprofiles/add']}>
                 <Routes>
                     <Route path="/signingprofiles/add" element={<SigningProfileForm />} />
                     <Route path="/signingprofiles/edit/:id" element={<SigningProfileForm />} />
