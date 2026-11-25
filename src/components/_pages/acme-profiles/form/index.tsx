@@ -169,6 +169,9 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
 
     useEffect(() => {
         if (raProfile?.authorityInstanceUuid) {
+            // Descriptors left from another RA profile must not stand in for these while they load or after they fail.
+            dispatch(raProfileActions.clearIssuanceAttributesDescriptors());
+            dispatch(raProfileActions.clearRevocationAttributesDescriptors());
             dispatch(
                 raProfileActions.listIssuanceAttributeDescriptors({ authorityUuid: raProfile.authorityInstanceUuid, uuid: raProfile.uuid }),
             );
@@ -379,6 +382,17 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
     const isEqual = useMemo(() => deepEqual<unknown>(defaultValues, allFormValues), [defaultValues, allFormValues]);
 
     const isSaving = isSubmitting || isCreating || isUpdating;
+    // An edit sends every attribute list in full and the API clears an omitted one, so it waits for all their descriptors.
+    const raAttributeDescriptorsLoaded =
+        !raProfile?.authorityInstanceUuid ||
+        (!isFetchingIssuanceAttributes &&
+            !isFetchingRevocationAttributes &&
+            raProfileIssuanceAttrDescs !== undefined &&
+            raProfileRevocationAttrDescs !== undefined);
+    const attributeDescriptorsLoaded =
+        raAttributeDescriptorsLoaded &&
+        multipleResourceCustomAttributes[Resource.AcmeProfiles] !== undefined &&
+        multipleResourceCustomAttributes[Resource.Certificates] !== undefined;
     const [initializedProfileId, setInitializedProfileId] = useState<string>();
 
     const lastResetProfileIdRef = useRef<string | undefined>(undefined);
@@ -817,7 +831,12 @@ export default function AcmeProfileForm({ acmeProfileId, onCancel, onSuccess }: 
                                 title={editMode ? 'Update' : 'Create'}
                                 inProgressTitle={editMode ? 'Updating...' : 'Creating...'}
                                 inProgress={isSaving}
-                                disabled={isSaving || !isValid || isEqual || (editMode && initializedProfileId !== id)}
+                                disabled={
+                                    isSaving ||
+                                    !isValid ||
+                                    isEqual ||
+                                    (editMode && (initializedProfileId !== id || !attributeDescriptorsLoaded))
+                                }
                                 type="submit"
                             />
                         </Container>

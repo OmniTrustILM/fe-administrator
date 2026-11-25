@@ -98,3 +98,30 @@ test.describe('AcmeProfileForm stored certificate associations', () => {
         });
     }
 });
+
+test.describe('AcmeProfileForm attribute descriptors', () => {
+    const profile = {
+        raProfile: { uuid: 'ra-1', name: 'RA profile', enabled: true, authorityInstanceUuid: 'authority-1' },
+        issueCertificateAttributes: [{ name: 'issueField', uuid: 'issue-1', contentType: 'string', content: [{ data: 'stored issue' }] }],
+        customAttributes: [{ name: 'customField', uuid: 'custom-1', contentType: 'string', content: [{ data: 'stored custom' }] }],
+    } as never;
+
+    test('cannot be saved until the descriptors arrive, then keeps the stored attribute values', async ({ mount, page }) => {
+        await mount(<AcmeProfileFormHarness raProfilesDelayMs={0} descriptorsDelayMs={1500} profile={profile} />);
+
+        await expect(page.locator('#name')).toHaveValue('ACME profile');
+        await page.locator('#description').fill('Edited');
+        const update = page.getByRole('button', { name: 'Update' });
+        await expect(update).toBeDisabled();
+        await expect(update).toBeEnabled();
+        await update.click();
+
+        const request = JSON.parse((await page.getByTestId('update-request').textContent()) ?? 'null');
+        expect(request).toMatchObject({
+            description: 'Edited',
+            raProfileUuid: 'ra-1',
+            issueCertificateAttributes: [{ name: 'issueField', content: [{ data: 'stored issue' }] }],
+            customAttributes: [{ name: 'customField', content: [{ data: 'stored custom' }] }],
+        });
+    });
+});

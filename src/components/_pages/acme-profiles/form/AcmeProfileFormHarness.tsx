@@ -5,6 +5,8 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import { actions as acmeProfilesActions, slice as acmeProfilesSlice } from 'ducks/acme-profiles';
 import { actions as raProfilesActions, slice as raProfilesSlice } from 'ducks/ra-profiles';
 import { slice as secretsSlice } from 'ducks/secrets';
+import { actions as customAttributesActions, slice as customAttributesSlice } from 'ducks/customAttributes';
+import { AttributeContentType, AttributeType, Resource } from 'types/openapi';
 import { actions as groupsActions, slice as groupsSlice } from 'ducks/certificateGroups';
 import { actions as usersActions, slice as usersSlice } from 'ducks/users';
 import { testReducers } from 'ducks/test-reducers';
@@ -19,7 +21,26 @@ type Props = Readonly<{
     raProfilesResult?: 'one' | 'empty' | 'fail';
     /** When the user and group lists answer, with owner 'user-1' (Alice) and groups 'group-1' (Admins) and 'group-2' (Ops); never when omitted. */
     associationsDelayMs?: number;
+    /** When the attribute descriptors answer: the custom attribute 'customField' for ACME profiles and the RA profile's issue attribute 'issueField'. */
+    descriptorsDelayMs?: number;
 }>;
+
+const stringProperties = { required: false, readOnly: false, visible: true, list: false, multiSelect: false };
+const customDescriptor = {
+    type: AttributeType.Custom,
+    name: 'customField',
+    uuid: 'custom-1',
+    contentType: AttributeContentType.String,
+    version: 2,
+    properties: { ...stringProperties, label: 'Custom Field' },
+};
+const issueDescriptor = {
+    type: AttributeType.Data,
+    name: 'issueField',
+    uuid: 'issue-1',
+    contentType: AttributeContentType.String,
+    properties: { ...stringProperties, label: 'Issue Field' },
+};
 
 const UUID = 'acme-profile-1';
 
@@ -27,7 +48,13 @@ const UUID = 'acme-profile-1';
  * The form editing one ACME profile that the store serves on request, with the RA profile list left empty as it is
  * while the list is still loading. The update request the form dispatches is rendered as JSON.
  */
-export default function AcmeProfileFormHarness({ profile, raProfilesDelayMs, raProfilesResult = 'one', associationsDelayMs }: Props) {
+export default function AcmeProfileFormHarness({
+    profile,
+    raProfilesDelayMs,
+    raProfilesResult = 'one',
+    associationsDelayMs,
+    descriptorsDelayMs = 0,
+}: Props) {
     const [state] = useState(() => {
         const loaded = { uuid: UUID, name: 'ACME profile', enabled: true, ...profile } as AcmeProfileResponseModel;
         let request: unknown;
@@ -57,6 +84,24 @@ export default function AcmeProfileFormHarness({ profile, raProfilesDelayMs, raP
                 ] as never;
                 setTimeout(() => api.dispatch(groupsActions.listGroupsSuccess({ groups })), associationsDelayMs);
             }
+            if (type === customAttributesActions.loadMultipleResourceCustomAttributes.type) {
+                const answer = customAttributesActions.receiveMultipleResourceCustomAttributes([
+                    { resource: Resource.AcmeProfiles, customAttributes: [customDescriptor] as never },
+                    { resource: Resource.Certificates, customAttributes: [] },
+                ]);
+                setTimeout(() => api.dispatch(answer), descriptorsDelayMs);
+            }
+            if (type === raProfilesActions.listIssuanceAttributeDescriptors.type) {
+                const answer = raProfilesActions.listIssuanceAttributesDescriptorsSuccess({
+                    uuid: 'ra-1',
+                    attributesDescriptors: [issueDescriptor] as never,
+                });
+                setTimeout(() => api.dispatch(answer), descriptorsDelayMs);
+            }
+            if (type === raProfilesActions.listRevocationAttributeDescriptors.type) {
+                const answer = raProfilesActions.listRevocationAttributeDescriptorsSuccess({ uuid: 'ra-1', attributesDescriptors: [] });
+                setTimeout(() => api.dispatch(answer), descriptorsDelayMs);
+            }
             if (type === acmeProfilesActions.updateAcmeProfile.type) {
                 request = (action as ReturnType<typeof acmeProfilesActions.updateAcmeProfile>).payload.updateAcmeRequest;
                 render?.();
@@ -70,6 +115,7 @@ export default function AcmeProfileFormHarness({ profile, raProfilesDelayMs, raP
                     [acmeProfilesSlice.name]: acmeProfilesSlice.reducer(current?.[acmeProfilesSlice.name] as never, action),
                     [raProfilesSlice.name]: raProfilesSlice.reducer(current?.[raProfilesSlice.name] as never, action),
                     [secretsSlice.name]: secretsSlice.reducer(current?.[secretsSlice.name] as never, action),
+                    [customAttributesSlice.name]: customAttributesSlice.reducer(current?.[customAttributesSlice.name] as never, action),
                     [usersSlice.name]: usersSlice.reducer(current?.[usersSlice.name] as never, action),
                     [groupsSlice.name]: groupsSlice.reducer(current?.[groupsSlice.name] as never, action),
                 }) as never,
