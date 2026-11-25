@@ -108,6 +108,10 @@ async function runEpic(
     return firstValueFrom(output$.pipe(take(takeCount), toArray()));
 }
 
+/** A connector's list attribute declaring two choices, and the edited profile's saved selection of one of them. */
+const listDescriptor = { uuid: 'a-list', properties: { list: true }, content: [{ data: 'A' }, { data: 'B' }] };
+const savedChoice = { uuid: 'a-list', content: [{ data: 'A' }] };
+
 describe('signingProfiles epics', () => {
     test('listSigningProfiles success emits listSuccess, pagingListSuccess and removeWidgetLock', async () => {
         const emitted = await runEpic(
@@ -793,16 +797,13 @@ describe('signingProfiles epics', () => {
         expect(emitted[0].type).toBe(signingProfileActions.listSignatureAttributesForCertificateFailure.type);
     });
 
-    test('listSignatureFormattingConnectorAttributes merges saved content from timestamping workflow', async () => {
-        const descriptors = [{ uuid: 'a-1' }, { uuid: 'a-2' }];
+    test('listSignatureFormattingConnectorAttributes keeps the declared choices of a list attribute with a saved selection', async () => {
+        const descriptors = [listDescriptor];
         const state = {
             signingProfiles: {
                 signingProfile: {
                     uuid: 'p-1',
-                    workflow: {
-                        type: SigningWorkflowType.Timestamping,
-                        signatureFormattingConnectorAttributes: [{ uuid: 'a-1', content: [{ data: 'saved' }] }],
-                    },
+                    workflow: { type: SigningWorkflowType.Timestamping, signatureFormattingConnectorAttributes: [savedChoice] },
                 },
             },
         };
@@ -819,10 +820,9 @@ describe('signingProfiles epics', () => {
             state,
         );
 
-        expect(emitted[0].type).toBe(signingProfileActions.listSignatureFormattingConnectorAttributesSuccess.type);
-        const merged = (emitted[0] as any).payload.attributeDescriptors;
-        expect(merged[0]).toEqual({ uuid: 'a-1', content: [{ data: 'saved' }] });
-        expect(merged[1]).toEqual({ uuid: 'a-2' });
+        expect(emitted[0]).toEqual(
+            signingProfileActions.listSignatureFormattingConnectorAttributesSuccess({ attributeDescriptors: descriptors as any }),
+        );
     });
 
     test('listSignatureFormattingConnectorAttributes leaves descriptors unchanged without a saved profile', async () => {
@@ -1068,21 +1068,19 @@ describe('signingProfiles epics', () => {
         });
     });
 
-    const savedOnConnector = (connectorUuid: string) => ({
-        signingProfiles: {
-            signingProfile: {
-                uuid: 'p-1',
-                workflow: {
-                    type: SigningWorkflowType.ContentSigning,
-                    signatureFormattingConnector: { uuid: connectorUuid, name: 'Saved connector' },
-                    signatureFormattingConnectorAttributes: [{ uuid: 'a-1', content: [{ data: 'saved' }] }],
+    test('listContentSigningProfileAttributes keeps the declared choices of a list attribute with a saved selection', async () => {
+        const state = {
+            signingProfiles: {
+                signingProfile: {
+                    uuid: 'p-1',
+                    workflow: {
+                        type: SigningWorkflowType.ContentSigning,
+                        signatureFormattingConnector: { uuid: 'cn-1', name: 'Saved connector' },
+                        signatureFormattingConnectorAttributes: [savedChoice],
+                    },
                 },
             },
-        },
-    });
-
-    test('listContentSigningProfileAttributes prefills the profile attributes with the saved content and keeps the request attributes', async () => {
-        const state = savedOnConnector('cn-1');
+        };
 
         const emitted = await runEpic(
             SigningProfilesEpicIndex.ListContentSigningProfileAttributes,
@@ -1095,7 +1093,7 @@ describe('signingProfiles epics', () => {
             {
                 signingProfiles: {
                     listContentSigningFormattingConnectorAttributes: () =>
-                        of({ profileAttributes: [{ uuid: 'a-1' }, { uuid: 'a-2' }], requestAttributes: [{ uuid: 'r-1' }] }),
+                        of({ profileAttributes: [listDescriptor], requestAttributes: [{ uuid: 'r-1' }] }),
                 },
             },
             1,
@@ -1104,35 +1102,8 @@ describe('signingProfiles epics', () => {
 
         expect(emitted[0]).toEqual(
             signingProfileActions.listContentSigningProfileAttributesSuccess({
-                profileAttributes: [{ uuid: 'a-1', content: [{ data: 'saved' }] }, { uuid: 'a-2' }] as any,
+                profileAttributes: [listDescriptor] as any,
                 requestAttributes: [{ uuid: 'r-1' }] as any,
-            }),
-        );
-    });
-
-    test('listContentSigningProfileAttributes prefills nothing for a connector other than the saved one', async () => {
-        const emitted = await runEpic(
-            SigningProfilesEpicIndex.ListContentSigningProfileAttributes,
-            signingProfileActions.listContentSigningProfileAttributes({
-                connectorUuid: 'cn-other',
-                family: 'pades',
-                level: SignatureLevel.Signed,
-                signingProfileUuid: 'p-1',
-            }),
-            {
-                signingProfiles: {
-                    listContentSigningFormattingConnectorAttributes: () =>
-                        of({ profileAttributes: [{ uuid: 'a-1' }], requestAttributes: [] }),
-                },
-            },
-            1,
-            savedOnConnector('cn-1'),
-        );
-
-        expect(emitted[0]).toEqual(
-            signingProfileActions.listContentSigningProfileAttributesSuccess({
-                profileAttributes: [{ uuid: 'a-1' }] as any,
-                requestAttributes: [],
             }),
         );
     });
@@ -1168,45 +1139,6 @@ describe('signingProfiles epics', () => {
                 requestAttributes: [],
             }),
         ]);
-    });
-
-    test('listContentSigningProfileAttributes leaves a new profile clear of the cached profile values', async () => {
-        const state = {
-            signingProfiles: {
-                signingProfile: {
-                    uuid: 'p-viewed',
-                    workflow: {
-                        type: SigningWorkflowType.ContentSigning,
-                        signatureFormattingConnector: { uuid: 'cn-1', name: 'PAdES' },
-                        signatureFormattingConnectorAttributes: [{ uuid: 'a-1', content: [{ data: 'viewed' }] }],
-                    },
-                },
-            },
-        };
-
-        const emitted = await runEpic(
-            SigningProfilesEpicIndex.ListContentSigningProfileAttributes,
-            signingProfileActions.listContentSigningProfileAttributes({
-                connectorUuid: 'cn-1',
-                family: 'pades',
-                level: SignatureLevel.Signed,
-            }),
-            {
-                signingProfiles: {
-                    listContentSigningFormattingConnectorAttributes: () =>
-                        of({ profileAttributes: [{ uuid: 'a-1' }], requestAttributes: [] }),
-                },
-            },
-            1,
-            state,
-        );
-
-        expect(emitted[0]).toEqual(
-            signingProfileActions.listContentSigningProfileAttributesSuccess({
-                profileAttributes: [{ uuid: 'a-1' }] as any,
-                requestAttributes: [],
-            }),
-        );
     });
 
     test('listContentSigningProfileAttributes failure emits failure action', async () => {

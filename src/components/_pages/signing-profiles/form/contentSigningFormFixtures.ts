@@ -214,3 +214,23 @@ export const profileWithUnreadableSource: SigningProfileDto = {
         timestampSource: { signingProfile: { uuid: 'tsa-hidden', name: 'Hidden TSA' }, type: TimestampSourceType.Internal },
     },
 } as SigningProfileDto;
+
+/** A PAdES-style choice attribute declaring two packagings. */
+export const packagingAttribute = {
+    uuid: 'attr-packaging',
+    name: 'packaging',
+    type: AttributeType.Data,
+    contentType: AttributeContentType.String,
+    version: 2,
+    properties: { label: 'Packaging', required: false, readOnly: false, visible: true, list: true, multiSelect: false },
+    content: [{ data: 'Enveloped' }, { data: 'Enveloping' }],
+} as BaseAttributeDto;
+
+/** The saved profile with one of the two packagings selected. */
+export const profileWithSavedPackaging: SigningProfileDto = {
+    ...savedProfile,
+    workflow: {
+        ...savedProfile.workflow,
+        signatureFormattingConnectorAttributes: [savedValue('attr-packaging', 'packaging', 'Enveloped')],
+    },
+} as SigningProfileDto;

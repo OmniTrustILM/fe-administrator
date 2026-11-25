@@ -1,4 +1,4 @@
-import type { AppEpic, AppState } from 'ducks';
+import type { AppEpic } from 'ducks';
 import { EMPTY, of } from 'rxjs';
 import { catchError, expand, filter, map, mergeMap, switchMap, toArray } from 'rxjs/operators';
 import { extractError, extractErrorReason } from 'utils/net';
@@ -8,17 +8,14 @@ import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { EntityType } from './filters';
 import { actions as pagingActions, selectors as pagingSelectors, entityListParams, listParamsAfterDelete } from './paging';
-import { selectors, slice } from './signing-profiles';
-import { isContentSigningWorkflow, isTimestampingWorkflow } from 'utils/type-guards';
+import { slice } from './signing-profiles';
 import { isEligibleTimestampSource } from 'utils/timestamp-source';
 import { transformSearchRequestModelToDto } from './transform/certificates';
 import { transformConnectorDtoV2ToModel } from './transform/connectors';
 import {
-    type BaseAttributeDto,
     ConnectorInterface,
     FilterConditionOperator,
     FilterFieldSource,
-    type ResponseAttribute,
     type SigningProfileDto,
     type SigningProfileListDto,
     SigningScheme,
@@ -409,42 +406,17 @@ const listSignatureAttributesForCertificate: AppEpic = (action$, state$, deps) =
     );
 };
 
-/** The cached profile when it is the one being edited. Only the edited profile's saved values prefill the editor. */
-function editedProfile(state: AppState, signingProfileUuid: string | undefined): SigningProfileDto | undefined {
-    const profile = selectors.signingProfile(state);
-    return signingProfileUuid !== undefined && profile?.uuid === signingProfileUuid ? profile : undefined;
-}
-
-function withSavedContent(descriptors: BaseAttributeDto[], savedAttrs: ResponseAttribute[]): BaseAttributeDto[] {
-    const savedContentByUuid = new Map(
-        savedAttrs
-            .filter((a): a is Extract<ResponseAttribute, { content?: unknown }> => 'content' in a)
-            .map((a) => [a.uuid, a.content] as const),
-    );
-    return descriptors.map((descriptor) => {
-        const savedContent = savedContentByUuid.get(descriptor.uuid);
-        return savedContent === undefined ? descriptor : ({ ...descriptor, content: savedContent } as typeof descriptor);
-    });
-}
-
 const listContentSigningProfileAttributes: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.listContentSigningProfileAttributes.match),
         switchMap((action) =>
             deps.apiClients.signingProfiles.listContentSigningFormattingConnectorAttributes(action.payload).pipe(
-                map(({ profileAttributes, requestAttributes }) => {
-                    const profile = editedProfile(state$.value, action.payload.signingProfileUuid);
-                    const savedAttrs =
-                        profile &&
-                        isContentSigningWorkflow(profile.workflow) &&
-                        profile.workflow.signatureFormattingConnector?.uuid === action.payload.connectorUuid
-                            ? (profile.workflow.signatureFormattingConnectorAttributes ?? [])
-                            : [];
-                    return slice.actions.listContentSigningProfileAttributesSuccess({
-                        profileAttributes: withSavedContent(profileAttributes ?? [], savedAttrs),
+                map(({ profileAttributes, requestAttributes }) =>
+                    slice.actions.listContentSigningProfileAttributesSuccess({
+                        profileAttributes: profileAttributes ?? [],
                         requestAttributes: requestAttributes ?? [],
-                    });
-                }),
+                    }),
+                ),
                 catchError((error) => of(slice.actions.listContentSigningProfileAttributesFailure({ reason: extractErrorReason(error) }))),
             ),
         ),
@@ -461,16 +433,9 @@ const listSignatureFormattingConnectorAttributes: AppEpic = (action$, state$, de
                     signingProfileUuid: action.payload.signingProfileUuid,
                 })
                 .pipe(
-                    map((descriptors) => {
-                        const profile = editedProfile(state$.value, action.payload.signingProfileUuid);
-                        const savedAttrs =
-                            profile && isTimestampingWorkflow(profile.workflow)
-                                ? (profile.workflow.signatureFormattingConnectorAttributes ?? [])
-                                : [];
-                        return slice.actions.listSignatureFormattingConnectorAttributesSuccess({
-                            attributeDescriptors: withSavedContent(descriptors, savedAttrs),
-                        });
-                    }),
+                    map((descriptors) =>
+                        slice.actions.listSignatureFormattingConnectorAttributesSuccess({ attributeDescriptors: descriptors }),
+                    ),
                     catchError((error) =>
                         of(
                             slice.actions.listSignatureFormattingConnectorAttributesFailure({

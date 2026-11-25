@@ -5,6 +5,8 @@ import { ContentSigningProfileFormTestWrapper, type RecordedRequest } from './Co
 import {
     core,
     DOCUMENT_SIGNING_EKU,
+    packagingAttribute,
+    profileWithSavedPackaging,
     profileWithRetiredSource,
     profileWithUnlistedSource,
     profileWithUnreadableSource,
@@ -318,6 +320,19 @@ test.describe('SigningProfileForm - content signing workflow', () => {
         await expect(page.getByLabel('Signing Reason')).toHaveValue('Contract');
         await page.getByRole('tab', { name: TAB_SIGNING_SCHEME }).click();
         await expect(page.getByTestId('select-certificateUuid-trigger')).toContainText('Qualified Cert (2)');
+    });
+
+    test('offers every declared choice of a list attribute with a saved selection', async ({ mount, page }) => {
+        const profileAttributesByLevel = { [SignatureLevel.Timestamped]: [packagingAttribute] };
+        await mount(
+            <ContentSigningProfileFormTestWrapper core={{ ...core, profileAttributesByLevel, editedProfile: profileWithSavedPackaging }} />,
+        );
+        await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();
+
+        const packaging = page.getByTestId('select-__attributes__contentSigningProfileAttrs__.packagingSelect-trigger');
+        await expect(packaging).toContainText('Enveloped');
+        await packaging.click();
+        await expect(page.getByRole('option', { name: 'Enveloping' })).toBeVisible();
     });
 
     test('keeps the saved request attributes while the formatting is unchanged', async ({ mount, page }) => {

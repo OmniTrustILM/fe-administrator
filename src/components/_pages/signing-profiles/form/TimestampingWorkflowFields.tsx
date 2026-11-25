@@ -221,7 +221,7 @@ function PolicyIdFields(): ReactElement {
 
     const defaultAmongAllowed = (value: unknown) => {
         const allowed = getValues('allowedPolicyIds');
-        if (!value || allowed.length === 0 || allowed.includes(String(value))) return undefined;
+        if (typeof value !== 'string' || !value || allowed.length === 0 || allowed.includes(value)) return undefined;
         return 'Default policy ID must be among the allowed policy IDs';
     };
 
