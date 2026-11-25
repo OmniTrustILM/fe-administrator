@@ -67,7 +67,7 @@ const asRequestAttribute = ({ uuid, name, contentType, content, version }: Respo
     ({ uuid, name, contentType, content, version }) as RequestAttribute;
 
 /** A level above SIGNED embeds a timestamp and so needs a timestamp source. */
-const embedsTimestamp = (level: SignatureLevel | ''): level is SignatureLevel => level !== '' && level !== SignatureLevel.Signed;
+export const embedsTimestamp = (level: SignatureLevel | ''): level is SignatureLevel => level !== '' && level !== SignatureLevel.Signed;
 
 /**
  * The content-signing workflow of a profile request. Its request-attribute values and allowed names come from the saved workflow,

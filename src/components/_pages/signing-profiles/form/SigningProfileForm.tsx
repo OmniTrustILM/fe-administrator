@@ -17,7 +17,7 @@ import { actions as signingProfileActions, selectors as signingProfileSelectors 
 import { PlatformEnum, Resource, SigningWorkflowType } from 'types/openapi';
 import { isContentSigningWorkflow, isStaticKeyManagedSigning, isTimestampingWorkflow } from 'utils/type-guards';
 
-import ContentSigningWorkflowFields from './ContentSigningWorkflowFields';
+import ContentSigningWorkflowFields, { embedsTimestamp } from './ContentSigningWorkflowFields';
 import GeneralFields, { workflowTypeLabels } from './GeneralFields';
 import RecordPolicyFields from './RecordPolicyFields';
 import SigningSchemeFields from './SigningSchemeFields';
@@ -98,6 +98,9 @@ export default function SigningProfileForm() {
             contentSigningAttributesListedFor.family === familyCode &&
             contentSigningAttributesListedFor.level === level);
 
+    const awaitsTimestampSources =
+        workflowType === SigningWorkflowType.ContentSigning && embedsTimestamp(level) && isFetchingTimestampSources;
+
     const isBusy =
         isFetchingDetail ||
         isCreating ||
@@ -173,7 +176,7 @@ export default function SigningProfileForm() {
                                     !isValid ||
                                     !formattingAttributesListed ||
                                     isFetchingSigningCertificates ||
-                                    isFetchingTimestampSources
+                                    awaitsTimestampSources
                                 }
                                 type="submit"
                             />

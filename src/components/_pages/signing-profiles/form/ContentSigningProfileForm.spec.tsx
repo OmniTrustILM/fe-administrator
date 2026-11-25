@@ -427,6 +427,18 @@ test.describe('SigningProfileForm - content signing workflow', () => {
         await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeDisabled();
     });
 
+    test('enables Update at a level without a timestamp while the timestamp sources are pending', async ({ mount, page }) => {
+        await mount(
+            <ContentSigningProfileFormTestWrapper core={{ ...core, editedProfile: savedProfile, timestampSourcesPending: true }} />,
+        );
+        await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();
+        await expect(page.getByTestId('select-signatureLevel-trigger')).toContainText('PAdES-B-T');
+
+        await choose(page, 'signatureLevel', 'PAdES-B');
+
+        await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeEnabled();
+    });
+
     test('keeps Update disabled when the formatting attributes cannot be listed', async ({ mount, page }) => {
         await mount(
             <ContentSigningProfileFormTestWrapper
