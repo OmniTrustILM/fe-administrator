@@ -25,6 +25,7 @@ export type CertificateRekeyDialogTestWrapperProps = Readonly<{
 const testCertificate = (registrationState: CertificateRegistrationState | undefined): CertificateDetailResponseModel =>
     ({
         uuid: 'certificate-uuid',
+        displayName: 'test-certificate',
         commonName: 'test-certificate',
         subjectDn: 'CN=test-certificate',
         subjectAlternativeNames: { dNSName: ['test.example'] },

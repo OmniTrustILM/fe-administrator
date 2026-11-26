@@ -25,6 +25,7 @@ type Props = Readonly<{
 
 const certificate = {
     uuid: 'cert-uuid',
+    displayName: 'app.example',
     commonName: 'app.example',
     subjectDn: 'CN=app.example',
     state: CertificateState.Issued,

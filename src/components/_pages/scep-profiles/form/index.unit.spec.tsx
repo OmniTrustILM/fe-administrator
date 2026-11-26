@@ -24,7 +24,7 @@ const descriptor = {
     properties: { label: 'Text Custom Attr', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
 };
 
-const caCert = { uuid: 'cert-1', commonName: 'Demo CA', serialNumber: '0123', publicKeyAlgorithm: 'RSA' };
+const caCert = { uuid: 'cert-1', displayName: 'Demo CA', commonName: 'Demo CA', serialNumber: '0123', publicKeyAlgorithm: 'RSA' };
 
 const profile = {
     uuid: 'sp-1',
@@ -130,7 +130,7 @@ describe('ScepProfileForm (edit mode)', () => {
             dispatched.push(action);
             return originalDispatch(action);
         };
-        await renderForm(store, profile, [{ uuid: 'other-cert', commonName: 'Other', serialNumber: '9' }]);
+        await renderForm(store, profile, [{ uuid: 'other-cert', displayName: 'Other', commonName: 'Other', serialNumber: '9' }]);
 
         await changeCustomAttribute('changed-value');
         expect(submitButton().disabled).toBe(false);
@@ -147,7 +147,7 @@ describe('ScepProfileForm (edit mode)', () => {
     });
 
     it('drops the saved certificate when Intune is toggled, forcing a re-pick from the refreshed list', async () => {
-        await renderForm(createStore(), profile, [{ uuid: 'other-cert', commonName: 'Other', serialNumber: '9' }]);
+        await renderForm(createStore(), profile, [{ uuid: 'other-cert', displayName: 'Other', commonName: 'Other', serialNumber: '9' }]);
 
         const certificateTrigger = () => container.querySelector('[data-testid="select-certificateSelect-trigger"]') as HTMLElement;
         expect(certificateTrigger().textContent).toContain('Demo CA');
@@ -227,7 +227,7 @@ describe('ScepProfileForm (edit mode)', () => {
     }
 
     it('offers only RSA CA certificates in registration mode and restores the full list on switch back', async () => {
-        const ecdsaCert = { uuid: 'cert-ec', commonName: 'EC CA', serialNumber: '9', publicKeyAlgorithm: 'ECDSA' };
+        const ecdsaCert = { uuid: 'cert-ec', displayName: 'EC CA', commonName: 'EC CA', serialNumber: '9', publicKeyAlgorithm: 'ECDSA' };
         await renderForm(createStore(), profile, [caCert, ecdsaCert]);
 
         const nativeOptions = () =>

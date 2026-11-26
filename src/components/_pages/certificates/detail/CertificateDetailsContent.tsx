@@ -15,7 +15,7 @@ import CertificateRAProfileDialog from '../CertificateRAProfileDialog';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders } from 'utils/widget';
-import { formatPEM } from 'utils/certificate';
+import { formatPEM, isX509Certificate } from 'utils/certificate';
 import { useCopyToClipboard } from 'utils/common-hooks';
 import { dateFormatter } from 'utils/dateUtil';
 import { actions, selectors } from 'ducks/certificates';
@@ -430,7 +430,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
               )
             : [];
 
-        if (certificate?.state !== CertStatus.Requested) {
+        if (isX509Certificate(certificate) && certificate?.state !== CertStatus.Requested) {
             certDetail.push({
                 id: 'asn1structure',
                 columns: [
@@ -720,9 +720,11 @@ export default function CertificateDetailsContent({ certificate, validationResul
                     <CustomTable hasPagination={false} headers={detailHeaders} data={detailData} />
                 </Widget>
                 <Container>
-                    <Widget title="Subject Alternative Names" busy={isBusy} titleSize="large">
-                        <CustomTable headers={detailHeaders} data={sanData} />
-                    </Widget>
+                    {isX509Certificate(certificate) && (
+                        <Widget title="Subject Alternative Names" busy={isBusy} titleSize="large">
+                            <CustomTable headers={detailHeaders} data={sanData} />
+                        </Widget>
+                    )}
                     {certificate?.protocolInfo && (
                         <Widget title="Protocol" busy={isBusy} titleSize="large">
                             <CustomTable headers={protocolHeader} data={protocolData} />

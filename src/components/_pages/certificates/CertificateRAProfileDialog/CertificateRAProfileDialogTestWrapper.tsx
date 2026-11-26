@@ -16,6 +16,7 @@ export type CertificateRAProfileDialogTestWrapperProps = Readonly<{
 
 const baseCertificate: CertificateDetailResponseModel = {
     uuid: 'certificate-uuid',
+    displayName: 'test-certificate',
     commonName: 'test-certificate',
     state: CertificateState.Issued,
     raProfile: { uuid: 'ra-1', name: 'RA One', authorityInstanceUuid: 'auth-1' },

@@ -450,7 +450,7 @@ export default function SigningProfileDetail() {
                     'Certificate',
                     cert ? (
                         <Link key="value" to={`/${Resource.Certificates.toLowerCase()}/detail/${cert.uuid}`}>
-                            {cert.commonName || cert.uuid}
+                            {cert.displayName || cert.uuid}
                             {cert.serialNumber ? <span className="ml-2 text-content-subtle text-xs">SN: {cert.serialNumber}</span> : null}
                         </Link>
                     ) : (

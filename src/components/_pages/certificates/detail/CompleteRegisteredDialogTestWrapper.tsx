@@ -29,6 +29,7 @@ export type CompleteRegisteredDialogTestWrapperProps = Readonly<{
 const testCertificate = (challenged: boolean, registrationState: CertificateRegistrationState): CertificateDetailResponseModel =>
     ({
         uuid: 'certificate-uuid',
+        displayName: 'test-registered-certificate',
         commonName: 'test-registered-certificate',
         state: CertificateState.Registered,
         raProfile: {

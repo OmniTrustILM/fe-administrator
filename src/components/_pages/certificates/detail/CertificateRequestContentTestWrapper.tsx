@@ -8,9 +8,10 @@ import CertificateRequestContent from './CertificateRequestContent';
 
 const certificate = {
     uuid: 'certificate-uuid',
+    displayName: 'app.example',
     commonName: 'app.example',
     serialNumber: '01',
-    certificateRequest: { commonName: 'app.example', content: 'TUlJQ1NyZXF1ZXN0' },
+    certificateRequest: { displayName: 'app.example', commonName: 'app.example', content: 'TUlJQ1NyZXF1ZXN0' },
 } as unknown as CertificateDetailResponseModel;
 
 export function CertificateRequestContentTestWrapper() {

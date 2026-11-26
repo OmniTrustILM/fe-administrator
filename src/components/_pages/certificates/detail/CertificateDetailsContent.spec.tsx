@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { CertificateRegistrationState, CertificateState, ResourceAction } from 'types/openapi';
+import { CertificateRegistrationState, CertificateState, CertificateType, ResourceAction } from 'types/openapi';
 import { expect, test } from '../../../../../playwright/ct-test';
 import { CertificateDetailsContentTestWrapper } from './CertificateDetailsContentTestWrapper';
 
@@ -186,4 +186,30 @@ test.describe('CertificateDetailsContent — operations by permission', () => {
         }
         await expect(page.getByRole('button', { name: 'Update Owner' })).toBeEnabled();
     });
+});
+
+test.describe('CertificateDetailsContent — parts by certificate type', () => {
+    const content = { certificateContent: 'MIIB', subjectAlternativeNames: { dNSName: ['app.example'] } };
+
+    test('shows the X.509 parts of an X.509 certificate', async ({ mount, page }) => {
+        await mount(<CertificateDetailsContentTestWrapper certificateOverrides={content} />);
+
+        await expect(page.getByText('Subject Alternative Names')).toBeVisible();
+        await expect(page.getByText('ASN.1 Structure')).toBeVisible();
+        await expect(page.getByText('Key Usage', { exact: true })).toBeVisible();
+    });
+
+    for (const [name, certificateType] of [
+        ['another known type', CertificateType.Ssh],
+        ['a type this version does not know', 'FUTURE' as CertificateType],
+    ] as const) {
+        test(`shows only the shared properties for ${name}`, async ({ mount, page }) => {
+            await mount(<CertificateDetailsContentTestWrapper certificateOverrides={{ ...content, certificateType }} />);
+
+            await expect(page.getByText('Serial Number')).toBeVisible();
+            await expect(page.getByText('Subject Alternative Names')).toHaveCount(0);
+            await expect(page.getByText('ASN.1 Structure')).toHaveCount(0);
+            await expect(page.getByText('Key Usage', { exact: true })).toHaveCount(0);
+        });
+    }
 });

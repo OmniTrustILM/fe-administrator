@@ -299,7 +299,7 @@ export default function ScepProfileDetail() {
                               'Name',
                               scepProfile.caCertificate?.uuid ? (
                                   <Link to={`../../certificates/detail/${scepProfile.caCertificate.uuid}`}>
-                                      {scepProfile.caCertificate.commonName}
+                                      {scepProfile.caCertificate.displayName}
                                   </Link>
                               ) : (
                                   ''

@@ -98,7 +98,7 @@ describe('certificates slice', () => {
         expect(next.isFetchingDetail).toBe(true);
         expect(next.certificateDetail).toBeUndefined();
 
-        const cert = { uuid: 'cert-1', commonName: 'Test' } as any;
+        const cert = { uuid: 'cert-1', displayName: 'Test', commonName: 'Test' } as any;
         next = reducer(next, actions.getCertificateDetailSuccess({ certificate: cert }));
         expect(next.isFetchingDetail).toBe(false);
         expect(next.certificateDetail).toEqual(cert);

@@ -10,6 +10,7 @@ import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import { formatPEM, downloadFile } from 'utils/certificate';
+import { certificateFileBaseName } from 'utils/download';
 import { useCopyToClipboard } from 'utils/common-hooks';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import { PlatformEnum, Resource } from 'types/openapi';
@@ -36,7 +37,7 @@ export default function CertificateRequestContent({ certificate, isBusy, getFres
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
 
-    const fileNameToDownload = certificate?.commonName + '_' + certificate?.serialNumber;
+    const fileNameToDownload = certificateFileBaseName(certificate);
 
     const downloadCSRDropDown = useMemo(
         () => (

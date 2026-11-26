@@ -72,7 +72,7 @@ export function downloadFileZip(
                 content = new Uint8Array(Buffer.from(certificate.certificateContent || '', 'base64'));
             }
 
-            zip.file(certificate.commonName.replace('*.', '_.') + '_' + certificate.serialNumber + '.' + fileType, content);
+            zip.file(certificateFileBaseName(certificate).replace('*.', '_.') + '.' + fileType, content);
         }
 
         const blob = await zip.generateAsync({ type: 'blob' });
@@ -103,4 +103,9 @@ export function formatPEM(pemString: string) {
     } else {
         return `-----BEGIN CERTIFICATE-----\n${pemString}\n-----END CERTIFICATE-----`;
     }
+}
+
+/** Base of the file name a certificate or its request is downloaded under: its display name and, when it has one, its serial number. */
+export function certificateFileBaseName(certificate?: { displayName?: string; serialNumber?: string }): string {
+    return [certificate?.displayName, certificate?.serialNumber].filter(Boolean).join('_');
 }

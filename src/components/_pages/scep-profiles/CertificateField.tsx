@@ -36,7 +36,7 @@ export default function CertificateField({ certificates, currentCertificate, rsa
     const optionsForCertificates = useMemo(() => {
         return availableCertificates?.map((certificate) => ({
             value: certificate.uuid,
-            label: `${certificate.commonName} (${certificate.serialNumber})`,
+            label: `${certificate.displayName} (${certificate.serialNumber})`,
         }));
     }, [availableCertificates]);
 

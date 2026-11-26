@@ -37,6 +37,7 @@ const platformEnums = {
 const testCertificate = (keystoreAvailable: boolean, hasPrivateKeyItem: boolean): CertificateDetailResponseModel =>
     ({
         uuid: 'certificate-uuid',
+        displayName: 'web-server-01.omnitrust.com',
         commonName: 'web-server-01.omnitrust.com',
         subjectDn: 'CN=web-server-01.omnitrust.com',
         publicKeyAlgorithm: 'RSA',

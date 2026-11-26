@@ -169,7 +169,7 @@ describe('transformCertificateResponseDtoToModel', () => {
 
 describe('transformCertificateListResponseDtoToModel', () => {
     test('returns shallow clone of input', () => {
-        const input = { uuid: 'cert1', commonName: 'test' } as any;
+        const input = { uuid: 'cert1', displayName: 'test', commonName: 'test' } as any;
         const result = transformCertificateListResponseDtoToModel(input);
         expect(result).toEqual(input);
         expect(result).not.toBe(input);

@@ -47,6 +47,7 @@ const existingSigningProfile: SigningProfileDto = {
         managedSigningType: ManagedSigningType.StaticKey,
         certificate: {
             uuid: 'cert1',
+            displayName: 'Signing Cert',
             commonName: 'Signing Cert',
             serialNumber: '123',
             certificateType: CertificateType.X509,
@@ -88,7 +89,9 @@ export function SigningProfileFormTestWrapper({
                         signatureFormattingConnectorsWorkflowType: SigningWorkflowType.Timestamping,
                         isFetchingSignatureFormattingConnectors: false,
                         failedSignatureFormattingConnectorsFetch: failedConnectorsFetch,
-                        signingCertificates: [{ uuid: 'cert1', commonName: 'Signing Cert', serialNumber: '123' }],
+                        signingCertificates: [
+                            { uuid: 'cert1', displayName: 'Signing Cert', commonName: 'Signing Cert', serialNumber: '123' },
+                        ],
                         isFetchingSigningCertificates: false,
                         signingOperationAttributeDescriptors: [],
                         isFetchingSignatureAttributes: false,

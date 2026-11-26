@@ -46,6 +46,7 @@ import { useActionAvailability } from 'utils/useActionAvailability';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { downloadFile, getCertificateStatusColor } from 'utils/certificate';
+import { certificateFileBaseName } from 'utils/download';
 import { resolveRelatedCertificateRelation } from 'utils/certificate-relation';
 
 import { dateFormatter } from 'utils/dateUtil';
@@ -314,7 +315,7 @@ export default function CertificateDetail() {
         setCertificateEdges(edges);
     }, [certificate, users, certLocations, raProfileSelected, certificateChain]);
 
-    const fileNameToDownload = certificate?.commonName + '_' + certificate?.serialNumber;
+    const fileNameToDownload = certificateFileBaseName(certificate);
 
     useEffect(() => {
         if (!certificateChainDownloadContent || !chainDownloadSwitch.isDownloadTriggered) return;
@@ -769,7 +770,7 @@ export default function CertificateDetail() {
     const getRelatedCertificateName = useCallback(
         (uuid: string) => {
             if (!relatedCertificates) return '';
-            return relatedCertificates.find((c) => c.uuid === uuid)?.commonName;
+            return relatedCertificates.find((c) => c.uuid === uuid)?.displayName;
         },
         [relatedCertificates],
     );
@@ -781,7 +782,7 @@ export default function CertificateDetail() {
             id: `${c.uuid}`,
             columns: [
                 <Link key={`${c.uuid}-name`} to={`../../certificates/detail/${c.uuid}`}>
-                    {c.commonName}
+                    {c.displayName}
                 </Link>,
                 <div key={`${c.uuid}-relation`} style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                     {c.relation === 'successor' && <span>{capitalize(c.relation)}</span>}
@@ -1236,7 +1237,7 @@ export default function CertificateDetail() {
             <Breadcrumb
                 items={[
                     { label: `${getEnumLabel(resourceEnum, Resource.Certificates)} Inventory`, href: '/certificates' },
-                    { label: certificate?.commonName || 'Certificate Details' },
+                    { label: certificate?.displayName || 'Certificate Details' },
                 ]}
             />
             <Widget widgetLockName={LockWidgetNameEnum.CertificateDetailsWidget} busy={isBusy} noBorder>

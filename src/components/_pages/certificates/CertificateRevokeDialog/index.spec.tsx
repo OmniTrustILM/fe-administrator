@@ -16,6 +16,7 @@ const revokeDataDescriptor: AttributeDescriptorModel = {
 
 const certificateWithPrivateKey: CertificateDetailResponseModel = {
     uuid: 'certificate-uuid',
+    displayName: 'test-certificate',
     commonName: 'test-certificate',
     state: CertificateState.Issued,
     raProfile: { uuid: 'ra-profile-uuid', name: 'Test RA Profile', authorityInstanceUuid: 'authority-uuid' },

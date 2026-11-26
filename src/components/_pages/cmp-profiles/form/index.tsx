@@ -141,7 +141,7 @@ export default function CmpProfileForm({ cmpProfileId, onCancel, onSuccess }: Cm
         () =>
             cmpSigningCertificates?.map((certificate) => ({
                 value: certificate.uuid,
-                label: `${certificate.commonName} (${certificate.serialNumber})`,
+                label: `${certificate.displayName} (${certificate.serialNumber})`,
             })),
         [cmpSigningCertificates],
     );

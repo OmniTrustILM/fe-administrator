@@ -42,17 +42,23 @@ export interface CertificateSimpleDto {
      */
     relationType: CertificateRelationType;
     /**
-     * Common name
+     * Name to show for the certificate: the common name of an X.509 certificate, the identifier of a certificate type without one
      * @type {string}
      * @memberof CertificateSimpleDto
      */
-    commonName: string;
+    displayName: string;
     /**
-     * Subject distinguished name
+     * Common name. Absent when the certificate has no common name: its type has none, or the subject of an X.509 certificate has none (a registration with only alternative names)
      * @type {string}
      * @memberof CertificateSimpleDto
      */
-    subjectDn: string;
+    commonName?: string;
+    /**
+     * Subject distinguished name. Absent when the certificate has no subject distinguished name: its type has none, or an X.509 certificate was registered with only alternative names.
+     * @type {string}
+     * @memberof CertificateSimpleDto
+     */
+    subjectDn?: string;
     /**
      * Issuer common name
      * @type {string}
@@ -60,7 +66,7 @@ export interface CertificateSimpleDto {
      */
     issuerCommonName?: string;
     /**
-     * Issuer distinguished name
+     * Issuer distinguished name. X.509 only; absent for other types.
      * @type {string}
      * @memberof CertificateSimpleDto
      */
@@ -78,13 +84,13 @@ export interface CertificateSimpleDto {
      */
     fingerprint?: string;
     /**
-     * Public key algorithm
+     * Public key algorithm. Absent when the certificate has no public key: its type has none, or the certificate is registered and not yet issued
      * @type {string}
      * @memberof CertificateSimpleDto
      */
-    publicKeyAlgorithm: string;
+    publicKeyAlgorithm?: string;
     /**
-     * Alternative public key algorithm
+     * Alternative public key algorithm. X.509 only; absent for other types.
      * @type {string}
      * @memberof CertificateSimpleDto
      */
@@ -96,7 +102,7 @@ export interface CertificateSimpleDto {
      */
     signatureAlgorithm?: string;
     /**
-     * Alternative signature algorithm
+     * Alternative signature algorithm. X.509 only; absent for other types.
      * @type {string}
      * @memberof CertificateSimpleDto
      */

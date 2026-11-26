@@ -5,7 +5,13 @@ import { withProviders } from 'utils/test-helpers';
 import TrustedCaCertificatesField from './TrustedCaCertificatesField';
 
 const caCertificate = (uuid: string, commonName: string): CertificateListResponseModel =>
-    ({ uuid, commonName, subjectDn: `CN=${commonName}`, serialNumber: `${uuid}-serial` }) as CertificateListResponseModel;
+    ({
+        uuid,
+        displayName: commonName,
+        commonName,
+        subjectDn: `CN=${commonName}`,
+        serialNumber: `${uuid}-serial`,
+    }) as CertificateListResponseModel;
 
 const CA_CERTIFICATES = [caCertificate('ca-1', 'Root CA'), caCertificate('ca-2', 'Issuing CA')];
 

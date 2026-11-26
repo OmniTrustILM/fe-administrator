@@ -147,6 +147,7 @@ export const savedProfile: SigningProfileDto = {
         managedSigningType: ManagedSigningType.StaticKey,
         certificate: {
             uuid: 'cert-nr',
+            displayName: 'Qualified Cert',
             commonName: 'Qualified Cert',
             serialNumber: '2',
             certificateType: CertificateType.X509,

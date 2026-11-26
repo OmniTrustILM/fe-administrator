@@ -26,6 +26,7 @@ const mockGetEnumLabel = (_e: any, key: string) => key;
 function buildListCertificate(overrides: Partial<CertificateListResponseModel> = {}): CertificateListResponseModel {
     return {
         uuid: 'u',
+        displayName: 'c',
         commonName: 'c',
         serialNumber: '1',
         signatureAlgorithm: '',
@@ -68,6 +69,7 @@ test.describe('certificateTableHelpers', () => {
         test('returns one column per entry in CERTIFICATE_COLUMNS for a minimal certificate', () => {
             const cert = buildListCertificate({
                 uuid: 'uuid-1',
+                displayName: 'cn.example.com',
                 commonName: 'cn.example.com',
                 serialNumber: 'SN123',
                 signatureAlgorithm: 'SHA256-RSA',
@@ -86,7 +88,7 @@ test.describe('certificateTableHelpers', () => {
         });
 
         test('with isLinkDisabled true commonName is plain text', () => {
-            const cert = buildListCertificate({ commonName: 'test.example.com' });
+            const cert = buildListCertificate({ displayName: 'test.example.com', commonName: 'test.example.com' });
 
             const result = buildCertificateRowColumns(cert, baseOpts);
             // commonName is 5th column (index 4): state, validationStatus, compliance, key, commonName
@@ -123,7 +125,7 @@ test.describe('certificateTableHelpers', () => {
         });
 
         test('renders a row for a column set given in a different order', () => {
-            const cert = buildListCertificate({ commonName: 'cn.example.com', serialNumber: 'SN123' });
+            const cert = buildListCertificate({ displayName: 'cn.example.com', commonName: 'cn.example.com', serialNumber: 'SN123' });
             const reordered = [CERTIFICATE_COLUMNS[10], CERTIFICATE_COLUMNS[4]];
 
             const result = buildCertificateRowColumns(cert, baseOpts, reordered);
@@ -154,6 +156,8 @@ test.describe('certificateTableHelpers', () => {
     test.describe('buildCertificateDetailBaseRows', () => {
         const minimalCertificate: CertificateDetailResponseModel = {
             uuid: 'uuid-detail',
+            certificateType: CertificateType.X509,
+            displayName: 'detail.example.com',
             commonName: 'detail.example.com',
             serialNumber: 'SN456',
             subjectDn: 'CN=detail',
@@ -216,6 +220,7 @@ test.describe('certificateTableHelpers', () => {
             // keySize, publicKeyAlgorithm, serialNumber, notBefore/notAfter are all absent.
             const preRegisteredCert = {
                 uuid: 'uuid-registered',
+                displayName: 'pre-registered',
                 commonName: 'pre-registered',
                 subjectDn: 'CN=pre-registered',
                 hybridCertificate: false,
