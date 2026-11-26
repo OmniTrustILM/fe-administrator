@@ -87,17 +87,23 @@ test.describe('SigningProfileForm - raw signing workflow', () => {
             });
     });
 
-    test('asks for raw-signing certificates once the workflow changes from content signing', async ({ mount, page }) => {
+    test('resets the certificate purpose and certificate once the workflow changes from content signing', async ({ mount, page }) => {
         await mount(<ContentSigningProfileFormTestWrapper core={core} />);
         await chooseWorkflow(page, 'Content Signing');
         await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();
         await toggleSwitch(page, 'requireNonRepudiation', true);
+        await addExtendedKeyUsage(page, DOCUMENT_SIGNING_EKU);
+        await page.getByRole('tab', { name: TAB_SIGNING_SCHEME }).click();
+        await choose(page, 'certificateUuid', 'Qualified Cert (2)');
         await page.getByRole('tab', { name: TAB_GENERAL }).click();
 
         await chooseWorkflow(page, 'Raw Signing');
 
         await page.getByRole('tab', { name: TAB_RAW_SIGNING }).click();
         await expect(page.locator('#requireNonRepudiation')).not.toBeChecked();
+        await expect(page.getByTestId('hostname-list-tags-requiredExtendedKeyUsageOidInput')).toHaveCount(0);
+        await page.getByRole('tab', { name: TAB_SIGNING_SCHEME }).click();
+        await expect(page.getByTestId('select-certificateUuid-trigger')).toContainText('Select a certificate');
         await expect
             .poll(() => lastCertificateQuery(page))
             .toEqual({ workflowType: SigningWorkflowType.RawSigning, requireNonRepudiation: false, requiredExtendedKeyUsageOids: [] });
