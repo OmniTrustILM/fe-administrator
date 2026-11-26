@@ -250,4 +250,63 @@ test.describe('AttributeFieldFile', () => {
             await expect(page.getByText('Required Field')).toBeVisible();
         });
     });
+
+    test.describe('image preview', () => {
+        const pixels = {
+            'image/png': 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=',
+            'image/jpeg':
+                '/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDABALDA4MChAODQ4SERATGCgaGBYWGDEjJR0oOjM9PDkzODdASFxOQERXRTc4UG1RV19iZ2hnPk1xeXBkeFxlZ2P/wAALCAABAAEBAREA/8QAHwAAAQUBAQEBAQEAAAAAAAAAAAECAwQFBgcICQoL/8QAtRAAAgEDAwIEAwUFBAQAAAF9AQIDAAQRBRIhMUEGE1FhByJxFDKBkaEII0KxwRVS0fAkM2JyggkKFhcYGRolJicoKSo0NTY3ODk6Q0RFRkdISUpTVFVWV1hZWmNkZWZnaGlqc3R1dnd4eXqDhIWGh4iJipKTlJWWl5iZmqKjpKWmp6ipqrKztLW2t7i5usLDxMXGx8jJytLT1NXW19jZ2uHi4+Tl5ufo6erx8vP09fb3+Pn6/9oACAEBAAA/ACv/2Q==',
+        };
+
+        for (const [mimeType, pixel] of Object.entries(pixels)) {
+            test(`previews a ${mimeType} file`, async ({ mount, page }) => {
+                await mount(
+                    <AttributeFieldFileTestWrapper
+                        name="testFile"
+                        descriptor={minimalFileDescriptor()}
+                        onFileDrop={noop}
+                        onFileDragOver={noop}
+                        onFileChanged={noop}
+                        initialFile={{ content: pixel, fileName: 'stamp', mimeType }}
+                    />,
+                );
+
+                const preview = page.getByRole('img', { name: 'Test File' });
+                await expect(preview).toHaveAttribute('src', `data:${mimeType};base64,${pixel}`);
+                await expect.poll(() => preview.evaluate((image: HTMLImageElement) => image.naturalWidth)).toBe(1);
+            });
+        }
+
+        test('shows no preview for a file a browser does not draw', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldFileTestWrapper
+                    name="testFile"
+                    descriptor={minimalFileDescriptor()}
+                    onFileDrop={noop}
+                    onFileDragOver={noop}
+                    onFileChanged={noop}
+                    initialFile={{ content: 'Wm9uZQ==', fileName: 'zone.pem', mimeType: 'text/plain' }}
+                />,
+            );
+
+            await expect(page.locator('#testFile-content')).toHaveValue('Wm9uZQ==');
+            await expect(page.getByRole('img')).toHaveCount(0);
+        });
+
+        test('shows no preview without a file', async ({ mount, page }) => {
+            await mount(
+                <AttributeFieldFileTestWrapper
+                    name="testFile"
+                    descriptor={minimalFileDescriptor()}
+                    onFileDrop={noop}
+                    onFileDragOver={noop}
+                    onFileChanged={noop}
+                    initialFile={{ content: '', fileName: '', mimeType: 'image/png' }}
+                />,
+            );
+
+            await expect(page.getByRole('region', { name: 'File drop zone' })).toBeVisible();
+            await expect(page.getByRole('img')).toHaveCount(0);
+        });
+    });
 });

@@ -22,6 +22,19 @@ const absent = (text: string) => (
     </span>
 );
 
+const chips = (values: string[]) => (
+    <div key="value" className="flex flex-wrap gap-1">
+        {values.map((value) => (
+            <span
+                key={value}
+                className="inline-flex items-center rounded-full bg-surface-sunken px-2.5 py-0.5 text-xs font-medium text-content-muted"
+            >
+                {value}
+            </span>
+        ))}
+    </div>
+);
+
 /**
  * Content-signing workflow widgets: the configuration under the connector's own family and level names, and the formatting
  * connector's attribute values.
@@ -48,6 +61,7 @@ export default function ContentSigningWorkflowDetail({ workflow, signingProfileU
         const levelName = familyDeclaration?.levels.find((declared) => declared.level === workflow.level)?.name;
         const timestampSource = workflow.timestampSource?.signingProfile;
         const extendedKeyUsages = workflow.requiredExtendedKeyUsageOids ?? [];
+        const allowedRequestAttributes = workflow.allowedRequestAttributes ?? [];
 
         return [
             {
@@ -91,22 +105,13 @@ export default function ContentSigningWorkflowDetail({ workflow, signingProfileU
             },
             {
                 id: 'requiredExtendedKeyUsages',
+                columns: ['Required Extended Key Usages', extendedKeyUsages.length > 0 ? chips(extendedKeyUsages) : absent('Any')],
+            },
+            {
+                id: 'allowedRequestAttributes',
                 columns: [
-                    'Required Extended Key Usages',
-                    extendedKeyUsages.length > 0 ? (
-                        <div key="value" className="flex flex-wrap gap-1">
-                            {extendedKeyUsages.map((oid) => (
-                                <span
-                                    key={oid}
-                                    className="inline-flex items-center rounded-full bg-surface-sunken px-2.5 py-0.5 text-xs font-medium text-content-muted"
-                                >
-                                    {oid}
-                                </span>
-                            ))}
-                        </div>
-                    ) : (
-                        absent('Any')
-                    ),
+                    'Allowed Request Attributes',
+                    allowedRequestAttributes.length > 0 ? chips(allowedRequestAttributes) : absent('None'),
                 ],
             },
         ];

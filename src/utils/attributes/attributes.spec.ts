@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
+    asEditorAttributes,
     firstInjectedDescriptorOfEachName,
     getAttributeCopyValue,
     getAttributeContent,
@@ -1277,5 +1278,33 @@ describe('firstInjectedDescriptorOfEachName', () => {
 
         // then
         expect(shown).toEqual([]);
+    });
+});
+
+describe('asEditorAttributes', () => {
+    const descriptors = [
+        {
+            type: AttributeType.Data,
+            name: 'reason',
+            uuid: 'u-reason',
+            contentType: AttributeContentType.String,
+            properties: { required: false, label: 'Signing Reason', readOnly: false, visible: true, list: false },
+        },
+    ] as AttributeDescriptorModel[];
+
+    test('labels each collected value as its descriptor does', () => {
+        const values = collectFormAttributes('draft', descriptors, { __attributes__draft__: { reason: 'Contract' } });
+
+        expect(asEditorAttributes(values, descriptors)).toEqual([
+            {
+                uuid: 'u-reason',
+                name: 'reason',
+                label: 'Signing Reason',
+                type: AttributeType.Data,
+                contentType: AttributeContentType.String,
+                version: AttributeVersion.V2,
+                content: [{ data: 'Contract' }],
+            },
+        ]);
     });
 });

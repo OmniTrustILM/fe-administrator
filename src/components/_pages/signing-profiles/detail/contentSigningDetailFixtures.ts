@@ -30,6 +30,7 @@ export const signedProfile: SigningProfileDto = {
         level: SignatureLevel.Signed,
         timestampSource: undefined,
         requiredExtendedKeyUsageOids: [],
+        allowedRequestAttributes: [],
     } as ContentSigningWorkflowDto,
 };
 

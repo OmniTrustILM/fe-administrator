@@ -4,8 +4,9 @@ import { selectors as customAttributesSelectors } from 'ducks/customAttributes';
 import { selectors as signingProfileSelectors } from 'ducks/signing-profiles';
 import { Resource, type SigningProfileRequestDto, SigningWorkflowType, type WorkflowInterface } from 'types/openapi';
 import { collectFormAttributes } from 'utils/attributes/attributes';
-import { isContentSigningWorkflow, isRawSigningWorkflow } from 'utils/type-guards';
-import { contentSigningAttributesEditorId, contentSigningWorkflowRequest } from './ContentSigningWorkflowFields';
+import { isRawSigningWorkflow } from 'utils/type-guards';
+import { collectContentSigningAttributes, contentSigningWorkflowRequest } from './ContentSigningWorkflowFields';
+import { permissionNamesOf } from './requestAttributePermissions';
 import {
     customAttributesEditorId,
     rawSigningWorkflowRequest,
@@ -26,17 +27,16 @@ export function useSigningProfileRequest(
     const customAttributeDescriptors = useSelector(signingProfileCustomAttributes)[Resource.SigningProfiles];
     const signingOperationDescriptors = useSelector(signingProfileSelectors.signingOperationAttributeModels);
     const timestampingDescriptors = useSelector(signingProfileSelectors.signatureFormattingConnectorAttributeModels);
-    const contentSigningDescriptors = useSelector(signingProfileSelectors.contentSigningProfileAttributeModels);
-    const contentSigningRequestDescriptors = useSelector(signingProfileSelectors.contentSigningRequestAttributeDescriptors);
+    const contentSigningDescriptors = useSelector(signingProfileSelectors.contentSigningProfileAndRequestAttributeModels);
+    const requestAttributeDescriptors = useSelector(signingProfileSelectors.contentSigningRequestAttributeDescriptors);
 
     const workflowRequest = useCallback(
         (values: SigningProfileFormValues): SigningProfileRequestDto['workflow'] => {
             if (values.workflowType === SigningWorkflowType.ContentSigning) {
                 return contentSigningWorkflowRequest(
                     values,
-                    collectFormAttributes(contentSigningAttributesEditorId, contentSigningDescriptors, values),
-                    contentSigningRequestDescriptors,
-                    savedWorkflow && isContentSigningWorkflow(savedWorkflow) ? savedWorkflow : undefined,
+                    collectContentSigningAttributes(contentSigningDescriptors, values),
+                    permissionNamesOf(requestAttributeDescriptors),
                 );
             }
             if (values.workflowType === SigningWorkflowType.RawSigning && savedWorkflow && isRawSigningWorkflow(savedWorkflow)) {
@@ -47,7 +47,7 @@ export function useSigningProfileRequest(
                 collectFormAttributes(timestampingAttributesEditorId, timestampingDescriptors, values),
             );
         },
-        [contentSigningDescriptors, contentSigningRequestDescriptors, timestampingDescriptors, savedWorkflow],
+        [contentSigningDescriptors, requestAttributeDescriptors, timestampingDescriptors, savedWorkflow],
     );
 
     return useCallback(

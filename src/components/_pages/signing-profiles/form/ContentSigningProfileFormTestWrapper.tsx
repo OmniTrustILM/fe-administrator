@@ -1,7 +1,7 @@
 import { combineReducers, configureStore, type Middleware, type Reducer, type UnknownAction } from '@reduxjs/toolkit';
 import { useState } from 'react';
 import { Provider } from 'react-redux';
-import { MemoryRouter, Route, Routes } from 'react-router';
+import { Link, MemoryRouter, Route, Routes } from 'react-router';
 import connectorsReducer from 'ducks/connectors';
 import userInterfaceReducer from 'ducks/user-interface';
 import signingProfilesReducer, { actions } from 'ducks/signing-profiles';
@@ -55,10 +55,14 @@ export interface CoreAnswers {
     timestampSourcesPending?: boolean;
     /** Profile the detail fetch returns. */
     editedProfile?: SigningProfileDto;
+    /** Profile a link on the page opens for editing, while the form stays mounted. */
+    linkedProfile?: SigningProfileDto;
     /** Profile the route edits while its detail fetch stays unanswered. */
     pendingProfileUuid?: string;
     /** Profile an earlier page left in the store. */
     cachedProfile?: SigningProfileDto;
+    /** Formatting-attribute listing another profile's edit page left in the store, of the PAdES family. */
+    cachedListing?: { connectorUuid: string; level: SignatureLevel };
 }
 
 /** Requests the form sends, in order, as the action type without the slice prefix and its payload. */
@@ -110,8 +114,9 @@ function answer(core: CoreAnswers, action: UnknownAction): UnknownAction | undef
         const { candidates, ineligible = [], unreadable } = core.timestampSources ?? { candidates: [], unreadable: [] };
         return actions.listTimestampSourceCandidatesSuccess({ candidates: candidates as SigningProfileDto[], ineligible, unreadable });
     }
-    if (actions.getSigningProfile.match(action) && core.editedProfile) {
-        return actions.getSigningProfileSuccess({ signingProfile: core.editedProfile });
+    if (actions.getSigningProfile.match(action)) {
+        const signingProfile = [core.editedProfile, core.linkedProfile].find((profile) => profile?.uuid === action.payload.uuid);
+        return signingProfile && actions.getSigningProfileSuccess({ signingProfile });
     }
     if (actions.listSignatureAttributesForCertificate.match(action)) {
         return actions.listSignatureAttributesForCertificateSuccess({ attributeDescriptors: [] });
@@ -135,7 +140,7 @@ function coreStandIn(core: CoreAnswers, onRequest: (request: RecordedRequest) =>
 
 /** The signing-profile form over a store whose Core answers from `core`. Its requests are printed for assertions. */
 export function ContentSigningProfileFormTestWrapper({ core }: Readonly<{ core: CoreAnswers }>) {
-    const { editedProfile, cachedProfile } = core;
+    const { editedProfile, linkedProfile, cachedProfile, cachedListing } = core;
     const editedUuid = editedProfile?.uuid ?? core.pendingProfileUuid;
     const [requests, setRequests] = useState<RecordedRequest[]>([]);
     const [store] = useState(() => {
@@ -154,6 +159,9 @@ export function ContentSigningProfileFormTestWrapper({ core }: Readonly<{ core: 
                 ),
         });
         if (cachedProfile) configured.dispatch(actions.getSigningProfileSuccess({ signingProfile: cachedProfile }));
+        if (cachedListing) {
+            configured.dispatch(actions.listContentSigningProfileAttributes({ ...cachedListing, family: 'pades' }));
+        }
         return configured;
     });
     return (
@@ -163,6 +171,7 @@ export function ContentSigningProfileFormTestWrapper({ core }: Readonly<{ core: 
                     <Route path="/signingprofiles/add" element={<SigningProfileForm />} />
                     <Route path="/signingprofiles/edit/:id" element={<SigningProfileForm />} />
                 </Routes>
+                {linkedProfile && <Link to={`/signingprofiles/edit/${linkedProfile.uuid}`}>Edit {linkedProfile.name}</Link>}
             </MemoryRouter>
             <output data-testid="requests">{JSON.stringify(requests)}</output>
         </Provider>

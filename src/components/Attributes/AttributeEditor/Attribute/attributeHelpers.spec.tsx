@@ -205,6 +205,50 @@ test.describe('attributeHelpers', () => {
             expect(fn('abc')).toBeUndefined();
         });
 
+        const withPattern = (data: string) => ({
+            ...minimalDataDescriptor(AttributeContentType.String, false),
+            constraints: [{ type: AttributeConstraintType.RegExp, data, errorMessage: 'Not blank' }],
+        });
+
+        test('reads a leading Java inline flag of a RegExp constraint as a RegExp flag', () => {
+            const fn = buildAttributeValidators(withPattern(String.raw`(?s)^(?=.*\S).{1,512}$`));
+            expect(fn('   ')).toBe('Not blank');
+            expect(fn('first line\nsecond line')).toBeUndefined();
+        });
+
+        test('matches a RegExp constraint against the whole value, as Java does', () => {
+            const fn = buildAttributeValidators(withPattern(String.raw`(?s)(?=.*\S).{1,512}`));
+            expect(fn('a'.repeat(512))).toBeUndefined();
+            expect(fn('a'.repeat(513))).toBe('Not blank');
+        });
+
+        test('enforces a RegExp constraint that escapes a character Unicode mode leaves unescaped', () => {
+            const fn = buildAttributeValidators(withPattern(String.raw`^\d{3}\-\d{4}$`));
+            expect(fn('123-4567')).toBeUndefined();
+            expect(fn('1234567')).toBe('Not blank');
+        });
+
+        test('leaves a RegExp constraint JavaScript cannot compile to the server', () => {
+            const fn = buildAttributeValidators(withPattern('^[a-z]++$'));
+            expect(fn('ABC')).toBeUndefined();
+        });
+
+        test('leaves a Java escape JavaScript reads as a literal to the server', () => {
+            const fn = buildAttributeValidators(withPattern('\\A[a-z]+\\z'));
+            expect(fn('abc')).toBeUndefined();
+        });
+
+        test('leaves a Java property class JavaScript lacks, such as XDigit, to the server', () => {
+            const fn = buildAttributeValidators(withPattern(String.raw`^\p{XDigit}{4}$`));
+            expect(fn('0A1F')).toBeUndefined();
+        });
+
+        test('enforces a Unicode property escape JavaScript reads as Java does', () => {
+            const fn = buildAttributeValidators(withPattern(String.raw`^\p{L}{3}$`));
+            expect(fn('abc')).toBeUndefined();
+            expect(fn('123')).toBe('Not blank');
+        });
+
         const withRange = (data: Record<string, unknown>, properties: Record<string, unknown> = {}) => {
             const d = minimalDataDescriptor(AttributeContentType.Integer, false);
             return {

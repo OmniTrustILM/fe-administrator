@@ -98,7 +98,8 @@ export default function ContentSigningFormattingFields({ value, onChange, onSele
     };
     const selectLevel = (selected: SelectEmission) => {
         const code = selectedCodeOrUndefined(selected);
-        onChange({ connectorUuid, familyCode, level: declaredLevels.find((declared) => declared.level === code)?.level });
+        const next = declaredLevels.find((declared) => declared.level === code)?.level;
+        if (next !== level) onChange({ connectorUuid, familyCode, level: next });
     };
 
     return (

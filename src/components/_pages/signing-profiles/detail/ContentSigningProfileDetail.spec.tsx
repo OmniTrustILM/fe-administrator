@@ -44,6 +44,8 @@ test.describe('Content-signing profile detail', () => {
         );
         await expect(row(page, 'Require Non-Repudiation')).toContainText('Enabled');
         await expect(row(page, 'Required Extended Key Usages')).toContainText(DOCUMENT_SIGNING_EKU);
+        await expect(row(page, 'Allowed Request Attributes')).toContainText('signature_appearance');
+        await expect(row(page, 'Allowed Request Attributes')).toContainText('timestamp-policy');
         await expect(page.getByText('Content Signing Formatting Connector Attributes')).toBeVisible();
         await expect(page.getByText('Contract')).toBeVisible();
         expect(await requests(page)).toContainEqual({
@@ -67,6 +69,7 @@ test.describe('Content-signing profile detail', () => {
 
         await expect(row(page, 'Timestamp Source')).toContainText('None');
         await expect(row(page, 'Required Extended Key Usages')).toContainText('Any');
+        await expect(row(page, 'Allowed Request Attributes')).toContainText('None');
     });
 
     test('offers ILM Native instead of the TSP protocol', async ({ mount, page }) => {

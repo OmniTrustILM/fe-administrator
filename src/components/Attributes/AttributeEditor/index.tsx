@@ -40,6 +40,7 @@ import { deepEqual } from 'utils/deep-equal';
 import { contentItemLabel } from 'utils/displayValue';
 import Button from 'components/Button';
 import RetryCallout from 'components/RetryCallout';
+import AttributeGroupPane from './AttributeGroupPane';
 import { Trash } from 'lucide-react';
 import {
     getAttributeEditorAttributeKey,
@@ -91,6 +92,10 @@ function rememberAnsweredDescriptors(
     }
 }
 
+/** Key of the untitled section holding the ungrouped attributes. */
+const untitledSectionKey = '__';
+const groupCodeAsTitle = (group: string) => group;
+
 /** Form changes are collected for this long before the change-driven callback pass runs. */
 export const CALLBACK_DEBOUNCE_MS = 600;
 
@@ -108,6 +113,16 @@ export type Props = {
     callbackResource?: Resource;
     callbackParentUuid?: string;
     withRemoveAction?: boolean;
+    /** Title of a group's section. Without one, the section shows the group code. */
+    groupTitle?: (group: string) => string;
+    /** Control shown in the header of a group's section. */
+    groupControl?: (group: string) => React.ReactNode;
+    /** Control shown beside an attribute. */
+    attributeControl?: (descriptor: DataAttributeModel | InfoAttributeModel | CustomAttributeModel) => React.ReactNode;
+    /** Shows each section in a bordered pane, and lets a titled group fold to a summary line. */
+    collapsibleGroups?: boolean;
+    /** Text a folded group's summary line adds after its values. */
+    groupSummaryNote?: (group: string) => string | undefined;
 };
 
 function AttributeEditorInner({
@@ -124,6 +139,11 @@ function AttributeEditorInner({
     groupAttributesCallbackAttributes: injectedDescriptors = emptyGroupAttributesCallbackAttributes,
     setGroupAttributesCallbackAttributes = () => emptyGroupAttributesCallbackAttributes,
     withRemoveAction = true,
+    groupTitle = groupCodeAsTitle,
+    groupControl,
+    attributeControl,
+    collapsibleGroups = false,
+    groupSummaryNote,
 }: Readonly<Props>) {
     const dispatch = useDispatch();
 
@@ -512,7 +532,7 @@ function AttributeEditorInner({
 
             orderedAttributeDescriptors.forEach((descriptor) => {
                 if (isDataAttributeModel(descriptor) || isInfoAttributeModel(descriptor) || isCustomAttributeModel(descriptor)) {
-                    const groupName = descriptor.properties.group || '__';
+                    const groupName = descriptor.properties.group || untitledSectionKey;
                     if (grouped[groupName]) {
                         grouped[groupName].push(descriptor);
                     } else {
@@ -600,7 +620,7 @@ function AttributeEditorInner({
             }
 
             function setSelectListAttributeValue() {
-                if (appliedContent) {
+                if (appliedContent?.[0]) {
                     formAttributeValue = mapAttributeContentToOptionValue(appliedContent[0], descriptor);
                 } else {
                     formAttributeValue = undefined;
@@ -1406,30 +1426,62 @@ function AttributeEditorInner({
         }
 
         groupedAttributesDescriptorsKeys.forEach((group, i, arr) => {
-            attrs.push(
-                <Widget noBorder key={group} title={group === '__' ? '' : group} busy={isRunningCb}>
-                    {groupedAttributesDescriptors[group].map((descriptor, index) => (
+            const fields = (
+                <>
+                    {groupedAttributesDescriptors[group].map((descriptor) => (
                         // Keyed by uuid too: another copy taking over an injected field starts afresh, local state included.
-                        <div key={`${descriptor.name}:${descriptor.uuid}`} className="mb-4">
-                            <Attribute
-                                busy={isRunningCb}
-                                name={getAttributeEditorAttributeKey(id, descriptor.name)}
-                                descriptor={descriptor}
-                                options={options[getAttributeEditorAttributeKey(id, descriptor.name)]}
-                                userInteractedRef={userInteractedRef}
-                                deleteButton={
-                                    withRemoveAction && isCustomAttributeModel(descriptor) && !descriptor.properties.required
-                                        ? deleteButton(descriptor)
-                                        : undefined
-                                }
-                            />
+                        <div key={`${descriptor.name}:${descriptor.uuid}`} className="mb-4 flex items-start gap-4">
+                            <div className="flex-1 min-w-0">
+                                <Attribute
+                                    busy={isRunningCb}
+                                    name={getAttributeEditorAttributeKey(id, descriptor.name)}
+                                    descriptor={descriptor}
+                                    options={options[getAttributeEditorAttributeKey(id, descriptor.name)]}
+                                    userInteractedRef={userInteractedRef}
+                                    deleteButton={
+                                        withRemoveAction && isCustomAttributeModel(descriptor) && !descriptor.properties.required
+                                            ? deleteButton(descriptor)
+                                            : undefined
+                                    }
+                                />
+                            </div>
+                            {attributeControl?.(descriptor)}
                         </div>
                     ))}
                     {i === arr.length - 1 && notYetShownCustomAttributeDescriptors.length > 0 && attributeSelector}
+                </>
+            );
+            if (collapsibleGroups && group !== untitledSectionKey) {
+                attrs.push(
+                    <AttributeGroupPane
+                        key={group}
+                        editorId={id}
+                        group={group}
+                        title={groupTitle(group)}
+                        control={groupControl?.(group)}
+                        descriptors={groupedAttributesDescriptors[group]}
+                        summaryNote={groupSummaryNote?.(group)}
+                        busy={isRunningCb}
+                    >
+                        {fields}
+                    </AttributeGroupPane>,
+                );
+                return;
+            }
+            attrs.push(
+                <Widget
+                    noBorder={!collapsibleGroups}
+                    key={group}
+                    title={group === untitledSectionKey ? '' : groupTitle(group)}
+                    widgetExtraTopNode={group === untitledSectionKey ? undefined : groupControl?.(group)}
+                    busy={isRunningCb}
+                    innerContainerProps={collapsibleGroups ? { className: 'relative [&>div:last-child]:mb-0' } : undefined}
+                >
+                    {fields}
                 </Widget>,
             );
         });
-        return attrs;
+        return collapsibleGroups ? <div className="space-y-3">{attrs}</div> : attrs;
     }, [
         notYetShownCustomAttributeDescriptors,
         groupedAttributesDescriptors,
@@ -1438,6 +1490,11 @@ function AttributeEditorInner({
         options,
         withRemoveAction,
         deleteButton,
+        groupTitle,
+        groupControl,
+        attributeControl,
+        collapsibleGroups,
+        groupSummaryNote,
         setValue,
         formValues,
         deletedAttributes,

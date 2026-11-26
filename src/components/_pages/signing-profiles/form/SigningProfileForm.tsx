@@ -13,7 +13,7 @@ import Widget from 'components/Widget';
 
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from 'ducks/customAttributes';
 import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
-import { actions as signingProfileActions, selectors as signingProfileSelectors } from 'ducks/signing-profiles';
+import { isListedFor, actions as signingProfileActions, selectors as signingProfileSelectors } from 'ducks/signing-profiles';
 import { PlatformEnum, Resource, SigningWorkflowType } from 'types/openapi';
 import { isContentSigningWorkflow, isStaticKeyManagedSigning, isTimestampingWorkflow } from 'utils/type-guards';
 
@@ -94,9 +94,7 @@ export default function SigningProfileForm() {
     // Core replaces every saved formatting value with those collected from the listing, so saving waits for it.
     const formattingAttributesListed =
         workflowType !== SigningWorkflowType.ContentSigning ||
-        (contentSigningAttributesListedFor?.connectorUuid === connectorUuid &&
-            contentSigningAttributesListedFor.family === familyCode &&
-            contentSigningAttributesListedFor.level === level);
+        isListedFor(contentSigningAttributesListedFor, { connectorUuid, family: familyCode, level });
 
     const awaitsTimestampSources =
         workflowType === SigningWorkflowType.ContentSigning && embedsTimestamp(level) && isFetchingTimestampSources;
@@ -121,7 +119,8 @@ export default function SigningProfileForm() {
             <TimestampingWorkflowFields signingProfileUuid={id} savedWorkflow={savedTimestampingWorkflow} />
         ),
         [SigningWorkflowType.ContentSigning]: (
-            <ContentSigningWorkflowFields signingProfileUuid={id} savedWorkflow={savedContentSigningWorkflow} />
+            // Keyed by profile, so each profile's edit page starts from that profile's saved values.
+            <ContentSigningWorkflowFields key={id} signingProfileUuid={id} savedWorkflow={savedContentSigningWorkflow} />
         ),
         [SigningWorkflowType.RawSigning]: <p className="text-sm text-content-muted">The raw-signing workflow is kept as saved.</p>,
     }[workflowType];

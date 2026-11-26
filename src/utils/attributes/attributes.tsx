@@ -478,6 +478,20 @@ export function collectFormAttributes(
     return attrs;
 }
 
+/** Collected values in the shape an attribute editor prefills from, so a reloaded editor shows the draft again. A value stays only while a data or custom descriptor of its name labels it, because only those can be prefilled. */
+export function asEditorAttributes(values: AttributeRequestModel[], descriptors: AttributeDescriptorModel[]): AttributeResponseModel[] {
+    const editableDescriptors = descriptors.filter(
+        (descriptor): descriptor is DataAttributeModel | CustomAttributeModel =>
+            isDataAttributeModel(descriptor) || isCustomAttributeModel(descriptor),
+    );
+    const descriptorsByName = new Map(editableDescriptors.map((descriptor) => [descriptor.name, descriptor]));
+    return values.flatMap((value) => {
+        const descriptor = descriptorsByName.get(value.name);
+        if (!descriptor) return [];
+        return [{ ...value, label: descriptor.properties.label, type: descriptor.type } as AttributeResponseModel];
+    });
+}
+
 type InputItem = {
     formAttributeName: string;
     formAttributeValue: unknown;

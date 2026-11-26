@@ -272,6 +272,46 @@ test.describe('AttributeFieldSelect', () => {
         });
     }
 
+    for (const multiSelect of [false, true]) {
+        test(`tells how to fill an empty list that takes custom values, with multiSelect ${multiSelect}`, async ({ mount, page }) => {
+            const descriptor = minimalDescriptor({
+                properties: { ...defaultProperties, list: true, extensibleList: true, multiSelect, label: 'Claimed roles' },
+            } as any);
+            await mount(<AttributeFieldSelectTestWrapper name="testSelect" descriptor={descriptor} />);
+
+            await expect(page.getByTestId('select-testSelectSelect-trigger')).toHaveText('No values yet: use Add custom value below');
+        });
+    }
+
+    test('says No options for an empty list that takes no custom values', async ({ mount, page }) => {
+        await mount(<AttributeFieldSelectTestWrapper name="testSelect" descriptor={minimalDescriptor()} />);
+
+        await expect(page.getByTestId('select-testSelectSelect-trigger')).toHaveText('No options');
+    });
+
+    test('says No options for an empty read-only list that takes custom values', async ({ mount, page }) => {
+        const descriptor = minimalDescriptor({
+            properties: { ...defaultProperties, list: true, extensibleList: true, readOnly: true },
+        } as any);
+        await mount(<AttributeFieldSelectTestWrapper name="testSelect" descriptor={descriptor} />);
+
+        await expect(page.getByTestId('select-testSelectSelect-trigger')).toHaveText('No options');
+    });
+
+    test('says No options when a search of a list that takes custom values matches nothing', async ({ mount, page }) => {
+        const descriptor = minimalDescriptor({
+            properties: { ...defaultProperties, list: true, extensibleList: true },
+        } as any);
+        await mount(
+            <AttributeFieldSelectTestWrapper name="testSelect" descriptor={descriptor} options={[{ label: 'Known', value: 'known' }]} />,
+        );
+
+        await page.getByTestId('select-testSelectSelect-trigger').click();
+        await page.getByPlaceholder('Search...').fill('zzz');
+
+        await expect(page.getByRole('listbox')).toHaveText('No options');
+    });
+
     test('extensible list adds extra option for current value not in options', async ({ mount, page }) => {
         const descriptor = minimalDescriptor({
             properties: { ...defaultProperties, list: true, extensibleList: true, label: 'Extensible' },
