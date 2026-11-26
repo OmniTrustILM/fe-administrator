@@ -22,7 +22,8 @@ import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { type AttributeDescriptorModel, isDataAttributeModel } from 'types/attributes';
 import { splitAttributeValidationErrors } from 'utils/raProfileValidation';
 import type { CertificateDetailResponseModel } from '../../../../types/certificate';
-import { CertificateRequestFormat, Resource } from '../../../../types/openapi';
+import { CertificateRequestFormat, CertificateType, PlatformEnum, Resource } from '../../../../types/openapi';
+import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { validateRegistrationChallenge } from 'utils/validators';
 import { buildValidationRules } from 'utils/validators-helper';
@@ -51,6 +52,7 @@ import TextInput from 'components/TextInput';
 
 type CertificateFormValues = {
     raProfileUuid: string;
+    certificateType?: CertificateType;
     requestType: 'issue' | 'register';
     uploadCsrSource?: 'external' | 'existing';
     includeAltKey: boolean;
@@ -189,6 +191,8 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const certificateGroups = useSelector(certificateGroupSelectors.certificateGroups);
     const issuanceAttributeDescriptors = useSelector(certificateSelectors.issuanceAttributes);
     const registerAttributeDescriptors = useSelector(certificateSelectors.registerAttributes);
+    const supportedCertificateTypes = useSelector(certificateSelectors.supportedCertificateTypes);
+    const certificateTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateType));
     const isFetchingRegisterAttributes = useSelector(certificateSelectors.isFetchingRegisterAttributes);
     const resourceCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
@@ -316,6 +320,25 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     // pre-registration Core leaves open.
     const hasChallenge = !!authorizationSecret?.trim();
 
+    const raProfileCertificateTypes = selectedRaProfileUuid ? supportedCertificateTypes?.[selectedRaProfileUuid] : undefined;
+    const certificateTypeOptions = useMemo(
+        () => (raProfileCertificateTypes ?? []).map((type) => ({ value: type, label: getEnumLabel(certificateTypeEnum, type) })),
+        [raProfileCertificateTypes, certificateTypeEnum],
+    );
+
+    // The only type an RA profile issues is the type requested; among several, X.509 is preselected when it is one of them.
+    useEffect(() => {
+        if (!raProfileCertificateTypes) {
+            setValue('certificateType', undefined);
+        } else if (raProfileCertificateTypes.length === 1) {
+            setValue('certificateType', raProfileCertificateTypes[0]);
+        } else if (raProfileCertificateTypes.includes(CertificateType.X509)) {
+            setValue('certificateType', CertificateType.X509);
+        } else {
+            setValue('certificateType', undefined);
+        }
+    }, [raProfileCertificateTypes, setValue]);
+
     useEffect(() => {
         if (!selectedRaProfileUuid) {
             setValue('tokenProfileUuid', undefined);
@@ -396,6 +419,12 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
             );
             dispatch(
                 certificateActions.getRegisterAttributes({
+                    raProfileUuid: profile.uuid,
+                    authorityUuid: profile.authorityInstanceUuid,
+                }),
+            );
+            dispatch(
+                certificateActions.listSupportedCertificateTypes({
                     raProfileUuid: profile.uuid,
                     authorityUuid: profile.authorityInstanceUuid,
                 }),
@@ -515,6 +544,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
 
             const payload: Parameters<typeof certificateActions.issueCertificate>[0]['signRequest'] = {
                 format: CertificateRequestFormat.Pkcs10,
+                certificateType: formValues.certificateType,
                 request: fileContent,
                 attributes: issuanceAttributes,
                 csrAttributes: csrAttrs,
@@ -654,6 +684,28 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         />
                                     )}
                                 />
+
+                                {!isRegister && certificateTypeOptions.length > 0 && (
+                                    <Controller
+                                        control={control}
+                                        name="certificateType"
+                                        rules={{ required: true }}
+                                        render={({ field: { value, onChange }, fieldState: { error } }) => (
+                                            <Select
+                                                id="certificateType"
+                                                dataTestId="certificateType"
+                                                options={certificateTypeOptions}
+                                                placeholder="Select Certificate Type"
+                                                value={value ?? ''}
+                                                label="Certificate Type"
+                                                required
+                                                isDisabled={certificateTypeOptions.length === 1}
+                                                onChange={(selected) => onChange((selected || undefined) as CertificateType | undefined)}
+                                                error={error && 'Certificate Type is required'}
+                                            />
+                                        )}
+                                    />
+                                )}
 
                                 {!isRegister && (
                                     <Controller

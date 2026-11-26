@@ -20,6 +20,7 @@ import { selectors as settingSelectors } from 'ducks/settings';
 import { EntityType, actions as filterActions, selectors as filterSelectors } from 'ducks/filters';
 
 import {
+    CertificateOperation,
     CertificateState as CertStatus,
     CertificateFormatEncoding,
     type CertificateSimpleDto,
@@ -45,7 +46,7 @@ import type { Availability } from 'utils/availability';
 import { useActionAvailability } from 'utils/useActionAvailability';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { collectFormAttributes } from 'utils/attributes/attributes';
-import { downloadFile, getCertificateStatusColor } from 'utils/certificate';
+import { downloadFile, getCertificateStatusColor, supportsOperation } from 'utils/certificate';
 import { certificateFileBaseName } from 'utils/download';
 import { resolveRelatedCertificateRelation } from 'utils/certificate-relation';
 
@@ -416,9 +417,13 @@ export default function CertificateDetail() {
         if (id) dispatch(resourceActions.listObjectAllowedActions({ resource: Resource.Certificates, uuids: [id] }));
     }, [dispatch, id, getFreshCertificateDetail]);
 
+    const validates = supportsOperation(certificate, CertificateOperation.Validate);
+    const checksCompliance = supportsOperation(certificate, CertificateOperation.CheckCompliance);
+
     const getFreshCertificateValidations = useCallback(() => {
         if (!certificate) return;
         if (certificate.state === CertStatus.Requested) return;
+        if (!supportsOperation(certificate, CertificateOperation.Validate)) return;
         dispatch(actions.getCertificateValidationResult({ uuid: certificate.uuid }));
     }, [dispatch, certificate]);
 
@@ -504,31 +509,29 @@ export default function CertificateDetail() {
         });
     }, [dispatch, certificate, locationsCheckedRows, certLocations]);
 
-    const buttonsLocations: WidgetButtonProps[] = useMemo(
-        () => [
-            {
-                icon: 'plus',
-                disabled: isCertificateArchived,
-                requires: canOnLocations(ResourceAction.Update, { onObjects: true, objects: [] }),
-                tooltip: 'Push to location',
-                onClick: () => {
-                    dispatch(locationActions.listLocations({}));
-                    setSelectLocationsCheckedRows([]);
-                    setAddCertToLocation(true);
-                },
+    const buttonsLocations: WidgetButtonProps[] = useMemo(() => {
+        const pushToLocation: WidgetButtonProps = {
+            icon: 'plus',
+            disabled: isCertificateArchived,
+            requires: canOnLocations(ResourceAction.Update, { onObjects: true, objects: [] }),
+            tooltip: 'Push to location',
+            onClick: () => {
+                dispatch(locationActions.listLocations({}));
+                setSelectLocationsCheckedRows([]);
+                setAddCertToLocation(true);
             },
-            {
-                icon: 'trash',
-                disabled: locationsCheckedRows.length === 0,
-                requires: canOnLocations(ResourceAction.Update, { onObjects: true, objects: locationsCheckedRows }),
-                tooltip: 'Remove',
-                onClick: () => {
-                    setConfirmRemove(true);
-                },
+        };
+        const remove: WidgetButtonProps = {
+            icon: 'trash',
+            disabled: locationsCheckedRows.length === 0,
+            requires: canOnLocations(ResourceAction.Update, { onObjects: true, objects: locationsCheckedRows }),
+            tooltip: 'Remove',
+            onClick: () => {
+                setConfirmRemove(true);
             },
-        ],
-        [locationsCheckedRows, isCertificateArchived, dispatch, canOnLocations],
-    );
+        };
+        return supportsOperation(certificate, CertificateOperation.PushToLocation) ? [pushToLocation, remove] : [remove];
+    }, [certificate, locationsCheckedRows, isCertificateArchived, dispatch, canOnLocations]);
 
     const historyHeaders: TableHeader[] = useMemo(
         () => [
@@ -1325,26 +1328,28 @@ export default function CertificateDetail() {
                         },
                         {
                             title: 'Validation',
-                            hidden: !isValidationTabVisible(certificate),
+                            hidden: !isValidationTabVisible(certificate) || !(validates || checksCompliance),
                             content: (
                                 <Container>
-                                    <Widget
-                                        title="Validation Status"
-                                        busy={isFetchingValidationResult}
-                                        titleSize="large"
-                                        refreshAction={
-                                            validationPanelState === 'pending-issuance' ? undefined : getFreshCertificateValidations
-                                        }
-                                    >
-                                        {validationPanelState === 'results' ? (
-                                            <CustomTable headers={validationHeaders} data={validationData} />
-                                        ) : (
-                                            <div data-testid="validation-panel-notice" className="text-center text-content-muted">
-                                                {validationPanelMessages[validationPanelState]}
-                                            </div>
-                                        )}
-                                    </Widget>
-                                    {certificate?.certificateContent ? (
+                                    {validates && (
+                                        <Widget
+                                            title="Validation Status"
+                                            busy={isFetchingValidationResult}
+                                            titleSize="large"
+                                            refreshAction={
+                                                validationPanelState === 'pending-issuance' ? undefined : getFreshCertificateValidations
+                                            }
+                                        >
+                                            {validationPanelState === 'results' ? (
+                                                <CustomTable headers={validationHeaders} data={validationData} />
+                                            ) : (
+                                                <div data-testid="validation-panel-notice" className="text-center text-content-muted">
+                                                    {validationPanelMessages[validationPanelState]}
+                                                </div>
+                                            )}
+                                        </Widget>
+                                    )}
+                                    {checksCompliance && certificate?.certificateContent ? (
                                         <ComplianceCheckResultWidget
                                             resource={Resource.Certificates}
                                             widgetLockName={LockWidgetNameEnum.CertificateDetailsWidget}

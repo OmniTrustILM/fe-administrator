@@ -1,5 +1,5 @@
 import type { Page } from '@playwright/test';
-import { CertificateRegistrationState, CertificateState, CertificateType, ResourceAction } from 'types/openapi';
+import { CertificateOperation, CertificateRegistrationState, CertificateState, CertificateType, ResourceAction } from 'types/openapi';
 import { expect, test } from '../../../../../playwright/ct-test';
 import { CertificateDetailsContentTestWrapper } from './CertificateDetailsContentTestWrapper';
 
@@ -212,4 +212,56 @@ test.describe('CertificateDetailsContent — parts by certificate type', () => {
             await expect(page.getByText('Key Usage', { exact: true })).toHaveCount(0);
         });
     }
+});
+
+test.describe('CertificateDetailsContent — actions by supported operation', () => {
+    const operationButtons = ['retweet', 'rekey', 'minus-square', 'gavel'];
+    const otherButtons = ['trash', 'archive', 'download', 'copy'];
+
+    test('offers every action for a certificate whose type supports every operation', async ({ mount, page }) => {
+        await mount(
+            <CertificateDetailsContentTestWrapper
+                certificateOverrides={{ certificateContent: 'MIIB', supportedOperations: Object.values(CertificateOperation) }}
+            />,
+        );
+
+        for (const icon of [...operationButtons, ...otherButtons]) {
+            await expect(page.getByTestId(`${icon}-button`)).toBeVisible();
+        }
+    });
+
+    test('offers no action whose operation the type does not support, and keeps the others', async ({ mount, page }) => {
+        await mount(
+            <CertificateDetailsContentTestWrapper certificateOverrides={{ certificateContent: 'MIIB', supportedOperations: [] }} />,
+        );
+
+        for (const icon of operationButtons) {
+            await expect(page.getByTestId(`${icon}-button`)).toHaveCount(0);
+        }
+        for (const icon of otherButtons) {
+            await expect(page.getByTestId(`${icon}-button`)).toBeVisible();
+        }
+    });
+
+    test('offers only the operations the type supports', async ({ mount, page }) => {
+        await mount(<CertificateDetailsContentTestWrapper certificateOverrides={{ supportedOperations: [CertificateOperation.Revoke] }} />);
+
+        await expect(page.getByTestId('minus-square-button')).toBeVisible();
+        for (const icon of ['retweet', 'rekey', 'gavel']) {
+            await expect(page.getByTestId(`${icon}-button`)).toHaveCount(0);
+        }
+    });
+
+    test('offers no X.509 download or copy for a certificate of another type', async ({ mount, page }) => {
+        await mount(
+            <CertificateDetailsContentTestWrapper
+                certificateOverrides={{ certificateContent: 'AAAA', certificateType: CertificateType.Ssh }}
+            />,
+        );
+
+        await expect(page.getByTestId('trash-button')).toBeVisible();
+        for (const icon of ['download', 'copy']) {
+            await expect(page.getByTestId(`${icon}-button`)).toHaveCount(0);
+        }
+    });
 });

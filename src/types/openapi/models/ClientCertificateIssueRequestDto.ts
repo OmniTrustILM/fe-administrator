@@ -10,7 +10,7 @@
  * Do not edit the class manually.
  */
 
-import type { CertificateRequestFormat, RequestAttribute } from './';
+import type { CertificateRequestFormat, CertificateType, RequestAttribute } from './';
 
 /**
  * @export
@@ -42,11 +42,17 @@ export interface ClientCertificateIssueRequestDto {
      */
     request: string;
     /**
-     * Certificate signing request format
+     * Format of the request, which says how to read it. When absent, the default format of the certificate type applies: pkcs10 for X.509
      * @type {CertificateRequestFormat}
      * @memberof ClientCertificateIssueRequestDto
      */
     format?: CertificateRequestFormat;
+    /**
+     * Type of the certificate to issue. When absent, the certificate is X.509
+     * @type {CertificateType}
+     * @memberof ClientCertificateIssueRequestDto
+     */
+    certificateType?: CertificateType;
     /**
      * Token Profile UUID. Required if CSR is not uploaded
      * @type {string}

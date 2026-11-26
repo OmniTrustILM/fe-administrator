@@ -44,7 +44,7 @@ vi.mock('./transform/certificates', () => ({
 }));
 
 import { AjaxError } from 'rxjs/ajax';
-import { InspectedEntryKind, Resource } from 'types/openapi';
+import { CertificateType, InspectedEntryKind, Resource } from 'types/openapi';
 import { triggerBlobDownload } from 'utils/download';
 import { extractError } from 'utils/net';
 import { actions as certificatesActions } from './certificates';
@@ -78,6 +78,7 @@ const BULK_UPDATE_RA_PROFILE_EPIC_INDEX = findEpicIndex('bulkUpdateRaProfile');
 const BULK_DELETE_EPIC_INDEX = findEpicIndex('bulkDelete');
 const UPLOAD_EPIC_INDEX = findEpicIndex('uploadCertificate');
 const GET_REGISTER_ATTRIBUTES_EPIC_INDEX = findEpicIndex('getRegisterAttributes');
+const LIST_SUPPORTED_CERTIFICATE_TYPES_EPIC_INDEX = findEpicIndex('listSupportedCertificateTypes');
 const GET_CSR_ATTRIBUTES_EPIC_INDEX = findEpicIndex('getCsrAttributes');
 const GET_RENEW_ATTRIBUTES_EPIC_INDEX = findEpicIndex('getRenewAttributes');
 const GET_IDENTIFY_ATTRIBUTES_EPIC_INDEX = findEpicIndex('getIdentifyAttributes');
@@ -262,6 +263,27 @@ async function runGetRegisterAttributesEpic(
     };
     const output$ = epics[GET_REGISTER_ATTRIBUTES_EPIC_INDEX](of(action), of({}) as any, deps as any);
     const emitted = await firstValueFrom(output$.pipe(take(takeCount), toArray()));
+    return { emitted, calls };
+}
+
+async function runListSupportedCertificateTypesEpic(
+    listSupportedCertificateTypes: (args: any) => Observable<any>,
+): Promise<{ emitted: UnknownAction[]; calls: any[] }> {
+    const epics = certificatesEpics as ((action$: any, state$: any, deps: any) => Observable<UnknownAction>)[];
+    const calls: any[] = [];
+    const deps = {
+        apiClients: {
+            clientOperations: {
+                listSupportedCertificateTypes: (args: any) => {
+                    calls.push(args);
+                    return listSupportedCertificateTypes(args);
+                },
+            },
+        },
+    };
+    const action = certificatesActions.listSupportedCertificateTypes({ raProfileUuid: 'ra-1', authorityUuid: 'auth-1' });
+    const output$ = epics[LIST_SUPPORTED_CERTIFICATE_TYPES_EPIC_INDEX](of(action), of({}) as any, deps as any);
+    const emitted = await firstValueFrom(output$.pipe(toArray()));
     return { emitted, calls };
 }
 
@@ -958,6 +980,30 @@ describe('certificates epics', () => {
             // The reducer needs the profile uuid to drop that profile's now-stale descriptors.
             expect((emitted[0] as any).payload.raProfileUuid).toBe('ra-1');
             expect(emitted[1].type).toBe(appRedirectActions.fetchError.type);
+        });
+    });
+
+    describe('listSupportedCertificateTypes', () => {
+        test('asks for the types of the RA profile and stores them by its uuid', async () => {
+            const { emitted, calls } = await runListSupportedCertificateTypesEpic(() =>
+                of([{ certificateType: CertificateType.X509 }, { certificateType: CertificateType.Ssh }]),
+            );
+
+            expect(calls).toEqual([{ authorityUuid: 'auth-1', raProfileUuid: 'ra-1' }]);
+            expect(emitted).toEqual([
+                certificatesActions.listSupportedCertificateTypesSuccess({
+                    raProfileUuid: 'ra-1',
+                    certificateTypes: [CertificateType.X509, CertificateType.Ssh],
+                }),
+            ]);
+        });
+
+        test('fails quietly when the client fails, so that the form requests as it did before', async () => {
+            const { emitted } = await runListSupportedCertificateTypesEpic(() => throwError(() => new Error('boom')));
+
+            expect(emitted).toHaveLength(1);
+            expect(emitted[0].type).toBe(certificatesActions.listSupportedCertificateTypesFailure.type);
+            expect((emitted[0] as any).payload.raProfileUuid).toBe('ra-1');
         });
     });
 

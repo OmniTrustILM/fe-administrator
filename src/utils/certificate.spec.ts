@@ -1,6 +1,7 @@
 import { describe, expect, test, vi } from 'vitest';
 import {
     CertificateEventHistoryDtoStatusEnum,
+    CertificateOperation,
     CertificateState,
     CertificateSubjectType,
     CertificateType,
@@ -9,7 +10,14 @@ import {
     ComplianceStatus,
 } from 'types/openapi';
 import { runDownloadFileSuite } from './__tests__/anchor-download-mock';
-import { formatPEM, getCertificateStatusBadgeColor, getCertificateStatusColor, downloadFile, isX509Certificate } from './certificate';
+import {
+    formatPEM,
+    getCertificateStatusBadgeColor,
+    getCertificateStatusColor,
+    downloadFile,
+    isX509Certificate,
+    supportsOperation,
+} from './certificate';
 
 vi.mock('react-redux', () => ({
     useSelector: vi.fn((selector: any) => selector({ enums: { platformEnums: {} } })),
@@ -257,5 +265,25 @@ describe('isX509Certificate', () => {
         ['no certificate', undefined],
     ])('is false for %s', (_name, certificate) => {
         expect(isX509Certificate(certificate)).toBe(false);
+    });
+});
+
+describe('supportsOperation', () => {
+    test('is true for an operation the certificate lists', () => {
+        const certificate = { supportedOperations: [CertificateOperation.Revoke, CertificateOperation.Renew] };
+
+        expect(supportsOperation(certificate, CertificateOperation.Revoke)).toBe(true);
+    });
+
+    test('is false for an operation the certificate does not list', () => {
+        expect(supportsOperation({ supportedOperations: [CertificateOperation.Renew] }, CertificateOperation.Revoke)).toBe(false);
+        expect(supportsOperation({ supportedOperations: [] }, CertificateOperation.Revoke)).toBe(false);
+    });
+
+    test.each([
+        ['a certificate without a list of operations', {}],
+        ['no certificate', undefined],
+    ])('restricts nothing for %s', (_name, certificate) => {
+        expect(supportsOperation(certificate, CertificateOperation.Revoke)).toBe(true);
     });
 });

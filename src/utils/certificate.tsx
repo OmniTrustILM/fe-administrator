@@ -5,6 +5,7 @@ import { useSelector } from 'react-redux';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import {
     CertificateEventHistoryDtoStatusEnum,
+    type CertificateOperation,
     CertificateState,
     CertificateSubjectType,
     CertificateType,
@@ -17,6 +18,17 @@ import {
 /** Whether the certificate is X.509, the only type that has the X.509 parts of the detail. An unknown type is not. */
 export function isX509Certificate(certificate?: { certificateType?: CertificateType }): boolean {
     return certificate?.certificateType === CertificateType.X509;
+}
+
+/**
+ * Whether the type of the certificate supports the operation. A certificate that carries no list of operations
+ * restricts nothing, so that an action is not hidden for want of an answer; Core refuses an unsupported one anyway.
+ */
+export function supportsOperation(
+    certificate: { supportedOperations?: Array<CertificateOperation> } | undefined,
+    operation: CertificateOperation,
+): boolean {
+    return certificate?.supportedOperations?.includes(operation) ?? true;
 }
 
 export const emptyCertificate: CertificateDetailResponseModel = {

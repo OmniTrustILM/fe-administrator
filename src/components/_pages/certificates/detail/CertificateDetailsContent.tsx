@@ -15,7 +15,7 @@ import CertificateRAProfileDialog from '../CertificateRAProfileDialog';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders } from 'utils/widget';
-import { formatPEM, isX509Certificate } from 'utils/certificate';
+import { formatPEM, isX509Certificate, supportsOperation } from 'utils/certificate';
 import { useCopyToClipboard } from 'utils/common-hooks';
 import { dateFormatter } from 'utils/dateUtil';
 import { actions, selectors } from 'ducks/certificates';
@@ -29,6 +29,7 @@ import {
     CertificateRegistrationState,
     CertificateRequestFormat,
     CertificateState as CertStatus,
+    CertificateOperation,
     CertificateSubjectType,
     type CertificateValidationResultDto,
     PlatformEnum,
@@ -311,7 +312,9 @@ export default function CertificateDetailsContent({ certificate, validationResul
             completeTooltip = 'Complete unavailable — the issuance window has elapsed';
         }
 
-        return [
+        // operation: offered only when the type of the certificate supports it. x509Only: the download formats and
+        // the PEM copy are those of X.509, so another type has neither until it brings its own.
+        const typeButtons: Array<WidgetButtonProps & { operation?: CertificateOperation; x509Only?: boolean }> = [
             {
                 icon: 'trash',
                 disabled: false,
@@ -338,6 +341,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                 icon: 'retweet',
                 disabled: !certificate?.raProfile || certificate?.state !== CertStatus.Issued || isCertificateArchived,
                 requires: can(ResourceAction.Renew),
+                operation: CertificateOperation.Renew,
                 tooltip: 'Renew',
                 onClick: () => {
                     attemptFailed.current = false;
@@ -349,6 +353,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                 disabled: !certificate?.raProfile || certificate?.state !== CertStatus.Issued || isCertificateArchived,
                 // Core checks rekey as renew.
                 requires: can(ResourceAction.Renew),
+                operation: CertificateOperation.Rekey,
                 tooltip: 'Rekey',
                 onClick: () => {
                     attemptFailed.current = false;
@@ -359,6 +364,7 @@ export default function CertificateDetailsContent({ certificate, validationResul
                 icon: 'minus-square',
                 disabled: !certificate?.raProfile || certificate?.state !== CertStatus.Issued || isCertificateArchived,
                 requires: can(ResourceAction.Revoke),
+                operation: CertificateOperation.Revoke,
                 tooltip: 'Revoke',
                 onClick: () => setRevoke(true),
             },
@@ -374,17 +380,20 @@ export default function CertificateDetailsContent({ certificate, validationResul
                 icon: 'gavel',
                 disabled: !certificate?.raProfile || !certificate?.certificateContent || isCertificateArchived,
                 requires: can(ResourceAction.CheckCompliance),
+                operation: CertificateOperation.CheckCompliance,
                 tooltip: 'Check Compliance',
                 onClick: onComplianceCheck,
             },
             {
                 icon: 'download',
                 tooltip: 'Download',
+                x509Only: true,
                 disabled: !certificate?.certificateContent,
                 onClick: onDownloadClick,
             },
             {
                 icon: 'copy',
+                x509Only: true,
                 disabled: !certificate?.certificateContent,
                 tooltip: 'Copy certificate content',
                 onClick: (event) => {
@@ -414,6 +423,12 @@ export default function CertificateDetailsContent({ certificate, validationResul
                 },
             },
         ];
+        return typeButtons
+            .filter(({ operation, x509Only }) => {
+                if (operation && !supportsOperation(certificate, operation)) return false;
+                return !x509Only || isX509Certificate(certificate);
+            })
+            .map(({ operation: _operation, x509Only: _x509Only, ...button }) => button as WidgetButtonProps);
     }, [certificate, onComplianceCheck, dispatch, onDownloadClick, copyToClipboard, isCertificateArchived, isArchiving, can]);
 
     const detailData: TableDataRow[] = useMemo(() => {

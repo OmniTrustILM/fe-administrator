@@ -1298,6 +1298,37 @@ const getRegisterAttributes: AppEpic = (action$, state, deps) => {
     );
 };
 
+const listSupportedCertificateTypes: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.listSupportedCertificateTypes.match),
+        switchMap((action) =>
+            deps.apiClients.clientOperations
+                .listSupportedCertificateTypes({
+                    authorityUuid: action.payload.authorityUuid,
+                    raProfileUuid: action.payload.raProfileUuid,
+                })
+                .pipe(
+                    map((types) =>
+                        slice.actions.listSupportedCertificateTypesSuccess({
+                            raProfileUuid: action.payload.raProfileUuid,
+                            certificateTypes: types.map((type) => type.certificateType),
+                        }),
+                    ),
+
+                    // Not reported to the user: without the types the form sends none and Core issues X.509, as before.
+                    catchError((err) =>
+                        of(
+                            slice.actions.listSupportedCertificateTypesFailure({
+                                raProfileUuid: action.payload.raProfileUuid,
+                                error: extractError(err, 'Failed to list supported certificate types'),
+                            }),
+                        ),
+                    ),
+                ),
+        ),
+    );
+};
+
 const getRevocationAttributes: AppEpic = (action$, state, deps) => {
     return action$.pipe(
         filter(slice.actions.getRevocationAttributes.match),
@@ -1741,6 +1772,7 @@ const epics = [
     uploadCertificate,
     getIssuanceAttributes,
     getRegisterAttributes,
+    listSupportedCertificateTypes,
     getRevocationAttributes,
     getRenewAttributes,
     getIdentifyAttributes,

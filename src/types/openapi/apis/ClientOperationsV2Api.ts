@@ -29,6 +29,7 @@ import type {
     ErrorMessageDto,
     ManuallyIssueCertificateRequestDto,
     RequestAttribute,
+    SupportedCertificateTypeDto,
 } from '../models';
 
 export interface CancelPendingCertificateOperationRequest {
@@ -77,6 +78,11 @@ export interface ListRenewCertificateAttributesRequest {
 }
 
 export interface ListRevokeCertificateAttributesRequest {
+    authorityUuid: string;
+    raProfileUuid: string;
+}
+
+export interface ListSupportedCertificateTypesRequest {
     authorityUuid: string;
     raProfileUuid: string;
 }
@@ -424,6 +430,36 @@ export class ClientOperationsV2Api extends BaseAPI {
         return this.request<Array<BaseAttributeDto>>(
             {
                 url: '/v2/operations/authorities/{authorityUuid}/raProfiles/{raProfileUuid}/attributes/revoke'
+                    .replace('{authorityUuid}', encodeURI(authorityUuid))
+                    .replace('{raProfileUuid}', encodeURI(raProfileUuid)),
+                method: 'GET',
+            },
+            opts?.responseOpts,
+        );
+    }
+
+    /**
+     * Return the certificate types that can be issued through this RA profile, as its certificate authority reports them. An authority that does not report its types issues X.509 only.
+     * List supported certificate types
+     */
+    listSupportedCertificateTypes({
+        authorityUuid,
+        raProfileUuid,
+    }: ListSupportedCertificateTypesRequest): Observable<Array<SupportedCertificateTypeDto>>;
+    listSupportedCertificateTypes(
+        { authorityUuid, raProfileUuid }: ListSupportedCertificateTypesRequest,
+        opts?: OperationOpts,
+    ): Observable<AjaxResponse<Array<SupportedCertificateTypeDto>>>;
+    listSupportedCertificateTypes(
+        { authorityUuid, raProfileUuid }: ListSupportedCertificateTypesRequest,
+        opts?: OperationOpts,
+    ): Observable<Array<SupportedCertificateTypeDto> | AjaxResponse<Array<SupportedCertificateTypeDto>>> {
+        throwIfNullOrUndefined(authorityUuid, 'authorityUuid', 'listSupportedCertificateTypes');
+        throwIfNullOrUndefined(raProfileUuid, 'raProfileUuid', 'listSupportedCertificateTypes');
+
+        return this.request<Array<SupportedCertificateTypeDto>>(
+            {
+                url: '/v2/operations/authorities/{authorityUuid}/raProfiles/{raProfileUuid}/certificateTypes'
                     .replace('{authorityUuid}', encodeURI(authorityUuid))
                     .replace('{raProfileUuid}', encodeURI(raProfileUuid)),
                 method: 'GET',

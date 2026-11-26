@@ -33,6 +33,7 @@ import type {
     CertificateKeystoreRequestDto,
     CertificateRelationsDto,
     CertificateRequestFormat,
+    CertificateType,
     DownloadCertificateChainRequest,
     DownloadCertificateRequest,
     ListCertificateApprovalsRequest,
@@ -104,6 +105,8 @@ export type State = {
     certificateLocations?: LocationResponseModel[];
     issuanceAttributes: { [raProfileId: string]: AttributeDescriptorModel[] };
     registerAttributes: { [raProfileId: string]: AttributeDescriptorModel[] };
+    /** The certificate types each RA profile issues, as loaded; a profile whose types are not loaded has no entry. */
+    supportedCertificateTypes: { [raProfileId: string]: CertificateType[] };
     revocationAttributes: AttributeDescriptorModel[];
     renewAttributes: AttributeDescriptorModel[];
     identifyAttributes: AttributeDescriptorModel[];
@@ -196,6 +199,7 @@ export const initialState: State = {
 
     issuanceAttributes: {},
     registerAttributes: {},
+    supportedCertificateTypes: {},
     revocationAttributes: [],
     renewAttributes: [],
     identifyAttributes: [],
@@ -1026,6 +1030,20 @@ export const slice = createSlice({
             }
         },
 
+        // The types already loaded for the profile stay until the answer arrives: they rarely change.
+        listSupportedCertificateTypes: (_state, _action: PayloadAction<{ raProfileUuid: string; authorityUuid: string }>) => {},
+
+        listSupportedCertificateTypesSuccess: (
+            state,
+            action: PayloadAction<{ raProfileUuid: string; certificateTypes: CertificateType[] }>,
+        ) => {
+            state.supportedCertificateTypes[action.payload.raProfileUuid] = action.payload.certificateTypes;
+        },
+
+        listSupportedCertificateTypesFailure: (state, action: PayloadAction<{ raProfileUuid: string; error: string | undefined }>) => {
+            delete state.supportedCertificateTypes[action.payload.raProfileUuid];
+        },
+
         getRevocationAttributes: (state, action: PayloadAction<{ raProfileUuid: string; authorityUuid: string }>) => {
             state.isFetchingRevocationAttributes = true;
         },
@@ -1313,6 +1331,7 @@ const certificateHistory = createSelector(state, (state) => state.certificateHis
 const certificateLocations = createSelector(state, (state) => state.certificateLocations);
 const issuanceAttributes = createSelector(state, (state) => state.issuanceAttributes);
 const registerAttributes = createSelector(state, (state) => state.registerAttributes);
+const supportedCertificateTypes = createSelector(state, (state) => state.supportedCertificateTypes);
 const revocationAttributes = createSelector(state, (state) => state.revocationAttributes);
 const renewAttributes = createSelector(state, (state) => state.renewAttributes);
 const identifyAttributes = createSelector(state, (state) => state.identifyAttributes);
@@ -1410,6 +1429,7 @@ export const selectors = {
     certificateLocations,
     issuanceAttributes,
     registerAttributes,
+    supportedCertificateTypes,
     revocationAttributes,
     renewAttributes,
     identifyAttributes,
