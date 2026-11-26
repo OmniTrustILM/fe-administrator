@@ -23,6 +23,7 @@ import {
     transformCertificateComplianceCheckModelToDto,
     transformCertificateChainDownloadResponseDtoToCertificateChainResponseModel,
     transformCertificateRegistrationRequestModelToDto,
+    transformCertificateObjectToNodesAndEdges,
 } from './certificates';
 import { AttributeContentType, AttributeType } from 'types/openapi';
 
@@ -169,7 +170,7 @@ describe('transformCertificateResponseDtoToModel', () => {
 
 describe('transformCertificateListResponseDtoToModel', () => {
     test('returns shallow clone of input', () => {
-        const input = { uuid: 'cert1', commonName: 'test' } as any;
+        const input = { uuid: 'cert1', displayName: 'test', commonName: 'test' } as any;
         const result = transformCertificateListResponseDtoToModel(input);
         expect(result).toEqual(input);
         expect(result).not.toBe(input);
@@ -370,5 +371,20 @@ describe('transformCertificateRegistrationRequestModelToDto', () => {
         expect(dto.expiresAt).toBe('2026-08-01T00:00:00Z');
         expect(dto.csrAttributes).toHaveLength(1);
         expect(dto.attributes).toEqual([]);
+    });
+});
+
+describe('transformCertificateObjectToNodesAndEdges', () => {
+    test('labels the current certificate and each chain certificate by display name', () => {
+        const certificate = { uuid: 'c-1', displayName: 'web-01 host key', commonName: 'web-01.example.com' } as any;
+        const chain = {
+            completeChain: true,
+            certificates: [{ uuid: 'c-2', displayName: 'Issuing authority', commonName: 'ca.example.com' }],
+        } as any;
+
+        const { nodes } = transformCertificateObjectToNodesAndEdges(certificate, undefined, undefined, undefined, chain);
+
+        expect(nodes.find((node) => node.id === '1')?.data.entityLabel).toBe('web-01 host key');
+        expect(nodes.find((node) => node.id === 'chain-0')?.data.entityLabel).toBe('Issuing authority');
     });
 });

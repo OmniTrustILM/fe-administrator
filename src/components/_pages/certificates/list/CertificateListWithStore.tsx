@@ -11,6 +11,7 @@ import CertificateList from './index';
 
 const certificate = {
     uuid: 'cert-1',
+    displayName: 'Certificate one',
     commonName: 'Certificate one',
     subjectDn: 'CN=Certificate one',
     state: CertificateState.Issued,

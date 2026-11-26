@@ -10,107 +10,11 @@
  * Do not edit the class manually.
  */
 
-import type { CertificateRequestFormat, CertificateType, ComplianceStatus, ResponseAttribute } from './';
+import type { CertificateRequestFormat, CertificateType, ComplianceStatus, ResponseAttribute, X509CertificateRequestDetail } from './';
 
 /**
+ * @type CertificateRequestDto
+ * Certificate request dependent on the certificate type
  * @export
- * @interface CertificateRequestDto
  */
-export interface CertificateRequestDto {
-    /**
-     * UUID of the Certificate Request
-     * @type {string}
-     * @memberof CertificateRequestDto
-     */
-    uuid: string;
-    /**
-     * Certificate type
-     * @type {CertificateType}
-     * @memberof CertificateRequestDto
-     */
-    certificateType: CertificateType;
-    /**
-     * Certificate request format
-     * @type {CertificateRequestFormat}
-     * @memberof CertificateRequestDto
-     */
-    certificateRequestFormat: CertificateRequestFormat;
-    /**
-     * Public key algorithm
-     * @type {string}
-     * @memberof CertificateRequestDto
-     */
-    publicKeyAlgorithm: string;
-    /**
-     * Certificate signature algorithm
-     * @type {string}
-     * @memberof CertificateRequestDto
-     */
-    signatureAlgorithm: string;
-    /**
-     * Certificate alternative signature algorithm
-     * @type {string}
-     * @memberof CertificateRequestDto
-     */
-    altSignatureAlgorithm?: string;
-    /**
-     * Certificate request content
-     * @type {string}
-     * @memberof CertificateRequestDto
-     */
-    content: string;
-    /**
-     * Certificate common name
-     * @type {string}
-     * @memberof CertificateRequestDto
-     */
-    commonName: string;
-    /**
-     * Subject DN of the Certificate
-     * @type {string}
-     * @memberof CertificateRequestDto
-     */
-    subjectDn: string;
-    /**
-     * Subject alternative names
-     * @type {{ [key: string]: Array<string>; }}
-     * @memberof CertificateRequestDto
-     */
-    subjectAlternativeNames?: { [key: string]: Array<string> };
-    /**
-     * CSR Attributes
-     * @type {Array<ResponseAttribute>}
-     * @memberof CertificateRequestDto
-     */
-    attributes?: Array<ResponseAttribute>;
-    /**
-     * Signature Attributes
-     * @type {Array<ResponseAttribute>}
-     * @memberof CertificateRequestDto
-     */
-    signatureAttributes?: Array<ResponseAttribute>;
-    /**
-     * Alternative Signature Attributes
-     * @type {Array<ResponseAttribute>}
-     * @memberof CertificateRequestDto
-     */
-    altSignatureAttributes?: Array<ResponseAttribute>;
-    /**
-     * UUID of the Key
-     * @type {string}
-     * @memberof CertificateRequestDto
-     */
-    keyUuid?: string;
-    /**
-     * UUID of the Alternative Key
-     * @type {string}
-     * @memberof CertificateRequestDto
-     */
-    altKeyUuid?: string;
-    /**
-     * Certificate request compliance status
-     * @type {ComplianceStatus}
-     * @memberof CertificateRequestDto
-     */
-    complianceStatus: ComplianceStatus;
-}
+export type CertificateRequestDto = X509CertificateRequestDetail;

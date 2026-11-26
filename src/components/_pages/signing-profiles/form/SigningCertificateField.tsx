@@ -16,8 +16,8 @@ type CertificateOption = { value: string; label: string };
 
 const certificateOption = (certificate: CertificateDto): CertificateOption => ({
     value: certificate.uuid,
-    label: certificate.commonName
-        ? `${certificate.commonName} (${certificate.serialNumber || certificate.fingerprint || certificate.uuid})`
+    label: certificate.displayName
+        ? `${certificate.displayName} (${certificate.serialNumber || certificate.fingerprint || certificate.uuid})`
         : certificate.uuid,
 });
 

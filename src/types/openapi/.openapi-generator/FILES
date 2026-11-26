@@ -187,6 +187,7 @@ models/CertificateImportResultDto.ts
 models/CertificateInLocationDto.ts
 models/CertificateKeyUsage.ts
 models/CertificateKeystoreRequestDto.ts
+models/CertificateOperation.ts
 models/CertificateOperationKind.ts
 models/CertificateProtocol.ts
 models/CertificateProtocolDto.ts
@@ -804,6 +805,8 @@ models/VerifyDataRequestDto.ts
 models/VerifyDataResponseDto.ts
 models/WorkflowInterface.ts
 models/WorkflowRequestInterface.ts
+models/X509CertificateDetail.ts
+models/X509CertificateRequestDetail.ts
 models/index.ts
 runtime.ts
 servers.ts

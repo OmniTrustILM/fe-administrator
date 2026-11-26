@@ -22,17 +22,23 @@ export interface CertificateContentDto {
      */
     uuid: string;
     /**
-     * Certificate common name
+     * Name to show for the certificate: the common name of an X.509 certificate, the identifier of a certificate type without one
      * @type {string}
      * @memberof CertificateContentDto
      */
-    commonName: string;
+    displayName: string;
     /**
-     * Certificate serial number
+     * Certificate common name. Absent when the certificate has no common name: its type has none, or the subject of an X.509 certificate has none (a registration with only alternative names)
      * @type {string}
      * @memberof CertificateContentDto
      */
-    serialNumber: string;
+    commonName?: string;
+    /**
+     * Certificate serial number. Absent for certificate types without one
+     * @type {string}
+     * @memberof CertificateContentDto
+     */
+    serialNumber?: string;
     /**
      * Base64 encoded Certificate content
      * @type {string}

@@ -3,12 +3,13 @@ import {
     CertificateEventHistoryDtoStatusEnum,
     CertificateState,
     CertificateSubjectType,
+    CertificateType,
     CertificateValidationStatus,
     ComplianceRuleStatus,
     ComplianceStatus,
 } from 'types/openapi';
 import { runDownloadFileSuite } from './__tests__/anchor-download-mock';
-import { formatPEM, getCertificateStatusBadgeColor, getCertificateStatusColor, downloadFile } from './certificate';
+import { formatPEM, getCertificateStatusBadgeColor, getCertificateStatusColor, downloadFile, isX509Certificate } from './certificate';
 
 vi.mock('react-redux', () => ({
     useSelector: vi.fn((selector: any) => selector({ enums: { platformEnums: {} } })),
@@ -241,5 +242,20 @@ describe('getCertificateStatusColor registration states', () => {
     });
     test('returns a distinct color for PendingRegistration', () => {
         expect(getCertificateStatusColor(CertificateState.PendingRegistration)).toBe('#9c7cf9');
+    });
+});
+
+describe('isX509Certificate', () => {
+    test('is true for an X.509 certificate', () => {
+        expect(isX509Certificate({ certificateType: CertificateType.X509 })).toBe(true);
+    });
+
+    test.each([
+        ['another known type', { certificateType: CertificateType.Ssh }],
+        ['a type this version does not know', { certificateType: 'FUTURE' as CertificateType }],
+        ['a certificate without a type', {}],
+        ['no certificate', undefined],
+    ])('is false for %s', (_name, certificate) => {
+        expect(isX509Certificate(certificate)).toBe(false);
     });
 });

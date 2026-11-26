@@ -7,7 +7,7 @@ import { testInitialState } from 'ducks/test-reducers';
 
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import type { UserProfileDetailModel } from 'types/auth';
-import { type CertificateRegistrationState, CertificateState, Resource, type ResourceAction } from 'types/openapi';
+import { type CertificateRegistrationState, CertificateState, CertificateType, Resource, type ResourceAction } from 'types/openapi';
 import { resolveAvailability } from 'utils/availability';
 import type { ActionAvailability } from 'utils/useActionAvailability';
 import { overlaySliceReducer, useRecordingStore } from 'utils/test-helpers';
@@ -26,8 +26,10 @@ export type CertificateDetailsContentTestWrapperProps = Readonly<{
 const testCertificate = (registrationState: CertificateRegistrationState | undefined): CertificateDetailResponseModel =>
     ({
         uuid: 'source-uuid',
+        displayName: 'app.example',
         commonName: 'app.example',
         subjectDn: 'CN=app.example',
+        certificateType: CertificateType.X509,
         state: CertificateState.Issued,
         privateKeyAvailability: true,
         raProfile: { uuid: 'ra-profile-uuid', name: 'Test RA Profile', authorityInstanceUuid: 'authority-uuid' },

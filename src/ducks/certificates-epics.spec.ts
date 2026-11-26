@@ -108,6 +108,7 @@ async function runEpic(
 
     const minimalCert = {
         uuid: 'cert-1',
+        displayName: 'cn',
         commonName: 'cn',
         subjectDn: 'CN=cn',
         publicKeyAlgorithm: 'RSA',

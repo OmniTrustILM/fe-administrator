@@ -3,7 +3,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { createRoot, type Root } from 'react-dom/client';
 
 import { setupReactActEnvironment } from '../test-utils/reactActEnvironment';
-import { AutoRenewalMode, CertificateState, CertificateValidationStatus, RenewalWindowSource } from 'types/openapi';
+import { AutoRenewalMode, CertificateState, CertificateType, CertificateValidationStatus, RenewalWindowSource } from 'types/openapi';
 import type { EnumItemModel } from 'types/enums';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 
@@ -30,7 +30,13 @@ const { buildCertificateDetailBaseRows } = await import('./certificateTableHelpe
 
 function buildRows(state: CertificateState, resultStatus?: CertificateValidationStatus) {
     return buildCertificateDetailBaseRows(
-        { uuid: 'cert-1', commonName: 'cert.example.com', subjectDn: 'CN=cert', state } as CertificateDetailResponseModel,
+        {
+            uuid: 'cert-1',
+            displayName: 'cert.example.com',
+            commonName: 'cert.example.com',
+            subjectDn: 'CN=cert',
+            state,
+        } as CertificateDetailResponseModel,
         resultStatus ? { resultStatus } : undefined,
         false,
         { certificateKeyUsage: {}, qcType: {} },
@@ -192,7 +198,7 @@ describe('buildCertificateCellRegistry', () => {
 
 describe('buildCertificateDetailBaseRows - renewal rows', () => {
     const renewalIds = ['renewalWindow', 'renewalWindowSource', 'renewalExplanation', 'renewalWindowUpdatedAt', 'renewalDue'];
-    const baseCertificate = { uuid: 'cert-1', commonName: 'cert.example.com', subjectDn: 'CN=cert' };
+    const baseCertificate = { uuid: 'cert-1', displayName: 'cert.example.com', commonName: 'cert.example.com', subjectDn: 'CN=cert' };
     const renewalInfo = {
         windowStart: '2026-05-01T00:00:00.000Z',
         windowEnd: '2026-05-10T00:00:00.000Z',
@@ -318,5 +324,80 @@ describe('buildCertificateDetailBaseRows - renewal rows', () => {
 
         await renderValue(rows, 'autoRenewal');
         expect(container.textContent).toBe('Not possible');
+    });
+});
+
+describe('buildCertificateDetailBaseRows - certificate type', () => {
+    const x509Only = ['issuerDN', 'keyUsage', 'extendedKeyUsage', 'subjectType'];
+    const sharedOptional = ['commonName', 'subjectDN', 'publicKeyAlgorithm', 'keySize'];
+
+    function rowIdsOf(certificate: Partial<CertificateDetailResponseModel>) {
+        return buildCertificateDetailBaseRows(
+            { uuid: 'cert-1', displayName: 'cert-1', state: CertificateState.Issued, ...certificate } as CertificateDetailResponseModel,
+            undefined,
+            false,
+            { certificateKeyUsage: {}, qcType: {}, renewalWindowSource: {} },
+            (d: Date) => d.toISOString(),
+            (_enumMap, key: string) => key,
+            () => undefined,
+        ).map((row) => row.id);
+    }
+
+    it('shows every X.509 row for an X.509 certificate, also the ones without a value', () => {
+        const ids = rowIdsOf({ certificateType: CertificateType.X509 });
+
+        expect(ids).toEqual(expect.arrayContaining([...x509Only, ...sharedOptional]));
+    });
+
+    it('shows the qualified certificate statements of an X.509 certificate', () => {
+        const withStatements = rowIdsOf({ certificateType: CertificateType.X509, qcStatements: { qcCompliance: true } });
+        const withoutStatements = rowIdsOf({ certificateType: CertificateType.X509 });
+
+        expect(withStatements.length).toBeGreaterThan(withoutStatements.length);
+    });
+
+    it.each([
+        ['another known type', CertificateType.Ssh],
+        ['a type this version does not know', 'FUTURE' as CertificateType],
+    ])('shows no X.509 row for %s', (_name, certificateType) => {
+        const ids = rowIdsOf({
+            certificateType,
+            keyUsage: [],
+            extendedKeyUsage: ['1.3.6.1.5.5.7.3.1'],
+            issuerDn: 'CN=Issuer',
+            qcStatements: { qcCompliance: true },
+        });
+
+        for (const id of x509Only) {
+            expect(ids).not.toContain(id);
+        }
+        expect(ids).toEqual(rowIdsOf({ certificateType }));
+    });
+
+    it('shows the alternative key rows of a hybrid certificate only for X.509', () => {
+        const alternative = ['altKey', 'altKeySize'];
+
+        const x509 = rowIdsOf({ certificateType: CertificateType.X509, hybridCertificate: true });
+        const future = rowIdsOf({ certificateType: 'FUTURE' as CertificateType, hybridCertificate: true });
+
+        expect(x509).toEqual(expect.arrayContaining(alternative));
+        expect(future.filter((id) => id.startsWith('alt'))).toEqual([]);
+    });
+
+    it('shows a shared property of another type only when the certificate has it', () => {
+        const without = rowIdsOf({ certificateType: CertificateType.Ssh });
+        const withValues = rowIdsOf({
+            certificateType: CertificateType.Ssh,
+            commonName: 'host.example',
+            subjectDn: 'CN=host.example',
+            publicKeyAlgorithm: 'Ed25519',
+            keySize: 256,
+        });
+
+        for (const id of sharedOptional) {
+            expect(without).not.toContain(id);
+            expect(withValues).toContain(id);
+        }
+        expect(without).toEqual(expect.arrayContaining(['serialNumber', 'certState', 'fingerprint', 'archivationStatus']));
     });
 });

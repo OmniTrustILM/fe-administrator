@@ -56,6 +56,7 @@ function pickListFieldsFromDetail(
     return {
         ...existing,
         uuid: detail.uuid,
+        displayName: detail.displayName,
         commonName: detail.commonName,
         serialNumber: detail.serialNumber,
         issuerCommonName: detail.issuerCommonName,

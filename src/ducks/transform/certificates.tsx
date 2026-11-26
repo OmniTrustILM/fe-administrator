@@ -201,7 +201,7 @@ function addCertificateNode(
         // height: nodeHeight,
         data: {
             customNodeCardTitle: 'Current Certificate',
-            entityLabel: certificate.commonName,
+            entityLabel: certificate.displayName,
             icon: 'fa fa-certificate',
             isMainNode: true,
             certificateNodeData: {
@@ -248,7 +248,7 @@ function addCertificateChainNodesAndEdges(nodes: CustomNode[], edges: Edge[], ce
                 data: {
                     customNodeCardTitle: chainLength - 1 === index && certificateChain?.completeChain ? `Root CA` : `Intermediate CA`,
                     redirectUrl: chain?.uuid ? `/certificates/detail/${chain.uuid}` : undefined,
-                    entityLabel: chain.commonName,
+                    entityLabel: chain.displayName,
                     icon: chainLength - 1 === index && certificateChain?.completeChain ? 'fa fa-medal' : 'fa fa-certificate',
                     certificateNodeData: { certificateNodeStatus: chain.state, certificateNodeValidationStatus: chain.validationStatus },
                     otherProperties: otherProperties,

@@ -98,13 +98,28 @@ describe('certificates slice', () => {
         expect(next.isFetchingDetail).toBe(true);
         expect(next.certificateDetail).toBeUndefined();
 
-        const cert = { uuid: 'cert-1', commonName: 'Test' } as any;
+        const cert = { uuid: 'cert-1', displayName: 'Test', commonName: 'Test' } as any;
         next = reducer(next, actions.getCertificateDetailSuccess({ certificate: cert }));
         expect(next.isFetchingDetail).toBe(false);
         expect(next.certificateDetail).toEqual(cert);
 
         next = reducer({ ...next, isFetchingDetail: true }, actions.getCertificateDetailFailure({ error: 'err' }));
         expect(next.isFetchingDetail).toBe(false);
+    });
+
+    test('getCertificateDetailSuccess updates the display name of the matching inventory row', () => {
+        const state = {
+            ...initialState,
+            certificates: [
+                { uuid: 'cert-1', displayName: 'old name', commonName: 'app.example' },
+                { uuid: 'cert-2', displayName: 'untouched', commonName: 'other.example' },
+            ] as any,
+        };
+        const cert = { uuid: 'cert-1', displayName: 'new name', commonName: 'app.example' } as any;
+
+        const next = reducer(state, actions.getCertificateDetailSuccess({ certificate: cert }));
+
+        expect(next.certificates.map((row) => row.displayName)).toEqual(['new name', 'untouched']);
     });
 
     test('getCertificateRelations / success / failure update relations flags and data', () => {

@@ -76,9 +76,10 @@ export const core: CoreAnswers = {
         ],
     },
     certificates: [
-        { uuid: 'cert-plain', commonName: 'Plain Cert', serialNumber: '1' },
+        { uuid: 'cert-plain', displayName: 'Plain Cert', commonName: 'Plain Cert', serialNumber: '1' },
         {
             uuid: 'cert-nr',
+            displayName: 'Qualified Cert',
             commonName: 'Qualified Cert',
             serialNumber: '2',
             nonRepudiation: true,
@@ -147,6 +148,7 @@ export const savedProfile: SigningProfileDto = {
         managedSigningType: ManagedSigningType.StaticKey,
         certificate: {
             uuid: 'cert-nr',
+            displayName: 'Qualified Cert',
             commonName: 'Qualified Cert',
             serialNumber: '2',
             certificateType: CertificateType.X509,

@@ -34,9 +34,14 @@ const platformEnums = {
     },
 };
 
-const testCertificate = (keystoreAvailable: boolean, hasPrivateKeyItem: boolean): CertificateDetailResponseModel =>
+const testCertificate = (
+    keystoreAvailable: boolean,
+    hasPrivateKeyItem: boolean,
+    naming: Partial<CertificateDetailResponseModel> = {},
+): CertificateDetailResponseModel =>
     ({
         uuid: 'certificate-uuid',
+        displayName: 'web-server-01.omnitrust.com',
         commonName: 'web-server-01.omnitrust.com',
         subjectDn: 'CN=web-server-01.omnitrust.com',
         publicKeyAlgorithm: 'RSA',
@@ -73,6 +78,7 @@ const testCertificate = (keystoreAvailable: boolean, hasPrivateKeyItem: boolean)
                   ],
               }
             : undefined,
+        ...naming,
     }) as CertificateDetailResponseModel;
 
 /** The global modal as the certificate's Download action opens it. */
@@ -101,6 +107,10 @@ export type CertificateDownloadFormTestWrapperProps = Readonly<{
     inGlobalModal?: boolean;
     /** Whether the signed-in user holds the key export permission. */
     canExportKeys?: boolean;
+    /** Display name, common name and serial number the certificate has in place of the fixture's. */
+    naming?: Pick<CertificateDetailResponseModel, 'displayName' | 'commonName' | 'serialNumber'>;
+    /** Base64 content a plain download is answered with; it stays in flight when absent. */
+    certificateDownloadContent?: string;
     onAction?: (action: UnknownAction) => void;
 }>;
 
@@ -113,23 +123,35 @@ export function CertificateDownloadFormTestWrapper({
     exportAnswer,
     inGlobalModal = false,
     canExportKeys = true,
+    naming,
+    certificateDownloadContent,
     onAction,
 }: CertificateDownloadFormTestWrapperProps) {
     const store = useMemo(
         () =>
             exportDialogTestStore(
-                { exportAttributeDescriptors, exportAnswer, onAction },
+                { exportAttributeDescriptors, exportAnswer, certificateDownloadContent, onAction },
                 {
                     auth: keyPermissionsAuth({ exportKey: canExportKeys }),
                     enums: { platformEnums },
                     certificates: {
                         ...certificateSlice.getInitialState(),
-                        certificateDetail: testCertificate(keystoreAvailable, hasPrivateKeyItem),
+                        certificateDetail: testCertificate(keystoreAvailable, hasPrivateKeyItem, naming),
                     },
                     ...(inGlobalModal ? { userInterface: downloadModal } : {}),
                 },
             ),
-        [keystoreAvailable, hasPrivateKeyItem, exportAttributeDescriptors, exportAnswer, inGlobalModal, canExportKeys, onAction],
+        [
+            keystoreAvailable,
+            hasPrivateKeyItem,
+            exportAttributeDescriptors,
+            exportAnswer,
+            inGlobalModal,
+            canExportKeys,
+            naming,
+            certificateDownloadContent,
+            onAction,
+        ],
     );
 
     return (
