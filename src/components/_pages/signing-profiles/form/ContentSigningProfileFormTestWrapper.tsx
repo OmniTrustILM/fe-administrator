@@ -25,6 +25,7 @@ const identity =
 /** A signing certificate Core holds, with the purposes the certificate-purpose knobs filter on. */
 export interface HeldCertificate {
     uuid: string;
+    displayName: string;
     commonName: string;
     serialNumber: string;
     nonRepudiation?: boolean;

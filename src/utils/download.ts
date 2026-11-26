@@ -56,6 +56,7 @@ export function downloadFileZip(
     void (async () => {
         const { default: JSZip } = await import('jszip');
         const zip = new JSZip();
+        const usedNames = new Set<string>();
 
         for (const i of certificateUuids) {
             const certificate = (certificates as Array<CertificateDetailResponseModel | CertificateContentResponseModel>).find(
@@ -72,7 +73,7 @@ export function downloadFileZip(
                 content = new Uint8Array(Buffer.from(certificate.certificateContent || '', 'base64'));
             }
 
-            zip.file(certificateFileBaseName(certificate).replace('*.', '_.') + '.' + fileType, content);
+            zip.file(uniqueZipEntryName(certificateFileBaseName(certificate).replace('*.', '_.'), fileType, usedNames), content);
         }
 
         const blob = await zip.generateAsync({ type: 'blob' });
@@ -108,4 +109,14 @@ export function formatPEM(pemString: string) {
 /** Base of the file name a certificate or its request is downloaded under: its display name and, when it has one, its serial number. */
 export function certificateFileBaseName(certificate?: { displayName?: string; serialNumber?: string }): string {
     return [certificate?.displayName, certificate?.serialNumber].filter(Boolean).join('_');
+}
+
+/** The entry name for a file in a zip: the base name, numbered from the second file that has the same one, so that no entry replaces another. */
+function uniqueZipEntryName(baseName: string, fileType: string, usedNames: Set<string>): string {
+    let name = `${baseName}.${fileType}`;
+    for (let copy = 2; usedNames.has(name); copy++) {
+        name = `${baseName} (${copy}).${fileType}`;
+    }
+    usedNames.add(name);
+    return name;
 }
