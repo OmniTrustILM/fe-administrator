@@ -82,6 +82,10 @@ test.describe('RaProfileDetail actions by permission', () => {
         const edit = page.getByTestId('edit-button');
         await expect(edit).toHaveCount(3);
         for (let index = 0; index < 3; index++) await expect(edit.nth(index)).toBeEnabled();
+        await page.getByRole('tab', { name: 'Protocols' }).click();
+        const activate = page.getByRole('button', { name: 'Activate' });
+        await expect(activate).toHaveCount(4);
+        for (let index = 0; index < 4; index++) await expect(activate.nth(index)).toBeDisabled();
     });
 
     test('disables the actions addressed by the route authority under an undefined segment', async ({ mount, page }) => {

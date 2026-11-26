@@ -64,9 +64,9 @@ export default function RaProfileDetail() {
     const raProfile = useSelector(raProfilesSelectors.raProfile);
 
     const routeAuthorityUuid = authorityId && authorityId !== 'unknown' && authorityId !== 'undefined' ? authorityId : undefined;
-    // Actions addressed by the route's authority stay disabled on a route without one.
+    // Actions whose endpoint or loaded state uses the route's authority stay disabled on a route without one.
     const routeWithoutAuthority = !routeAuthorityUuid;
-    // Dialogs that submit the loaded profile's own authority follow that profile instead of the route.
+    // The validation dialogs submit the loaded profile's own authority, so they follow that profile instead of the route.
     const profileWithoutAuthority = !raProfile?.authorityInstanceUuid;
     const requestAttributesAuthorityUuid = raProfile?.authorityInstanceUuid ?? routeAuthorityUuid;
     const acmeDetails = useSelector(raProfilesSelectors.acmeDetails);
@@ -816,7 +816,7 @@ export default function RaProfileDetail() {
                     <ProgressButton
                         key="action"
                         type="button"
-                        disabled={profileWithoutAuthority}
+                        disabled={routeWithoutAuthority}
                         requires={can(ResourceAction.Update)}
                         title={acmeDetails?.acmeAvailable ? 'Deactivate' : 'Activate'}
                         inProgressTitle={acmeDetails?.acmeAvailable ? 'Deactivating...' : 'Activating...'}
@@ -846,7 +846,7 @@ export default function RaProfileDetail() {
                     <ProgressButton
                         key="action"
                         type="button"
-                        disabled={profileWithoutAuthority}
+                        disabled={routeWithoutAuthority}
                         requires={can(ResourceAction.Update)}
                         title={scepDetails?.scepAvailable ? 'Deactivate' : 'Activate'}
                         inProgressTitle={scepDetails?.scepAvailable ? 'Deactivating...' : 'Activating...'}
@@ -875,7 +875,7 @@ export default function RaProfileDetail() {
                     <ProgressButton
                         key="action"
                         type="button"
-                        disabled={profileWithoutAuthority}
+                        disabled={routeWithoutAuthority}
                         requires={can(ResourceAction.Update)}
                         title={cmpDetails?.cmpAvailable ? 'Deactivate' : 'Activate'}
                         inProgressTitle={cmpDetails?.cmpAvailable ? 'Deactivating...' : 'Activating...'}
@@ -905,7 +905,7 @@ export default function RaProfileDetail() {
                     <ProgressButton
                         key="action"
                         type="button"
-                        disabled={profileWithoutAuthority}
+                        disabled={routeWithoutAuthority}
                         requires={can(ResourceAction.Update)}
                         title={estDetails?.estAvailable ? 'Deactivate' : 'Activate'}
                         inProgressTitle={estDetails?.estAvailable ? 'Deactivating...' : 'Activating...'}
@@ -950,7 +950,7 @@ export default function RaProfileDetail() {
             openCmpActivationDialog,
             openEstActivationDialog,
             can,
-            profileWithoutAuthority,
+            routeWithoutAuthority,
         ],
     );
 
