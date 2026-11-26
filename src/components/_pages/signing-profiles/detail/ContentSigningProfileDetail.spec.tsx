@@ -1,6 +1,6 @@
-import { expect, type Locator, type Page, test } from '../../../../../playwright/ct-test';
+import { expect, type Page, test } from '../../../../../playwright/ct-test';
 import { ResourceAction } from 'types/openapi';
-import { ContentSigningProfileDetailTestWrapper, type RecordedRequest } from './ContentSigningProfileDetailTestWrapper';
+import { ContentSigningProfileDetailTestWrapper } from './ContentSigningProfileDetailTestWrapper';
 import {
     DOCUMENT_SIGNING_EKU,
     delegatedProfile,
@@ -11,20 +11,10 @@ import {
     otherTypeCertificateProfile,
     signedProfile,
 } from './contentSigningDetailFixtures';
-
-const row = (scope: Locator | Page, label: string) =>
-    scope.getByRole('row').filter({ has: scope.getByRole('cell', { name: label, exact: true }) });
-
-async function requests(page: Page): Promise<RecordedRequest[]> {
-    return JSON.parse((await page.getByTestId('requests').textContent()) ?? '[]') as RecordedRequest[];
-}
+import { openTab, requests, row } from './signingProfileDetailTestHelpers';
 
 async function answers(page: Page): Promise<string[]> {
     return JSON.parse((await page.getByTestId('answers').textContent()) ?? '[]') as string[];
-}
-
-async function openTab(page: Page, name: string) {
-    await page.getByRole('tab', { name }).click();
 }
 
 test.describe('Content-signing profile detail', () => {

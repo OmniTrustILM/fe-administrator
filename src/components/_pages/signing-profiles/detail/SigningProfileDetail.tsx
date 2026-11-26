@@ -17,6 +17,7 @@ import CustomAttributeWidget from 'components/Attributes/CustomAttributeWidget';
 import AttributeViewer from 'components/Attributes/AttributeViewer';
 import TabLayout from 'components/Layout/TabLayout';
 import ContentSigningWorkflowDetail from './ContentSigningWorkflowDetail';
+import RawSigningWorkflowDetail from './RawSigningWorkflowDetail';
 
 import { actions, selectors } from 'ducks/signing-profiles';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
@@ -36,7 +37,7 @@ import {
     type StaticKeyManagedSigningDto,
     type TimestampingWorkflowDto,
 } from 'types/openapi';
-import { isContentSigningWorkflow, isStaticKeyManagedSigning, isTimestampingWorkflow } from 'utils/type-guards';
+import { isContentSigningWorkflow, isRawSigningWorkflow, isStaticKeyManagedSigning, isTimestampingWorkflow } from 'utils/type-guards';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import { useActionAvailability } from 'utils/useActionAvailability';
@@ -668,6 +669,9 @@ export default function SigningProfileDetail() {
         }
         if (loadedProfile && isContentSigningWorkflow(loadedProfile.workflow)) {
             return <ContentSigningWorkflowDetail workflow={loadedProfile.workflow} signingProfileUuid={loadedProfile.uuid} />;
+        }
+        if (loadedProfile && isRawSigningWorkflow(loadedProfile.workflow)) {
+            return <RawSigningWorkflowDetail workflow={loadedProfile.workflow} />;
         }
         return (
             <Widget title="Signing Workflow Configuration" titleSize="large">
