@@ -92,21 +92,17 @@ export default function CertificateRequestContent({ certificate, isBusy, getFres
         [certificate, fileNameToDownload, copyToClipboard, isX509Request],
     );
 
-    // The download formats and the PEM copy are those of a PKCS#10 request, so a request of another type has neither.
     const buttonsCSR: WidgetButtonProps[] = useMemo(
-        () =>
-            isX509Certificate(certificate?.certificateRequest)
-                ? [
-                      {
-                          icon: 'download',
-                          disabled: false,
-                          tooltip: 'Download CSR',
-                          custom: downloadCSRDropDown,
-                          onClick: () => {},
-                      },
-                  ]
-                : [],
-        [certificate, downloadCSRDropDown],
+        () => [
+            {
+                icon: 'download',
+                disabled: false,
+                tooltip: 'Download CSR',
+                custom: downloadCSRDropDown,
+                onClick: () => {},
+            },
+        ],
+        [downloadCSRDropDown],
     );
 
     const csrPropertiesData: TableDataRow[] = useMemo(() => {

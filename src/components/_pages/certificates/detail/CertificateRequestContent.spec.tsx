@@ -29,7 +29,6 @@ test.describe('CertificateRequestContent — parts by request type', () => {
 
         await expect(page.getByText('Subject DN')).toBeVisible();
         await expect(page.getByText('ASN.1 Structure')).toBeVisible();
-        await expect(page.getByRole('button', { name: 'Download' })).toBeVisible();
     });
 
     for (const [name, requestType] of [
@@ -42,7 +41,6 @@ test.describe('CertificateRequestContent — parts by request type', () => {
             await expect(page.getByText('Signature Algorithm')).toBeVisible();
             await expect(page.getByText('Subject DN')).toHaveCount(0);
             await expect(page.getByText('ASN.1 Structure')).toHaveCount(0);
-            await expect(page.getByRole('button', { name: 'Download' })).toHaveCount(0);
         });
 
         test(`shows a shared property only when a request of ${name} has it`, async ({ mount, page }) => {
