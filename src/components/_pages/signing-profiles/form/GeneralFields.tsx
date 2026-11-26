@@ -19,7 +19,12 @@ const workflowTypeOptions = [SigningWorkflowType.Timestamping, SigningWorkflowTy
     workflowTypeOption,
 );
 
-export default function GeneralFields(): ReactElement {
+interface Props {
+    /** Whether the edited profile has ILM Native active, which Core turns off when the profile is saved under Timestamping. */
+    ilmNativeEnabled: boolean;
+}
+
+export default function GeneralFields({ ilmNativeEnabled }: Readonly<Props>): ReactElement {
     const { control, setValue } = useFormContext<SigningProfileFormValues>();
     const workflowType = useWatch({ control, name: 'workflowType' });
 
@@ -70,6 +75,9 @@ export default function GeneralFields(): ReactElement {
                 selected={workflowType}
                 onSelect={switchWorkflow}
             />
+            {ilmNativeEnabled && workflowType === SigningWorkflowType.Timestamping && (
+                <p className="text-xs text-warning">Saving under the Timestamping workflow deactivates ILM Native on this profile.</p>
+            )}
         </div>
     );
 }

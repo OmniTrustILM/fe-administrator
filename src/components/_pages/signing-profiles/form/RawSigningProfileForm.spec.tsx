@@ -3,7 +3,7 @@ import { test, expect } from 'playwright/ct-test';
 import { type SigningProfileRequestDto, SigningWorkflowType } from 'types/openapi';
 import { ContentSigningProfileFormTestWrapper } from './ContentSigningProfileFormTestWrapper';
 import { core, DOCUMENT_SIGNING_EKU, rawSigningProfile } from './contentSigningFormFixtures';
-import { rawProfileWithoutPurpose } from './rawSigningFormFixtures';
+import { rawIlmNativeProfile, rawProfileWithoutPurpose } from './rawSigningFormFixtures';
 import {
     addExtendedKeyUsage,
     choose,
@@ -20,6 +20,8 @@ import {
 
 const SIGNATURE_ALGORITHM_NOTE =
     "Integrators submit digests through the ILM Native API. The signature algorithm, and with it the digest algorithm each request must name, follows the certificate's key and the Signing Operation Attributes on the Signing Scheme tab.";
+
+const ILM_NATIVE_WARNING = 'Saving under the Timestamping workflow deactivates ILM Native on this profile.';
 
 const lastCertificateQuery = async (page: Page) => (await requests(page, 'listSigningCertificates')).at(-1);
 
@@ -167,5 +169,38 @@ test.describe('SigningProfileForm - raw signing workflow', () => {
                 requireNonRepudiation: true,
                 requiredExtendedKeyUsageOids: [DOCUMENT_SIGNING_EKU],
             });
+    });
+});
+
+test.describe('SigningProfileForm - ILM Native warning', () => {
+    test('warns that saving under Timestamping deactivates ILM Native', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={{ ...core, editedProfile: rawIlmNativeProfile }} />);
+        await expect(page.locator('#signingProfileName')).toHaveValue('RawSigning');
+
+        await chooseWorkflow(page, 'Timestamping');
+        await expect(page.getByText(ILM_NATIVE_WARNING)).toBeVisible();
+
+        await chooseWorkflow(page, 'Raw Signing');
+        await expect(page.getByText(ILM_NATIVE_WARNING)).toHaveCount(0);
+    });
+
+    test('gives no ILM Native warning when switching to content signing', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={{ ...core, editedProfile: rawIlmNativeProfile }} />);
+        await expect(page.locator('#signingProfileName')).toHaveValue('RawSigning');
+
+        await chooseWorkflow(page, 'Content Signing');
+
+        await expect(page.getByRole('radio', { name: 'Content Signing' })).toBeChecked();
+        await expect(page.getByText(ILM_NATIVE_WARNING)).toHaveCount(0);
+    });
+
+    test('gives no ILM Native warning for a profile without it', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={{ ...core, editedProfile: rawSigningProfile }} />);
+        await expect(page.locator('#signingProfileName')).toHaveValue('RawSigning');
+
+        await chooseWorkflow(page, 'Timestamping');
+
+        await expect(page.getByRole('radio', { name: 'Timestamping' })).toBeChecked();
+        await expect(page.getByText(ILM_NATIVE_WARNING)).toHaveCount(0);
     });
 });
