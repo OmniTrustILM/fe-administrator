@@ -73,9 +73,21 @@ export interface TokenKeyDto {
      */
     suggestedName?: string;
     /**
-     * Why the key cannot be onboarded
+     * Platform\'s summary of why the key cannot be onboarded
      * @type {string}
      * @memberof TokenKeyDto
      */
     reason?: string;
+    /**
+     * Text of the token instance\'s connector naming the cause behind the status and how to fix it, alongside the platform\'s `reason`. Clients display it and never parse it.
+     * @type {string}
+     * @memberof TokenKeyDto
+     */
+    diagnostic?: string;
+    /**
+     * Name of the key\'s standardized parameters: the curve of an ECDSA key or the parameter set of a post-quantum key, such as P-256 or ML-DSA-65; absent for RSA and AES keys, whose `length` gives their size, and for a key the platform cannot name.
+     * @type {string}
+     * @memberof TokenKeyDto
+     */
+    parameterSet?: string | null;
 }

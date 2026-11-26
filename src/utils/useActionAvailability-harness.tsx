@@ -8,12 +8,17 @@ import { useActionAvailability } from 'utils/useActionAvailability';
 
 type Props = Readonly<{
     resource: Resource;
-    objectUuid?: string;
+    objectUuid?: string | string[];
+    decideOver?: string[];
     preloadedState: Partial<ReturnType<typeof testReducers>>;
 }>;
 
-function UpdateAvailability({ resource, objectUuid }: Readonly<{ resource: Resource; objectUuid?: string }>) {
-    const availability = useActionAvailability(resource, objectUuid)(ResourceAction.Update);
+function UpdateAvailability({
+    resource,
+    objectUuid,
+    decideOver,
+}: Readonly<{ resource: Resource; objectUuid?: string | string[]; decideOver?: string[] }>) {
+    const availability = useActionAvailability(resource, objectUuid)(ResourceAction.Update, { objects: decideOver });
     return <output data-testid="availability">{JSON.stringify(availability)}</output>;
 }
 
@@ -33,8 +38,7 @@ function AnswerOutcomes({ resource, objectUuid }: Readonly<{ resource: Resource;
                     dispatch(
                         resourceActions.listObjectAllowedActionsSuccess({
                             resource,
-                            uuid: objectUuid,
-                            allowedActions: [ResourceAction.Update],
+                            answers: [{ uuid: objectUuid, allowedActions: [ResourceAction.Update] }],
                         }),
                     )
                 }
@@ -44,7 +48,7 @@ function AnswerOutcomes({ resource, objectUuid }: Readonly<{ resource: Resource;
             <button
                 type="button"
                 data-testid="simulate-answer-failure"
-                onClick={() => dispatch(resourceActions.listObjectAllowedActionsFailure({ resource, uuid: objectUuid }))}
+                onClick={() => dispatch(resourceActions.listObjectAllowedActionsFailure({ resource, uuids: [objectUuid] }))}
             >
                 Simulate failure
             </button>
@@ -52,12 +56,12 @@ function AnswerOutcomes({ resource, objectUuid }: Readonly<{ resource: Resource;
     );
 }
 
-export function UseActionAvailabilityWithStore({ resource, objectUuid, preloadedState }: Props) {
+export function UseActionAvailabilityWithStore({ resource, objectUuid, decideOver, preloadedState }: Props) {
     const { store, dispatched } = useRecordingStore(preloadedState, 'resource/listObjectAllowedActions', answeringReducer);
     return (
         <Provider store={store}>
-            <UpdateAvailability resource={resource} objectUuid={objectUuid} />
-            {objectUuid && <AnswerOutcomes resource={resource} objectUuid={objectUuid} />}
+            <UpdateAvailability resource={resource} objectUuid={objectUuid} decideOver={decideOver} />
+            {typeof objectUuid === 'string' && <AnswerOutcomes resource={resource} objectUuid={objectUuid} />}
             <output data-testid="dispatched">{JSON.stringify(dispatched)}</output>
         </Provider>
     );

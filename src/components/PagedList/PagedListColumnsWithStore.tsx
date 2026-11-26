@@ -1,5 +1,5 @@
 import type { CellRegistry } from 'components/CustomTable/columns';
-import type { FiltersTestState, ListViewsTestState } from 'ducks/test-reducers';
+import { type FiltersTestState, type ListViewsTestState, testInitialState, testReducers } from 'ducks/test-reducers';
 import { actions as filterActions, EntityType } from 'ducks/filters';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Provider, useDispatch, useSelector } from 'react-redux';
@@ -9,9 +9,10 @@ import { of } from 'rxjs';
 import type { SearchFieldListModel, SearchFilterModel, SearchRequestModel } from 'types/certificate';
 import type { ListViewModel } from 'types/listViews';
 import { FilterFieldSource, Resource } from 'types/openapi';
+import { LockTypeEnum, LockWidgetNameEnum } from 'types/user-interface';
 import type { ColumnDefinition } from 'types/tableColumns';
 import type { ColumnSort } from 'utils/tableColumns';
-import { createMockStore } from 'utils/test-helpers';
+import { createRecordingStore } from 'utils/test-helpers';
 import PagedList from './PagedList';
 
 export type StubRow = {
@@ -57,6 +58,8 @@ type Props = Readonly<{
     refreshedCatalogue?: SearchFieldListModel[];
     /** Renders a control that fails the catalogue read, which settles it with no fields behind it. */
     withCatalogueFailureControl?: boolean;
+    /** Fails the catalogue read as the page mounts over a catalogue an earlier visit read successfully. */
+    failsCatalogueOnMount?: boolean;
     /** Renders a control that lands the withheld view list, so a test can act before the strip is up. */
     withViewsControl?: boolean;
     /** Renders a control that blanks the rows and puts a list request in flight, as a listing duck does. */
@@ -67,7 +70,26 @@ type Props = Readonly<{
     typedFilters?: SearchFilterModel[];
     /** Renders a second such control, for a user typing a different set of filters afterwards. */
     retypedFilters?: SearchFilterModel[];
+    /** Marks a catalogue read as in flight until it is answered, as the real reducer does; no epic answers it here. */
+    holdsCatalogueReads?: boolean;
+    /** Mounts the host with no catalogue API, as a page without a filter widget does. */
+    withoutCatalogueApi?: boolean;
+    /** Preloads the lock a failed row read leaves on the list widget. */
+    lockedRows?: boolean;
 }>;
+
+const holdingCatalogueReads: typeof testReducers = (state, action) => {
+    const next = testReducers(state, action);
+    if (!filterActions.getAvailableFilters.match(action)) return next;
+    return {
+        ...next,
+        filters: {
+            filters: next.filters.filters.map((entry) =>
+                entry.entity === action.payload.entity ? { ...entry, filter: { ...entry.filter, isFetchingFilters: true } } : entry,
+            ),
+        },
+    };
+};
 
 const registry: CellRegistry<StubRow> = {
     'property:COMMON_NAME': (row) => row.commonName,
@@ -175,20 +197,25 @@ function CatalogueControl({ catalogue }: Readonly<{ catalogue: SearchFieldListMo
     );
 }
 
+const catalogueFailure = {
+    type: 'filters/getAvailableFiltersFailure',
+    payload: { entity: EntityType.CERTIFICATE, error: 'Catalogue unavailable' },
+};
+
+/** Fails the catalogue read in the mount commit, before the strip can open on the copy an earlier visit left. */
+function CatalogueFailureOnMount() {
+    const dispatch = useDispatch();
+    useEffect(() => {
+        dispatch(catalogueFailure);
+    }, [dispatch]);
+    return null;
+}
+
 function CatalogueFailureControl() {
     const dispatch = useDispatch();
 
     return (
-        <button
-            type="button"
-            data-testid="fail-catalogue"
-            onClick={() =>
-                dispatch({
-                    type: 'filters/getAvailableFiltersFailure',
-                    payload: { entity: EntityType.CERTIFICATE, error: 'Catalogue unavailable' },
-                })
-            }
-        >
+        <button type="button" data-testid="fail-catalogue" onClick={() => dispatch(catalogueFailure)}>
             Fail catalogue
         </button>
     );
@@ -251,50 +278,74 @@ export default function PagedListColumnsWithStore({
     withCatalogueControl = false,
     refreshedCatalogue,
     withCatalogueFailureControl = false,
+    failsCatalogueOnMount = false,
     withViewsControl = false,
     withListInFlightControl = false,
     withFirstPageControl = false,
     typedFilters,
     retypedFilters,
+    holdsCatalogueReads = false,
+    withoutCatalogueApi = false,
+    lockedRows = false,
 }: Props) {
+    const [catalogueReads, setCatalogueReads] = useState(0);
     const [store] = useState(() =>
-        createMockStore({
-            listViews: {
-                byResource: {
-                    [Resource.Certificates]: { views, isFetching: withheldViews, hasLoaded: !withheldViews, isMutating: false },
+        createRecordingStore(
+            {
+                userInterface: {
+                    ...testInitialState.userInterface,
+                    widgetLocks: lockedRows
+                        ? [
+                              {
+                                  widgetName: LockWidgetNameEnum.ListOfCertificates,
+                                  lockTitle: 'Service unavailable',
+                                  lockText: 'Try again later',
+                                  lockType: LockTypeEnum.GENERIC,
+                              },
+                          ]
+                        : [],
                 },
-                dispatched: [],
-            },
-            filters: {
-                filters: [
-                    {
-                        entity: EntityType.CERTIFICATE,
-                        filter: {
-                            availableFilters: withheldCatalogue ? [] : catalogue,
-                            currentFilters: drillDownFilters ?? initialFilters,
-                            handedIn: drillDownFilters ? { source: 'drill-down' as const, scope: '/certificates' } : undefined,
-                            isFetchingFilters: withheldCatalogue || isRefetchingCatalogue,
-                            hasLoadedFilters: !withheldCatalogue,
-                            hasFailedFilters: failedCatalogue,
-                        },
+                listViews: {
+                    byResource: {
+                        [Resource.Certificates]: { views, isFetching: withheldViews, hasLoaded: !withheldViews, isMutating: false },
                     },
-                ],
-            },
-            pagings: {
-                pagings: [
-                    {
-                        entity: EntityType.CERTIFICATE,
-                        paging: {
-                            totalItems: rows.length,
-                            checkedRows: [],
-                            isFetchingList: withFirstPageControl,
-                            pageNumber: 1,
-                            pageSize: 10,
+                    dispatched: [],
+                },
+                filters: {
+                    filters: [
+                        {
+                            entity: EntityType.CERTIFICATE,
+                            filter: {
+                                availableFilters: withheldCatalogue ? [] : catalogue,
+                                currentFilters: drillDownFilters ?? initialFilters,
+                                handedIn: drillDownFilters ? { source: 'drill-down' as const, scope: '/certificates' } : undefined,
+                                isFetchingFilters: withheldCatalogue || isRefetchingCatalogue,
+                                hasLoadedFilters: !withheldCatalogue,
+                                hasFailedFilters: failedCatalogue,
+                            },
                         },
-                    },
-                ],
+                    ],
+                },
+                pagings: {
+                    pagings: [
+                        {
+                            entity: EntityType.CERTIFICATE,
+                            paging: {
+                                totalItems: rows.length,
+                                checkedRows: [],
+                                isFetchingList: withFirstPageControl,
+                                pageNumber: 1,
+                                pageSize: 10,
+                            },
+                        },
+                    ],
+                },
             },
-        }),
+            ({ type }) => {
+                if (type === filterActions.getAvailableFilters.type) setCatalogueReads((count) => count + 1);
+            },
+            holdsCatalogueReads ? holdingCatalogueReads : testReducers,
+        ),
     );
 
     const [answeredRows, setAnsweredRows] = useState(withFirstPageControl ? [] : rows);
@@ -336,11 +387,12 @@ export default function PagedListColumnsWithStore({
                         entity={EntityType.CERTIFICATE}
                         title="List of Certificates"
                         filterTitle="Certificate Inventory Filter"
-                        getAvailableFiltersApi={getAvailableFiltersApi}
+                        getAvailableFiltersApi={withoutCatalogueApi ? undefined : getAvailableFiltersApi}
                         onListCallback={onListCallback}
                         addHidden
                         configurableColumns={config}
                         refreshToken={refreshToken}
+                        pageWidgetLockName={LockWidgetNameEnum.ListOfCertificates}
                     />
                 )}
 
@@ -355,6 +407,8 @@ export default function PagedListColumnsWithStore({
                 {withCatalogueControl && <CatalogueControl catalogue={refreshedCatalogue ?? catalogue} />}
 
                 {withCatalogueFailureControl && <CatalogueFailureControl />}
+
+                {failsCatalogueOnMount && <CatalogueFailureOnMount />}
 
                 {withViewsControl && <ViewsControl views={views} />}
 
@@ -372,6 +426,7 @@ export default function PagedListColumnsWithStore({
                     </button>
                 )}
 
+                <div data-testid="catalogue-reads">{catalogueReads}</div>
                 <ListRequests requests={requests} />
                 <CurrentFilters />
                 <HandedIn />

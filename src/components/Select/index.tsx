@@ -22,19 +22,30 @@ import {
     OPTION_CLASSES,
     OPTION_HIGHLIGHTED_CLASSES,
     OPTION_DISABLED_CLASSES,
-    OPTION_ADD_NEW_CLASSES,
     OPTION_LABEL_TRUNCATE_CLASSES,
     OPTION_LABEL_WRAP_CLASSES,
     CHIP_CLASSES,
     CHIP_REMOVE_CLASSES,
     CHIP_LABEL_CLASSES,
     SELECTED_ICON_CLASSES,
+    OPTION_MULTI_ROW_CLASSES,
+    OPTION_CHECKBOX_CLASSES,
+    OPTION_CHECKBOX_CHECKED_CLASSES,
+    OPTION_CHECKBOX_UNCHECKED_CLASSES,
     NO_OPTIONS_CLASSES,
+    FOOTER_CLASSES,
+    FOOTER_ACTION_CLASSES,
 } from './classes';
 
 export type SingleValue<T> = T | undefined;
 export type MultiValue<T> = T[] | undefined;
 export type OptionValue = string | number | object;
+
+export type SelectFooterAction = {
+    label: string;
+    onClick: () => void;
+    disabled?: boolean;
+};
 
 interface BaseProps {
     id: string;
@@ -68,6 +79,8 @@ interface BaseProps {
     colorizeVersionLabel?: boolean;
     showOptionDescriptionInDropdown?: boolean;
     showSelectedDescriptionAsHelp?: boolean;
+    /** An action pinned below the list, outside the options and their keyboard navigation. */
+    footerAction?: SelectFooterAction;
 }
 
 interface SingleSelectProps extends BaseProps {
@@ -164,8 +177,6 @@ const renderColorizedVersionLabel = (text: string): React.ReactNode => {
     );
 };
 
-const ADD_NEW_VALUES = new Set(['__add_new__', '__add_custom__']);
-
 function getErrorState(id: string, error: string | undefined, invalid: boolean | undefined, ariaDescribedBy: string | undefined) {
     const errorId = `${id}-error`;
     const describedBy = [ariaDescribedBy, error ? errorId : undefined].filter(Boolean).join(' ') || undefined;
@@ -201,6 +212,7 @@ function Select({
     colorizeVersionLabel = false,
     showOptionDescriptionInDropdown = false,
     showSelectedDescriptionAsHelp = false,
+    footerAction,
 }: Props) {
     const searchInputRef = useRef<HTMLInputElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
@@ -225,8 +237,8 @@ function Select({
         return Array.from(map.values());
     }, [optionsProp]);
 
-    const hasOptions = options.length > 0;
-    const triggerDisabled = !!isDisabled || !hasOptions;
+    const canOpen = options.length > 0 || !!footerAction;
+    const triggerDisabled = !!isDisabled || !canOpen;
     const hasSearch = isSearchable;
 
     // Unwrap { value, label } for single-mode value.
@@ -397,8 +409,8 @@ function Select({
         if (isMulti) {
             if (!multiValues || multiValues.length === 0) {
                 return (
-                    <span className={hasOptions ? PLACEHOLDER_CLASSES : TRIGGER_NO_OPTIONS_CLASSES}>
-                        {hasOptions ? placeholder : 'No options'}
+                    <span className={canOpen ? PLACEHOLDER_CLASSES : TRIGGER_NO_OPTIONS_CLASSES}>
+                        {canOpen ? placeholder : 'No options'}
                     </span>
                 );
             }
@@ -432,9 +444,7 @@ function Select({
         // single
         if (singleRawValue == null || singleRawValue === '') {
             return (
-                <span className={hasOptions ? PLACEHOLDER_CLASSES : TRIGGER_NO_OPTIONS_CLASSES}>
-                    {hasOptions ? placeholder : 'No options'}
-                </span>
+                <span className={canOpen ? PLACEHOLDER_CLASSES : TRIGGER_NO_OPTIONS_CLASSES}>{canOpen ? placeholder : 'No options'}</span>
             );
         }
         const matched = options.find((o) => valuesMatch(o.value, singleRawValue));
@@ -443,7 +453,7 @@ function Select({
             return <span>{renderColorizedVersionLabel(labelText)}</span>;
         }
         return <span title={labelText}>{labelText}</span>;
-    }, [isMulti, multiValues, singleRawValue, options, hasOptions, placeholder, colorizeVersionLabel, toggleMulti]);
+    }, [isMulti, multiValues, singleRawValue, options, canOpen, placeholder, colorizeVersionLabel, toggleMulti]);
 
     // Build the listbox option nodes.
     const renderOptionLabel = (opt: (typeof options)[number]) => {
@@ -458,9 +468,8 @@ function Select({
         if (colorizeVersionLabel) {
             return <span className={OPTION_LABEL_TRUNCATE_CLASSES}>{renderColorizedVersionLabel(opt.label)}</span>;
         }
-        const isAddNew = ADD_NEW_VALUES.has(getOptionValueString(opt.value));
         return (
-            <span className={cn(OPTION_LABEL_TRUNCATE_CLASSES, isAddNew && OPTION_ADD_NEW_CLASSES)} title={opt.label}>
+            <span className={OPTION_LABEL_TRUNCATE_CLASSES} title={opt.label}>
                 {opt.label}
             </span>
         );
@@ -546,6 +555,10 @@ function Select({
                                 if (hasSearch) {
                                     e.preventDefault();
                                     requestAnimationFrame(() => searchInputRef.current?.focus());
+                                } else if (footerAction) {
+                                    // Keep focus on the list so Enter selects an option rather than activating the footer.
+                                    e.preventDefault();
+                                    contentRef.current?.focus();
                                 }
                             }}
                             onKeyDown={onListKeyDown}
@@ -618,13 +631,53 @@ function Select({
                                                 onMouseEnter={() => !opt.disabled && setHighlightedIndex(idx)}
                                                 onClick={() => handleOptionActivate(opt)}
                                             >
-                                                {renderOptionLabel(opt)}
-                                                {selected && <Check className={SELECTED_ICON_CLASSES} aria-hidden />}
+                                                {isMulti ? (
+                                                    <span className={OPTION_MULTI_ROW_CLASSES}>
+                                                        <span
+                                                            className={cn(
+                                                                OPTION_CHECKBOX_CLASSES,
+                                                                selected
+                                                                    ? OPTION_CHECKBOX_CHECKED_CLASSES
+                                                                    : OPTION_CHECKBOX_UNCHECKED_CLASSES,
+                                                            )}
+                                                            data-testid="select-option-checkbox"
+                                                            aria-hidden
+                                                        >
+                                                            {selected && <Check className="size-3" strokeWidth={3} />}
+                                                        </span>
+                                                        {renderOptionLabel(opt)}
+                                                    </span>
+                                                ) : (
+                                                    <>
+                                                        {renderOptionLabel(opt)}
+                                                        {selected && <Check className={SELECTED_ICON_CLASSES} aria-hidden />}
+                                                    </>
+                                                )}
                                             </div>
                                         );
                                     })
                                 )}
                             </div>
+                            {footerAction && (
+                                <div className={FOOTER_CLASSES}>
+                                    <button
+                                        type="button"
+                                        className={FOOTER_ACTION_CLASSES}
+                                        disabled={footerAction.disabled}
+                                        onKeyDown={(e) => {
+                                            // Enter belongs to the button here, not to the list's option selection.
+                                            if (e.key === 'Enter') e.stopPropagation();
+                                        }}
+                                        onClick={() => {
+                                            setOpen(false);
+                                            footerAction.onClick();
+                                        }}
+                                        data-testid={dataTestId ? `${dataTestId}-footer-action` : `select-${id}-footer-action`}
+                                    >
+                                        {footerAction.label}
+                                    </button>
+                                </div>
+                            )}
                         </Popover.Content>
                     </Popover.Portal>
                 </Popover.Root>

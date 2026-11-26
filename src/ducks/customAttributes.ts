@@ -24,6 +24,8 @@ export type State = {
     resourceCustomAttributes: CustomAttributeModel[];
     secondaryResourceCustomAttributes: CustomAttributeModel[];
     resourceCustomAttributesContents: ResourceCustomAttributesContents[];
+    /** Resources whose last multi-resource lookup failed; their stored list is empty because it is unknown. */
+    failedMultipleResourceCustomAttributes: Resource[];
     resources: Resource[];
 
     isFetchingList: boolean;
@@ -53,6 +55,7 @@ export const initialState: State = {
     resourceCustomAttributes: [],
     secondaryResourceCustomAttributes: [],
     resourceCustomAttributesContents: [],
+    failedMultipleResourceCustomAttributes: [],
     resources: [],
     isFetchingList: false,
     isFetchingDetail: false,
@@ -256,9 +259,11 @@ export const slice = createSlice({
         },
         receiveMultipleResourceCustomAttributes: (
             state,
-            action: PayloadAction<{ resource: Resource; customAttributes: CustomAttributeModel[] }[]>,
+            action: PayloadAction<{ resource: Resource; customAttributes: CustomAttributeModel[]; failed?: boolean }[]>,
         ) => {
-            action.payload.forEach(({ resource, customAttributes }) => {
+            action.payload.forEach(({ resource, customAttributes, failed }) => {
+                state.failedMultipleResourceCustomAttributes = state.failedMultipleResourceCustomAttributes.filter((r) => r !== resource);
+                if (failed) state.failedMultipleResourceCustomAttributes.push(resource);
                 const index = state.resourceCustomAttributesContents.findIndex((r) => r.resource === resource && r.resourceUuid === '');
 
                 const convertVersion = (version: number): AttributeVersion => {
@@ -449,6 +454,8 @@ const multipleResourceCustomAttributes = (resources: Resource[]) =>
         return result;
     });
 
+const failedMultipleResourceCustomAttributes = createSelector(state, (state: State) => state.failedMultipleResourceCustomAttributes);
+
 const isFetchingList = createSelector(state, (state: State) => state.isFetchingList);
 const isFetchingDetail = createSelector(state, (state: State) => state.isFetchingDetail);
 const isFetchingResources = createSelector(state, (state: State) => state.isFetchingResources);
@@ -483,6 +490,7 @@ export const selectors = {
     secondaryResourceCustomAttributes,
     resourceCustomAttributesContents,
     multipleResourceCustomAttributes,
+    failedMultipleResourceCustomAttributes,
 
     isCreating,
     isFetchingList,

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { createObjectPermissionStore } from 'components/_pages/test-utils/objectPermissionStore';
+import { PERMISSION_SCENARIOS, scenarioState } from 'components/_pages/test-utils/permissionScenarios';
 import { slice as acmeProfilesSlice } from 'ducks/acme-profiles';
 import { slice as approvalProfilesSlice } from 'ducks/approval-profiles';
 import { slice as cmpProfilesSlice } from 'ducks/cmp-profiles';
@@ -21,6 +22,8 @@ type Props = Readonly<{
     resourceGrants?: { resource: Resource; actions: ResourceAction[] }[];
     /** Resources the user holds object access on; none when omitted. */
     objectAccess?: Resource[];
+    /** A permission scenario by name, whose profile and answer replace the grant props above. */
+    scenario?: string;
     /** Opens a profile that has no authority, under the route's `unknown` segment. */
     withoutAuthority?: boolean;
 }>;
@@ -33,17 +36,33 @@ const raProfile = {
     authorityInstanceName: 'Authority',
     attributes: [],
     certificateValidationSettings: { usePlatformSettings: true },
+    renewalSettings: {
+        windowEnabled: false,
+        windowStartPercent: 67,
+        windowEndPercent: 80,
+        useAuthorityRenewalInfo: false,
+        authorityRenewalInfoSupported: true,
+        autoRenewalEnabled: true,
+        autoRenewalMaxAttempts: 7,
+    },
 } as unknown as RaProfileResponseModel;
 
 export default function RaProfileDetailWithStore({
     allowedActions = Object.values(ResourceAction),
     resourceGrants,
     objectAccess,
-    withoutAuthority,
+    scenario,
+    withoutAuthority = false,
 }: Props) {
-    const profile = withoutAuthority ? { ...raProfile, authorityInstanceUuid: undefined, authorityInstanceName: undefined } : raProfile;
-    const [store] = useState(() =>
-        createObjectPermissionStore({
+    const loaded = withoutAuthority ? { ...raProfile, authorityInstanceUuid: undefined, authorityInstanceName: undefined } : raProfile;
+    const [store] = useState(() => {
+        const permissions = scenario
+            ? scenarioState(PERMISSION_SCENARIOS.find((candidate) => candidate.name === scenario)!, {
+                  resource: Resource.RaProfiles,
+                  uuid: raProfile.uuid,
+              })
+            : {};
+        return createObjectPermissionStore({
             resource: Resource.RaProfiles,
             uuid: raProfile.uuid,
             allowedActions,
@@ -51,15 +70,16 @@ export default function RaProfileDetailWithStore({
             objectAccess,
             realSlices: [acmeProfilesSlice, approvalProfilesSlice, cmpProfilesSlice, estProfilesSlice, scepProfilesSlice],
             preloadedState: {
-                raprofiles: { ...raProfilesInitialState, ...testInitialState.raprofiles, raProfile: profile },
+                raprofiles: { ...raProfilesInitialState, ...testInitialState.raprofiles, raProfile: loaded },
                 complianceProfiles: { ...complianceProfilesInitialState, ...testInitialState.complianceProfiles },
+                ...permissions,
             },
-        }),
-    );
+        });
+    });
 
     return (
         <Provider store={store}>
-            <MemoryRouter initialEntries={[`/raprofiles/detail/${profile.authorityInstanceUuid ?? 'unknown'}/${profile.uuid}`]}>
+            <MemoryRouter initialEntries={[`/raprofiles/detail/${loaded.authorityInstanceUuid ?? 'unknown'}/${loaded.uuid}`]}>
                 <Routes>
                     <Route path="/raprofiles/detail/:authorityId/:id" element={<RaProfileDetail />} />
                 </Routes>

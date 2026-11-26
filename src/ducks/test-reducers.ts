@@ -75,6 +75,9 @@ function userInterfaceTestReducer(
     if (a.type === 'userInterface/showGlobalModal' && a.payload) {
         return { ...state, globalModal: a.payload as UserInterfaceTestState['globalModal'] };
     }
+    if (a.type === 'userInterface/hideGlobalModal') {
+        return { ...state, globalModal: userInterfaceTestInitialState.globalModal };
+    }
     if (a.type === 'userInterface/resetState') {
         return { ...userInterfaceTestInitialState };
     }
@@ -529,9 +532,23 @@ function connectorsTestReducer(state: ConnectorsTestState = connectorsTestInitia
         const connectAction = action as { type: string; payload?: { connectInfo?: ConnectInfoDto[] } };
         return { ...state, connectInfo: connectAction.payload?.connectInfo };
     }
-    const a = action as { type: string; payload?: { callbackId: string; data?: unknown } };
+    const a = action as { type: string; payload?: { callbackId: string; data?: unknown; prefix?: string } };
     if (a.type === 'connectors/clearCallbackData') {
         return { ...state, callbackData: {} };
+    }
+    if (a.type === 'connectors/clearCallbackDataWithPrefix' && a.payload?.prefix !== undefined) {
+        const prefix = a.payload.prefix;
+        return {
+            ...state,
+            callbackData: Object.fromEntries(Object.entries(state.callbackData).filter(([callbackId]) => !callbackId.startsWith(prefix))),
+        };
+    }
+    if (a.type === 'connectors/clearCallbackDataFor' && a.payload?.callbackId) {
+        return {
+            ...state,
+            callbackData: { ...state.callbackData, [a.payload.callbackId]: undefined },
+            isRunningCallback: { ...state.isRunningCallback, [a.payload.callbackId]: false },
+        };
     }
     if (a.type === 'connectors/callbackSuccess' && a.payload) {
         return {
@@ -1002,6 +1019,7 @@ function raProfileRequestAttributesTestReducer(
 
 export type RaProfilesTestState = {
     isUpdating: boolean;
+    isUpdatingRenewalSettings?: boolean;
     isCreating: boolean;
     createRaProfileSucceeded: boolean;
     createdRaProfileUuid: string | null;

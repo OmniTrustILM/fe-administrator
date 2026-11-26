@@ -1,6 +1,6 @@
 import { expect, test } from '../../../../playwright/ct-test';
 import { withProviders } from 'utils/test-helpers';
-import { AttributeContentType, FilterFieldSource } from 'types/openapi';
+import { AttributeContentType, FilterFieldSource, KeyAlgorithm } from 'types/openapi';
 import type { CryptographicKeyResponseModel } from 'types/cryptographic-keys';
 import type { ColumnDefinition } from 'types/tableColumns';
 import { renderCell } from 'components/CustomTable/columns';
@@ -121,6 +121,7 @@ test.describe('buildKeyCellRegistry', () => {
             'CKI_FORMAT',
             'CKI_STATE',
             'CKI_CRYPTOGRAPHIC_ALGORITHM',
+            'CKI_PARAMETER_SET',
             'CKI_USAGE',
             'CKI_LENGTH',
             'CK_TOKEN_PROFILE',
@@ -138,6 +139,27 @@ test.describe('buildKeyCellRegistry', () => {
         for (const column of KEY_COLUMNS) {
             expect(registry[`${column.fieldSource}:${column.fieldIdentifier}`], column.fieldIdentifier).toBeDefined();
         }
+    });
+
+    test('shows the parameter set between the algorithm and the size in the platform default set', () => {
+        expect(columnAt('CKI_PARAMETER_SET')).toBe(columnAt('CKI_CRYPTOGRAPHIC_ALGORITHM') + 1);
+        expect(columnAt('CKI_LENGTH')).toBe(columnAt('CKI_PARAMETER_SET') + 1);
+    });
+
+    test('renders the curve of an ECDSA key and the parameter set of a post-quantum key', () => {
+        const ecdsa = buildKey({ keyAlgorithm: KeyAlgorithm.Ecdsa, parameterSet: 'P-384', length: 384 });
+        const pqc = buildKey({ keyAlgorithm: KeyAlgorithm.MlDsa, parameterSet: 'ML-DSA-65', length: 15616 });
+        const parameterSetColumn = [KEY_COLUMNS[columnAt('CKI_PARAMETER_SET')]];
+
+        expect(buildKeyRowColumns(ecdsa, opts, parameterSetColumn)).toEqual(['P-384']);
+        expect(buildKeyRowColumns(pqc, opts, parameterSetColumn)).toEqual(['ML-DSA-65']);
+    });
+
+    test('renders the shared empty state for a key without a parameter set', async ({ mount, page }) => {
+        const cells = buildKeyRowColumns(buildKey(), opts);
+        await mount(withProviders(<div>{cells[columnAt('CKI_PARAMETER_SET')]}</div>));
+
+        await expect(page.getByTestId('empty-cell')).toBeVisible();
     });
 
     test('leaves Key Usage out of the platform default set', () => {

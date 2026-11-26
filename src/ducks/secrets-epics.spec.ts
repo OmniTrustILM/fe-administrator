@@ -309,7 +309,7 @@ describe('secrets epics', () => {
         );
 
         expect(emitted[0]).toEqual(secretsActions.updateSecretObjectsSuccess({ uuid: 's-1' }));
-        expect(emitted[1]).toEqual(resourceActions.listObjectAllowedActions({ resource: Resource.Secrets, uuid: 's-1' }));
+        expect(emitted[1]).toEqual(resourceActions.listObjectAllowedActions({ resource: Resource.Secrets, uuids: ['s-1'] }));
         expect(emitted[2]).toEqual(alertActions.success('Secret updated successfully.'));
     });
 

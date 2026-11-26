@@ -1,7 +1,7 @@
 import { describe, expect, test, vi } from 'vitest';
 import type { UnknownAction } from '@reduxjs/toolkit';
-import { BehaviorSubject, firstValueFrom, of, throwError } from 'rxjs';
-import { take, toArray } from 'rxjs/operators';
+import { BehaviorSubject, firstValueFrom, of, Subject, throwError } from 'rxjs';
+import { delay, take, toArray } from 'rxjs/operators';
 
 import { actions as signingProfileActions } from './signing-profiles';
 import { actions as appRedirectActions } from './app-redirect';
@@ -10,7 +10,15 @@ import { actions as userInterfaceActions } from './user-interface';
 import { actions as pagingActions } from './paging';
 import { EntityType } from './filters';
 import { LockWidgetNameEnum } from 'types/user-interface';
-import { SigningWorkflowType } from 'types/openapi';
+import {
+    ConnectorInterface,
+    ManagedSigningType,
+    type SignatureFamilyDeclaration,
+    SignatureLevel,
+    SigningRecordPersistenceMode,
+    SigningScheme,
+    SigningWorkflowType,
+} from 'types/openapi';
 
 // Epic indices match the order of the exported `epics` array in signing-profiles-epics.ts
 enum SigningProfilesEpicIndex {
@@ -34,6 +42,11 @@ enum SigningProfilesEpicIndex {
     ListSignatureFormattingConnectorAttributes = 17,
     ListSignatureFormattingConnectors = 18,
     ListSigningRecords = 19,
+    ListSignatureFormattingConnectorDeclarations = 20,
+    ListContentSigningProfileAttributes = 21,
+    ActivateIlmNative = 22,
+    DeactivateIlmNative = 23,
+    ListTimestampSourceCandidates = 24,
 }
 
 vi.mock('../App', () => ({
@@ -76,6 +89,7 @@ async function runEpic(
         listSignatureAttributesForCertificate: () => of([{ uuid: 'a-1' }]),
         listSignatureFormattingConnectorAttributes: () => of([{ uuid: 'a-1' }]),
         listSigningRecordsForSigningProfile: () => of({ items: [], totalItems: 0 }),
+        listSignatureFormattingConnectorDeclarations: () => of([]),
     };
 
     const defaultConnectorsV2 = {
@@ -93,6 +107,10 @@ async function runEpic(
     const output$ = epic(of(action), new BehaviorSubject(state ?? { signingProfiles: {} }) as any, deps as any);
     return firstValueFrom(output$.pipe(take(takeCount), toArray()));
 }
+
+/** A connector's list attribute declaring two choices, and the edited profile's saved selection of one of them. */
+const listDescriptor = { uuid: 'a-list', properties: { list: true }, content: [{ data: 'A' }, { data: 'B' }] };
+const savedChoice = { uuid: 'a-list', content: [{ data: 'A' }] };
 
 describe('signingProfiles epics', () => {
     test('listSigningProfiles success emits listSuccess, pagingListSuccess and removeWidgetLock', async () => {
@@ -718,6 +736,33 @@ describe('signingProfiles epics', () => {
         expect(emitted[0]).toEqual(signingProfileActions.listSigningCertificatesSuccess({ signingCertificates: certs as any }));
     });
 
+    test('listSigningCertificates forwards the certificate-purpose knobs to API', async () => {
+        let capturedArgs: any;
+        await runEpic(
+            SigningProfilesEpicIndex.ListSigningCertificates,
+            signingProfileActions.listSigningCertificates({
+                workflowType: SigningWorkflowType.ContentSigning,
+                requireNonRepudiation: true,
+                requiredExtendedKeyUsageOids: ['1.3.6.1.5.5.7.3.36'],
+            }),
+            {
+                signingProfiles: {
+                    listSigningCertificates: (args: any) => {
+                        capturedArgs = args;
+                        return of([]);
+                    },
+                },
+            },
+            1,
+        );
+
+        expect(capturedArgs).toEqual({
+            signingWorkflowType: SigningWorkflowType.ContentSigning,
+            requireNonRepudiation: true,
+            requiredExtendedKeyUsageOids: ['1.3.6.1.5.5.7.3.36'],
+        });
+    });
+
     test('listSignatureAttributesForCertificate success emits success action', async () => {
         const descriptors = [{ uuid: 'a-1' }];
         const emitted = await runEpic(
@@ -752,23 +797,20 @@ describe('signingProfiles epics', () => {
         expect(emitted[0].type).toBe(signingProfileActions.listSignatureAttributesForCertificateFailure.type);
     });
 
-    test('listSignatureFormattingConnectorAttributes merges saved content from timestamping workflow', async () => {
-        const descriptors = [{ uuid: 'a-1' }, { uuid: 'a-2' }];
+    test('listSignatureFormattingConnectorAttributes keeps the declared choices of a list attribute with a saved selection', async () => {
+        const descriptors = [listDescriptor];
         const state = {
             signingProfiles: {
                 signingProfile: {
                     uuid: 'p-1',
-                    workflow: {
-                        type: SigningWorkflowType.Timestamping,
-                        signatureFormattingConnectorAttributes: [{ uuid: 'a-1', content: [{ data: 'saved' }] }],
-                    },
+                    workflow: { type: SigningWorkflowType.Timestamping, signatureFormattingConnectorAttributes: [savedChoice] },
                 },
             },
         };
 
         const emitted = await runEpic(
             SigningProfilesEpicIndex.ListSignatureFormattingConnectorAttributes,
-            signingProfileActions.listSignatureFormattingConnectorAttributes({ connectorUuid: 'cn-1' }),
+            signingProfileActions.listSignatureFormattingConnectorAttributes({ connectorUuid: 'cn-1', signingProfileUuid: 'p-1' }),
             {
                 signingProfiles: {
                     listSignatureFormattingConnectorAttributes: () => of(descriptors),
@@ -778,10 +820,9 @@ describe('signingProfiles epics', () => {
             state,
         );
 
-        expect(emitted[0].type).toBe(signingProfileActions.listSignatureFormattingConnectorAttributesSuccess.type);
-        const merged = (emitted[0] as any).payload.attributeDescriptors;
-        expect(merged[0]).toEqual({ uuid: 'a-1', content: [{ data: 'saved' }] });
-        expect(merged[1]).toEqual({ uuid: 'a-2' });
+        expect(emitted[0]).toEqual(
+            signingProfileActions.listSignatureFormattingConnectorAttributesSuccess({ attributeDescriptors: descriptors as any }),
+        );
     });
 
     test('listSignatureFormattingConnectorAttributes leaves descriptors unchanged without a saved profile', async () => {
@@ -835,14 +876,16 @@ describe('signingProfiles epics', () => {
         expect(emitted[0]).toEqual(signingProfileActions.listSignatureFormattingConnectorsSuccess({ connectors: [] }));
         const filters = capturedArgs.searchRequestDto.filters;
         expect(filters.some((f: any) => f.fieldIdentifier === 'CONNECTOR_FEATURES' && f.value === 'timestamping')).toBe(true);
-        expect(filters.some((f: any) => f.fieldIdentifier === 'CONNECTOR_INTERFACE')).toBe(true);
+        expect(
+            filters.some((f: any) => f.fieldIdentifier === 'CONNECTOR_INTERFACE' && f.value === ConnectorInterface.SignatureFormatting),
+        ).toBe(true);
     });
 
-    test('listSignatureFormattingConnectors omits feature filter for unmapped workflow', async () => {
+    test('listSignatureFormattingConnectors asks for content-signing formatting connectors for content signing', async () => {
         let capturedArgs: any;
         await runEpic(
             SigningProfilesEpicIndex.ListSignatureFormattingConnectors,
-            signingProfileActions.listSignatureFormattingConnectors({ workflowType: SigningWorkflowType.RawSigning }),
+            signingProfileActions.listSignatureFormattingConnectors({ workflowType: SigningWorkflowType.ContentSigning }),
             {
                 connectorsV2: {
                     listConnectorsV2: (args: any) => {
@@ -855,8 +898,22 @@ describe('signingProfiles epics', () => {
         );
 
         const filters = capturedArgs.searchRequestDto.filters;
-        expect(filters.some((f: any) => f.fieldIdentifier === 'CONNECTOR_FEATURES')).toBe(false);
-        expect(filters.some((f: any) => f.fieldIdentifier === 'CONNECTOR_INTERFACE')).toBe(true);
+        expect(filters).toEqual([
+            expect.objectContaining({ fieldIdentifier: 'CONNECTOR_INTERFACE', value: ConnectorInterface.ContentSigningFormatting }),
+        ]);
+    });
+
+    test('listSignatureFormattingConnectors answers raw signing with no connector and calls nothing', async () => {
+        const listConnectorsV2 = vi.fn();
+        const emitted = await runEpic(
+            SigningProfilesEpicIndex.ListSignatureFormattingConnectors,
+            signingProfileActions.listSignatureFormattingConnectors({ workflowType: SigningWorkflowType.RawSigning }),
+            { connectorsV2: { listConnectorsV2 } },
+            1,
+        );
+
+        expect(emitted).toEqual([signingProfileActions.listSignatureFormattingConnectorsSuccess({ connectors: [] })]);
+        expect(listConnectorsV2).not.toHaveBeenCalled();
     });
 
     test('listSignatureFormattingConnectors failure emits failure action', async () => {
@@ -872,7 +929,7 @@ describe('signingProfiles epics', () => {
             1,
         );
 
-        expect(emitted[0].type).toBe(signingProfileActions.listSignatureFormattingConnectorsFailure.type);
+        expect(emitted[0]).toEqual(signingProfileActions.listSignatureFormattingConnectorsFailure({ reason: 'connectors failed' }));
     });
 
     test('listSigningRecordsForSigningProfile success emits listSigningRecordsSuccess', async () => {
@@ -905,5 +962,394 @@ describe('signingProfiles epics', () => {
         );
 
         expect(emitted[0].type).toBe(signingProfileActions.listSigningRecordsForSigningProfileFailure.type);
+    });
+
+    test('listSignatureFormattingConnectorDeclarations success emits the declarations', async () => {
+        const declarations = [
+            {
+                code: 'pades',
+                label: 'PAdES',
+                levels: [{ level: SignatureLevel.Signed, name: 'PAdES-B' }],
+                transferModes: [],
+            },
+        ];
+        let capturedArgs: any;
+        const emitted = await runEpic(
+            SigningProfilesEpicIndex.ListSignatureFormattingConnectorDeclarations,
+            signingProfileActions.listSignatureFormattingConnectorDeclarations({ connectorUuid: 'cn-1', signingProfileUuid: 'p-1' }),
+            {
+                signingProfiles: {
+                    listSignatureFormattingConnectorDeclarations: (args: any) => {
+                        capturedArgs = args;
+                        return of(declarations);
+                    },
+                },
+            },
+            1,
+        );
+
+        expect(capturedArgs).toEqual({ connectorUuid: 'cn-1', signingProfileUuid: 'p-1' });
+        expect(emitted[0]).toEqual(
+            signingProfileActions.listSignatureFormattingConnectorDeclarationsSuccess({ connectorUuid: 'cn-1', declarations }),
+        );
+    });
+
+    test('listSignatureFormattingConnectorDeclarations answers only the newest of overlapping requests', async () => {
+        const { default: epics } = await import('./signing-profiles-epics');
+        const answers: Record<string, Subject<SignatureFamilyDeclaration[]>> = { 'cn-old': new Subject(), 'cn-new': new Subject() };
+        const deps = {
+            apiClients: {
+                signingProfiles: {
+                    listSignatureFormattingConnectorDeclarations: ({ connectorUuid }: { connectorUuid: string }) => answers[connectorUuid],
+                },
+            },
+        };
+        const action$ = new Subject<UnknownAction>();
+        const emitted: UnknownAction[] = [];
+        const epic = (epics as any)[SigningProfilesEpicIndex.ListSignatureFormattingConnectorDeclarations];
+        epic(action$, new BehaviorSubject({ signingProfiles: {} }), deps).subscribe((action: UnknownAction) => emitted.push(action));
+
+        action$.next(signingProfileActions.listSignatureFormattingConnectorDeclarations({ connectorUuid: 'cn-old' }));
+        action$.next(signingProfileActions.listSignatureFormattingConnectorDeclarations({ connectorUuid: 'cn-new' }));
+        answers['cn-new'].next([]);
+        answers['cn-old'].next([{ code: 'old', label: 'Old', levels: [], transferModes: [] }]);
+
+        expect(emitted).toEqual([
+            signingProfileActions.listSignatureFormattingConnectorDeclarationsSuccess({ connectorUuid: 'cn-new', declarations: [] }),
+        ]);
+    });
+
+    test('listSignatureFormattingConnectorDeclarations failure names the connector and the reason', async () => {
+        const emitted = await runEpic(
+            SigningProfilesEpicIndex.ListSignatureFormattingConnectorDeclarations,
+            signingProfileActions.listSignatureFormattingConnectorDeclarations({ connectorUuid: 'cn-1' }),
+            {
+                signingProfiles: {
+                    listSignatureFormattingConnectorDeclarations: () => throwError(() => new Error('declarations failed')),
+                },
+            },
+            1,
+        );
+
+        expect(emitted[0]).toEqual(
+            signingProfileActions.listSignatureFormattingConnectorDeclarationsFailure({
+                connectorUuid: 'cn-1',
+                reason: 'declarations failed',
+            }),
+        );
+    });
+
+    test('listContentSigningProfileAttributes asks for the chosen family and level', async () => {
+        let capturedArgs: any;
+        await runEpic(
+            SigningProfilesEpicIndex.ListContentSigningProfileAttributes,
+            signingProfileActions.listContentSigningProfileAttributes({
+                connectorUuid: 'cn-1',
+                family: 'pades',
+                level: SignatureLevel.Timestamped,
+                signingProfileUuid: 'p-1',
+            }),
+            {
+                signingProfiles: {
+                    listContentSigningFormattingConnectorAttributes: (args: any) => {
+                        capturedArgs = args;
+                        return of({ profileAttributes: [], requestAttributes: [] });
+                    },
+                },
+            },
+            1,
+        );
+
+        expect(capturedArgs).toEqual({
+            connectorUuid: 'cn-1',
+            family: 'pades',
+            level: SignatureLevel.Timestamped,
+            signingProfileUuid: 'p-1',
+        });
+    });
+
+    test('listContentSigningProfileAttributes keeps the declared choices of a list attribute with a saved selection', async () => {
+        const state = {
+            signingProfiles: {
+                signingProfile: {
+                    uuid: 'p-1',
+                    workflow: {
+                        type: SigningWorkflowType.ContentSigning,
+                        signatureFormattingConnector: { uuid: 'cn-1', name: 'Saved connector' },
+                        signatureFormattingConnectorAttributes: [savedChoice],
+                    },
+                },
+            },
+        };
+
+        const emitted = await runEpic(
+            SigningProfilesEpicIndex.ListContentSigningProfileAttributes,
+            signingProfileActions.listContentSigningProfileAttributes({
+                connectorUuid: 'cn-1',
+                family: 'pades',
+                level: SignatureLevel.Signed,
+                signingProfileUuid: 'p-1',
+            }),
+            {
+                signingProfiles: {
+                    listContentSigningFormattingConnectorAttributes: () =>
+                        of({ profileAttributes: [listDescriptor], requestAttributes: [{ uuid: 'r-1' }] }),
+                },
+            },
+            1,
+            state,
+        );
+
+        expect(emitted[0]).toEqual(
+            signingProfileActions.listContentSigningProfileAttributesSuccess({
+                profileAttributes: [listDescriptor] as any,
+                requestAttributes: [{ uuid: 'r-1' }] as any,
+            }),
+        );
+    });
+
+    test('listContentSigningProfileAttributes answers only the newest of overlapping requests', async () => {
+        const { default: epics } = await import('./signing-profiles-epics');
+        const answers: Record<string, Subject<{ profileAttributes: any[]; requestAttributes: any[] }>> = {
+            [SignatureLevel.Signed]: new Subject(),
+            [SignatureLevel.Timestamped]: new Subject(),
+        };
+        const deps = {
+            apiClients: {
+                signingProfiles: {
+                    listContentSigningFormattingConnectorAttributes: ({ level }: { level: SignatureLevel }) => answers[level],
+                },
+            },
+        };
+        const action$ = new Subject<UnknownAction>();
+        const emitted: UnknownAction[] = [];
+        const epic = (epics as any)[SigningProfilesEpicIndex.ListContentSigningProfileAttributes];
+        epic(action$, new BehaviorSubject({ signingProfiles: {} }), deps).subscribe((action: UnknownAction) => emitted.push(action));
+
+        const select = (level: SignatureLevel) =>
+            signingProfileActions.listContentSigningProfileAttributes({ connectorUuid: 'cn-1', family: 'pades', level });
+        action$.next(select(SignatureLevel.Signed));
+        action$.next(select(SignatureLevel.Timestamped));
+        answers[SignatureLevel.Timestamped].next({ profileAttributes: [{ uuid: 'tsa-url' }], requestAttributes: [] });
+        answers[SignatureLevel.Signed].next({ profileAttributes: [{ uuid: 'stale' }], requestAttributes: [] });
+
+        expect(emitted).toEqual([
+            signingProfileActions.listContentSigningProfileAttributesSuccess({
+                profileAttributes: [{ uuid: 'tsa-url' }] as any,
+                requestAttributes: [],
+            }),
+        ]);
+    });
+
+    test('listContentSigningProfileAttributes failure emits failure action', async () => {
+        const emitted = await runEpic(
+            SigningProfilesEpicIndex.ListContentSigningProfileAttributes,
+            signingProfileActions.listContentSigningProfileAttributes({
+                connectorUuid: 'cn-1',
+                family: 'pades',
+                level: SignatureLevel.Signed,
+            }),
+            {
+                signingProfiles: {
+                    listContentSigningFormattingConnectorAttributes: () => throwError(() => new Error('level not executable')),
+                },
+            },
+            1,
+        );
+
+        expect(emitted[0]).toEqual(signingProfileActions.listContentSigningProfileAttributesFailure({ reason: 'level not executable' }));
+    });
+
+    describe('listTimestampSourceCandidates', () => {
+        const durableTsa = {
+            uuid: 'tsa-durable',
+            name: 'Durable TSA',
+            workflow: { type: SigningWorkflowType.Timestamping },
+            signingScheme: { signingScheme: SigningScheme.Managed, managedSigningType: ManagedSigningType.StaticKey },
+            recordPolicy: { recordingEnabled: true, persistenceMode: SigningRecordPersistenceMode.Immediate },
+        };
+        const unrecordedTsa = { ...durableTsa, uuid: 'tsa-unrecorded', name: 'Unrecorded TSA', recordPolicy: { recordingEnabled: false } };
+
+        test('lists managed TIMESTAMPING profiles, offers those whose detail meets the floor and names the others', async () => {
+            let capturedSearch: any;
+            const details: Record<string, any> = { 'tsa-durable': durableTsa, 'tsa-unrecorded': unrecordedTsa };
+            const emitted = await runEpic(
+                SigningProfilesEpicIndex.ListTimestampSourceCandidates,
+                signingProfileActions.listTimestampSourceCandidates(),
+                {
+                    signingProfiles: {
+                        listSigningProfiles: (args: any) => {
+                            capturedSearch = args.searchRequestDto;
+                            return of({ items: [durableTsa, unrecordedTsa], totalItems: 2 });
+                        },
+                        getSigningProfile: ({ uuid }: { uuid: string }) => of(details[uuid]),
+                    },
+                },
+                1,
+            );
+
+            expect(capturedSearch.filters).toEqual([
+                expect.objectContaining({ fieldIdentifier: 'SIGNING_PROFILE_WORKFLOW_TYPE', value: SigningWorkflowType.Timestamping }),
+                expect.objectContaining({ fieldIdentifier: 'SIGNING_PROFILE_SIGNING_SCHEME', value: SigningScheme.Managed }),
+            ]);
+            expect(emitted[0]).toEqual(
+                signingProfileActions.listTimestampSourceCandidatesSuccess({
+                    candidates: [durableTsa] as any,
+                    ineligible: [{ uuid: 'tsa-unrecorded', name: 'Unrecorded TSA' }],
+                    unreadable: [],
+                }),
+            );
+        });
+
+        test('names a candidate whose detail cannot be read and keeps offering the others', async () => {
+            const emitted = await runEpic(
+                SigningProfilesEpicIndex.ListTimestampSourceCandidates,
+                signingProfileActions.listTimestampSourceCandidates(),
+                {
+                    signingProfiles: {
+                        listSigningProfiles: () => of({ items: [{ uuid: 'tsa-hidden', name: 'Hidden TSA' }, durableTsa], totalItems: 2 }),
+                        getSigningProfile: ({ uuid }: { uuid: string }) =>
+                            uuid === 'tsa-hidden' ? throwError(() => new Error('forbidden')) : of(durableTsa),
+                    },
+                },
+                1,
+            );
+
+            expect(emitted[0]).toEqual(
+                signingProfileActions.listTimestampSourceCandidatesSuccess({
+                    candidates: [durableTsa] as any,
+                    ineligible: [],
+                    unreadable: [{ uuid: 'tsa-hidden', name: 'Hidden TSA' }],
+                }),
+            );
+        });
+
+        test('reads every page of TIMESTAMPING profiles', async () => {
+            const pages: Record<number, any> = {
+                1: { items: [durableTsa], totalPages: 2 },
+                2: { items: [{ ...durableTsa, uuid: 'tsa-older', name: 'Older TSA' }], totalPages: 2 },
+            };
+            const emitted = await runEpic(
+                SigningProfilesEpicIndex.ListTimestampSourceCandidates,
+                signingProfileActions.listTimestampSourceCandidates(),
+                {
+                    signingProfiles: {
+                        listSigningProfiles: (args: any) => of(pages[args.searchRequestDto.pageNumber]),
+                        getSigningProfile: ({ uuid }: { uuid: string }) => of({ ...durableTsa, uuid }),
+                    },
+                },
+                1,
+            );
+
+            expect((emitted[0] as any).payload.candidates.map((candidate: any) => candidate.uuid)).toEqual(['tsa-durable', 'tsa-older']);
+        });
+
+        test('offers the candidates in list order whatever order their details arrive in', async () => {
+            const slowTsa = { ...durableTsa, uuid: 'tsa-slow', name: 'Slow TSA' };
+            const emitted = await runEpic(
+                SigningProfilesEpicIndex.ListTimestampSourceCandidates,
+                signingProfileActions.listTimestampSourceCandidates(),
+                {
+                    signingProfiles: {
+                        listSigningProfiles: () => of({ items: [slowTsa, durableTsa], totalPages: 1 }),
+                        getSigningProfile: ({ uuid }: { uuid: string }) =>
+                            uuid === 'tsa-slow' ? of(slowTsa).pipe(delay(20)) : of(durableTsa),
+                    },
+                },
+                1,
+            );
+
+            expect((emitted[0] as any).payload.candidates.map((candidate: any) => candidate.uuid)).toEqual(['tsa-slow', 'tsa-durable']);
+        });
+
+        test('answers an empty list when no TIMESTAMPING profile exists', async () => {
+            const emitted = await runEpic(
+                SigningProfilesEpicIndex.ListTimestampSourceCandidates,
+                signingProfileActions.listTimestampSourceCandidates(),
+                { signingProfiles: { listSigningProfiles: () => of({ items: [], totalItems: 0 }) } },
+                1,
+            );
+
+            expect(emitted[0]).toEqual(
+                signingProfileActions.listTimestampSourceCandidatesSuccess({ candidates: [], ineligible: [], unreadable: [] }),
+            );
+        });
+
+        test('reports the reason when the list cannot be read', async () => {
+            const emitted = await runEpic(
+                SigningProfilesEpicIndex.ListTimestampSourceCandidates,
+                signingProfileActions.listTimestampSourceCandidates(),
+                { signingProfiles: { listSigningProfiles: () => throwError(() => new Error('Core unreachable')) } },
+                1,
+            );
+
+            expect(emitted[0]).toEqual(signingProfileActions.listTimestampSourceCandidatesFailure({ reason: 'Core unreachable' }));
+        });
+    });
+
+    test('activateIlmNative calls the API with the profile and reports success', async () => {
+        let capturedArgs: any;
+        const emitted = await runEpic(
+            SigningProfilesEpicIndex.ActivateIlmNative,
+            signingProfileActions.activateIlmNative({ uuid: 'p-1' }),
+            {
+                signingProfiles: {
+                    activateIlmNative: (args: any) => {
+                        capturedArgs = args;
+                        return of(undefined);
+                    },
+                },
+            },
+            1,
+        );
+
+        expect(capturedArgs).toEqual({ uuid: 'p-1' });
+        expect(emitted[0]).toEqual(signingProfileActions.activateIlmNativeSuccess({ uuid: 'p-1' }));
+    });
+
+    test('activateIlmNative failure emits failure action and alerts the operator', async () => {
+        const err = new Error('forbidden');
+        const emitted = await runEpic(
+            SigningProfilesEpicIndex.ActivateIlmNative,
+            signingProfileActions.activateIlmNative({ uuid: 'p-1' }),
+            { signingProfiles: { activateIlmNative: () => throwError(() => err) } },
+            2,
+        );
+
+        expect(emitted[0].type).toBe(signingProfileActions.activateIlmNativeFailure.type);
+        expect(emitted[1]).toEqual(appRedirectActions.fetchError({ error: err, message: 'Failed to activate ILM Native' }));
+    });
+
+    test('deactivateIlmNative calls the API with the profile and reports success', async () => {
+        let capturedArgs: any;
+        const emitted = await runEpic(
+            SigningProfilesEpicIndex.DeactivateIlmNative,
+            signingProfileActions.deactivateIlmNative({ uuid: 'p-1' }),
+            {
+                signingProfiles: {
+                    deactivateIlmNative: (args: any) => {
+                        capturedArgs = args;
+                        return of(undefined);
+                    },
+                },
+            },
+            1,
+        );
+
+        expect(capturedArgs).toEqual({ uuid: 'p-1' });
+        expect(emitted[0]).toEqual(signingProfileActions.deactivateIlmNativeSuccess({ uuid: 'p-1' }));
+    });
+
+    test('deactivateIlmNative failure emits failure action and alerts the operator', async () => {
+        const err = new Error('forbidden');
+        const emitted = await runEpic(
+            SigningProfilesEpicIndex.DeactivateIlmNative,
+            signingProfileActions.deactivateIlmNative({ uuid: 'p-1' }),
+            { signingProfiles: { deactivateIlmNative: () => throwError(() => err) } },
+            2,
+        );
+
+        expect(emitted[0].type).toBe(signingProfileActions.deactivateIlmNativeFailure.type);
+        expect(emitted[1]).toEqual(appRedirectActions.fetchError({ error: err, message: 'Failed to deactivate ILM Native' }));
     });
 });

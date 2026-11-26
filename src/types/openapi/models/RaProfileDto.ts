@@ -10,7 +10,12 @@
  * Do not edit the class manually.
  */
 
-import type { RaProfileCertificateRequestAttributesDto, RaProfileCertificateValidationSettingsDto, ResponseAttribute } from './';
+import type {
+    RaProfileCertificateRequestAttributesDto,
+    RaProfileCertificateValidationSettingsDto,
+    RaProfileRenewalSettingsDto,
+    ResponseAttribute,
+} from './';
 
 /**
  * @export
@@ -89,4 +94,10 @@ export interface RaProfileDto {
      * @memberof RaProfileDto
      */
     certificateRequestAttributes?: RaProfileCertificateRequestAttributesDto;
+    /**
+     * Renewal window settings of the RA Profile
+     * @type {RaProfileRenewalSettingsDto}
+     * @memberof RaProfileDto
+     */
+    renewalSettings?: RaProfileRenewalSettingsDto;
 }

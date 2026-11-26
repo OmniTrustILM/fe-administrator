@@ -11,6 +11,7 @@ import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EntityType, actions as filterActions } from 'ducks/filters';
 import { actions as pagingActions, selectors as pagingSelectors } from 'ducks/paging';
 import { selectors as tokenKeysSelectors } from 'ducks/token-keys';
+import { isOnboarded } from 'ducks/transform/token-keys';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import Select from 'components/Select';
@@ -263,7 +264,7 @@ function CryptographicKeyList() {
 
     // An import or an onboarding from the Create Key dialog is listed as soon as it succeeds, however the dialog is closed after it.
     useRunOnSuccessfulFinish(isImporting, !!importResults, refreshList);
-    useRunOnSuccessfulFinish(isOnboarding, !!onboardingResults?.some((result) => result.onboarded), refreshList);
+    useRunOnSuccessfulFinish(isOnboarding, !!onboardingResults?.some(isOnboarded), refreshList);
 
     const failedRemovalRows: TableDataRow[] = useMemo(
         () => (failedRemovals ?? []).map((failure) => ({ id: failure.uuid, columns: [failure.name, failure.message] })),

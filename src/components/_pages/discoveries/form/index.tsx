@@ -27,10 +27,16 @@ import { Clock } from 'lucide-react';
 
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type { ConnectorResponseModel } from 'types/connectors';
-import { ConnectorInterface, FunctionGroupCode, PlatformEnum, Resource } from 'types/openapi';
+import { ConnectorInterface, DiscoveryWindowMode, FeatureFlag, FunctionGroupCode, PlatformEnum, Resource } from 'types/openapi';
 
 import { collectFormAttributes } from 'utils/attributes/attributes';
-import { validateAlphaNumericWithSpecialChars, validateQuartzCronExpression, validateRequired } from 'utils/validators';
+import {
+    validateAlphaNumericWithSpecialChars,
+    validateQuartzCronExpression,
+    validateRequired,
+    validateRange,
+    validateWholeNumber,
+} from 'utils/validators';
 import { buildValidationRules, getFieldErrorMessage } from 'utils/validators-helper';
 import TriggerEditorWidget from 'components/TriggerEditorWidget';
 import TextInput from 'components/TextInput';
@@ -53,12 +59,41 @@ interface FormValues {
     cronExpression: string | undefined;
     scheduled: boolean;
     oneTime: boolean;
+    // Offered only when the bound interface advertises incremental discovery; Full sends no window at all.
+    windowMode: DiscoveryWindowMode;
+    // Lookback period in whole days or hours, sent as an ISO-8601 duration; used only by the Lookback mode.
+    windowLookbackAmount: string;
+    windowLookbackUnit: LookbackUnit;
     // Attribute fields and deletion markers are registered dynamically by AttributeEditor, one pair per editor id.
     [attributeField: `__attributes__${string}`]: unknown;
     [deletedField: `deletedAttributes_${string}`]: unknown;
 }
 
 const DEFAULT_CRON_EXPRESSION = '0 0 00 1/1 * ? *';
+
+type LookbackUnit = 'days' | 'hours';
+
+const LOOKBACK_UNIT_OPTIONS: { label: string; value: LookbackUnit }[] = [
+    { label: 'Days', value: 'days' },
+    { label: 'Hours', value: 'hours' },
+];
+const MAX_LOOKBACK_AMOUNT: Record<LookbackUnit, number> = { days: 3650, hours: 87600 };
+
+const validateLookbackAmount = (unit: LookbackUnit) =>
+    buildValidationRules([validateRequired(), validateWholeNumber(), validateRange(1, MAX_LOOKBACK_AMOUNT[unit])]).validate;
+
+const toIsoDuration = (amount: number, unit: LookbackUnit) => (unit === 'days' ? `P${amount}D` : `PT${amount}H`);
+
+// Explains a valid lookback in words; an invalid amount has its own error message instead.
+const describeLookback = (amount: string, unit: LookbackUnit, scheduled: boolean) => {
+    if (!/^\d+$/.test(amount)) return undefined;
+    const count = Number(amount);
+    if (count < 1 || count > MAX_LOOKBACK_AMOUNT[unit]) return undefined;
+    const period = `${count} ${unit === 'days' ? 'day' : 'hour'}${count === 1 ? '' : 's'}`;
+    return `Discovers what was created or changed in the ${period} before the discovery starts.${
+        scheduled ? ' Choose a period longer than the time between runs.' : ''
+    }`;
+};
 
 const NO_DESCRIPTORS: AttributeDescriptorModel[] = [];
 
@@ -77,6 +112,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
     const discoveryResources = useSelector(discoverySelectors.discoveryResources);
     const resourceCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
     const resourceEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.Resource));
+    const windowModeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.DiscoveryWindowMode));
     const [selectedTriggers, setSelectedTriggers] = useState<string[]>([]);
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
     const isFetchingDiscoveryDetail = useSelector(discoverySelectors.isFetchingDetail);
@@ -149,6 +185,9 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
             cronExpression: undefined,
             scheduled: false,
             oneTime: false,
+            windowMode: DiscoveryWindowMode.Full,
+            windowLookbackAmount: '7',
+            windowLookbackUnit: 'days',
         }),
         [],
     );
@@ -163,6 +202,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
         control,
         formState: { isDirty, isSubmitting, isValid },
         setValue,
+        trigger,
         unregister,
     } = methods;
 
@@ -191,6 +231,44 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
         control,
         name: 'cronExpression',
     });
+
+    const watchedWindowMode = useWatch({
+        control,
+        name: 'windowMode',
+    });
+
+    const watchedLookbackAmount = useWatch({
+        control,
+        name: 'windowLookbackAmount',
+    });
+
+    const watchedLookbackUnit = useWatch({
+        control,
+        name: 'windowLookbackUnit',
+    });
+
+    const lookbackDescription = describeLookback(watchedLookbackAmount, watchedLookbackUnit, watchedScheduled);
+
+    const supportsIncremental =
+        discoveryInterfaces.find((iface) => iface.uuid === watchedInterfaceUuid)?.features?.includes(FeatureFlag.DiscoveryIncremental) ??
+        false;
+
+    // Only a scheduled job has earlier runs to measure against, so a one-off discovery falls back to Full.
+    useEffect(() => {
+        if (!watchedScheduled && watchedWindowMode === DiscoveryWindowMode.SinceLastSuccessfulRun) {
+            setValue('windowMode', DiscoveryWindowMode.Full, { shouldValidate: true });
+        }
+    }, [watchedScheduled, watchedWindowMode, setValue]);
+
+    const optionsForWindowModes = useMemo(
+        () =>
+            [
+                DiscoveryWindowMode.Full,
+                ...(watchedScheduled ? [DiscoveryWindowMode.SinceLastSuccessfulRun] : []),
+                DiscoveryWindowMode.Lookback,
+            ].map((mode) => ({ label: getEnumLabel(windowModeEnum, mode), value: mode })),
+        [watchedScheduled, windowModeEnum],
+    );
 
     // Both keys an AttributeEditor registers: its values and its deletion marker. Clearing the values alone would leave
     // an attribute the user removed under the previous schema silently removed under the next one.
@@ -317,6 +395,16 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
     const onSubmit = useCallback(
         (values: FormValues) => {
             const resources = isV2Provider ? values.resources : undefined;
+            const discoveryWindow =
+                supportsIncremental && values.windowMode !== DiscoveryWindowMode.Full
+                    ? {
+                          mode: values.windowMode,
+                          lookback:
+                              values.windowMode === DiscoveryWindowMode.Lookback
+                                  ? toIsoDuration(Number(values.windowLookbackAmount), values.windowLookbackUnit)
+                                  : undefined,
+                      }
+                    : undefined;
             dispatch(
                 discoveryActions.createDiscovery({
                     request: {
@@ -347,6 +435,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
                               )
                             : undefined,
                         customAttributes: collectFormAttributes('customDiscovery', resourceCustomAttributes, values),
+                        window: discoveryWindow,
                     },
                     scheduled: values.scheduled,
                     jobName: values.jobName,
@@ -365,6 +454,7 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
             selectedTriggers,
             isV2Provider,
             showCertificateTriggers,
+            supportsIncremental,
         ],
     );
 
@@ -714,6 +804,73 @@ export default function DiscoveryForm({ onSuccess, onCancel }: DiscoveryFormProp
                                     />
                                 )}
                             />
+                        )}
+
+                        {supportsIncremental && (
+                            <Controller
+                                name="windowMode"
+                                control={control}
+                                render={({ field }) => (
+                                    <Select
+                                        id="windowModeSelect"
+                                        label="Discovery Window"
+                                        value={field.value}
+                                        onChange={(value) => field.onChange(value)}
+                                        options={optionsForWindowModes}
+                                        placement="bottom"
+                                    />
+                                )}
+                            />
+                        )}
+
+                        {supportsIncremental && watchedWindowMode === DiscoveryWindowMode.Lookback && (
+                            <div>
+                                <div className="flex items-start gap-3 max-w-sm">
+                                    <div className="flex-1">
+                                        <Controller
+                                            name="windowLookbackAmount"
+                                            control={control}
+                                            rules={{
+                                                validate: (value, values) =>
+                                                    values.windowMode !== DiscoveryWindowMode.Lookback ||
+                                                    validateLookbackAmount(values.windowLookbackUnit)(value),
+                                            }}
+                                            render={({ field, fieldState }) => (
+                                                <TextInput
+                                                    {...field}
+                                                    id="windowLookbackAmount"
+                                                    label="Lookback"
+                                                    type="text"
+                                                    inputMode="numeric"
+                                                    required
+                                                    invalid={!!fieldState.error && fieldState.isTouched}
+                                                    error={getFieldErrorMessage(fieldState)}
+                                                />
+                                            )}
+                                        />
+                                    </div>
+                                    <div className="w-32">
+                                        <Controller
+                                            name="windowLookbackUnit"
+                                            control={control}
+                                            render={({ field }) => (
+                                                <Select
+                                                    id="windowLookbackUnitSelect"
+                                                    label="Unit"
+                                                    value={field.value}
+                                                    onChange={(value) => {
+                                                        field.onChange(value);
+                                                        void trigger('windowLookbackAmount');
+                                                    }}
+                                                    options={LOOKBACK_UNIT_OPTIONS}
+                                                    placement="bottom"
+                                                />
+                                            )}
+                                        />
+                                    </div>
+                                </div>
+                                {lookbackDescription && <p className="mt-1 text-sm text-content-muted">{lookbackDescription}</p>}
+                            </div>
                         )}
 
                         <TabLayout

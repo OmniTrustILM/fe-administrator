@@ -134,6 +134,7 @@ models/AuthenticationSettingsUpdateDto.ts
 models/AuthorityInstanceDto.ts
 models/AuthorityInstanceRequestDto.ts
 models/AuthorityInstanceUpdateRequestDto.ts
+models/AutoRenewalMode.ts
 models/AvailableOperations.ts
 models/BaseAttributeConstraint.ts
 models/BaseAttributeContentDtoV2.ts
@@ -151,6 +152,7 @@ models/BuildInfoDto.ts
 models/BulkActionMessageDto.ts
 models/BulkCompromiseKeyItemRequestDto.ts
 models/BulkCompromiseKeyRequestDto.ts
+models/BulkEarlyRenewalRequestDto.ts
 models/BulkKeyItemUsageRequestDto.ts
 models/BulkKeyUsageRequestDto.ts
 models/BulkOperationResponse.ts
@@ -163,6 +165,7 @@ models/CbomDto.ts
 models/CbomSyncSkipDto.ts
 models/CbomSyncSkipState.ts
 models/CbomUploadRequestDto.ts
+models/CertificateAutoRenewalDto.ts
 models/CertificateChainDownloadResponseDto.ts
 models/CertificateChainResponseDto.ts
 models/CertificateComplianceCheckDto.ts
@@ -194,6 +197,9 @@ models/CertificateRegistrationSettingsUpdateDto.ts
 models/CertificateRegistrationState.ts
 models/CertificateRelationType.ts
 models/CertificateRelationsDto.ts
+models/CertificateRenewalInfoDto.ts
+models/CertificateRenewalInfoSettingsDto.ts
+models/CertificateRenewalInfoSettingsUpdateDto.ts
 models/CertificateRequestAttributesSettingsDto.ts
 models/CertificateRequestAttributesSettingsUpdateDto.ts
 models/CertificateRequestDto.ts
@@ -298,6 +304,7 @@ models/ConnectorSummaryDto.ts
 models/ConnectorUpdateRequestDto.ts
 models/ConnectorUpdateRequestDtoV2.ts
 models/ConnectorVersion.ts
+models/ContentSigningFormattingAttributes.ts
 models/ContentSigningWorkflowDto.ts
 models/ContentSigningWorkflowRequestDto.ts
 models/CoreInfoResponseDto.ts
@@ -366,6 +373,10 @@ models/DiscoveryResourceProgressDto.ts
 models/DiscoveryResponseDto.ts
 models/DiscoveryStatus.ts
 models/DiscoverySupportedResourceDto.ts
+models/DiscoveryWindowDto.ts
+models/DiscoveryWindowMode.ts
+models/DocumentTransferMode.ts
+models/EarlyRenewalRequestDto.ts
 models/EditKeyItemDto.ts
 models/EditKeyRequestDto.ts
 models/EditLocationRequestDto.ts
@@ -446,6 +457,7 @@ models/JwtTokenSecretContent.ts
 models/KeyAlgorithm.ts
 models/KeyAssociationDto.ts
 models/KeyCompromiseReason.ts
+models/KeyDescriptionDto.ts
 models/KeyDetailDto.ts
 models/KeyDto.ts
 models/KeyEventHistoryDto.ts
@@ -587,6 +599,7 @@ models/RaProfileCertificateValidationSettingsDto.ts
 models/RaProfileCertificateValidationSettingsUpdateDto.ts
 models/RaProfileCmpDetailResponseDto.ts
 models/RaProfileDto.ts
+models/RaProfileEarlyRenewalResponseDto.ts
 models/RaProfileScepDetailResponseDto.ts
 models/RandomDataRequestDto.ts
 models/RandomDataResponseDto.ts
@@ -599,6 +612,7 @@ models/RdnMappedField.ts
 models/RecipientType.ts
 models/RegexpAttributeConstraint.ts
 models/RemoveCertificateDto.ts
+models/RenewalWindowSource.ts
 models/RequestAttribute.ts
 models/RequestAttributeCallback.ts
 models/RequestAttributeV2.ts
@@ -609,6 +623,8 @@ models/ResourceActionsDto.ts
 models/ResourceCertificateContentData.ts
 models/ResourceDto.ts
 models/RaProfileEstDetailResponseDto.ts
+models/RaProfileRenewalSettingsDto.ts
+models/RaProfileRenewalSettingsUpdateDto.ts
 models/ResourceEvent.ts
 models/ResourceEventDto.ts
 models/ResourceLoggingSettingsDto.ts
@@ -667,9 +683,12 @@ models/SecretUpdateRequestDto.ts
 models/SecretVersionDto.ts
 models/SignDataRequestDto.ts
 models/SignDataResponseDto.ts
+models/SignatureAlgorithm.ts
 models/SignatureFamily.ts
+models/SignatureFamilyDeclaration.ts
 models/SignatureFamilyParameterGroups.ts
 models/SignatureLevel.ts
+models/SignatureLevelDeclaration.ts
 models/SignatureParameterGroup.ts
 models/SignatureParameterGroupFields.ts
 models/SignatureParameters.ts
@@ -724,6 +743,7 @@ models/TokenInstanceStatusComponent.ts
 models/TokenInstanceStatusDetailDto.ts
 models/TokenKeyDto.ts
 models/TokenKeyListResponseDto.ts
+models/TokenKeyOnboardingOutcome.ts
 models/TokenKeyOnboardingResultDto.ts
 models/TokenKeySelectionDto.ts
 models/TokenKeyStatus.ts

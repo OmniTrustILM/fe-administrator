@@ -11,6 +11,7 @@ import { type MenuSourceColumn, toMenuContents } from './sourceColumns';
 
 const LOCKED_AT_LAST_COLUMN = 'A view must keep at least one column';
 const LOCKED_WHILE_LOADING = 'Columns cannot be changed while the page is loading';
+const LOCKED_AFTER_FAILURE = 'Fields failed to load, so columns cannot be changed. Refresh to try again.';
 const NO_COLUMNS: readonly ColumnDefinition[] = [];
 
 function getEmptyState(column: MenuSourceColumn, isCatalogueLoaded: boolean): string {
@@ -43,6 +44,8 @@ type Props = Readonly<{
     shippedColumns?: readonly ColumnDefinition[];
     /** Puts the platform's own column set back. Left out where there is nothing to go back to. */
     onReset?: () => void;
+    /** Whether the catalogue read failed, which is why `onToggle` is withheld and what the lock names. */
+    isCatalogueFailed?: boolean;
     /** Which columns a view can store, so the last of them is the one held. Defaults to every column not display-only. */
     isStorable?: (column: ColumnDefinition) => boolean;
     dataTestId?: string;
@@ -104,6 +107,7 @@ export default function AddColumnMenu({
     shippedColumns = NO_COLUMNS,
     onToggle,
     onReset,
+    isCatalogueFailed = false,
     isStorable = isNotDisplayOnly,
     dataTestId = 'add-column-menu',
 }: Props) {
@@ -151,7 +155,7 @@ export default function AddColumnMenu({
     // The rule in force, named once where it can be read: a disabled checkbox is out of the tab
     // order, so a keyboard user never reaches whatever the control itself might say.
     let lockNotice: string | undefined;
-    if (isLocked) lockNotice = LOCKED_WHILE_LOADING;
+    if (isLocked) lockNotice = isCatalogueFailed ? LOCKED_AFTER_FAILURE : LOCKED_WHILE_LOADING;
     else if (isAtLastColumn) lockNotice = LOCKED_AT_LAST_COLUMN;
 
     return (

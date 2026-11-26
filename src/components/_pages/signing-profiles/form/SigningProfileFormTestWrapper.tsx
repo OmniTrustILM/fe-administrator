@@ -4,6 +4,7 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import { useMemo } from 'react';
 import connectorsReducer from 'ducks/connectors';
 import userInterfaceReducer from 'ducks/user-interface';
+import { initialState as signingProfilesInitialState } from 'ducks/signing-profiles';
 import {
     CertificateRelationType,
     CertificateState,
@@ -70,19 +71,23 @@ const existingSigningProfile: SigningProfileDto = {
 export function SigningProfileFormTestWrapper({
     editMode = false,
     timeQualityAccuracy,
-}: Readonly<{ editMode?: boolean; timeQualityAccuracy?: string }>) {
+    failedConnectorsFetch,
+}: Readonly<{ editMode?: boolean; timeQualityAccuracy?: string; failedConnectorsFetch?: { reason?: string } }>) {
     const store = useMemo(
         () =>
             configureStore({
                 reducer: combineReducers({
                     enums: identity({ platformEnums: {} }),
                     signingProfiles: identity({
+                        ...signingProfilesInitialState,
                         signingProfile: editMode ? existingSigningProfile : undefined,
                         isFetchingDetail: false,
                         isCreating: false,
                         isUpdating: false,
-                        signatureFormattingConnectors: [{ uuid: 'c1', name: 'PAdES Connector' }],
+                        signatureFormattingConnectors: failedConnectorsFetch ? [] : [{ uuid: 'c1', name: 'PAdES Connector' }],
+                        signatureFormattingConnectorsWorkflowType: SigningWorkflowType.Timestamping,
                         isFetchingSignatureFormattingConnectors: false,
+                        failedSignatureFormattingConnectorsFetch: failedConnectorsFetch,
                         signingCertificates: [{ uuid: 'cert1', commonName: 'Signing Cert', serialNumber: '123' }],
                         isFetchingSigningCertificates: false,
                         signingOperationAttributeDescriptors: [],
@@ -109,7 +114,7 @@ export function SigningProfileFormTestWrapper({
                 }),
                 middleware: (getDefault) => getDefault({ serializableCheck: false }),
             }),
-        [editMode, timeQualityAccuracy],
+        [editMode, timeQualityAccuracy, failedConnectorsFetch],
     );
 
     return (

@@ -10,7 +10,7 @@
  * Do not edit the class manually.
  */
 
-import type { RequestAttribute, Resource } from './';
+import type { DiscoveryWindowDto, RequestAttribute, Resource } from './';
 
 /**
  * @export
@@ -71,4 +71,10 @@ export interface DiscoveryDto {
      * @memberof DiscoveryDto
      */
     resourceAttributes?: { [key: string]: Array<RequestAttribute> };
+    /**
+     * Which part of the target to discover. Absent means a full discovery.
+     * @type {DiscoveryWindowDto}
+     * @memberof DiscoveryDto
+     */
+    window?: DiscoveryWindowDto;
 }

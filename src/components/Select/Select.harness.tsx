@@ -139,3 +139,45 @@ export function ToneHarness() {
         </div>
     );
 }
+
+type FooterActionHarnessProps = {
+    isMulti?: boolean;
+    isSearchable?: boolean;
+    disabled?: boolean;
+    options?: { value: string; label: string }[];
+};
+
+export function FooterActionHarness({ isMulti = false, isSearchable = false, disabled, options = BASE_OPTIONS }: FooterActionHarnessProps) {
+    const [single, setSingle] = useState<SingleValueState>('');
+    const [multi, setMulti] = useState<MultiOption[] | undefined>([]);
+    const [created, setCreated] = useState(0);
+    const footerAction = { label: '+ Create new', onClick: () => setCreated((c) => c + 1), disabled };
+    return (
+        <div>
+            {isMulti ? (
+                <Select
+                    id="f"
+                    value={multi ?? []}
+                    onChange={(nv) => setMulti(nv)}
+                    options={options}
+                    isMulti
+                    isSearchable={isSearchable}
+                    footerAction={footerAction}
+                    dataTestId="sel"
+                />
+            ) : (
+                <Select
+                    id="f"
+                    value={single}
+                    onChange={(nv) => setSingle(nv)}
+                    options={options}
+                    isSearchable={isSearchable}
+                    footerAction={footerAction}
+                    dataTestId="sel"
+                />
+            )}
+            <div data-testid="value-display">{JSON.stringify(isMulti ? (multi ?? null) : single)}</div>
+            <div data-testid="created-count">{created}</div>
+        </div>
+    );
+}

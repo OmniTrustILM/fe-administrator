@@ -21,17 +21,11 @@ const RenderTokenProfile = ({ type, name }: Props) => {
     const formCallbackValue = useSelector(userInterfaceSelectors.selectCallbackValue);
 
     const tokenProfileOptions = useMemo(
-        () => [
-            ...tokenProfiles.map((tokenProfile) => ({
+        () =>
+            tokenProfiles.map((tokenProfile) => ({
                 label: tokenProfile.name,
                 value: tokenProfile.uuid,
             })),
-            {
-                label: '+ Create new',
-                value: '__add_new__',
-                disabled: false,
-            },
-        ],
         [tokenProfiles],
     );
 
@@ -80,14 +74,11 @@ const RenderTokenProfile = ({ type, name }: Props) => {
                         options={tokenProfileOptions}
                         value={value ?? ''}
                         onChange={(selected) => {
-                            if (selected === '__add_new__') {
-                                handleAddNew();
-                                return;
-                            }
                             handleTokenProfileChange(selected as string);
                             onChange(selected);
                         }}
                         placeholder={type === 'alt' ? 'Select Alternative Token Profile' : 'Select Token Profile'}
+                        footerAction={{ label: '+ Create new', onClick: handleAddNew }}
                     />
                     {error && <div className="text-danger mt-1">{error.message ?? 'Token profile is required.'}</div>}
                 </div>

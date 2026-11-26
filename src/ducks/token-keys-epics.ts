@@ -25,7 +25,7 @@ const listTokenKeys: AppEpic = (action$, state$, deps) => {
     );
 };
 
-/** A refused key raises an error, the only alert that stays on screen until dismissed. */
+/** A batch with any failure raises an error, the only alert that stays on screen until dismissed. */
 function onboardingAlert(results: TokenKeyOnboardingResultDto[], captions: CaptionsByHandle) {
     const { allOnboarded, message } = summarizeOnboarding(results, captions);
     return allOnboarded ? alertActions.success(message) : alertActions.error(message);

@@ -10,6 +10,8 @@ import {
     transformRaProfileCertificateValidationSettingsUpdateModelToDto,
     transformRaProfileCmpDetailResponseDtoToModel,
     transformRaProfileEditRequestModelToDto,
+    transformRaProfileRenewalSettingsDtoToModel,
+    transformRaProfileRenewalSettingsUpdateModelToDto,
     transformRaProfileResponseDtoToModel,
     transformRaProfileScepDetailResponseDtoToModel,
     transformRaProfileSimplifiedDtoToModel,
@@ -195,5 +197,35 @@ describe('ra-profiles transforms', () => {
         const result = transformComplianceProfileSimplifiedDtoToModel(dto);
         expect(result).toEqual(dto);
         expect(result).not.toBe(dto);
+    });
+});
+
+describe('ra-profiles renewal settings transforms', () => {
+    const renewalSettings = {
+        windowEnabled: true,
+        windowStartPercent: 60,
+        windowEndPercent: 85,
+        useAuthorityRenewalInfo: true,
+        authorityRenewalInfoSupported: true,
+        autoRenewalEnabled: true,
+        autoRenewalMaxAttempts: 7,
+    };
+
+    test('transformRaProfileRenewalSettingsDtoToModel copies fields', () => {
+        const result = transformRaProfileRenewalSettingsDtoToModel(renewalSettings);
+        expect(result).toEqual(renewalSettings);
+        expect(result).not.toBe(renewalSettings);
+    });
+
+    test('transformRaProfileResponseDtoToModel maps renewalSettings and tolerates their absence', () => {
+        expect(transformRaProfileResponseDtoToModel({ uuid: 'rp-1', renewalSettings } as any).renewalSettings).toEqual(renewalSettings);
+        expect(transformRaProfileResponseDtoToModel({ uuid: 'rp-1' } as any).renewalSettings).toBeUndefined();
+    });
+
+    test('transformRaProfileRenewalSettingsUpdateModelToDto carries auto renewal values and drops the read-only support flag', () => {
+        const { authorityRenewalInfoSupported, ...updateModel } = renewalSettings;
+        const result = transformRaProfileRenewalSettingsUpdateModelToDto({ ...updateModel, authorityRenewalInfoSupported } as any);
+        expect(result).toEqual(updateModel);
+        expect(result).not.toHaveProperty('authorityRenewalInfoSupported');
     });
 });

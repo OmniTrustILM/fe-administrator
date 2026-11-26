@@ -35,6 +35,18 @@ describe('connectors slice', () => {
         expect(next.connectInfo).toBeUndefined();
     });
 
+    test('clearCallbackDataWithPrefix drops only the callback data under the prefix', () => {
+        // given
+        const otherEditorsData = { y: 2 };
+        const state = { ...initialState, callbackData: { '__attributes__a__.cb': { x: 1 }, '__attributes__b__.cb': otherEditorsData } };
+
+        // when
+        const next = reducer(state, actions.clearCallbackDataWithPrefix({ prefix: '__attributes__a__.' }));
+
+        // then
+        expect(next.callbackData).toEqual({ '__attributes__b__.cb': otherEditorsData });
+    });
+
     test('clearCallbackData resets callbackData', () => {
         const next = reducer({ ...initialState, callbackData: { cb1: { x: 1 }, cb2: { y: 2 } } }, actions.clearCallbackData());
         expect(next.callbackData).toEqual({});
@@ -429,6 +441,30 @@ describe('connectors slice', () => {
         );
         expect(next.callbackData.cb1).toBeUndefined();
         expect(next.isRunningCallback.cb1).toBe(true);
+    });
+
+    test('clearCallbackDataFor clears only the named callback data', () => {
+        // given
+        const state = { ...initialState, callbackData: { cleared: [{ data: 'a' }], kept: [{ data: 'b' }] } };
+
+        // when
+        const next = reducer(state, actions.clearCallbackDataFor({ callbackId: 'cleared' }));
+
+        // then
+        expect(next.callbackData.cleared).toBeUndefined();
+        expect(next.callbackData.kept).toEqual([{ data: 'b' }]);
+    });
+
+    test('clearCallbackDataFor supersedes the request in flight for the named callback', () => {
+        // given
+        const inFlight = { ...initialState, isRunningCallback: { cleared: true }, callbackSeq: { cleared: 3 } };
+
+        // when
+        const next = reducer(inFlight, actions.clearCallbackDataFor({ callbackId: 'cleared' }));
+
+        // then
+        expect(next.isRunningCallback.cleared).toBe(false);
+        expect(next.callbackSeq.cleared).toBe(4);
     });
 
     test('callbackResource and clear helpers update callbackData and isRunningCallback', () => {

@@ -425,6 +425,21 @@ function toNonEmptyAttributeContent(
     return content.length > 0 ? content : undefined;
 }
 
+/**
+ * The first injected descriptor of each name, leaving out the names of the form's own attributes: group callbacks can
+ * inject the same field more than once, and the first copy is the one a form shows, validates and submits.
+ */
+export function firstInjectedDescriptorOfEachName(
+    injectedDescriptors: AttributeDescriptorModel[],
+    ownDescriptors: AttributeDescriptorModel[],
+): AttributeDescriptorModel[] {
+    const ownNames = new Set(ownDescriptors.map((descriptor) => descriptor.name));
+    return injectedDescriptors.filter(
+        (descriptor, index) =>
+            !ownNames.has(descriptor.name) && injectedDescriptors.findIndex((other) => other.name === descriptor.name) === index,
+    );
+}
+
 export function collectFormAttributes(
     id: string,
     descriptors: AttributeDescriptorModel[] | undefined,

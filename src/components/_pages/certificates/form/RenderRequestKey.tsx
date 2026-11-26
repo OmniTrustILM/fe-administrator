@@ -32,17 +32,11 @@ const RenderRequestKey = ({ type, name, tokenProfileField }: Props) => {
     );
 
     const keyOptions = useMemo(
-        () => [
-            ...availableKeys.map((key) => ({
+        () =>
+            availableKeys.map((key) => ({
                 label: key.name,
                 value: key.uuid,
             })),
-            {
-                label: '+ Create new',
-                value: '__add_new__',
-                disabled: false,
-            },
-        ],
         [availableKeys],
     );
 
@@ -114,14 +108,11 @@ const RenderRequestKey = ({ type, name, tokenProfileField }: Props) => {
                             options={keyOptions}
                             value={value ?? ''}
                             onChange={(selected) => {
-                                if (selected === '__add_new__') {
-                                    handleAddNewKey();
-                                    return;
-                                }
                                 onChange(selected);
                                 handleKeyChange(selected as string);
                             }}
                             placeholder={isAltKey ? 'Select Alternative Key' : 'Select Key'}
+                            footerAction={{ label: '+ Create new', onClick: handleAddNewKey }}
                         />
                         {error && <div className="text-danger mt-1">{error.message ?? 'Key is required.'}</div>}
                     </div>

@@ -1,7 +1,7 @@
 import type React from 'react';
-import { useCallback, useRef, useState } from 'react';
+import { useState } from 'react';
 import { Controller, useFormContext, useFormState } from 'react-hook-form';
-import Select from 'components/Select';
+import Select, { type SelectFooterAction } from 'components/Select';
 import Label from 'components/Label';
 import Button from 'components/Button';
 import { AddCustomValuePanel } from 'components/Input/DynamicContent/AddCustomValuePanel';
@@ -21,7 +21,7 @@ type AttributeFieldSelectProps = {
     options?: AttributeSelectOption[];
     busy: boolean;
     deleteButton?: React.ReactNode;
-    addNewAttributeValue?: { label: string; value: string; disabled?: boolean };
+    createNewAction?: SelectFooterAction;
     onSelectChangeMulti: (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => void;
     onSelectChangeSingle: (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => void;
 };
@@ -32,32 +32,13 @@ export function AttributeFieldSelect({
     options = [],
     busy,
     deleteButton,
-    addNewAttributeValue,
+    createNewAction,
     onSelectChangeMulti,
     onSelectChangeSingle,
 }: Readonly<AttributeFieldSelectProps>): React.ReactNode {
     const { control } = useFormContext();
     const { submitCount } = useFormState({ control });
     const [showAddCustom, setShowAddCustom] = useState(false);
-    const [singleSelectKey, setSingleSelectKey] = useState(0);
-    const fieldValueRef = useRef<unknown>(undefined);
-
-    const handleSingleSelectChange = useCallback(
-        (fieldOnChange: (v: unknown) => void, fieldOnBlur: () => void) => (newValue: unknown) => {
-            if (newValue === '__add_new__') {
-                onSelectChangeSingle(fieldOnChange)(newValue);
-                if (!fieldValueRef.current) {
-                    fieldOnChange(undefined);
-                }
-                // The remount below drops focus without a blur, so a cancelled "create new" would leave the field untouched.
-                fieldOnBlur();
-                setSingleSelectKey((k) => k + 1);
-            } else {
-                onSelectChangeSingle(fieldOnChange)(newValue);
-            }
-        },
-        [onSelectChangeSingle],
-    );
 
     return (
         <Controller
@@ -65,7 +46,6 @@ export function AttributeFieldSelect({
             control={control}
             rules={{ validate: buildAttributeValidators(descriptor) }}
             render={({ field, fieldState }) => {
-                fieldValueRef.current = field.value;
                 const selectValue = getSelectValueFromField(field.value, descriptor.properties.multiSelect);
                 // While a custom value is being added the field is still being filled in, so its error waits.
                 const errorVisible = isAttributeErrorVisible(fieldState, submitCount) && !showAddCustom;
@@ -86,17 +66,15 @@ export function AttributeFieldSelect({
                               .filter((v) => !seen.has(String(v)))
                               .map((v) => ({ label: String(v), value: v as AttributeSelectOption['value'] }))
                         : [];
-                const selectOptionsList = [...baseOptions, ...extra];
-                const selectOptions = addNewAttributeValue
-                    ? [
-                          ...selectOptionsList,
-                          {
-                              label: addNewAttributeValue.label,
-                              value: addNewAttributeValue.value,
-                              disabled: addNewAttributeValue.disabled ?? false,
-                          },
-                      ]
-                    : selectOptionsList;
+                const selectOptions = [...baseOptions, ...extra];
+                // Creating leaves the field as it was, so mark it touched or a cancelled create would hide its error.
+                const footerAction = createNewAction && {
+                    ...createNewAction,
+                    onClick: () => {
+                        field.onBlur();
+                        createNewAction.onClick();
+                    },
+                };
 
                 return (
                     <>
@@ -121,13 +99,13 @@ export function AttributeFieldSelect({
                                         invalid={errorVisible}
                                         onBlur={field.onBlur}
                                         ariaDescribedBy={describedBy}
+                                        footerAction={footerAction}
                                     />
                                 ) : (
                                     <Select
-                                        key={singleSelectKey}
                                         id={`${name}Select`}
                                         value={selectValue}
-                                        onChange={handleSingleSelectChange(field.onChange, field.onBlur)}
+                                        onChange={onSelectChangeSingle(field.onChange)}
                                         options={selectOptions}
                                         placeholder={`Select ${descriptor.properties.label}`}
                                         isDisabled={descriptor.properties.readOnly || busy || showAddCustom}
@@ -137,6 +115,7 @@ export function AttributeFieldSelect({
                                         invalid={errorVisible}
                                         onBlur={field.onBlur}
                                         ariaDescribedBy={describedBy}
+                                        footerAction={footerAction}
                                     />
                                 )}
                             </div>

@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 import { of } from 'rxjs';
@@ -105,6 +105,8 @@ export type FilterWidgetTestWrapperProps = {
     busyBadges?: boolean;
     extraFilterComponent?: React.ReactNode;
     filterGridCols?: 2 | 4;
+    /** Goes busy on every filter update until a control ends the save, as the condition detail page does. */
+    busyWhileSaving?: boolean;
 };
 
 export default function FilterWidgetTestWrapper({
@@ -117,7 +119,9 @@ export default function FilterWidgetTestWrapper({
     busyBadges,
     extraFilterComponent,
     filterGridCols = 4,
+    busyWhileSaving = false,
 }: Readonly<FilterWidgetTestWrapperProps>) {
+    const [isSaving, setIsSaving] = useState(false);
     const getAvailableFiltersApi = useMemo(() => () => of(availableFilters), [availableFilters]);
 
     const preloadedState = useMemo(
@@ -158,12 +162,20 @@ export default function FilterWidgetTestWrapper({
                     title={title}
                     entity={entity}
                     getAvailableFiltersApi={getAvailableFiltersApi}
-                    onFilterUpdate={onFilterUpdate}
+                    onFilterUpdate={(filters) => {
+                        if (busyWhileSaving) setIsSaving(true);
+                        onFilterUpdate?.(filters);
+                    }}
                     disableBadgeRemove={disableBadgeRemove}
-                    busyBadges={busyBadges}
+                    busyBadges={busyBadges || isSaving}
                     extraFilterComponent={extraFilterComponent}
                     filterGridCols={filterGridCols}
                 />
+                {busyWhileSaving && (
+                    <button type="button" data-testid="finish-save" onClick={() => setIsSaving(false)}>
+                        Finish save
+                    </button>
+                )}
             </MemoryRouter>
         </Provider>
     );

@@ -8,6 +8,7 @@ import {
     KeyRequestType,
     Resource,
     TokenInstanceStatus,
+    TokenKeyOnboardingOutcome,
     TokenKeyStatus,
 } from 'types/openapi';
 import { actions as keyActions } from 'ducks/cryptographic-keys';
@@ -435,7 +436,12 @@ test.describe('CryptographicKeyForm', () => {
                 keyListableTokenProfiles={[profile]}
                 tokenKeys={onboardableKeys}
                 onboardingResults={[
-                    { keyPairMeta: keyPairMeta('onboardable'), onboarded: true, intoExistingKey: false, keyUuid: 'key', keyName: 'signer' },
+                    {
+                        keyPairMeta: keyPairMeta('onboardable'),
+                        outcome: TokenKeyOnboardingOutcome.Onboarded,
+                        keyUuid: 'key',
+                        keyName: 'signer',
+                    },
                 ]}
                 onSuccess={() => {
                     succeededCount += 1;

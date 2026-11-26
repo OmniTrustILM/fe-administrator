@@ -55,8 +55,8 @@ test.describe('RaProfileDetail actions by permission', () => {
         await expect(page.getByTestId('add-button')).toBeEnabled();
         await page.getByRole('tab', { name: 'Validation' }).click();
         const edit = page.getByTestId('edit-button');
-        await expect(edit).toHaveCount(2);
-        for (let index = 0; index < 2; index++) await expect(edit.nth(index)).toBeEnabled();
+        await expect(edit).toHaveCount(3);
+        for (let index = 0; index < 3; index++) await expect(edit.nth(index)).toBeEnabled();
     });
 
     test('disables the actions addressed by authority on a profile without one, whatever the user may update', async ({ mount, page }) => {
@@ -70,7 +70,38 @@ test.describe('RaProfileDetail actions by permission', () => {
         for (let index = 0; index < 4; index++) await expect(activate.nth(index)).toBeDisabled();
         await page.getByRole('tab', { name: 'Validation' }).click();
         const edit = page.getByTestId('edit-button');
-        await expect(edit).toHaveCount(2);
-        for (let index = 0; index < 2; index++) await expect(edit.nth(index)).toBeDisabled();
+        await expect(edit).toHaveCount(3);
+        for (let index = 0; index < 3; index++) await expect(edit.nth(index)).toBeDisabled();
+    });
+
+    test('disables editing the renewal settings of an RA profile without an authority', async ({ mount, page }) => {
+        await mount(<RaProfileDetailWithStore withoutAuthority />);
+        await page.getByRole('tab', { name: 'Validation' }).click();
+
+        await expect(page.getByTestId('renewal-settings-widget').getByTestId('edit-button')).toBeDisabled();
+    });
+
+    test('shows automatic renewal and its maximum attempts in the renewal widget', async ({ mount, page }) => {
+        await mount(<RaProfileDetailWithStore />);
+        await page.getByRole('tab', { name: 'Validation' }).click();
+
+        const widget = page.getByTestId('renewal-settings-widget');
+        await expect(widget.getByText('Automatic Renewal Enabled')).toBeVisible();
+        await expect(widget.locator('#autoRenewalEnabled')).toBeChecked();
+        await expect(widget.getByText('Maximum Renewal Attempts')).toBeVisible();
+        await expect(widget.getByText('7', { exact: true })).toBeVisible();
+    });
+
+    test('clicking a renewal dialog switch label toggles it and leaves the read-only widget switch alone', async ({ mount, page }) => {
+        await mount(<RaProfileDetailWithStore />);
+        await page.getByRole('tab', { name: 'Validation' }).click();
+        await page.getByTestId('renewal-settings-widget').getByTestId('edit-button').click();
+
+        const dialogSwitch = page.locator('#renewal-dialog-autoRenewalEnabled');
+        await expect(dialogSwitch).toBeChecked();
+        await page.getByText('Enable Automatic Renewal').click();
+
+        await expect(dialogSwitch).not.toBeChecked();
+        await expect(page.getByTestId('renewal-settings-widget').locator('#autoRenewalEnabled')).toBeChecked();
     });
 });

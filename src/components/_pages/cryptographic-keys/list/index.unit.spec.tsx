@@ -10,7 +10,7 @@ import { EntityType } from 'ducks/filters';
 import pagingsReducer, { actions as pagingsActions, initialState as pagingsInitialState } from 'ducks/paging';
 import tokenKeysReducer, { actions as tokenKeysActions, initialState as tokenKeysInitialState } from 'ducks/token-keys';
 import { actions as tokenProfilesActions, initialState as tokenProfilesInitialState } from 'ducks/token-profiles';
-import { InspectedEntryKind, KeyState, KeyType, ResourceAction } from 'types/openapi';
+import { InspectedEntryKind, KeyState, KeyType, ResourceAction, TokenKeyOnboardingOutcome, TokenKeyStatus } from 'types/openapi';
 import { REMOVE_KEY_FROM_INVENTORY_NOTE, REMOVE_KEYS_FROM_INVENTORY_NOTE } from '../constants';
 import { clickByText, clickByTitle } from '../../test-utils/domActions';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
@@ -145,7 +145,10 @@ describe('CryptographicKeyList', () => {
         expect(createKeyDialog()).toBeUndefined();
     });
 
-    it('refreshes as soon as an onboarding from its Create Key dialog onboards a key, however the dialog is then closed', async () => {
+    it.each([
+        { outcome: TokenKeyOnboardingOutcome.Onboarded, ending: 'onboards a new key' },
+        { outcome: TokenKeyOnboardingOutcome.JoinedExistingKey, ending: 'joins a key pair to an existing key' },
+    ])('refreshes as soon as an onboarding from its Create Key dialog $ending, however the dialog is then closed', async ({ outcome }) => {
         state = {
             ...state,
             tokenKeys: tokenKeysReducer(
@@ -162,9 +165,7 @@ describe('CryptographicKeyList', () => {
         await renderList();
         expect(listRefreshToken()).toBe('0');
 
-        const results = [
-            { keyPairMeta: keyPairMeta('handle'), onboarded: true, intoExistingKey: false, keyUuid: 'key-1', keyName: 'signer' },
-        ];
+        const results = [{ keyPairMeta: keyPairMeta('handle'), outcome, keyUuid: 'key-1', keyName: 'signer' }];
         state = {
             ...state,
             tokenKeys: tokenKeysReducer(state.tokenKeys, tokenKeysActions.onboardTokenKeysSuccess({ results })),
@@ -190,7 +191,9 @@ describe('CryptographicKeyList', () => {
         };
         await renderList();
 
-        const results = [{ keyPairMeta: keyPairMeta('handle'), onboarded: false, intoExistingKey: false, reason: 'gone' }];
+        const results = [
+            { keyPairMeta: keyPairMeta('handle'), outcome: TokenKeyOnboardingOutcome.Blocked, status: TokenKeyStatus.Gone, reason: 'gone' },
+        ];
         state = {
             ...state,
             tokenKeys: tokenKeysReducer(state.tokenKeys, tokenKeysActions.onboardTokenKeysSuccess({ results })),

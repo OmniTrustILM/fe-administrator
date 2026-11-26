@@ -1,6 +1,14 @@
 import { test, expect } from '../../../playwright/ct-test';
 import Select from './index';
-import { BlurHarness, MultiHarness, SearchableHarness, SearchableMultiHarness, SingleHarness, ToneHarness } from './Select.harness';
+import {
+    BlurHarness,
+    FooterActionHarness,
+    MultiHarness,
+    SearchableHarness,
+    SearchableMultiHarness,
+    SingleHarness,
+    ToneHarness,
+} from './Select.harness';
 
 const BASE_OPTIONS = [
     { value: '1', label: 'Option 1' },
@@ -83,6 +91,49 @@ test.describe('Select', () => {
         await expect(page.getByRole('listbox')).toBeVisible();
         await expect(page.getByTestId('value-display')).toContainText('Option 1');
         await expect(page.getByTestId('value-display')).toContainText('Option 2');
+    });
+
+    test('multi mode marks options with a leading checkbox instead of a trailing check', async ({ mount, page }) => {
+        await mount(<MultiHarness initial={[{ value: '2', label: 'Option 2' }]} />);
+        await page.getByTestId('sel-trigger').click();
+
+        const selected = page.getByRole('option', { name: 'Option 2' });
+        const unselected = page.getByRole('option', { name: 'Option 1' });
+        await expect(page.getByRole('option')).toHaveCount(3);
+        await expect(page.getByTestId('select-option-checkbox')).toHaveCount(3);
+        await expect(selected.getByTestId('select-option-checkbox')).toHaveClass(/bg-brand-solid/);
+        await expect(selected.getByTestId('select-option-checkbox').locator('svg')).toHaveCount(1);
+        await expect(unselected.getByTestId('select-option-checkbox').locator('svg')).toHaveCount(0);
+        await expect(selected.locator('svg')).toHaveCount(1);
+
+        const firstChild = await selected.evaluate((el) => el.firstElementChild?.firstElementChild?.getAttribute('data-testid'));
+        expect(firstChild).toBe('select-option-checkbox');
+    });
+
+    test('multi mode toggles the same way from the checkbox, the row and the keyboard', async ({ mount, page }) => {
+        await mount(<MultiHarness />);
+        await page.getByTestId('sel-trigger').click();
+        const option1 = page.getByRole('option', { name: 'Option 1' });
+        const option2 = page.getByRole('option', { name: 'Option 2' });
+
+        await option1.getByTestId('select-option-checkbox').click();
+        await expect(option1).toHaveAttribute('aria-selected', 'true');
+
+        await option2.click();
+        await expect(option2).toHaveAttribute('aria-selected', 'true');
+
+        await option1.hover();
+        await page.keyboard.press('Enter');
+        await expect(option1).toHaveAttribute('aria-selected', 'false');
+        await expect(page.getByTestId('value-display')).toHaveText(JSON.stringify([{ value: '2', label: 'Option 2' }]));
+    });
+
+    test('single mode keeps the trailing check and shows no checkbox', async ({ mount, page }) => {
+        await mount(<SingleHarness initial="2" />);
+        await page.getByTestId('sel-trigger').click();
+        await expect(page.getByTestId('select-option-checkbox')).toHaveCount(0);
+        await expect(page.getByRole('option', { name: 'Option 2' }).locator('svg')).toHaveCount(1);
+        await expect(page.getByRole('option', { name: 'Option 1' }).locator('svg')).toHaveCount(0);
     });
 
     test('multi mode emits undefined when all chips removed', async ({ mount, page }) => {
@@ -271,16 +322,118 @@ test.describe('Select', () => {
         await expect(page.getByTestId('sel-selected-description')).toHaveCount(0);
     });
 
-    test('"+ Create new" option gets brand medium-weight styling', async ({ mount, page }) => {
-        const opts = [
-            { value: '1', label: 'One' },
-            { value: '__add_new__', label: '+ Create new' },
-        ];
-        await mount(<Select id="an" value="" onChange={() => {}} options={opts} dataTestId="sel" />);
-        await page.getByTestId('sel-trigger').click();
-        const addNew = page.getByRole('option', { name: '+ Create new' });
-        await expect(addNew).toBeVisible();
-        await expect(addNew.locator('span.text-brand-hover')).toHaveCount(1);
+    test.describe('footerAction', () => {
+        test('renders a brand-styled button below the listbox, not an option', async ({ mount, page }) => {
+            await mount(<FooterActionHarness />);
+            await page.getByTestId('sel-trigger').click();
+            const footer = page.getByRole('button', { name: '+ Create new' });
+            await expect(footer).toBeVisible();
+            await expect(footer).toHaveClass(/text-brand-hover/);
+            await expect(footer).toHaveClass(/font-medium/);
+            await expect(page.getByRole('option', { name: '+ Create new' })).toHaveCount(0);
+            await expect(page.getByRole('listbox').getByRole('button')).toHaveCount(0);
+        });
+
+        test('is absent without the prop', async ({ mount, page }) => {
+            await mount(<SingleHarness />);
+            await page.getByTestId('sel-trigger').click();
+            await expect(page.getByRole('listbox')).toBeVisible();
+            await expect(page.getByRole('button', { name: '+ Create new' })).toHaveCount(0);
+        });
+
+        test('stays visible while a search filters out every option', async ({ mount, page }) => {
+            await mount(<FooterActionHarness isSearchable />);
+            await page.getByTestId('sel-trigger').click();
+            await page.getByTestId('sel-search').fill('zzz');
+            await expect(page.getByRole('option')).toHaveCount(0);
+            await expect(page.getByRole('button', { name: '+ Create new' })).toBeVisible();
+        });
+
+        test('stays visible below a long, scrolling list', async ({ mount, page }) => {
+            const options = Array.from({ length: 40 }, (_, i) => ({ value: String(i), label: `Item ${i}` }));
+            await mount(<FooterActionHarness options={options} />);
+            await page.getByTestId('sel-trigger').click();
+            await expect(page.getByRole('button', { name: '+ Create new' })).toBeInViewport();
+        });
+
+        test('keeps the trigger usable when there are no options', async ({ mount, page }) => {
+            await mount(<FooterActionHarness options={[]} />);
+            await expect(page.getByTestId('sel-trigger')).toBeEnabled();
+            await page.getByTestId('sel-trigger').click();
+            await page.getByRole('button', { name: '+ Create new' }).click();
+            await expect(page.getByTestId('created-count')).toHaveText('1');
+        });
+
+        test('ArrowDown never reaches it and Enter selects the highlighted option', async ({ mount, page }) => {
+            await mount(<FooterActionHarness />);
+            await page.getByTestId('sel-trigger').click();
+            for (let i = 0; i < 5; i++) await page.keyboard.press('ArrowDown');
+            await page.keyboard.press('Enter');
+            await expect(page.getByRole('listbox')).toHaveCount(0);
+            await expect(page.getByTestId('created-count')).toHaveText('0');
+            await expect(page.getByTestId('value-display')).toHaveText('"2"');
+        });
+
+        test('Enter after typing a search selects the matching option', async ({ mount, page }) => {
+            await mount(<FooterActionHarness isSearchable />);
+            await page.getByTestId('sel-trigger').click();
+            await page.getByTestId('sel-search').fill('Option 3');
+            await page.keyboard.press('Enter');
+            await expect(page.getByTestId('created-count')).toHaveText('0');
+            await expect(page.getByTestId('value-display')).toHaveText('"3"');
+        });
+
+        test('clicking it closes the dropdown and calls onClick without changing the value', async ({ mount, page }) => {
+            await mount(<FooterActionHarness />);
+            await page.getByTestId('sel-trigger').click();
+            await page.getByRole('button', { name: '+ Create new' }).click();
+            await expect(page.getByRole('listbox')).toHaveCount(0);
+            await expect(page.getByTestId('created-count')).toHaveText('1');
+            await expect(page.getByTestId('value-display')).toHaveText('""');
+        });
+
+        for (const key of ['Enter', 'Space']) {
+            test(`Tab reaches it and ${key} activates it`, async ({ mount, page, browserName }) => {
+                await mount(<FooterActionHarness isSearchable />);
+                await page.getByTestId('sel-trigger').click();
+                await expect(page.getByTestId('sel-search')).toBeFocused();
+                await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
+                await expect(page.getByRole('button', { name: '+ Create new' })).toBeFocused();
+                await page.keyboard.press(key);
+                await expect(page.getByRole('listbox')).toHaveCount(0);
+                await expect(page.getByTestId('created-count')).toHaveText('1');
+                await expect(page.getByTestId('value-display')).toHaveText('""');
+            });
+        }
+
+        test('Tab reaches it from a non-searchable list', async ({ mount, page, browserName }) => {
+            await mount(<FooterActionHarness />);
+            await page.getByTestId('sel-trigger').click();
+            await expect(page.getByRole('listbox')).toBeVisible();
+            await page.keyboard.press(browserName === 'webkit' ? 'Alt+Tab' : 'Tab');
+            await expect(page.getByRole('button', { name: '+ Create new' })).toBeFocused();
+            await page.keyboard.press('Enter');
+            await expect(page.getByTestId('created-count')).toHaveText('1');
+        });
+
+        test('works in multi select', async ({ mount, page }) => {
+            await mount(<FooterActionHarness isMulti isSearchable />);
+            await page.getByTestId('sel-trigger').click();
+            await page.getByRole('option', { name: 'Option 1' }).click();
+            await page.getByTestId('sel-search').fill('zzz');
+            await page.getByRole('button', { name: '+ Create new' }).click();
+            await expect(page.getByRole('listbox')).toHaveCount(0);
+            await expect(page.getByTestId('created-count')).toHaveText('1');
+            await expect(page.getByTestId('value-display')).toHaveText('[{"value":"1","label":"Option 1"}]');
+        });
+
+        test('a disabled action cannot be activated', async ({ mount, page }) => {
+            await mount(<FooterActionHarness disabled />);
+            await page.getByTestId('sel-trigger').click();
+            const footer = page.getByRole('button', { name: '+ Create new' });
+            await expect(footer).toBeDisabled();
+            await expect(page.getByTestId('created-count')).toHaveText('0');
+        });
     });
 
     test('object-valued options match selected via value matchers', async ({ mount, page }) => {

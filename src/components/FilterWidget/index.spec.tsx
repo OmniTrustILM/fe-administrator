@@ -223,7 +223,7 @@ test.describe('FilterWidget', () => {
         const badges = page.getByTestId('badge');
         const count = await badges.count();
         for (let i = 0; i < count; i += 1) {
-            await badges.nth(i).click();
+            await badges.nth(i).getByRole('button').first().click();
             await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeVisible();
         }
     });
@@ -272,6 +272,105 @@ test.describe('FilterWidget', () => {
         );
         await expect(page.getByTestId('extra-filter-content')).toBeVisible();
         await expect(page.locator('.grid-cols-2')).toBeVisible();
+    });
+
+    test('renders each value of a multi-value filter as its own chip and removes one at a time', async ({ mount, page }) => {
+        const updates: unknown[][] = [];
+        await mount(
+            <FilterWidgetTestWrapper
+                onFilterUpdate={(filters) => updates.push(filters)}
+                initialCurrentFilters={[
+                    {
+                        fieldSource: FilterFieldSource.Meta,
+                        fieldIdentifier: 'owners',
+                        condition: FilterConditionOperator.Equals,
+                        value: [{ name: 'Alice' }, { name: 'Bob' }],
+                    },
+                ]}
+            />,
+        );
+        const chips = page.getByTestId('filter-value-chip');
+        await expect(chips).toHaveText(['Alice', 'Bob']);
+        await expect(page.getByText(/OR/)).toHaveCount(0);
+        await expect(page.locator('button button, button [tabindex]')).toHaveCount(0);
+
+        await page.getByRole('button', { name: 'Remove Alice from Owners', exact: true }).click();
+
+        await expect(chips).toHaveText(['Bob']);
+        await expect.poll(() => updates.length).toBe(1);
+        expect(updates[0]).toEqual([
+            { fieldSource: FilterFieldSource.Meta, fieldIdentifier: 'owners', condition: FilterConditionOperator.Equals, value: ['Bob'] },
+        ]);
+
+        await page.getByRole('button', { name: 'Remove Bob from Owners', exact: true }).click();
+        await expect(page.getByText("'Owners'")).toHaveCount(0);
+        await expect.poll(() => updates.length).toBe(2);
+        expect(updates[1]).toEqual([]);
+    });
+
+    test('keeps keyboard focus on a surviving chip, then on the filter list, as values are removed', async ({ mount, page }) => {
+        await mount(
+            <FilterWidgetTestWrapper
+                onFilterUpdate={() => {}}
+                initialCurrentFilters={[
+                    {
+                        fieldSource: FilterFieldSource.Meta,
+                        fieldIdentifier: 'owners',
+                        condition: FilterConditionOperator.Equals,
+                        value: [{ name: 'Alice' }, { name: 'Bob' }],
+                    },
+                ]}
+            />,
+        );
+
+        await page.getByRole('button', { name: 'Remove Bob from Owners', exact: true }).focus();
+        await page.keyboard.press('Enter');
+        await expect(page.getByRole('button', { name: 'Remove Alice from Owners', exact: true })).toBeFocused();
+
+        await page.keyboard.press('Enter');
+        await expect(page.getByRole('group', { name: 'Applied filters' })).toBeFocused();
+    });
+
+    test('puts focus on the surviving chip once a save that hid the badges finishes', async ({ mount, page }) => {
+        await mount(
+            <FilterWidgetTestWrapper
+                busyWhileSaving
+                initialCurrentFilters={[
+                    {
+                        fieldSource: FilterFieldSource.Meta,
+                        fieldIdentifier: 'owners',
+                        condition: FilterConditionOperator.Equals,
+                        value: [{ name: 'Alice' }, { name: 'Bob' }],
+                    },
+                ]}
+            />,
+        );
+
+        await page.getByRole('button', { name: 'Remove Bob from Owners', exact: true }).focus();
+        await page.keyboard.press('Enter');
+        await expect(page.getByTestId('filter-value-chip')).toHaveCount(0);
+
+        await page.getByTestId('finish-save').evaluate((button: HTMLButtonElement) => button.click());
+
+        await expect(page.getByRole('button', { name: 'Remove Alice from Owners', exact: true })).toBeFocused();
+    });
+
+    test('offers no per-value removal when badge removal is disabled', async ({ mount, page }) => {
+        await mount(
+            <FilterWidgetTestWrapper
+                disableBadgeRemove
+                initialCurrentFilters={[
+                    {
+                        fieldSource: FilterFieldSource.Meta,
+                        fieldIdentifier: 'owners',
+                        condition: FilterConditionOperator.Equals,
+                        value: [{ name: 'Alice' }, { name: 'Bob' }],
+                    },
+                ]}
+            />,
+        );
+        await expect(page.getByTestId('filter-value-chip')).toHaveText(['Alice', 'Bob']);
+        await expect(page.getByRole('button', { name: /^Remove (Alice|Bob) from Owners$/ })).toHaveCount(0);
     });
 
     test('preloaded date/datetime/list values render in badges', async ({ mount, page }) => {

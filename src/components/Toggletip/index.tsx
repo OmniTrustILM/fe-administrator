@@ -13,7 +13,7 @@ type Props = {
      */
     triggerContent?: ReactNode;
     iconSize?: number;
-    placement?: 'top' | 'bottom';
+    placement?: 'top' | 'bottom' | 'right';
     triggerClassName?: string;
     contentClassName?: string;
     showClose?: boolean;

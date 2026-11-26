@@ -1,5 +1,6 @@
 import { describe, expect, test } from 'vitest';
 import {
+    firstInjectedDescriptorOfEachName,
     getAttributeCopyValue,
     getAttributeContent,
     getAttributeFormValue,
@@ -11,6 +12,7 @@ import {
     testAttributeSetFunction,
     mapProfileAttribute,
 } from './attributes';
+import type { AttributeDescriptorModel } from 'types/attributes';
 import { AttributeContentType, AttributeType, AttributeVersion, ProgrammingLanguageEnum } from 'types/openapi';
 
 const base64Encode = (s: string) => {
@@ -1208,5 +1210,34 @@ describe('attributes utils', () => {
             const result = mapProfileAttribute(profile, multipleResourceCustomAttributes, 'resource', 'section.attributes', 'form');
             expect(result).toHaveLength(0);
         });
+    });
+});
+
+describe('firstInjectedDescriptorOfEachName', () => {
+    const descriptor = (name: string, uuid: string) => ({ type: AttributeType.Data, name, uuid }) as AttributeDescriptorModel;
+
+    test('keeps the first injected copy of each name', () => {
+        // given
+        const firstZone = descriptor('zone', 'zone-a');
+        const secondZone = descriptor('zone', 'zone-b');
+        const server = descriptor('server', 'server-a');
+
+        // when
+        const shown = firstInjectedDescriptorOfEachName([firstZone, server, secondZone], []);
+
+        // then
+        expect(shown).toEqual([firstZone, server]);
+    });
+
+    test("leaves out an injected copy named like one of the form's own attributes", () => {
+        // given
+        const ownChallengeType = descriptor('challengeType', 'own');
+        const injectedChallengeType = descriptor('challengeType', 'injected');
+
+        // when
+        const shown = firstInjectedDescriptorOfEachName([injectedChallengeType], [ownChallengeType]);
+
+        // then
+        expect(shown).toEqual([]);
     });
 });

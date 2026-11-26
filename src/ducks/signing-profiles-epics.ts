@@ -1,18 +1,26 @@
 import type { AppEpic } from 'ducks';
-import { of } from 'rxjs';
-import { catchError, filter, map, mergeMap, switchMap } from 'rxjs/operators';
-import { extractError } from 'utils/net';
+import { EMPTY, of } from 'rxjs';
+import { catchError, expand, filter, map, mergeMap, switchMap, toArray } from 'rxjs/operators';
+import { extractError, extractErrorReason } from 'utils/net';
 
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { actions as alertActions } from './alerts';
 import { actions as appRedirectActions } from './app-redirect';
 import { EntityType } from './filters';
 import { actions as pagingActions, selectors as pagingSelectors, entityListParams, listParamsAfterDelete } from './paging';
-import { selectors, slice } from './signing-profiles';
-import { isTimestampingWorkflow } from 'utils/type-guards';
+import { slice } from './signing-profiles';
+import { isEligibleTimestampSource } from 'utils/timestamp-source';
 import { transformSearchRequestModelToDto } from './transform/certificates';
 import { transformConnectorDtoV2ToModel } from './transform/connectors';
-import { ConnectorInterface, FilterConditionOperator, FilterFieldSource, type ResponseAttribute, SigningWorkflowType } from 'types/openapi';
+import {
+    ConnectorInterface,
+    FilterConditionOperator,
+    FilterFieldSource,
+    type SigningProfileDto,
+    type SigningProfileListDto,
+    SigningScheme,
+    SigningWorkflowType,
+} from 'types/openapi';
 import { actions as userInterfaceActions } from './user-interface';
 import { store } from '../App';
 
@@ -363,6 +371,8 @@ const listSigningCertificates: AppEpic = (action$, state$, deps) => {
                 .listSigningCertificates({
                     signingWorkflowType: action.payload.workflowType,
                     qualifiedTimestamp: action.payload.qualifiedTimestamp,
+                    requireNonRepudiation: action.payload.requireNonRepudiation,
+                    requiredExtendedKeyUsageOids: action.payload.requiredExtendedKeyUsageOids,
                 })
                 .pipe(
                     map((certificates) => slice.actions.listSigningCertificatesSuccess({ signingCertificates: certificates })),
@@ -396,6 +406,23 @@ const listSignatureAttributesForCertificate: AppEpic = (action$, state$, deps) =
     );
 };
 
+const listContentSigningProfileAttributes: AppEpic = (action$, state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.listContentSigningProfileAttributes.match),
+        switchMap((action) =>
+            deps.apiClients.signingProfiles.listContentSigningFormattingConnectorAttributes(action.payload).pipe(
+                map(({ profileAttributes, requestAttributes }) =>
+                    slice.actions.listContentSigningProfileAttributesSuccess({
+                        profileAttributes: profileAttributes ?? [],
+                        requestAttributes: requestAttributes ?? [],
+                    }),
+                ),
+                catchError((error) => of(slice.actions.listContentSigningProfileAttributesFailure({ reason: extractErrorReason(error) }))),
+            ),
+        ),
+    );
+};
+
 const listSignatureFormattingConnectorAttributes: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.listSignatureFormattingConnectorAttributes.match),
@@ -406,27 +433,9 @@ const listSignatureFormattingConnectorAttributes: AppEpic = (action$, state$, de
                     signingProfileUuid: action.payload.signingProfileUuid,
                 })
                 .pipe(
-                    map((descriptors) => {
-                        const profile = selectors.signingProfile(state$.value);
-                        const savedAttrs =
-                            profile && isTimestampingWorkflow(profile.workflow)
-                                ? (profile.workflow.signatureFormattingConnectorAttributes ?? [])
-                                : [];
-
-                        const savedContentByUuid = new Map(
-                            savedAttrs
-                                .filter((a): a is Extract<ResponseAttribute, { content?: unknown }> => 'content' in a)
-                                .map((a) => [a.uuid, a.content] as const),
-                        );
-                        const merged = descriptors.map((descriptor) => {
-                            const savedContent = savedContentByUuid.get(descriptor.uuid);
-                            return savedContent === undefined
-                                ? descriptor
-                                : ({ ...descriptor, content: savedContent } as typeof descriptor);
-                        });
-
-                        return slice.actions.listSignatureFormattingConnectorAttributesSuccess({ attributeDescriptors: merged });
-                    }),
+                    map((descriptors) =>
+                        slice.actions.listSignatureFormattingConnectorAttributesSuccess({ attributeDescriptors: descriptors }),
+                    ),
                     catchError((error) =>
                         of(
                             slice.actions.listSignatureFormattingConnectorAttributesFailure({
@@ -460,22 +469,26 @@ const listSigningRecordsForSigningProfile: AppEpic = (action$, state$, deps) => 
     );
 };
 
-const workflowTypeToConnectorFeature: Partial<Record<SigningWorkflowType, string>> = {
-    [SigningWorkflowType.Timestamping]: 'timestamping',
+/** A workflow without an entry, such as raw signing, has no formatting connector. */
+const formattingConnectorSearch: Partial<Record<SigningWorkflowType, { connectorInterface: ConnectorInterface; feature?: string }>> = {
+    [SigningWorkflowType.Timestamping]: { connectorInterface: ConnectorInterface.SignatureFormatting, feature: 'timestamping' },
+    [SigningWorkflowType.ContentSigning]: { connectorInterface: ConnectorInterface.ContentSigningFormatting },
 };
 
 const listSignatureFormattingConnectors: AppEpic = (action$, _state$, deps) => {
     return action$.pipe(
         filter(slice.actions.listSignatureFormattingConnectors.match),
         switchMap((action) => {
-            const featureValue = workflowTypeToConnectorFeature[action.payload.workflowType];
-            const featureFilter = featureValue
+            const search = formattingConnectorSearch[action.payload.workflowType];
+            if (!search) return of(slice.actions.listSignatureFormattingConnectorsSuccess({ connectors: [] }));
+            const { connectorInterface, feature } = search;
+            const featureFilter = feature
                 ? [
                       {
                           fieldSource: FilterFieldSource.Property,
                           fieldIdentifier: 'CONNECTOR_FEATURES',
                           condition: FilterConditionOperator.Equals,
-                          value: featureValue,
+                          value: feature,
                       },
                   ]
                 : [];
@@ -490,7 +503,7 @@ const listSignatureFormattingConnectors: AppEpic = (action$, _state$, deps) => {
                                 fieldSource: FilterFieldSource.Property,
                                 fieldIdentifier: 'CONNECTOR_INTERFACE',
                                 condition: FilterConditionOperator.Equals,
-                                value: ConnectorInterface.SignatureFormatting,
+                                value: connectorInterface,
                             },
                         ],
                     },
@@ -502,14 +515,130 @@ const listSignatureFormattingConnectors: AppEpic = (action$, _state$, deps) => {
                         }),
                     ),
                     catchError((error) =>
-                        of(
-                            slice.actions.listSignatureFormattingConnectorsFailure({
-                                error: extractError(error, 'Failed to get signature formatting connectors'),
-                            }),
-                        ),
+                        of(slice.actions.listSignatureFormattingConnectorsFailure({ reason: extractErrorReason(error) })),
                     ),
                 );
         }),
+    );
+};
+
+const listSignatureFormattingConnectorDeclarations: AppEpic = (action$, _state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.listSignatureFormattingConnectorDeclarations.match),
+        switchMap((action) => {
+            const { connectorUuid, signingProfileUuid } = action.payload;
+            return deps.apiClients.signingProfiles.listSignatureFormattingConnectorDeclarations({ connectorUuid, signingProfileUuid }).pipe(
+                map((declarations) => slice.actions.listSignatureFormattingConnectorDeclarationsSuccess({ connectorUuid, declarations })),
+                catchError((error) =>
+                    of(
+                        slice.actions.listSignatureFormattingConnectorDeclarationsFailure({
+                            connectorUuid,
+                            reason: extractErrorReason(error),
+                        }),
+                    ),
+                ),
+            );
+        }),
+    );
+};
+
+const activateIlmNative: AppEpic = (action$, _state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.activateIlmNative.match),
+        switchMap((action) =>
+            deps.apiClients.signingProfiles.activateIlmNative({ uuid: action.payload.uuid }).pipe(
+                map(() => slice.actions.activateIlmNativeSuccess({ uuid: action.payload.uuid })),
+                catchError((error) =>
+                    of(
+                        slice.actions.activateIlmNativeFailure({ error: extractError(error, 'Failed to activate ILM Native') }),
+                        appRedirectActions.fetchError({ error, message: 'Failed to activate ILM Native' }),
+                    ),
+                ),
+            ),
+        ),
+    );
+};
+
+const deactivateIlmNative: AppEpic = (action$, _state$, deps) => {
+    return action$.pipe(
+        filter(slice.actions.deactivateIlmNative.match),
+        switchMap((action) =>
+            deps.apiClients.signingProfiles.deactivateIlmNative({ uuid: action.payload.uuid }).pipe(
+                map(() => slice.actions.deactivateIlmNativeSuccess({ uuid: action.payload.uuid })),
+                catchError((error) =>
+                    of(
+                        slice.actions.deactivateIlmNativeFailure({ error: extractError(error, 'Failed to deactivate ILM Native') }),
+                        appRedirectActions.fetchError({ error, message: 'Failed to deactivate ILM Native' }),
+                    ),
+                ),
+            ),
+        ),
+    );
+};
+
+const TIMESTAMP_SOURCE_PAGE_SIZE = 1000;
+const TIMESTAMP_SOURCE_DETAIL_CONCURRENCY = 8;
+
+type CandidateRead = { listed: SigningProfileListDto; listPosition: number } & (
+    | { readable: true; detail: SigningProfileDto }
+    | { readable: false }
+);
+
+const inListOrder = (reads: CandidateRead[]) => [...reads].sort((a, b) => a.listPosition - b.listPosition);
+
+/** Each candidate's detail is read to decide its eligibility. The list response lacks the managed signing type and the record policy. */
+const listTimestampSourceCandidates: AppEpic = (action$, _state$, deps) => {
+    const readPage = (pageNumber: number) =>
+        deps.apiClients.signingProfiles
+            .listSigningProfiles({
+                searchRequestDto: {
+                    pageNumber,
+                    itemsPerPage: TIMESTAMP_SOURCE_PAGE_SIZE,
+                    filters: [
+                        {
+                            fieldSource: FilterFieldSource.Property,
+                            fieldIdentifier: 'SIGNING_PROFILE_WORKFLOW_TYPE',
+                            condition: FilterConditionOperator.Equals,
+                            value: SigningWorkflowType.Timestamping,
+                        },
+                        {
+                            fieldSource: FilterFieldSource.Property,
+                            fieldIdentifier: 'SIGNING_PROFILE_SIGNING_SCHEME',
+                            condition: FilterConditionOperator.Equals,
+                            value: SigningScheme.Managed,
+                        },
+                    ],
+                },
+            })
+            .pipe(map((response) => ({ pageNumber, response })));
+    const readDetail = (listed: SigningProfileListDto, listPosition: number) =>
+        deps.apiClients.signingProfiles.getSigningProfile({ uuid: listed.uuid }).pipe(
+            map((detail): CandidateRead => ({ listed, listPosition, readable: true, detail })),
+            catchError(() => of<CandidateRead>({ listed, listPosition, readable: false })),
+        );
+    return action$.pipe(
+        filter(slice.actions.listTimestampSourceCandidates.match),
+        switchMap(() =>
+            readPage(1).pipe(
+                expand(({ pageNumber, response }) => (pageNumber < response.totalPages ? readPage(pageNumber + 1) : EMPTY)),
+                mergeMap(({ response }) => response.items),
+                mergeMap(readDetail, TIMESTAMP_SOURCE_DETAIL_CONCURRENCY),
+                toArray(),
+                map(inListOrder),
+                map((reads) =>
+                    slice.actions.listTimestampSourceCandidatesSuccess({
+                        candidates: reads.flatMap((read) => (read.readable && isEligibleTimestampSource(read.detail) ? [read.detail] : [])),
+                        ineligible: reads.flatMap((read) =>
+                            read.readable && !isEligibleTimestampSource(read.detail)
+                                ? [{ uuid: read.listed.uuid, name: read.listed.name }]
+                                : [],
+                        ),
+                        unreadable: reads.flatMap((read) => (read.readable ? [] : [{ uuid: read.listed.uuid, name: read.listed.name }])),
+                    }),
+                ),
+                catchError((error) => of(slice.actions.listTimestampSourceCandidatesFailure({ reason: extractErrorReason(error) }))),
+            ),
+        ),
     );
 };
 
@@ -534,6 +663,11 @@ const epics = [
     listSignatureFormattingConnectorAttributes,
     listSignatureFormattingConnectors,
     listSigningRecordsForSigningProfile,
+    listSignatureFormattingConnectorDeclarations,
+    listContentSigningProfileAttributes,
+    activateIlmNative,
+    deactivateIlmNative,
+    listTimestampSourceCandidates,
 ];
 
 export default epics;

@@ -389,7 +389,8 @@ describe('customAttributes epics', () => {
         }
     });
 
-    test('loadMultipleResourceCustomAttributes emits mapped resources and empty list on partial error', async () => {
+    test('loadMultipleResourceCustomAttributes marks a resource whose request fails as failed and reports the error', async () => {
+        const error = new Error('secret failed');
         const emitted = await runEpic(
             EpicIndex.LoadMultipleResourceCustomAttributes,
             slice.actions.loadMultipleResourceCustomAttributes([
@@ -400,14 +401,17 @@ describe('customAttributes epics', () => {
                 depsOverrides: {
                     customAttributes: {
                         getResourceCustomAttributes: ({ resource }: { resource: Resource }) =>
-                            resource === Resource.Secrets ? throwError(() => new Error('secret failed')) : of([{ uuid: 'ok', name: 'ok' }]),
+                            resource === Resource.Secrets ? throwError(() => error) : of([{ uuid: 'ok', name: 'ok' }]),
                     } as any,
                 },
+                takeCount: 2,
             },
         );
 
         expect(emitted[0].type).toBe(slice.actions.receiveMultipleResourceCustomAttributes.type);
-        expect((emitted[0] as any).payload[1].customAttributes).toEqual([]);
+        expect((emitted[0] as any).payload[0]).not.toHaveProperty('failed');
+        expect((emitted[0] as any).payload[1]).toEqual({ resource: Resource.Secrets, customAttributes: [], failed: true });
+        expect(emitted[1]).toEqual(appRedirectActions.fetchError({ error, message: 'Failed to get custom attributes' }));
     });
 
     test.each([

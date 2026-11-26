@@ -1,3 +1,4 @@
+import type { Action } from '@reduxjs/toolkit';
 import type { AppEpic } from 'ducks';
 import { EMPTY, merge, of, timer } from 'rxjs';
 import { AjaxError } from 'rxjs/ajax';
@@ -13,7 +14,7 @@ import * as slice from './certificates';
 import { transformAttributeDescriptorDtoToModel, transformAttributeRequestModelToDto } from './transform/attributes';
 
 import { store } from '../App';
-import { Resource } from 'types/openapi';
+import { BulkOperationResponseStatusEnum, Resource } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { EntityType } from './filters';
 import { actions as pagingActions, selectors as pagingSelectors } from './paging';
@@ -633,7 +634,8 @@ const deleteCertificate: AppEpic = (action$, state, deps) => {
 };
 
 // Core answers a certificate's allowed actions from its owner, groups and RA profile, so a change to them invalidates the answer.
-const refreshAllowedActions = (uuid: string) => resourceActions.listObjectAllowedActions({ resource: Resource.Certificates, uuid });
+const refreshAllowedActions = (uuid: string) =>
+    resourceActions.listObjectAllowedActions({ resource: Resource.Certificates, uuids: [uuid] });
 
 const updateGroup: AppEpic = (action$, state, deps) => {
     return action$.pipe(
@@ -1184,6 +1186,35 @@ const bulkDelete: AppEpic = (action$, state, deps) => {
     );
 };
 
+const BULK_EARLY_RENEWAL_ALERTS: Partial<Record<BulkOperationResponseStatusEnum, (message: string) => Action>> = {
+    [BulkOperationResponseStatusEnum.Success]: alertActions.success,
+    [BulkOperationResponseStatusEnum.Partial]: alertActions.info,
+    [BulkOperationResponseStatusEnum.Failed]: alertActions.error,
+};
+
+const bulkRequestEarlyRenewal: AppEpic = (action$, state, deps) => {
+    return action$.pipe(
+        filter(slice.actions.bulkRequestEarlyRenewal.match),
+        switchMap((action) =>
+            deps.apiClients.certificates.bulkRequestEarlyRenewal({ bulkEarlyRenewalRequestDto: action.payload }).pipe(
+                mergeMap((response) => {
+                    const message = `Early renewal ${response.status}, ${response.failedItem} failed: ${response.message}`;
+                    const alertAction = BULK_EARLY_RENEWAL_ALERTS[response.status] ?? alertActions.error;
+                    const alert = alertAction(message);
+                    return of(slice.actions.bulkRequestEarlyRenewalSuccess({ response }), alert);
+                }),
+
+                catchError((err) =>
+                    of(
+                        slice.actions.bulkRequestEarlyRenewalFailure({ error: extractError(err, 'Failed to request early renewal') }),
+                        alertActions.error(extractError(err, 'Failed to request early renewal')),
+                    ),
+                ),
+            ),
+        ),
+    );
+};
+
 const uploadCertificate: AppEpic = (action$, state$, deps) => {
     return action$.pipe(
         filter(slice.actions.uploadCertificate.match),
@@ -1706,6 +1737,7 @@ const epics = [
     bulkUpdateRaProfile,
     bulkUpdateOwner,
     bulkDelete,
+    bulkRequestEarlyRenewal,
     uploadCertificate,
     getIssuanceAttributes,
     getRegisterAttributes,

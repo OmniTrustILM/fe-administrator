@@ -217,8 +217,16 @@ export const validateQuartzCronExpression = () => (value: string) => {
     }
 };
 
-export const validateOid = () =>
-    validatePattern(/^[0-2](\.(0|[1-9]\d*)){1,50}$/, 'Must be a dot-separated numeric OID (e.g. 1.2.840.113549.1.1.11)');
+const OID_ARC = String.raw`(0|[1-9]\d*)`;
+const OID_SHAPE = new RegExp(String.raw`^[0-2](\.${OID_ARC}){1,50}$`);
+// X.660 caps the second arc at 39 under the first arcs 0 and 1, as Core's published OID pattern does.
+const OID_ROOT_ARCS = new RegExp(String.raw`^([01]\.(\d|[1-3]\d)|2\.${OID_ARC})(\.|$)`);
+
+export const validateOid = () => {
+    const shape = validatePattern(OID_SHAPE, 'Must be a dot-separated numeric OID (e.g. 1.2.840.113549.1.1.11)');
+    const rootArcs = validatePattern(OID_ROOT_ARCS, 'The second arc must be 0 to 39 when the first arc is 0 or 1');
+    return (value: unknown) => shape(value) ?? rootArcs(value);
+};
 
 export const validateOidCode = () => validatePattern(/^[A-Za-z][A-Za-z0-9-]*$/, 'Value must be a valid OID code');
 

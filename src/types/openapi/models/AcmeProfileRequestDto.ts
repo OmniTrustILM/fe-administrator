@@ -130,4 +130,16 @@ export interface AcmeProfileRequestDto {
      * @memberof AcmeProfileRequestDto
      */
     identifierAuthorizationMode?: AcmeIdentifierAuthorizationMode;
+    /**
+     * Serve ACME Renewal Information (RFC 9773) for certificates issued through this ACME Profile
+     * @type {boolean}
+     * @memberof AcmeProfileRequestDto
+     */
+    renewalInfoEnabled?: boolean;
+    /**
+     * Polling interval in seconds suggested to ACME clients in the Retry-After header of the renewal information response
+     * @type {number}
+     * @memberof AcmeProfileRequestDto
+     */
+    renewalInfoRetryAfter?: number;
 }
