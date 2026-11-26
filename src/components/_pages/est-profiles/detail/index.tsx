@@ -20,11 +20,12 @@ import Dialog from 'components/Dialog';
 import StatusBadge from 'components/StatusBadge';
 import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
-import { type NameAndUuidDto, PlatformEnum, Resource } from 'types/openapi';
+import { type NameAndUuidDto, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import EstProfileForm from '../form';
 import { showsBasicCredentialSecrets, showsTrustedCaCertificates } from 'utils/est-profile';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { createWidgetDetailHeaders, getGroupNames, getOwnerName } from 'utils/widget';
 
 const yesNo = (value: boolean) => (value ? 'Yes' : 'No');
@@ -45,6 +46,7 @@ function LinkList({ items, basePath }: Readonly<{ items: NameAndUuidDto[] | unde
 export default function EstProfileDetail() {
     const dispatch = useDispatch();
     const { id } = useParams();
+    const can = useActionAvailability(Resource.EstProfiles, id);
 
     const estProfile = useSelector(selectors.estProfile);
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
@@ -99,29 +101,33 @@ export default function EstProfileDetail() {
             {
                 icon: 'pencil',
                 disabled: !estProfile,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: () => setIsEditModalOpen(true),
             },
             {
                 icon: 'trash',
                 disabled: !estProfile,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => setConfirmDelete(true),
             },
             {
                 icon: 'check',
                 disabled: !estProfile || estProfile.enabled,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Enable',
                 onClick: () => estProfile && dispatch(actions.enableEstProfile({ uuid: estProfile.uuid })),
             },
             {
                 icon: 'times',
                 disabled: !estProfile?.enabled,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Disable',
                 onClick: () => estProfile && dispatch(actions.disableEstProfile({ uuid: estProfile.uuid })),
             },
         ],
-        [estProfile, dispatch],
+        [estProfile, dispatch, can],
     );
 
     const tableHeader: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -322,6 +328,7 @@ export default function EstProfileDetail() {
                             resource={Resource.EstProfiles}
                             resourceUuid={estProfile.uuid}
                             attributes={estProfile.customAttributes}
+                            requires={can(ResourceAction.Update)}
                         />
                     )}
                     <Widget title={raProfileData.length ? 'RA Profile Configuration' : 'Default RA Profile not selected'} titleSize="large">

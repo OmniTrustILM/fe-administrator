@@ -11,10 +11,11 @@ import StatusCircle from 'components/StatusCircle';
 import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 
-import { AccountStatus, PlatformEnum, Resource } from 'types/openapi';
+import { AccountStatus, PlatformEnum, Resource, ResourceAction } from 'types/openapi';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { acmeAccountStatus } from '../acmeAccountStatus';
 import { createWidgetDetailHeaders } from 'utils/widget';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { EnumValueDescription } from 'components/EnumDescription';
 import Badge from 'components/Badge';
@@ -26,6 +27,7 @@ export default function AcmeAccountDetail() {
     const dispatch = useDispatch();
 
     const { id, acmeProfileId } = useParams();
+    const can = useActionAvailability(Resource.AcmeAccounts);
 
     const acmeAccount = useSelector(selectors.account);
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
@@ -69,6 +71,7 @@ export default function AcmeAccountDetail() {
             {
                 icon: 'cross-circle',
                 disabled: acmeAccount ? acmeAccount.status !== AccountStatus.Valid : true,
+                requires: can(ResourceAction.Revoke),
                 tooltip: 'Revoke',
                 onClick: () => {
                     setConfirmRevoke(true);
@@ -77,6 +80,7 @@ export default function AcmeAccountDetail() {
             {
                 icon: 'check',
                 disabled: acmeAccount ? acmeAccount.enabled || acmeAccount.status !== AccountStatus.Valid : true,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Enable',
                 onClick: () => {
                     onEnableClick();
@@ -85,13 +89,14 @@ export default function AcmeAccountDetail() {
             {
                 icon: 'times',
                 disabled: acmeAccount ? !acmeAccount.enabled : true,
+                requires: can(ResourceAction.Enable),
                 tooltip: 'Disable',
                 onClick: () => {
                     onDisableClick();
                 },
             },
         ],
-        [acmeAccount, onEnableClick, onDisableClick],
+        [acmeAccount, onEnableClick, onDisableClick, can],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);

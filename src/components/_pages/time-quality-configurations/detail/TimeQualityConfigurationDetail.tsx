@@ -12,7 +12,8 @@ import CustomAttributeWidget from 'components/Attributes/CustomAttributeWidget';
 import StatusBadge from 'components/StatusBadge';
 
 import { actions, selectors } from 'ducks/time-quality-configurations';
-import { Resource } from 'types/openapi';
+import { Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import { getInputStringFromIso8601String } from 'utils/duration';
@@ -22,6 +23,7 @@ export const TimeQualityConfigurationDetail = () => {
     const navigate = useNavigate();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.TimeQualityConfigurations, id);
 
     const timeQualityConfiguration = useSelector(selectors.timeQualityConfiguration);
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
@@ -61,6 +63,7 @@ export const TimeQualityConfigurationDetail = () => {
                 id: 'edit',
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: onEditClick,
             },
@@ -68,11 +71,12 @@ export const TimeQualityConfigurationDetail = () => {
                 id: 'delete',
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => setConfirmDelete(true),
             },
         ],
-        [onEditClick],
+        [onEditClick, can],
     );
 
     const tableHeader: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -235,6 +239,7 @@ export const TimeQualityConfigurationDetail = () => {
                                 resource={Resource.TimeQualityConfigurations}
                                 resourceUuid={timeQualityConfiguration.uuid}
                                 attributes={timeQualityConfiguration.customAttributes}
+                                requires={can(ResourceAction.Update)}
                             />
                         )}
                     </Container>
