@@ -63,6 +63,22 @@ describe('downloadFileZip', () => {
         expect(mockCreateObjectURL).toHaveBeenCalledTimes(1);
     });
 
+    test('numbers the entries that would share a name, so that no certificate is left out', async () => {
+        const { default: JSZip } = await import('jszip');
+        const zipFile = new JSZip().file as unknown as ReturnType<typeof vi.fn>;
+        const certs = [
+            { uuid: 'c-1', displayName: 'host-key', certificateContent: 'YQ==' },
+            { uuid: 'c-2', displayName: 'host-key', certificateContent: 'Yg==' },
+            { uuid: 'c-3', displayName: 'host-key', certificateContent: 'Yw==' },
+            { uuid: 'c-4', displayName: 'other', serialNumber: '04', certificateContent: 'ZA==' },
+        ] as any[];
+
+        downloadFileZip(['c-1', 'c-2', 'c-3', 'c-4'], certs, 'pem');
+
+        await vi.waitFor(() => expect(mockClick).toHaveBeenCalledTimes(1));
+        expect(zipFile.mock.calls.map(([name]) => name)).toEqual(['host-key.pem', 'host-key (2).pem', 'host-key (3).pem', 'other_04.pem']);
+    });
+
     test('skips unmatched certificate uuids and still generates empty zip', async () => {
         const certs = [{ uuid: 'c-3', displayName: 'a.com', commonName: 'a.com', serialNumber: '03', certificateContent: 'YQ==' }] as any[];
 

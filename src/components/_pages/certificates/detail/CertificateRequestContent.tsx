@@ -9,7 +9,7 @@ import ComplianceCheckResultWidget from 'components/_pages/certificates/Complian
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders } from 'utils/widget';
-import { formatPEM, downloadFile } from 'utils/certificate';
+import { formatPEM, downloadFile, isX509Certificate } from 'utils/certificate';
 import { certificateFileBaseName } from 'utils/download';
 import { useCopyToClipboard } from 'utils/common-hooks';
 import type { CertificateDetailResponseModel } from 'types/certificate';
@@ -147,21 +147,25 @@ export default function CertificateRequestContent({ certificate, isBusy, getFres
                             columns: ['Alternative Signature Algorithm', certificate?.certificateRequest?.altSignatureAlgorithm ?? ''],
                         }
                       : null,
-                  {
-                      id: 'subjectDn',
-                      columns: ['Subject DN', certificate?.certificateRequest?.subjectDn ?? ''],
-                  },
-                  {
-                      id: 'asn1RequestStructure',
-                      columns: [
-                          'ASN.1 Structure',
-                          certificate?.certificateRequest?.content ? (
-                              <Asn1Dialog content={certificate?.certificateRequest?.content} isCSR={true} />
-                          ) : (
-                              <>n/a</>
-                          ),
-                      ],
-                  },
+                  isX509Certificate(certificate.certificateRequest)
+                      ? {
+                            id: 'subjectDn',
+                            columns: ['Subject DN', certificate?.certificateRequest?.subjectDn ?? ''],
+                        }
+                      : null,
+                  isX509Certificate(certificate.certificateRequest)
+                      ? {
+                            id: 'asn1RequestStructure',
+                            columns: [
+                                'ASN.1 Structure',
+                                certificate?.certificateRequest?.content ? (
+                                    <Asn1Dialog content={certificate?.certificateRequest?.content} isCSR={true} />
+                                ) : (
+                                    <>n/a</>
+                                ),
+                            ],
+                        }
+                      : null,
               ].filter((el) => el !== null) as NonNullable<TableDataRow>[])
             : [];
     }, [certificate, certificateRequestFormatEnum, certificateTypeEnum]);
