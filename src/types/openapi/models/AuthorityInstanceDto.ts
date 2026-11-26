@@ -82,5 +82,5 @@ export interface AuthorityInstanceDto {
      * @type {Array<MetadataResponseDto>}
      * @memberof AuthorityInstanceDto
      */
-    metadata?: Array<MetadataResponseDto>;
+    metadata?: Array<MetadataResponseDto> | null;
 }
