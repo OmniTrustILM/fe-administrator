@@ -407,8 +407,13 @@ function toAttributeContent(descriptor: DataAttributeModel | CustomAttributeMode
     const normalized = normalizeAttributeValue(descriptor, value);
     const content = descriptor.contentType === AttributeContentType.Resource ? stripEmptyResourceContent(normalized) : normalized;
     if (content === undefined || Array.isArray(content)) return content;
-    return content.data === undefined ? undefined : [content];
+    const blank = content.data === undefined || (descriptor.contentType === AttributeContentType.File && isBlankFile(content.data));
+    return blank ? undefined : [content];
 }
+
+export const blankFile: FileAttributeContentData = { content: '', fileName: '', mimeType: '' };
+
+export const isBlankFile = (file: unknown): boolean => isEmptyAttributeContentItem({ data: file }, AttributeContentType.File);
 
 // Blank values are dropped before normalising as well, because Date and Datetime normalisation throws on a blank value.
 // Resource content needs no separate stripping here: its blank selections already count as empty.

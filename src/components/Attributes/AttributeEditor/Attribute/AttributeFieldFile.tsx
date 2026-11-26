@@ -1,9 +1,11 @@
 import type React from 'react';
-import { Controller, useFormContext, useFormState } from 'react-hook-form';
+import { Controller, useFormContext, useFormState, useWatch } from 'react-hook-form';
 import Label from 'components/Label';
+import Button from 'components/Button';
 import TextInput from 'components/TextInput';
 import cn from 'classnames';
 import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
+import { isBlankFile } from 'utils/attributes/attributes';
 import { buildAttributeValidators, isAttributeErrorVisible } from './attributeHelpers';
 
 type AttributeFieldFileProps = {
@@ -13,6 +15,7 @@ type AttributeFieldFileProps = {
     onFileDrop: (e: React.DragEvent<HTMLInputElement>) => void;
     onFileDragOver: (e: React.DragEvent<HTMLInputElement>) => void;
     onFileChanged: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onFileCleared: () => void;
 };
 
 export function AttributeFieldFile({
@@ -22,10 +25,12 @@ export function AttributeFieldFile({
     onFileDrop,
     onFileDragOver,
     onFileChanged,
+    onFileCleared,
 }: Readonly<AttributeFieldFileProps>): React.ReactNode {
     const { control } = useFormContext();
     const { submitCount } = useFormState({ control });
     const errorId = `${name}-content-error`;
+    const clearable = useIsClearable(name, descriptor);
 
     return (
         <>
@@ -129,6 +134,17 @@ export function AttributeFieldFile({
                             Select file...
                         </label>
                         <input id={name} type="file" className="hidden" onChange={onFileChanged} />
+                        {clearable && (
+                            <Button
+                                variant="outline"
+                                color="secondary"
+                                className="ml-2"
+                                aria-label={`Clear ${descriptor.properties.label}`}
+                                onClick={onFileCleared}
+                            >
+                                Clear
+                            </Button>
+                        )}
                     </div>
                     <div className="w-full h-0"></div>
                     <div className="text-sm text-content-subtle text-center w-full mt-4">Select or Drag &amp; Drop file to Drop Zone.</div>
@@ -137,4 +153,10 @@ export function AttributeFieldFile({
             )}
         </>
     );
+}
+
+function useIsClearable(name: string, descriptor: DataAttributeModel | CustomAttributeModel): boolean {
+    const file = useWatch({ name });
+    const { required, readOnly } = descriptor.properties;
+    return !required && !readOnly && !isBlankFile(file);
 }

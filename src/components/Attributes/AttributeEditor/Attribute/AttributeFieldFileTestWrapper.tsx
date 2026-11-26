@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import * as ReactHookForm from 'react-hook-form';
 import { AttributeFieldFile } from './AttributeFieldFile';
 import type { DataAttributeModel } from 'types/attributes';
+import { blankFile } from 'utils/attributes/attributes';
 
 export type AttributeFieldFileTestWrapperProps = {
     name: string;
@@ -32,7 +33,7 @@ export function AttributeFieldFileTestWrapper({
     const methods = ReactHookForm.useForm({
         mode,
         defaultValues: {
-            [name]: { content: '', fileName: '', mimeType: '' },
+            [name]: blankFile,
         },
     });
     useEffect(() => {
@@ -47,6 +48,7 @@ export function AttributeFieldFileTestWrapper({
             onFileDrop={onFileDrop}
             onFileDragOver={onFileDragOver}
             onFileChanged={onFileChanged}
+            onFileCleared={() => {}}
         />
     );
 

@@ -582,27 +582,8 @@ function AttributeEditorInner({
             const appliedContent = shouldUseAttributeValues ? contentFromValues : undefined;
 
             function handleFileAttributeContentType() {
-                if (appliedContent) {
-                    setValue(`${formAttributeName}.content`, (appliedContent as FileAttributeContentModel[])[0].reference);
-                    setValue(
-                        `${formAttributeName}.fileName`,
-                        (appliedContent as FileAttributeContentModel[])[0].data.fileName || 'unknown',
-                    );
-                    setValue(
-                        `${formAttributeName}.mimeType`,
-                        (appliedContent as FileAttributeContentModel[])[0].data.mimeType || 'unknown',
-                    );
-                } else if (descriptor.content) {
-                    setValue(`${formAttributeName}.content`, (descriptor.content as FileAttributeContentModel[])[0].reference);
-                    setValue(
-                        `${formAttributeName}.fileName`,
-                        (descriptor.content as FileAttributeContentModel[])[0].data.fileName || 'unknown',
-                    );
-                    setValue(
-                        `${formAttributeName}.mimeType`,
-                        (descriptor.content as FileAttributeContentModel[])[0].data.mimeType || 'unknown',
-                    );
-                }
+                const savedOrDefaultFile = ((appliedContent ?? descriptor.content) as FileAttributeContentModel[] | undefined)?.[0];
+                if (savedOrDefaultFile) setValue(formAttributeName, savedOrDefaultFile.data);
             }
 
             if (descriptor.contentType === AttributeContentType.File) {
