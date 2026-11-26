@@ -3,12 +3,14 @@ import { useDispatch, useSelector } from 'react-redux';
 import Select, { type OptionValue } from 'components/Select';
 import Spinner from 'components/Spinner';
 import { actions as signingProfileActions, selectors as signingProfileSelectors } from 'ducks/signing-profiles';
-import type { SignatureLevel } from 'types/openapi';
+import { type SignatureLevel, SigningWorkflowType } from 'types/openapi';
 import { formattingConnectorListError } from './formattingConnectorListError';
 
 const connectorLabel = 'Content Signing Formatting Connector';
 
 const clearedSelection = '';
+
+const contentSigningConnectorList = signingProfileSelectors.signatureFormattingConnectorListFor(SigningWorkflowType.ContentSigning);
 
 export interface ContentSigningFormattingDraft {
     connectorUuid?: string;
@@ -18,18 +20,21 @@ export interface ContentSigningFormattingDraft {
 
 interface Props {
     value: ContentSigningFormattingDraft;
-    /** Receives the new draft. A connector change clears the family and level; a family change clears the level. */
+    /**
+     * Receives the new draft. A connector change clears the family and level, and a family change clears the level;
+     * an empty family or level then takes the sole choice the connector declares.
+     */
     onChange: (draft: ContentSigningFormattingDraft) => void;
+    /** Receives the family or level the loaded declarations lack, or nothing while they load, fail or declare the choice. */
+    onSelectionErrorChange?: (error: string | undefined) => void;
     /** Profile being edited. Core authorizes the declarations fetch against it. */
     signingProfileUuid?: string;
 }
 
 /** Connector, family and level pickers for a content-signing profile. The family and level choices are those the selected connector declares. */
-export default function ContentSigningFormattingFields({ value, onChange, signingProfileUuid }: Readonly<Props>) {
+export default function ContentSigningFormattingFields({ value, onChange, onSelectionErrorChange, signingProfileUuid }: Readonly<Props>) {
     const dispatch = useDispatch();
-    const connectors = useSelector(signingProfileSelectors.signatureFormattingConnectors);
-    const isFetchingConnectors = useSelector(signingProfileSelectors.isFetchingSignatureFormattingConnectors);
-    const failedConnectorsFetch = useSelector(signingProfileSelectors.failedSignatureFormattingConnectorsFetch);
+    const { connectors, isFetching: isFetchingConnectors, failure: failedConnectorsFetch } = useSelector(contentSigningConnectorList);
     const declarations = useSelector(signingProfileSelectors.signatureFormattingConnectorDeclarations);
     const isFetchingDeclarations = useSelector(signingProfileSelectors.isFetchingSignatureFormattingConnectorDeclarations);
     const failedDeclarationsFetch = useSelector(signingProfileSelectors.failedSignatureFormattingConnectorDeclarationsFetch);
@@ -51,7 +56,15 @@ export default function ContentSigningFormattingFields({ value, onChange, signin
         connectorOptions.push({ value: connectorUuid, label: connectorUuid });
     }
     const familyOptions = connectorDeclarations.map((declaration) => ({ value: declaration.code, label: declaration.label }));
-    const levelOptions = (familyDeclaration?.levels ?? []).map((declared) => ({ value: declared.level, label: declared.name }));
+    const declaredLevels = familyDeclaration?.levels ?? [];
+    const levelOptions = declaredLevels.map((declared) => ({ value: declared.level, label: declared.name }));
+    const soleFamilyCode = connectorDeclarations.length === 1 ? connectorDeclarations[0].code : undefined;
+    const soleLevel = declaredLevels.length === 1 ? declaredLevels[0].level : undefined;
+
+    useEffect(() => {
+        if (!familyCode && soleFamilyCode) onChange({ connectorUuid, familyCode: soleFamilyCode });
+        else if (familyDeclaration && !level && soleLevel) onChange({ connectorUuid, familyCode, level: soleLevel });
+    }, [onChange, connectorUuid, familyCode, familyDeclaration, level, soleFamilyCode, soleLevel]);
 
     let declarationsError: string | undefined;
     if (connectorUuid && failedDeclarationsFetch?.connectorUuid === connectorUuid) {
@@ -66,9 +79,14 @@ export default function ContentSigningFormattingFields({ value, onChange, signin
             ? `${connectorName} no longer declares the family ${familyCode}.`
             : undefined;
     const levelError =
-        familyDeclaration && level && !familyDeclaration.levels.some((declared) => declared.level === level)
+        familyDeclaration && level && !declaredLevels.some((declared) => declared.level === level)
             ? `${familyDeclaration.label} of ${connectorName} no longer declares the level ${level}.`
             : undefined;
+    const selectionError = familyError ?? levelError;
+
+    useEffect(() => {
+        onSelectionErrorChange?.(selectionError);
+    }, [onSelectionErrorChange, selectionError]);
 
     const selectConnector = (selected: SelectEmission) => {
         const next = selectedCodeOrUndefined(selected);
@@ -80,7 +98,7 @@ export default function ContentSigningFormattingFields({ value, onChange, signin
     };
     const selectLevel = (selected: SelectEmission) => {
         const code = selectedCodeOrUndefined(selected);
-        onChange({ connectorUuid, familyCode, level: familyDeclaration?.levels.find((declared) => declared.level === code)?.level });
+        onChange({ connectorUuid, familyCode, level: declaredLevels.find((declared) => declared.level === code)?.level });
     };
 
     return (

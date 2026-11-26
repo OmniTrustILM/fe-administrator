@@ -2,7 +2,7 @@ import { combineReducers, configureStore, type Middleware } from '@reduxjs/toolk
 import { useState } from 'react';
 import { Provider } from 'react-redux';
 import signingProfilesReducer, { actions, initialState } from 'ducks/signing-profiles';
-import type { SignatureFamilyDeclaration } from 'types/openapi';
+import { type SignatureFamilyDeclaration, SigningWorkflowType } from 'types/openapi';
 import type { ConnectorResponseModel } from 'types/connectors';
 import ContentSigningFormattingFields, { type ContentSigningFormattingDraft } from './ContentSigningFormattingFields';
 
@@ -56,6 +56,7 @@ export function ContentSigningFormattingFieldsTestWrapper({
                 signingProfiles: {
                     ...initialState,
                     signatureFormattingConnectors: connectors as ConnectorResponseModel[],
+                    signatureFormattingConnectorsWorkflowType: SigningWorkflowType.ContentSigning,
                     failedSignatureFormattingConnectorsFetch: failedConnectorsFetch,
                 },
             },

@@ -8,6 +8,7 @@ const connectors = [
     { uuid: 'c-broken', name: 'Broken Connector' },
     { uuid: 'c-empty', name: 'Empty Connector' },
     { uuid: 'c-custom', name: 'Custom Connector' },
+    { uuid: 'c-pades-only', name: 'PAdES-Only Connector' },
 ];
 
 const declarationsByConnector: DeclarationsByConnector = {
@@ -35,6 +36,17 @@ const declarationsByConnector: DeclarationsByConnector = {
             code: 'x-vendor-family',
             label: 'Vendor Family',
             levels: [{ level: SignatureLevel.Signed, name: 'Vendor-B' }],
+            transferModes: [],
+        },
+    ],
+    'c-pades-only': [
+        {
+            code: 'pades',
+            label: 'PAdES',
+            levels: [
+                { level: SignatureLevel.Signed, name: 'PAdES-B' },
+                { level: SignatureLevel.Timestamped, name: 'PAdES-B-T' },
+            ],
             transferModes: [],
         },
     ],
@@ -73,10 +85,12 @@ test.describe('ContentSigningFormattingFields', () => {
         );
         await choose(page, 'contentSigningFormattingConnector', 'PAdES Connector');
         await choose(page, 'signatureFamily', 'PAdES');
-        await choose(page, 'signatureLevel', 'PAdES-B');
+        await choose(page, 'signatureLevel', 'PAdES-B-T');
 
         await choose(page, 'signatureFamily', 'CAdES');
-        await expectDraft(page, { connectorUuid: 'c-pades', familyCode: 'cades' });
+        await expectDraft(page, { connectorUuid: 'c-pades', familyCode: 'cades', level: SignatureLevel.Signed });
+        await choose(page, 'signatureFamily', 'PAdES');
+        await expectDraft(page, { connectorUuid: 'c-pades', familyCode: 'pades' });
 
         await choose(page, 'contentSigningFormattingConnector', 'Empty Connector');
         await expectDraft(page, { connectorUuid: 'c-empty' });
@@ -135,16 +149,38 @@ test.describe('ContentSigningFormattingFields', () => {
         );
     });
 
-    test('offers a family code that only the connector knows', async ({ mount, page }) => {
+    test('chooses the sole family and level, even a family code only the connector knows', async ({ mount, page }) => {
         await mount(
             <ContentSigningFormattingFieldsTestWrapper connectors={connectors} declarationsByConnector={declarationsByConnector} />,
         );
 
         await choose(page, 'contentSigningFormattingConnector', 'Custom Connector');
-        await choose(page, 'signatureFamily', 'Vendor Family');
-        await choose(page, 'signatureLevel', 'Vendor-B');
 
+        await expect(page.getByTestId('select-signatureFamily-trigger')).toContainText('Vendor Family');
+        await expect(page.getByTestId('select-signatureLevel-trigger')).toContainText('Vendor-B');
         await expectDraft(page, { connectorUuid: 'c-custom', familyCode: 'x-vendor-family', level: SignatureLevel.Signed });
+    });
+
+    test('chooses the sole family and leaves the choice of its two levels open', async ({ mount, page }) => {
+        await mount(
+            <ContentSigningFormattingFieldsTestWrapper connectors={connectors} declarationsByConnector={declarationsByConnector} />,
+        );
+
+        await choose(page, 'contentSigningFormattingConnector', 'PAdES-Only Connector');
+
+        await expectDraft(page, { connectorUuid: 'c-pades-only', familyCode: 'pades' });
+    });
+
+    test('chooses the sole level of the chosen family', async ({ mount, page }) => {
+        await mount(
+            <ContentSigningFormattingFieldsTestWrapper connectors={connectors} declarationsByConnector={declarationsByConnector} />,
+        );
+        await choose(page, 'contentSigningFormattingConnector', 'PAdES Connector');
+
+        await choose(page, 'signatureFamily', 'CAdES');
+
+        await expect(page.getByTestId('select-signatureLevel-trigger')).toContainText('CAdES-B');
+        await expectDraft(page, { connectorUuid: 'c-pades', familyCode: 'cades', level: SignatureLevel.Signed });
     });
 
     test('clears the family and level when another connector replaces a complete choice', async ({ mount, page }) => {
@@ -155,9 +191,9 @@ test.describe('ContentSigningFormattingFields', () => {
         await choose(page, 'signatureFamily', 'CAdES');
         await choose(page, 'signatureLevel', 'CAdES-B');
 
-        await choose(page, 'contentSigningFormattingConnector', 'Custom Connector');
+        await choose(page, 'contentSigningFormattingConnector', 'Empty Connector');
 
-        await expectDraft(page, { connectorUuid: 'c-custom' });
+        await expectDraft(page, { connectorUuid: 'c-empty' });
     });
 
     test('keeps the family and level when the same connector and family are chosen again', async ({ mount, page }) => {
@@ -200,7 +236,7 @@ test.describe('ContentSigningFormattingFields', () => {
         await expect(page.getByText('PAdES Connector no longer declares the family xades.')).toBeVisible();
 
         await choose(page, 'signatureFamily', 'CAdES');
-        await expectDraft(page, { connectorUuid: 'c-pades', familyCode: 'cades' });
+        await expectDraft(page, { connectorUuid: 'c-pades', familyCode: 'cades', level: SignatureLevel.Signed });
     });
 
     test('names a saved level the family no longer declares', async ({ mount, page }) => {

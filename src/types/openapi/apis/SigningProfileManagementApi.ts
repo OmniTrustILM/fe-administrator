@@ -19,12 +19,12 @@ import type {
     BaseAttributeDto,
     BulkActionMessageDto,
     CertificateDto,
+    ContentSigningFormattingAttributes,
     ErrorMessageDto,
     PaginationResponseDtoSigningProfileListDto,
     PaginationResponseDtoSigningRecordListDto,
     SearchFieldDataByGroupDto,
     SearchRequestDto,
-    SignatureFamily,
     SignatureFamilyDeclaration,
     SignatureLevel,
     SigningProfileDto,
@@ -90,7 +90,7 @@ export interface GetTspActivationDetailsRequest {
 
 export interface ListContentSigningFormattingConnectorAttributesRequest {
     connectorUuid: string;
-    family: SignatureFamily;
+    family: string;
     level: SignatureLevel;
     signingProfileUuid?: string;
 }
@@ -434,7 +434,7 @@ export class SigningProfileManagementApi extends BaseAPI {
     }
 
     /**
-     * Returns the formatting attribute descriptors a content signing Signing Profile can reach, merged by name into one flat set carrying the connector\'s default values. family and level together name the workflow the Signing Profile will run, and the connector must be able to serve it; the descriptor set follows from level, so family does not narrow the returned descriptors. The signingProfileUuid parameter is used for authorization only and does not affect the returned descriptors.
+     * Returns the formatting attribute descriptors a content-signing Signing Profile can reach, merged by name across operations and split into profile attributes and request attributes, with the connector\'s default values. A request attribute\'s `properties.group` names its permission group, which the Signing Profile\'s `allowedRequestAttributes` may list. family and level together name the workflow the Signing Profile will run, and the connector must be able to serve it; the descriptor set follows from level, so family does not narrow the returned descriptors. The signingProfileUuid parameter is used for authorization only and does not affect the returned descriptors.
      * Get content signing formatting attribute descriptors from a Signature Formatting Provider
      */
     listContentSigningFormattingConnectorAttributes({
@@ -442,15 +442,15 @@ export class SigningProfileManagementApi extends BaseAPI {
         family,
         level,
         signingProfileUuid,
-    }: ListContentSigningFormattingConnectorAttributesRequest): Observable<Array<BaseAttributeDto>>;
+    }: ListContentSigningFormattingConnectorAttributesRequest): Observable<ContentSigningFormattingAttributes>;
     listContentSigningFormattingConnectorAttributes(
         { connectorUuid, family, level, signingProfileUuid }: ListContentSigningFormattingConnectorAttributesRequest,
         opts?: OperationOpts,
-    ): Observable<AjaxResponse<Array<BaseAttributeDto>>>;
+    ): Observable<AjaxResponse<ContentSigningFormattingAttributes>>;
     listContentSigningFormattingConnectorAttributes(
         { connectorUuid, family, level, signingProfileUuid }: ListContentSigningFormattingConnectorAttributesRequest,
         opts?: OperationOpts,
-    ): Observable<Array<BaseAttributeDto> | AjaxResponse<Array<BaseAttributeDto>>> {
+    ): Observable<ContentSigningFormattingAttributes | AjaxResponse<ContentSigningFormattingAttributes>> {
         throwIfNullOrUndefined(connectorUuid, 'connectorUuid', 'listContentSigningFormattingConnectorAttributes');
         throwIfNullOrUndefined(family, 'family', 'listContentSigningFormattingConnectorAttributes');
         throwIfNullOrUndefined(level, 'level', 'listContentSigningFormattingConnectorAttributes');
@@ -465,7 +465,7 @@ export class SigningProfileManagementApi extends BaseAPI {
             queryParams['signingProfileUuid'] = signingProfileUuid;
         }
 
-        return this.request<Array<BaseAttributeDto>>(
+        return this.request<ContentSigningFormattingAttributes>(
             {
                 url: '/v1/signingProfiles/signatureFormattingConnectors/{connectorUuid}/contentSigningFormattingAttributes'.replace(
                     '{connectorUuid}',

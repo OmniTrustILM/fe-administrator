@@ -6,7 +6,7 @@ import { createObjectPermissionStore } from 'components/_pages/test-utils/object
 import { PERMISSION_SCENARIOS, scenarioState } from 'components/_pages/test-utils/permissionScenarios';
 import { initialState as signingProfilesInitialState } from 'ducks/signing-profiles';
 import { initialState as tspProfilesInitialState } from 'ducks/tsp-profiles';
-import { Resource, SigningScheme, SigningWorkflowType } from 'types/openapi';
+import { Resource, SigningProtocol, SigningScheme, SigningWorkflowType } from 'types/openapi';
 import SigningProfileDetail from './SigningProfileDetail';
 
 const enabledProfile = {
@@ -35,7 +35,12 @@ export default function SigningProfileDetailWithStore({
             uuid: signingProfile.uuid,
             allowedActions: [],
             realSlices: [
-                heldSlice('signingProfiles', { ...signingProfilesInitialState, signingProfile }),
+                heldSlice('signingProfiles', {
+                    ...signingProfilesInitialState,
+                    signingProfile,
+                    supportedProtocols: [SigningProtocol.Tsp],
+                    supportedProtocolsWorkflowType: SigningWorkflowType.Timestamping,
+                }),
                 heldSlice('tspProfiles', tspProfilesInitialState),
             ],
             preloadedState: scenarioState(PERMISSION_SCENARIOS.find((candidate) => candidate.name === scenario)!, {

@@ -10,16 +10,7 @@
  * Do not edit the class manually.
  */
 
-import type {
-    NameAndUuidDto,
-    ResponseAttribute,
-    SignatureFamily,
-    SignatureLevel,
-    SignatureParameterGroup,
-    SignatureParameters,
-    SigningWorkflowType,
-    TimestampSourceDto,
-} from './';
+import type { NameAndUuidDto, ResponseAttribute, SignatureLevel, SigningWorkflowType, TimestampSourceDto } from './';
 
 /**
  * Content signing workflow configuration. The validation material that LONG_TERM and ARCHIVAL embed is fetched by the Signature Formatting Provider and is not configured here.
@@ -40,17 +31,17 @@ export interface ContentSigningWorkflowDto {
      */
     signatureFormattingConnector?: NameAndUuidDto;
     /**
-     * Attributes configured on the Signature Formatting Provider that control DTBS construction for the content signing workflow. Applicable only when ILM-managed signing is used. These attributes carry operator-only settings; a request supplies signature parameters only in the groups that allowedRequestParameterGroups lists.
+     * Values of the Signature Formatting Provider\'s profile attributes and request attributes, which control DTBS construction for the content-signing workflow; a request attribute\'s value here is the one a signing request inherits. Applicable only when ILM-managed signing is used.
      * @type {Array<ResponseAttribute>}
      * @memberof ContentSigningWorkflowDto
      */
     signatureFormattingConnectorAttributes?: Array<ResponseAttribute>;
     /**
      * Signature family this profile produces. Present only when ILM-managed signing is used; null for delegated signing.
-     * @type {SignatureFamily}
+     * @type {string}
      * @memberof ContentSigningWorkflowDto
      */
-    family?: SignatureFamily;
+    family?: string;
     /**
      * Signature level at which the profile signs every document. Present only when ILM-managed signing is used; null for delegated signing.
      * @type {SignatureLevel}
@@ -64,12 +55,6 @@ export interface ContentSigningWorkflowDto {
      */
     timestampSource?: TimestampSourceDto;
     /**
-     * Largest document accepted for signing, in bytes. Enforced when an ILM-managed signing request arrives. Null when no profile-level cap applies.
-     * @type {number}
-     * @memberof ContentSigningWorkflowDto
-     */
-    documentSizeCap?: number;
-    /**
      * Demand the nonRepudiation key-usage bit specifically, for commitment-grade profiles. Applies to ILM-managed signing only; delegated profile gets always false.
      * @type {boolean}
      * @memberof ContentSigningWorkflowDto
@@ -82,15 +67,9 @@ export interface ContentSigningWorkflowDto {
      */
     requiredExtendedKeyUsageOids?: Array<string>;
     /**
-     * Signature parameter groups which a signing request may supply. Empty for delegated signing. Membership is the only permission mechanism. A request carrying any field of a group absent from this list is rejected, even when the value matches the profile\'s own. An empty list accepts no request-supplied group. Independent of defaultSignatureParameters: a group may be allowed with no default (pure pass-through), or carry a default without being allowed (operator-fixed).
-     * @type {Array<SignatureParameterGroup>}
+     * Names of the request-attribute groups and ungrouped request attributes a signing request may set; a request setting any other request attribute is refused, even when its value matches the profile value. Empty allows none and is always empty for delegated signing.
+     * @type {Array<string>}
      * @memberof ContentSigningWorkflowDto
      */
-    allowedRequestParameterGroups?: Array<SignatureParameterGroup>;
-    /**
-     * Signature parameters this profile applies when a request does not override them. Null for delegated signing. Merged field by field with the request winning; list-typed fields, and a placement in a different addressing mode, replace the default wholesale.
-     * @type {SignatureParameters}
-     * @memberof ContentSigningWorkflowDto
-     */
-    defaultSignatureParameters?: SignatureParameters;
+    allowedRequestAttributes?: Array<string>;
 }

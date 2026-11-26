@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest';
 
-import { SigningWorkflowType } from 'types/openapi';
+import { SignatureLevel, SigningProtocol, SigningWorkflowType } from 'types/openapi';
 import reducer, { actions, initialState, selectors } from './signing-profiles';
 
 describe('signingProfiles slice', () => {
@@ -382,6 +382,54 @@ describe('signingProfiles slice', () => {
         expect(next.isFetchingSupportedProtocols).toBe(true);
     });
 
+    test('listSupportedProtocols drops the stored list and records the workflow it asks for', () => {
+        const next = reducer(
+            {
+                ...initialState,
+                supportedProtocols: [SigningProtocol.Tsp],
+                supportedProtocolsWorkflowType: SigningWorkflowType.Timestamping,
+            },
+            actions.listSupportedProtocols({ workflowType: SigningWorkflowType.ContentSigning }),
+        );
+        expect(next.supportedProtocols).toEqual([]);
+        expect(next.supportedProtocolsWorkflowType).toBe(SigningWorkflowType.ContentSigning);
+    });
+
+    test('supportedProtocolListFor returns only the list of the workflow it was fetched for', () => {
+        const store = {
+            signingProfiles: {
+                ...initialState,
+                supportedProtocols: [SigningProtocol.IlmNative],
+                supportedProtocolsWorkflowType: SigningWorkflowType.ContentSigning,
+            },
+        } as any;
+        expect(selectors.supportedProtocolListFor(SigningWorkflowType.ContentSigning)(store).protocols).toEqual([
+            SigningProtocol.IlmNative,
+        ]);
+        expect(selectors.supportedProtocolListFor(SigningWorkflowType.Timestamping)(store).protocols).toEqual([]);
+        expect(selectors.supportedProtocolListFor(undefined)(store).protocols).toEqual([]);
+    });
+
+    test('supportedProtocolListFor carries the listing failure of its workflow', () => {
+        const failed = reducer(
+            reducer(initialState, actions.listSupportedProtocols({ workflowType: SigningWorkflowType.ContentSigning })),
+            actions.listSupportedProtocolsFailure({ error: 'Core unavailable' }),
+        );
+        const store = { signingProfiles: failed } as any;
+        expect(selectors.supportedProtocolListFor(SigningWorkflowType.ContentSigning)(store).failure).toEqual({
+            reason: 'Core unavailable',
+        });
+        expect(selectors.supportedProtocolListFor(SigningWorkflowType.Timestamping)(store).failure).toBeUndefined();
+    });
+
+    test('listSupportedProtocols clears the previous failure', () => {
+        const next = reducer(
+            { ...initialState, failedSupportedProtocolsFetch: { reason: 'Core unavailable' } },
+            actions.listSupportedProtocols({ workflowType: SigningWorkflowType.ContentSigning }),
+        );
+        expect(next.failedSupportedProtocolsFetch).toBeUndefined();
+    });
+
     test('listSupportedProtocolsSuccess sets supportedProtocols', () => {
         const protocols = ['tsp'] as any[];
         const next = reducer(
@@ -415,12 +463,52 @@ describe('signingProfiles slice', () => {
         expect(next.signingCertificates).toEqual(certs);
     });
 
-    test('listSigningCertificatesFailure clears isFetchingSigningCertificates', () => {
-        const next = reducer(
-            { ...initialState, isFetchingSigningCertificates: true },
-            actions.listSigningCertificatesFailure({ error: 'err' }),
+    test('listSigningCertificatesFailure clears the certificates and leaves them unlisted', () => {
+        const listing = reducer(
+            { ...initialState, signingCertificates: [{ uuid: 'c-1' } as any], signingCertificatesListed: true },
+            actions.listSigningCertificates({ workflowType: SigningWorkflowType.ContentSigning }),
         );
+        expect(selectors.signingCertificatesListed({ signingProfiles: listing } as any)).toBe(false);
+
+        const next = reducer(listing, actions.listSigningCertificatesFailure({ error: 'err' }));
+
         expect(next.isFetchingSigningCertificates).toBe(false);
+        expect(next.signingCertificates).toEqual([]);
+        expect(selectors.signingCertificatesListed({ signingProfiles: next } as any)).toBe(false);
+        expect(selectors.failedSigningCertificatesFetch({ signingProfiles: next } as any)).toEqual({ reason: 'err' });
+    });
+
+    test('listSigningCertificates clears the failure of the previous listing', () => {
+        const failed = reducer(initialState, actions.listSigningCertificatesFailure({ error: 'err' }));
+
+        const next = reducer(failed, actions.listSigningCertificates({ workflowType: SigningWorkflowType.ContentSigning }));
+
+        expect(selectors.failedSigningCertificatesFetch({ signingProfiles: next } as any)).toBeUndefined();
+    });
+
+    describe('contentSigningAttributesListedFor', () => {
+        const selection = { connectorUuid: 'c-pades', family: 'pades', level: SignatureLevel.Timestamped };
+        const listedFor = (signingProfiles: typeof initialState) => selectors.contentSigningAttributesListedFor({ signingProfiles } as any);
+        const listing = reducer(initialState, actions.listContentSigningProfileAttributes(selection));
+
+        test('names nothing while the listing is pending', () => {
+            expect(listedFor(listing)).toBeUndefined();
+        });
+
+        test('names the selection Core listed', () => {
+            const next = reducer(
+                listing,
+                actions.listContentSigningProfileAttributesSuccess({ profileAttributes: [], requestAttributes: [] }),
+            );
+
+            expect(listedFor(next)).toEqual(selection);
+        });
+
+        test('names nothing after the listing failed', () => {
+            const next = reducer(listing, actions.listContentSigningProfileAttributesFailure({ reason: 'connector unavailable' }));
+
+            expect(listedFor(next)).toBeUndefined();
+        });
     });
 
     test('listSignatureAttributesForCertificate sets flag and clears previous descriptors', () => {
@@ -494,6 +582,40 @@ describe('signingProfiles slice', () => {
         );
         expect(next.isFetchingSignatureFormattingConnectors).toBe(false);
         expect(next.signatureFormattingConnectors).toEqual(connectors);
+    });
+
+    test('listSignatureFormattingConnectorsSuccess keeps the workflow the list was searched for', () => {
+        const connectors = [{ uuid: 'cn-1' }] as any[];
+        const requested = reducer(
+            initialState,
+            actions.listSignatureFormattingConnectors({ workflowType: SigningWorkflowType.ContentSigning }),
+        );
+        const next = reducer(requested, actions.listSignatureFormattingConnectorsSuccess({ connectors }));
+        const rootState = { signingProfiles: next } as any;
+
+        expect(selectors.signatureFormattingConnectorListFor(SigningWorkflowType.ContentSigning)(rootState)).toEqual({
+            connectors,
+            isFetching: false,
+            failure: undefined,
+        });
+        expect(selectors.signatureFormattingConnectorListFor(SigningWorkflowType.Timestamping)(rootState)).toEqual({
+            connectors: [],
+            isFetching: false,
+        });
+    });
+
+    test('a failed connector search shows only for the workflow it was searched for', () => {
+        const requested = reducer(
+            initialState,
+            actions.listSignatureFormattingConnectors({ workflowType: SigningWorkflowType.ContentSigning }),
+        );
+        const next = reducer(requested, actions.listSignatureFormattingConnectorsFailure({ reason: 'Core unreachable' }));
+        const rootState = { signingProfiles: next } as any;
+
+        expect(selectors.signatureFormattingConnectorListFor(SigningWorkflowType.ContentSigning)(rootState).failure).toEqual({
+            reason: 'Core unreachable',
+        });
+        expect(selectors.signatureFormattingConnectorListFor(SigningWorkflowType.Timestamping)(rootState).failure).toBeUndefined();
     });
 
     test('listSignatureFormattingConnectorsFailure clears the flag and records the reason', () => {
@@ -586,10 +708,12 @@ describe('signingProfiles selectors', () => {
             signingProfiles: profiles,
             tspActivationDetails: tspDetails,
             supportedProtocols: protocols,
+            supportedProtocolsWorkflowType: SigningWorkflowType.Timestamping,
             signingCertificates: [{ uuid: 'c-1' }] as any[],
             signingOperationAttributeDescriptors: [{ uuid: 'a-1' }] as any[],
             signatureFormattingConnectorAttributeDescriptors: [{ uuid: 'a-2' }] as any[],
             signatureFormattingConnectors: [{ uuid: 'cn-1' }] as any[],
+            signatureFormattingConnectorsWorkflowType: SigningWorkflowType.Timestamping,
             signingRecords: signingRecordData,
             searchableFields: fields,
             deleteErrorMessage: 'del err',
@@ -622,11 +746,13 @@ describe('signingProfiles selectors', () => {
         expect(selectors.signingProfile(state)).toEqual(profile);
         expect(selectors.signingProfiles(state)).toEqual(profiles);
         expect(selectors.tspActivationDetails(state)).toEqual(tspDetails);
-        expect(selectors.supportedProtocols(state)).toEqual(protocols);
+        expect(selectors.supportedProtocolListFor(SigningWorkflowType.Timestamping)(state).protocols).toEqual(protocols);
         expect(selectors.signingCertificates(state)).toEqual([{ uuid: 'c-1' }]);
         expect(selectors.signingOperationAttributeDescriptors(state)).toEqual([{ uuid: 'a-1' }]);
         expect(selectors.signatureFormattingConnectorAttributeDescriptors(state)).toEqual([{ uuid: 'a-2' }]);
-        expect(selectors.signatureFormattingConnectors(state)).toEqual([{ uuid: 'cn-1' }]);
+        expect(selectors.signatureFormattingConnectorListFor(SigningWorkflowType.Timestamping)(state).connectors).toEqual([
+            { uuid: 'cn-1' },
+        ]);
         expect(selectors.signingRecords(state)).toEqual(signingRecordData);
         expect(selectors.searchableFields(state)).toEqual(fields);
         expect(selectors.deleteErrorMessage(state)).toBe('del err');
@@ -639,7 +765,7 @@ describe('signingProfiles selectors', () => {
         expect(selectors.isFetchingSigningCertificates(state)).toBe(true);
         expect(selectors.isFetchingSignatureAttributes(state)).toBe(true);
         expect(selectors.isFetchingSignatureFormattingConnectorAttributes(state)).toBe(true);
-        expect(selectors.isFetchingSignatureFormattingConnectors(state)).toBe(true);
+        expect(selectors.signatureFormattingConnectorListFor(SigningWorkflowType.Timestamping)(state).isFetching).toBe(true);
         expect(selectors.isFetchingSigningRecords(state)).toBe(true);
         expect(selectors.isCreating(state)).toBe(true);
         expect(selectors.isDeleting(state)).toBe(true);
@@ -651,5 +777,52 @@ describe('signingProfiles selectors', () => {
         expect(selectors.isBulkDisabling(state)).toBe(true);
         expect(selectors.isActivatingTsp(state)).toBe(true);
         expect(selectors.isDeactivatingTsp(state)).toBe(true);
+    });
+
+    describe('ILM_NATIVE activation', () => {
+        const profile = { uuid: 'p-1', enabledProtocols: [SigningProtocol.Tsp] } as any;
+
+        test('a response for another profile leaves the loaded profile untouched', () => {
+            const next = reducer({ ...initialState, signingProfile: profile }, actions.activateIlmNativeSuccess({ uuid: 'p-other' }));
+
+            expect(next.signingProfile?.enabledProtocols).toEqual([SigningProtocol.Tsp]);
+        });
+
+        test('activateIlmNativeSuccess adds ILM_NATIVE to the profile once', () => {
+            const activating = reducer({ ...initialState, signingProfile: profile }, actions.activateIlmNative({ uuid: 'p-1' }));
+            expect(activating.isActivatingIlmNative).toBe(true);
+
+            const once = reducer(activating, actions.activateIlmNativeSuccess({ uuid: 'p-1' }));
+            const twice = reducer(once, actions.activateIlmNativeSuccess({ uuid: 'p-1' }));
+
+            expect(twice.isActivatingIlmNative).toBe(false);
+            expect(twice.signingProfile?.enabledProtocols).toEqual([SigningProtocol.Tsp, SigningProtocol.IlmNative]);
+        });
+
+        test('deactivateIlmNativeSuccess removes ILM_NATIVE and keeps the other protocols', () => {
+            const active = { ...profile, enabledProtocols: [SigningProtocol.Tsp, SigningProtocol.IlmNative] };
+            const deactivating = reducer({ ...initialState, signingProfile: active }, actions.deactivateIlmNative({ uuid: 'p-1' }));
+            expect(deactivating.isDeactivatingIlmNative).toBe(true);
+
+            const next = reducer(deactivating, actions.deactivateIlmNativeSuccess({ uuid: 'p-1' }));
+
+            expect(next.isDeactivatingIlmNative).toBe(false);
+            expect(next.signingProfile?.enabledProtocols).toEqual([SigningProtocol.Tsp]);
+        });
+
+        test('a deactivation for another profile leaves the loaded profile untouched', () => {
+            const active = { ...profile, enabledProtocols: [SigningProtocol.IlmNative] };
+            const next = reducer({ ...initialState, signingProfile: active }, actions.deactivateIlmNativeSuccess({ uuid: 'p-other' }));
+
+            expect(next.signingProfile?.enabledProtocols).toEqual([SigningProtocol.IlmNative]);
+        });
+
+        test('a failure clears the in-progress flag and keeps the protocols', () => {
+            const activating = reducer({ ...initialState, signingProfile: profile }, actions.activateIlmNative({ uuid: 'p-1' }));
+            const next = reducer(activating, actions.activateIlmNativeFailure({ error: 'forbidden' }));
+
+            expect(next.isActivatingIlmNative).toBe(false);
+            expect(next.signingProfile?.enabledProtocols).toEqual([SigningProtocol.Tsp]);
+        });
     });
 });

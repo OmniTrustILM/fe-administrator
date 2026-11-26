@@ -304,6 +304,7 @@ models/ConnectorSummaryDto.ts
 models/ConnectorUpdateRequestDto.ts
 models/ConnectorUpdateRequestDtoV2.ts
 models/ConnectorVersion.ts
+models/ContentSigningFormattingAttributes.ts
 models/ContentSigningWorkflowDto.ts
 models/ContentSigningWorkflowRequestDto.ts
 models/CoreInfoResponseDto.ts

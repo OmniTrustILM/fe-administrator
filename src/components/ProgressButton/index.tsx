@@ -13,6 +13,7 @@ type Props = {
     type?: 'submit' | 'reset' | 'button';
     onClick?: () => void;
     dataTestId?: string;
+    disabledTooltip?: string;
     requires?: Availability;
 };
 
@@ -25,6 +26,7 @@ function ProgressButton({
     type = 'submit',
     onClick,
     dataTestId,
+    disabledTooltip,
     requires,
 }: Readonly<Props>) {
     const buttonProps: ButtonProps = {
@@ -34,6 +36,7 @@ function ProgressButton({
         className: cn('relative', { 'opacity-50': inProgress }),
         type,
         'data-testid': dataTestId || 'progress-button',
+        disabledTooltip,
         requires,
     };
 
