@@ -416,7 +416,7 @@ export function buildCertificateDetailBaseRows(
             columns: ['Key', certificate.key ? <Link to={`../keys/detail/${certificate.key.uuid}`}>{certificate.key.name}</Link> : ''],
         },
     );
-    if (certificate.hybridCertificate) {
+    if (isX509 && certificate.hybridCertificate) {
         rows.push({
             id: 'altKey',
             columns: [
@@ -463,14 +463,14 @@ export function buildCertificateDetailBaseRows(
             ? [{ id: 'publicKeyAlgorithm', columns: ['Public Key Algorithm', certificate.publicKeyAlgorithm] }]
             : []),
     );
-    if (certificate.hybridCertificate) {
+    if (isX509 && certificate.hybridCertificate) {
         rows.push({
             id: 'altPublicKeyAlgorithm',
             columns: ['Alternative Public Key Algorithm', certificate.altPublicKeyAlgorithm],
         });
     }
     rows.push({ id: 'signatureAlgorithm', columns: ['Signature Algorithm', certificate.signatureAlgorithm] });
-    if (certificate.hybridCertificate) {
+    if (isX509 && certificate.hybridCertificate) {
         rows.push({
             id: 'altSignatureAlgorithm',
             columns: ['Alternative Signature Algorithm', certificate.altSignatureAlgorithm],
@@ -513,7 +513,7 @@ export function buildCertificateDetailBaseRows(
         { id: 'fingerprintAlgorithm', columns: ['Fingerprint Algorithm', 'SHA256'] },
         ...(shown(certificate.keySize) ? [{ id: 'keySize', columns: ['Key Size', certificate.keySize?.toString() ?? ''] }] : []),
     );
-    if (certificate.hybridCertificate) {
+    if (isX509 && certificate.hybridCertificate) {
         rows.push({
             id: 'altKeySize',
             columns: ['Alternative Key Size', certificate.altKeySize?.toString()],
@@ -539,7 +539,6 @@ export function buildCertificateDetailBaseRows(
     return rows;
 }
 
-/** Key usage, extended key usage and subject type: the rows only an X.509 certificate has. */
 function buildX509UsageRows(
     certificate: CertificateDetailResponseModel,
     certificateKeyUsageEnum: PlatformEnumMap,

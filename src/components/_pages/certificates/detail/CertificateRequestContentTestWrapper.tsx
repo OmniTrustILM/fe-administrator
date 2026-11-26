@@ -23,15 +23,26 @@ const certificate = {
 export type CertificateRequestContentTestWrapperProps = Readonly<{
     /** Type of the request; X.509 when omitted. */
     requestType?: CertificateType;
+    /** Fields the certificate has in place of the fixture's; a field set to `undefined` is absent. */
+    certificateFields?: Record<string, unknown>;
+    /** Fields the request has in place of the fixture's; a field set to `undefined` is absent. */
+    requestFields?: Record<string, unknown>;
 }>;
 
-export function CertificateRequestContentTestWrapper({ requestType }: CertificateRequestContentTestWrapperProps) {
-    const shown = requestType
-        ? ({
-              ...certificate,
-              certificateRequest: { ...certificate.certificateRequest, certificateType: requestType },
-          } as CertificateDetailResponseModel)
-        : certificate;
+export function CertificateRequestContentTestWrapper({
+    requestType,
+    certificateFields,
+    requestFields,
+}: CertificateRequestContentTestWrapperProps) {
+    const shown = {
+        ...certificate,
+        ...certificateFields,
+        certificateRequest: {
+            ...certificate.certificateRequest,
+            ...(requestType && { certificateType: requestType }),
+            ...requestFields,
+        },
+    } as CertificateDetailResponseModel;
     const { store } = useRecordingStore(undefined, 'alerts/');
 
     return (

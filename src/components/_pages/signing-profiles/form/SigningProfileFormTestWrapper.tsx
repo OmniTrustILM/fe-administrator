@@ -48,7 +48,7 @@ const existingSigningProfile: SigningProfileDto = {
         certificate: {
             uuid: 'cert1',
             displayName: 'Signing Cert',
-            commonName: 'Signing Cert',
+            commonName: 'signing.example',
             serialNumber: '123',
             certificateType: CertificateType.X509,
             state: CertificateState.Issued,
@@ -90,7 +90,7 @@ export function SigningProfileFormTestWrapper({
                         isFetchingSignatureFormattingConnectors: false,
                         failedSignatureFormattingConnectorsFetch: failedConnectorsFetch,
                         signingCertificates: [
-                            { uuid: 'cert1', displayName: 'Signing Cert', commonName: 'Signing Cert', serialNumber: '123' },
+                            { uuid: 'cert1', displayName: 'Signing Cert', commonName: 'signing.example', serialNumber: '123' },
                         ],
                         isFetchingSigningCertificates: false,
                         signingOperationAttributeDescriptors: [],

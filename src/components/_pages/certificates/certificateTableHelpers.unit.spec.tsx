@@ -374,6 +374,16 @@ describe('buildCertificateDetailBaseRows - certificate type', () => {
         expect(ids).toEqual(rowIdsOf({ certificateType }));
     });
 
+    it('shows the alternative key rows of a hybrid certificate only for X.509', () => {
+        const alternative = ['altKey', 'altKeySize'];
+
+        const x509 = rowIdsOf({ certificateType: CertificateType.X509, hybridCertificate: true });
+        const future = rowIdsOf({ certificateType: 'FUTURE' as CertificateType, hybridCertificate: true });
+
+        expect(x509).toEqual(expect.arrayContaining(alternative));
+        expect(future.filter((id) => id.startsWith('alt'))).toEqual([]);
+    });
+
     it('shows a shared property of another type only when the certificate has it', () => {
         const without = rowIdsOf({ certificateType: CertificateType.Ssh });
         const withValues = rowIdsOf({

@@ -649,7 +649,7 @@ export default function CertificateDetail() {
         () => [
             {
                 id: 'name',
-                content: 'Common Name',
+                content: 'Name',
             },
             {
                 id: 'relation',

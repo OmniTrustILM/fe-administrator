@@ -1,7 +1,16 @@
 import { expect, type Locator, type Page, test } from '../../../../../playwright/ct-test';
 import { ResourceAction } from 'types/openapi';
 import { ContentSigningProfileDetailTestWrapper, type RecordedRequest } from './ContentSigningProfileDetailTestWrapper';
-import { DOCUMENT_SIGNING_EKU, delegatedProfile, detailCore, ilmNativeProfile, signedProfile } from './contentSigningDetailFixtures';
+import {
+    DOCUMENT_SIGNING_EKU,
+    delegatedProfile,
+    detailCore,
+    ilmNativeProfile,
+    namedCertificateProfile,
+    noCommonNameProfile,
+    otherTypeCertificateProfile,
+    signedProfile,
+} from './contentSigningDetailFixtures';
 
 const row = (scope: Locator | Page, label: string) =>
     scope.getByRole('row').filter({ has: scope.getByRole('cell', { name: label, exact: true }) });
@@ -133,4 +142,21 @@ test.describe('Content-signing profile detail', () => {
         await activate.locator('..').hover();
         await expect(page.getByRole('tooltip')).toContainText('This profile delegates signing.');
     });
+});
+
+test.describe('Signing profile detail — signing certificate', () => {
+    for (const [name, profile, linkText] of [
+        ['its display name', namedCertificateProfile, 'Qualified Cert'],
+        ['its UUID when an X.509 certificate has no common name', noCommonNameProfile, 'cert-nr'],
+        ['its display name when its type has no common name', otherTypeCertificateProfile, 'web-01 host key'],
+    ] as const) {
+        test(`links the certificate by ${name}`, async ({ mount, page }) => {
+            await mount(<ContentSigningProfileDetailTestWrapper core={{ ...detailCore, profile }} />);
+            await openTab(page, 'Signing Scheme');
+
+            const link = row(page, 'Certificate').getByRole('link');
+            await expect(link).toHaveAttribute('href', '/certificates/detail/cert-nr');
+            await expect(link).toHaveText(`${linkText}SN: 2`);
+        });
+    }
 });

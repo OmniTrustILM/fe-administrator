@@ -1,3 +1,4 @@
+import { isX509Certificate } from 'utils/certificate';
 import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate, useParams } from 'react-router';
@@ -450,7 +451,7 @@ export default function SigningProfileDetail() {
                     'Certificate',
                     cert ? (
                         <Link key="value" to={`/${Resource.Certificates.toLowerCase()}/detail/${cert.uuid}`}>
-                            {cert.displayName || cert.uuid}
+                            {isX509Certificate(cert) && !cert.commonName ? cert.uuid : cert.displayName}
                             {cert.serialNumber ? <span className="ml-2 text-content-subtle text-xs">SN: {cert.serialNumber}</span> : null}
                         </Link>
                     ) : (

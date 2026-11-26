@@ -115,10 +115,10 @@ export function certificateFileBaseName(certificate?: { displayName?: string; se
 function uniqueZipEntryName(baseName: string, fileType: string, usedNames: Set<string>): string {
     let name = `${baseName}.${fileType}`;
     let copy = 2;
-    while (usedNames.has(name)) {
+    while (usedNames.has(name.toLowerCase())) {
         name = `${baseName} (${copy}).${fileType}`;
         copy++;
     }
-    usedNames.add(name);
+    usedNames.add(name.toLowerCase());
     return name;
 }
