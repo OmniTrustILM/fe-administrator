@@ -1,4 +1,4 @@
-import AttributeViewer from 'components/Attributes/AttributeViewer';
+import AttributeViewer, { ATTRIBUTE_VIEWER_TYPE } from 'components/Attributes/AttributeViewer';
 import CustomTable, { type TableDataRow, type TableHeader } from 'components/CustomTable';
 import Dialog from 'components/Dialog';
 
@@ -146,6 +146,12 @@ export default function AuthorityDetail() {
                         <Label>Certification Authority Attributes</Label>
                         <AttributeViewer attributes={authority?.attributes} />
                     </Widget>
+
+                    {!!authority?.metadata?.length && (
+                        <Widget title="Metadata" titleSize="large">
+                            <AttributeViewer viewerType={ATTRIBUTE_VIEWER_TYPE.METADATA} metadata={authority.metadata} />
+                        </Widget>
+                    )}
 
                     {authority && (
                         <CustomAttributeWidget
