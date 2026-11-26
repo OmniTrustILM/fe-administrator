@@ -32,6 +32,7 @@ const testCertificate = (
 ): CertificateDetailResponseModel =>
     ({
         uuid: 'source-uuid',
+        displayName: 'app.example',
         commonName: 'app.example',
         subjectDn: 'CN=app.example,O=Example',
         subjectAlternativeNames: { dNSName: ['app.example'] },

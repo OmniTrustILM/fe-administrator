@@ -1,5 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
-import { Resource, ResourceAction } from 'types/openapi';
+import { CertificateRelationType, CertificateState, CertificateType, Resource, ResourceAction } from 'types/openapi';
 import { expect, test } from '../../../../../playwright/ct-test';
 import CertificateDetailWithStore from './CertificateDetailWithStore';
 
@@ -62,6 +62,33 @@ test.describe('CertificateDetail — permission to change', () => {
 
         await page.getByRole('tab', { name: 'Related Certificates' }).click();
         await expect(page.getByTestId('add_related_certificate-button')).toBeEnabled();
+    });
+
+    test('names a related certificate by its display name, in the table and when removing it', async ({ mount, page }) => {
+        const successor = {
+            uuid: 'successor-uuid',
+            displayName: 'web-01 host key',
+            commonName: 'web-01.example',
+            certificateType: CertificateType.X509,
+            state: CertificateState.Issued,
+            relationType: CertificateRelationType.Renewal,
+        } as never;
+        await mount(
+            <CertificateDetailWithStore
+                allowedListings={listings}
+                allowedActions={[ResourceAction.Detail, ResourceAction.Update]}
+                successorCertificates={[successor]}
+            />,
+        );
+        await page.getByRole('tab', { name: 'Related Certificates' }).click();
+
+        await expect(page.getByRole('columnheader', { name: 'Name', exact: true })).toBeVisible();
+        const row = page.getByRole('row').filter({ has: page.getByRole('link', { name: 'web-01 host key', exact: true }) });
+        await row.getByRole('checkbox').check();
+        await page.getByTestId('remove_related_certificate-button').click();
+
+        await expect(page.getByRole('dialog', { name: 'Delete Related Certificate' })).toContainText('web-01 host key');
+        await expect(page.getByText('web-01.example')).toHaveCount(0);
     });
 });
 

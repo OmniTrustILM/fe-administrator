@@ -20,7 +20,7 @@ export default function TrustedCaCertificatesField({ value, onChange, caCertific
         () =>
             caCertificates.map((certificate) => ({
                 value: certificate.uuid,
-                label: certificate.commonName || certificate.subjectDn,
+                label: certificate.displayName,
                 description: [certificate.subjectDn, certificate.serialNumber].filter(Boolean).join(' · '),
             })),
         [caCertificates],

@@ -14,8 +14,14 @@ import {
     PlatformEnum,
 } from 'types/openapi';
 
+/** Whether the certificate is X.509, the only type that has the X.509 parts of the detail. An unknown type is not. */
+export function isX509Certificate(certificate?: { certificateType?: CertificateType }): boolean {
+    return certificate?.certificateType === CertificateType.X509;
+}
+
 export const emptyCertificate: CertificateDetailResponseModel = {
     uuid: '',
+    displayName: '',
     commonName: '',
     serialNumber: '',
     issuerCommonName: '',

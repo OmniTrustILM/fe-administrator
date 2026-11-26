@@ -2,18 +2,47 @@ import { Provider } from 'react-redux';
 import { MemoryRouter } from 'react-router';
 
 import type { CertificateDetailResponseModel } from 'types/certificate';
+import { CertificateType } from 'types/openapi';
 import { useRecordingStore } from 'utils/test-helpers';
 
 import CertificateRequestContent from './CertificateRequestContent';
 
 const certificate = {
     uuid: 'certificate-uuid',
+    displayName: 'app.example',
     commonName: 'app.example',
     serialNumber: '01',
-    certificateRequest: { commonName: 'app.example', content: 'TUlJQ1NyZXF1ZXN0' },
+    certificateRequest: {
+        displayName: 'app.example',
+        commonName: 'app.example',
+        certificateType: CertificateType.X509,
+        content: 'TUlJQ1NyZXF1ZXN0',
+    },
 } as unknown as CertificateDetailResponseModel;
 
-export function CertificateRequestContentTestWrapper() {
+export type CertificateRequestContentTestWrapperProps = Readonly<{
+    /** Type of the request; X.509 when omitted. */
+    requestType?: CertificateType;
+    /** Fields the certificate has in place of the fixture's; a field set to `undefined` is absent. */
+    certificateFields?: Record<string, unknown>;
+    /** Fields the request has in place of the fixture's; a field set to `undefined` is absent. */
+    requestFields?: Record<string, unknown>;
+}>;
+
+export function CertificateRequestContentTestWrapper({
+    requestType,
+    certificateFields,
+    requestFields,
+}: CertificateRequestContentTestWrapperProps) {
+    const shown = {
+        ...certificate,
+        ...certificateFields,
+        certificateRequest: {
+            ...certificate.certificateRequest,
+            ...(requestType && { certificateType: requestType }),
+            ...requestFields,
+        },
+    } as CertificateDetailResponseModel;
     const { store } = useRecordingStore(undefined, 'alerts/');
 
     return (
@@ -21,7 +50,7 @@ export function CertificateRequestContentTestWrapper() {
             <MemoryRouter>
                 <div className="p-16">
                     <CertificateRequestContent
-                        certificate={certificate}
+                        certificate={shown}
                         isBusy={false}
                         getFreshCertificateDetail={() => {}}
                         setSelectedAttributesInfo={() => {}}

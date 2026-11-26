@@ -17,6 +17,7 @@ export type CertificateRevokeDialogTestWrapperProps = Readonly<{
 
 const baseCertificate: CertificateDetailResponseModel = {
     uuid: 'certificate-uuid',
+    displayName: 'test-certificate',
     commonName: 'test-certificate',
     state: CertificateState.Issued,
     raProfile: {

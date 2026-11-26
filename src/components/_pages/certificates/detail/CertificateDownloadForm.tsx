@@ -11,6 +11,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 
 import { downloadFile } from 'utils/certificate';
+import { certificateFileBaseName } from 'utils/download';
 
 import { PlatformEnum, Resource, ResourceAction } from 'types/openapi';
 import { useActionAvailability } from 'utils/useActionAvailability';
@@ -47,7 +48,7 @@ const CertificateDownloadForm = () => {
     const [isDownloadFormCertificateChain, setIsDownloadFormCertificateChain] = useState<boolean>(false);
     const [certificateFormatValue, setCertificateFormatValue] = useState<string>('');
 
-    const fileNameToDownload = certificate?.commonName + '_' + certificate?.serialNumber;
+    const fileNameToDownload = certificateFileBaseName(certificate);
 
     const certificateFormatEncodingMap = useMemo(() => {
         return {
@@ -275,7 +276,7 @@ const CertificateDownloadForm = () => {
                         <div className="mt-4">
                             <KeystoreDownloadDialog
                                 certificateUuid={certificate.uuid}
-                                certificateName={certificate.commonName}
+                                certificateName={certificate.displayName}
                                 keyUuid={certificate.key.uuid}
                                 privateKeyItemUuid={privateKeyItem.uuid}
                                 onClose={() => dispatch(userInterfaceActions.hideGlobalModal())}

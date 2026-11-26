@@ -12,6 +12,7 @@ import CertificateDetail from './index';
 
 const issued = {
     uuid: 'cert-1',
+    displayName: 'app.example',
     commonName: 'app.example',
     subjectDn: 'CN=app.example',
     state: CertificateState.Issued,

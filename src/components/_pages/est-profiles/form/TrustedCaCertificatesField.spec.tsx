@@ -7,7 +7,7 @@ test.describe('TrustedCaCertificatesField', () => {
 
         await page.getByTestId('trustedCaCertificates-trigger').click();
 
-        await expect(page.getByRole('option', { name: /Root CA/ })).toContainText('CN=Root CA · ca-1-serial');
+        await expect(page.getByRole('option', { name: /Root CA/ })).toContainText('CN=root.example · ca-1-serial');
         await expect(page.getByRole('option', { name: /Issuing CA/ })).toBeVisible();
     });
 

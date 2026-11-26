@@ -1,7 +1,14 @@
 import { afterEach, describe, expect, test, vi, beforeEach } from 'vitest';
 
 import { runDownloadFileSuite, setupAnchorDownloadMocks } from './__tests__/anchor-download-mock';
-import { downloadFile, downloadFileZip, fileNameFromContentDisposition, formatPEM, triggerBlobDownload } from './download';
+import {
+    certificateFileBaseName,
+    downloadFile,
+    downloadFileZip,
+    fileNameFromContentDisposition,
+    formatPEM,
+    triggerBlobDownload,
+} from './download';
 
 const mockCreateObjectURL = vi.fn(() => 'blob:mock-url');
 const mockRevokeObjectURL = vi.fn();
@@ -32,7 +39,9 @@ describe('downloadFileZip', () => {
     });
 
     test('triggers blob download for pem certificates', async () => {
-        const certs = [{ uuid: 'c-1', commonName: 'example.com', serialNumber: '01', certificateContent: 'YQ==' }] as any[];
+        const certs = [
+            { uuid: 'c-1', displayName: 'example.com', commonName: 'example.com', serialNumber: '01', certificateContent: 'YQ==' },
+        ] as any[];
 
         downloadFileZip(['c-1'], certs, 'pem');
 
@@ -44,7 +53,9 @@ describe('downloadFileZip', () => {
     });
 
     test('triggers blob download for der certificates', async () => {
-        const certs = [{ uuid: 'c-2', commonName: '*.wildcard.com', serialNumber: '02', certificateContent: 'YQ==' }] as any[];
+        const certs = [
+            { uuid: 'c-2', displayName: '*.wildcard.com', commonName: '*.wildcard.com', serialNumber: '02', certificateContent: 'YQ==' },
+        ] as any[];
 
         downloadFileZip(['c-2'], certs, 'der');
 
@@ -52,8 +63,53 @@ describe('downloadFileZip', () => {
         expect(mockCreateObjectURL).toHaveBeenCalledTimes(1);
     });
 
+    test('numbers the entries that would share a name, so that no certificate is left out', async () => {
+        const { default: JSZip } = await import('jszip');
+        const zipFile = new JSZip().file as unknown as ReturnType<typeof vi.fn>;
+        const certs = [
+            { uuid: 'c-1', displayName: 'host-key', certificateContent: 'YQ==' },
+            { uuid: 'c-2', displayName: 'host-key', certificateContent: 'Yg==' },
+            { uuid: 'c-3', displayName: 'host-key', certificateContent: 'Yw==' },
+            { uuid: 'c-4', displayName: 'other', serialNumber: '04', certificateContent: 'ZA==' },
+        ] as any[];
+
+        downloadFileZip(['c-1', 'c-2', 'c-3', 'c-4'], certs, 'pem');
+
+        await vi.waitFor(() => expect(mockClick).toHaveBeenCalledTimes(1));
+        expect(zipFile.mock.calls.map(([name]) => name)).toEqual(['host-key.pem', 'host-key (2).pem', 'host-key (3).pem', 'other_04.pem']);
+    });
+
+    test('numbers past an entry whose own name already looks numbered', async () => {
+        const { default: JSZip } = await import('jszip');
+        const zipFile = new JSZip().file as unknown as ReturnType<typeof vi.fn>;
+        const certs = [
+            { uuid: 'c-1', displayName: 'host-key', certificateContent: 'YQ==' },
+            { uuid: 'c-2', displayName: 'host-key (2)', certificateContent: 'Yg==' },
+            { uuid: 'c-3', displayName: 'host-key', certificateContent: 'Yw==' },
+        ] as any[];
+
+        downloadFileZip(['c-1', 'c-2', 'c-3'], certs, 'pem');
+
+        await vi.waitFor(() => expect(mockClick).toHaveBeenCalledTimes(1));
+        expect(zipFile.mock.calls.map(([name]) => name)).toEqual(['host-key.pem', 'host-key (2).pem', 'host-key (3).pem']);
+    });
+
+    test('numbers the entries whose names differ only by case, keeping their own casing', async () => {
+        const { default: JSZip } = await import('jszip');
+        const zipFile = new JSZip().file as unknown as ReturnType<typeof vi.fn>;
+        const certs = [
+            { uuid: 'c-1', displayName: 'App.example', certificateContent: 'YQ==' },
+            { uuid: 'c-2', displayName: 'app.example', certificateContent: 'Yg==' },
+        ] as any[];
+
+        downloadFileZip(['c-1', 'c-2'], certs, 'pem');
+
+        await vi.waitFor(() => expect(mockClick).toHaveBeenCalledTimes(1));
+        expect(zipFile.mock.calls.map(([name]) => name)).toEqual(['App.example.pem', 'app.example (2).pem']);
+    });
+
     test('skips unmatched certificate uuids and still generates empty zip', async () => {
-        const certs = [{ uuid: 'c-3', commonName: 'a.com', serialNumber: '03', certificateContent: 'YQ==' }] as any[];
+        const certs = [{ uuid: 'c-3', displayName: 'a.com', commonName: 'a.com', serialNumber: '03', certificateContent: 'YQ==' }] as any[];
 
         downloadFileZip(['c-999'], certs, 'pem');
 
@@ -176,5 +232,19 @@ describe('fileNameFromContentDisposition', () => {
     });
     test('falls back to the fallback when the extended filename cannot be decoded and there is no plain one', () => {
         expect(fileNameFromContentDisposition("attachment; filename*=UTF-8''%E0%A4%A", 'fallback.p12')).toBe('fallback.p12');
+    });
+});
+
+describe('certificateFileBaseName', () => {
+    test('joins the display name and the serial number', () => {
+        expect(certificateFileBaseName({ displayName: 'host.example', serialNumber: '0A1B' })).toBe('host.example_0A1B');
+    });
+
+    test('is the display name alone for a certificate without a serial number', () => {
+        expect(certificateFileBaseName({ displayName: 'host-key' })).toBe('host-key');
+    });
+
+    test('is empty while no certificate is loaded', () => {
+        expect(certificateFileBaseName(undefined)).toBe('');
     });
 });

@@ -256,7 +256,7 @@ export default function AdministratorDetail() {
                               'Signing Certificate',
                               cmpProfile?.signingCertificate ? (
                                   <Link to={`/certificates/detail/${cmpProfile.signingCertificate.uuid}`}>
-                                      {cmpProfile?.signingCertificate.commonName}
+                                      {cmpProfile?.signingCertificate.displayName}
                                   </Link>
                               ) : (
                                   'N/A'

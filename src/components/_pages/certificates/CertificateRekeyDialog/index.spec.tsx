@@ -332,6 +332,7 @@ test.describe('CertificateRekeyDialog — Register switch', () => {
     test('switching back to rekey reloads the keys of the restored token profile', async ({ mount, page }) => {
         const certificate = {
             uuid: 'certificate-uuid',
+            displayName: 'test-certificate',
             commonName: 'test-certificate',
             subjectAlternativeNames: { dNSName: ['test.example'] },
             raProfile: { uuid: 'ra-profile-uuid', name: 'Test RA Profile', authorityInstanceUuid: 'authority-uuid' },

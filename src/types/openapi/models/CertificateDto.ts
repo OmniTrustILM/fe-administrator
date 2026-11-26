@@ -32,11 +32,17 @@ export interface CertificateDto {
      */
     uuid: string;
     /**
-     * Certificate common name
+     * Name to show for the certificate: the common name of an X.509 certificate, the identifier of a certificate type without one
      * @type {string}
      * @memberof CertificateDto
      */
-    commonName: string;
+    displayName: string;
+    /**
+     * Certificate common name. Absent when the certificate has no common name: its type has none, or the subject of an X.509 certificate has none (a registration with only alternative names)
+     * @type {string}
+     * @memberof CertificateDto
+     */
+    commonName?: string;
     /**
      * Certificate serial number
      * @type {string}
@@ -50,17 +56,17 @@ export interface CertificateDto {
      */
     issuerCommonName?: string;
     /**
-     * Issuer DN of the Certificate
+     * Issuer DN of the Certificate. X.509 only; absent for other types.
      * @type {string}
      * @memberof CertificateDto
      */
     issuerDn?: string;
     /**
-     * Subject DN of the Certificate
+     * Subject DN of the Certificate. Absent when the certificate has no subject distinguished name: its type has none, or an X.509 certificate was registered with only alternative names.
      * @type {string}
      * @memberof CertificateDto
      */
-    subjectDn: string;
+    subjectDn?: string;
     /**
      * Certificate validity start date
      * @type {string}
@@ -80,13 +86,13 @@ export interface CertificateDto {
      */
     renewalWindowStart?: string;
     /**
-     * Public key algorithm
+     * Public key algorithm. Absent when the certificate has no public key: its type has none, or the certificate is registered and not yet issued
      * @type {string}
      * @memberof CertificateDto
      */
-    publicKeyAlgorithm: string;
+    publicKeyAlgorithm?: string;
     /**
-     * Alternative Public key algorithm
+     * Alternative Public key algorithm. X.509 only; absent for other types.
      * @type {string}
      * @memberof CertificateDto
      */
@@ -98,25 +104,25 @@ export interface CertificateDto {
      */
     signatureAlgorithm?: string;
     /**
-     * Certificate alternative signature algorithm
+     * Certificate alternative signature algorithm. X.509 only; absent for other types.
      * @type {string}
      * @memberof CertificateDto
      */
     altSignatureAlgorithm?: string;
     /**
-     * Indicator whether the certificate is hybrid
+     * Indicator whether the certificate is hybrid. False for types without a hybrid form.
      * @type {boolean}
      * @memberof CertificateDto
      */
     hybridCertificate: boolean;
     /**
-     * Certificate key size
+     * Certificate key size. Absent when the certificate has no public key: its type has none, or the certificate is registered and not yet issued
      * @type {number}
      * @memberof CertificateDto
      */
-    keySize: number;
+    keySize?: number;
     /**
-     * Certificate key size of the alternative key
+     * Certificate key size of the alternative key. X.509 only; absent for other types.
      * @type {number}
      * @memberof CertificateDto
      */
@@ -170,7 +176,7 @@ export interface CertificateDto {
      */
     certificateType: CertificateType;
     /**
-     * Serial number of the issuer
+     * Serial number of the issuer. X.509 only; absent for other types.
      * @type {string}
      * @memberof CertificateDto
      */

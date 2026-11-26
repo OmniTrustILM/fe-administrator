@@ -162,4 +162,21 @@ test.describe('CertificateDownloadForm', () => {
             .poll(() => downloadCertificateRequests(actions))
             .toEqual([{ uuid: 'certificate-uuid', certificateFormat: 'raw', encoding: 'pem' }]);
     });
+
+    test('names the downloaded file after the display name and the serial number', async ({ mount, page }) => {
+        await mount(
+            <CertificateDownloadFormTestWrapper
+                naming={{ displayName: 'web-01 host key', commonName: 'web-01.example', serialNumber: '0a' }}
+                certificateDownloadContent="YQ=="
+            />,
+        );
+        await chooseFormat(page, 'Raw');
+        await page.getByTestId('select-certificateEncoding-trigger').click();
+        await page.getByRole('option', { name: 'PEM' }).click();
+        const download = page.waitForEvent('download');
+
+        await page.getByRole('button', { name: 'Submit' }).click();
+
+        expect((await download).suggestedFilename()).toBe('web-01 host key_0a.pem');
+    });
 });

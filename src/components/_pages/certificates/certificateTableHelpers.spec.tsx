@@ -26,6 +26,7 @@ const mockGetEnumLabel = (_e: any, key: string) => key;
 function buildListCertificate(overrides: Partial<CertificateListResponseModel> = {}): CertificateListResponseModel {
     return {
         uuid: 'u',
+        displayName: 'c',
         commonName: 'c',
         serialNumber: '1',
         signatureAlgorithm: '',
@@ -68,6 +69,7 @@ test.describe('certificateTableHelpers', () => {
         test('returns one column per entry in CERTIFICATE_COLUMNS for a minimal certificate', () => {
             const cert = buildListCertificate({
                 uuid: 'uuid-1',
+                displayName: 'cn.example.com',
                 commonName: 'cn.example.com',
                 serialNumber: 'SN123',
                 signatureAlgorithm: 'SHA256-RSA',
@@ -85,13 +87,13 @@ test.describe('certificateTableHelpers', () => {
             expect(result).toHaveLength(CERTIFICATE_COLUMNS.length);
         });
 
-        test('with isLinkDisabled true commonName is plain text', () => {
-            const cert = buildListCertificate({ commonName: 'test.example.com' });
+        test('with isLinkDisabled true the display name is plain text', () => {
+            const cert = buildListCertificate({ displayName: 'web-01 host key', commonName: undefined });
 
             const result = buildCertificateRowColumns(cert, baseOpts);
             // commonName is 5th column (index 4): state, validationStatus, compliance, key, commonName
             const commonNameColumn = result[4];
-            expect(commonNameColumn).toBe('test.example.com');
+            expect(commonNameColumn).toBe('web-01 host key');
         });
 
         test('renders the shared empty state for a certificate with no groups', async ({ mount, page }) => {
@@ -123,7 +125,7 @@ test.describe('certificateTableHelpers', () => {
         });
 
         test('renders a row for a column set given in a different order', () => {
-            const cert = buildListCertificate({ commonName: 'cn.example.com', serialNumber: 'SN123' });
+            const cert = buildListCertificate({ displayName: 'cn.example.com', commonName: 'cn.example.com', serialNumber: 'SN123' });
             const reordered = [CERTIFICATE_COLUMNS[10], CERTIFICATE_COLUMNS[4]];
 
             const result = buildCertificateRowColumns(cert, baseOpts, reordered);
@@ -154,6 +156,8 @@ test.describe('certificateTableHelpers', () => {
     test.describe('buildCertificateDetailBaseRows', () => {
         const minimalCertificate: CertificateDetailResponseModel = {
             uuid: 'uuid-detail',
+            certificateType: CertificateType.X509,
+            displayName: 'detail.example.com',
             commonName: 'detail.example.com',
             serialNumber: 'SN456',
             subjectDn: 'CN=detail',
@@ -216,6 +220,7 @@ test.describe('certificateTableHelpers', () => {
             // keySize, publicKeyAlgorithm, serialNumber, notBefore/notAfter are all absent.
             const preRegisteredCert = {
                 uuid: 'uuid-registered',
+                displayName: 'pre-registered',
                 commonName: 'pre-registered',
                 subjectDn: 'CN=pre-registered',
                 hybridCertificate: false,

@@ -24,6 +24,7 @@ import BooleanCell from 'components/CustomTable/columns/BooleanCell';
 import MultiValueCell from 'components/CustomTable/columns/MultiValueCell';
 import type { ColumnDefinition } from 'types/tableColumns';
 import type { ListCellValue } from 'utils/attributes/listCellValues';
+import { isX509Certificate } from 'utils/certificate';
 import { EnumValueDescription } from 'components/EnumDescription';
 import Tooltip from 'components/Tooltip';
 import CertificateStatus from './CertificateStatus';
@@ -46,7 +47,7 @@ export interface BuildCertificateRowColumnsOpts {
 
 function buildCommonNameCell(certificate: CertificateListResponseModel, opts: BuildCertificateRowColumnsOpts) {
     const { selectCertsOnly, isLinkDisabled } = opts;
-    const label = certificate.commonName || '(empty)';
+    const label = certificate.displayName || '(empty)';
     if (selectCertsOnly || isLinkDisabled) return label;
     return <Link to={`./detail/${certificate.uuid}`}>{label}</Link>;
 }
@@ -393,8 +394,12 @@ export function buildCertificateDetailBaseRows(
     onPendingAction: (action: PendingAction) => void,
     can?: ActionAvailability,
 ): TableDataRow[] {
-    const rows: TableDataRow[] = [
-        {
+    const isX509 = isX509Certificate(certificate);
+    // X.509 keeps every row it has always had; another type shows a shared property only when it has a value
+    const shown = (value: unknown) => isX509 || (value !== undefined && value !== null);
+    const rows: TableDataRow[] = [];
+    if (shown(certificate.commonName)) {
+        rows.push({
             id: 'commonName',
             columns: [
                 <span key="cn-label" style={{ whiteSpace: 'nowrap' }}>
@@ -402,14 +407,16 @@ export function buildCertificateDetailBaseRows(
                 </span>,
                 certificate.commonName,
             ],
-        },
+        });
+    }
+    rows.push(
         { id: 'serialNumber', columns: ['Serial Number', certificate.serialNumber || ''] },
         {
             id: 'key',
             columns: ['Key', certificate.key ? <Link to={`../keys/detail/${certificate.key.uuid}`}>{certificate.key.name}</Link> : ''],
         },
-    ];
-    if (certificate.hybridCertificate) {
+    );
+    if (isX509 && certificate.hybridCertificate) {
         rows.push({
             id: 'altKey',
             columns: [
@@ -433,8 +440,8 @@ export function buildCertificateDetailBaseRows(
                 })(),
             ],
         },
-        { id: 'issuerDN', columns: ['Issuer DN', certificate.issuerDn || ''] },
-        { id: 'subjectDN', columns: ['Subject DN', certificate.subjectDn] },
+        ...(isX509 ? [{ id: 'issuerDN', columns: ['Issuer DN', certificate.issuerDn || ''] }] : []),
+        ...(shown(certificate.subjectDn) ? [{ id: 'subjectDN', columns: ['Subject DN', certificate.subjectDn] }] : []),
         {
             id: 'validFrom',
             columns: [
@@ -452,16 +459,18 @@ export function buildCertificateDetailBaseRows(
         ...(certificate.renewalInfo
             ? buildRenewalRows(certificate.renewalInfo, enums.renewalWindowSource, dateFormatter, getEnumLabel)
             : []),
-        { id: 'publicKeyAlgorithm', columns: ['Public Key Algorithm', certificate.publicKeyAlgorithm] },
+        ...(shown(certificate.publicKeyAlgorithm)
+            ? [{ id: 'publicKeyAlgorithm', columns: ['Public Key Algorithm', certificate.publicKeyAlgorithm] }]
+            : []),
     );
-    if (certificate.hybridCertificate) {
+    if (isX509 && certificate.hybridCertificate) {
         rows.push({
             id: 'altPublicKeyAlgorithm',
             columns: ['Alternative Public Key Algorithm', certificate.altPublicKeyAlgorithm],
         });
     }
     rows.push({ id: 'signatureAlgorithm', columns: ['Signature Algorithm', certificate.signatureAlgorithm] });
-    if (certificate.hybridCertificate) {
+    if (isX509 && certificate.hybridCertificate) {
         rows.push({
             id: 'altSignatureAlgorithm',
             columns: ['Alternative Signature Algorithm', certificate.altSignatureAlgorithm],
@@ -502,22 +511,47 @@ export function buildCertificateDetailBaseRows(
         },
         { id: 'fingerprint', columns: ['Fingerprint', certificate.fingerprint || ''] },
         { id: 'fingerprintAlgorithm', columns: ['Fingerprint Algorithm', 'SHA256'] },
-        { id: 'keySize', columns: ['Key Size', certificate.keySize?.toString() ?? ''] },
+        ...(shown(certificate.keySize) ? [{ id: 'keySize', columns: ['Key Size', certificate.keySize?.toString() ?? ''] }] : []),
     );
-    if (certificate.hybridCertificate) {
+    if (isX509 && certificate.hybridCertificate) {
         rows.push({
             id: 'altKeySize',
             columns: ['Alternative Key Size', certificate.altKeySize?.toString()],
         });
     }
-    rows.push(
+    if (isX509) {
+        rows.push(...buildX509UsageRows(certificate, enums.certificateKeyUsage, getEnumLabel));
+    }
+    rows.push({
+        id: 'archivationStatus',
+        columns: [
+            'Archived',
+            <Badge key="archivationStatus" color={isCertificateArchived ? 'secondary' : 'success'}>
+                {isCertificateArchived ? 'Yes' : 'No'}
+            </Badge>,
+        ],
+    });
+
+    if (isX509 && certificate.qcStatements) {
+        rows.push(...buildQcStatementRows(certificate.qcStatements, enums.qcType, getEnumLabel));
+    }
+
+    return rows;
+}
+
+function buildX509UsageRows(
+    certificate: CertificateDetailResponseModel,
+    certificateKeyUsageEnum: PlatformEnumMap,
+    getEnumLabel: (e: PlatformEnumMap, key: string) => string,
+): TableDataRow[] {
+    return [
         {
             id: 'keyUsage',
             columns: [
                 'Key Usage',
                 certificate?.keyUsage?.map((name) => (
                     <div key={name} style={{ margin: '1px' }}>
-                        <Badge>{getEnumLabel(enums.certificateKeyUsage, name)}</Badge>
+                        <Badge>{getEnumLabel(certificateKeyUsageEnum, name)}</Badge>
                         &nbsp;
                     </div>
                 )) || '',
@@ -549,22 +583,7 @@ export function buildCertificateDetailBaseRows(
                 ),
             ],
         },
-        {
-            id: 'archivationStatus',
-            columns: [
-                'Archived',
-                <Badge key="archivationStatus" color={isCertificateArchived ? 'secondary' : 'success'}>
-                    {isCertificateArchived ? 'Yes' : 'No'}
-                </Badge>,
-            ],
-        },
-    );
-
-    if (certificate.qcStatements) {
-        rows.push(...buildQcStatementRows(certificate.qcStatements, enums.qcType, getEnumLabel));
-    }
-
-    return rows;
+    ];
 }
 
 function getProtocolProfileLink(protocolInfo: CertificateProtocolDto): string | undefined {
