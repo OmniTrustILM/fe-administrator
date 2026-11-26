@@ -38,6 +38,7 @@ export default function CertificateRequestContent({ certificate, isBusy, getFres
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
 
     const fileNameToDownload = certificateFileBaseName(certificate);
+    const isX509Request = isX509Certificate(certificate?.certificateRequest);
 
     const downloadCSRDropDown = useMemo(
         () => (
@@ -50,29 +51,33 @@ export default function CertificateRequestContent({ certificate, isBusy, getFres
                     </>
                 }
                 items={[
-                    {
-                        title: 'PEM (.pem)',
-                        onClick: () =>
-                            downloadFile(
-                                formatPEM(certificate?.certificateRequest?.content ?? '', true),
-                                fileNameToDownload + '_CSR' + '.pem',
-                            ),
-                    },
-                    {
-                        title: (
-                            <div className="flex items-center gap-x-2">
-                                <span>Copy PEM to clipboard</span>
-                            </div>
-                        ),
-                        onClick: () => {
-                            if (!certificate?.certificateRequest?.content) return;
-                            copyToClipboard(
-                                formatPEM(certificate?.certificateRequest?.content ?? '', true),
-                                csrDropdownTrigger.current,
-                                'Failed to copy certificate request content to clipboard',
-                            );
-                        },
-                    },
+                    ...(isX509Request
+                        ? [
+                              {
+                                  title: 'PEM (.pem)',
+                                  onClick: () =>
+                                      downloadFile(
+                                          formatPEM(certificate?.certificateRequest?.content ?? '', true),
+                                          fileNameToDownload + '_CSR' + '.pem',
+                                      ),
+                              },
+                              {
+                                  title: (
+                                      <div className="flex items-center gap-x-2">
+                                          <span>Copy PEM to clipboard</span>
+                                      </div>
+                                  ),
+                                  onClick: () => {
+                                      if (!certificate?.certificateRequest?.content) return;
+                                      copyToClipboard(
+                                          formatPEM(certificate?.certificateRequest?.content ?? '', true),
+                                          csrDropdownTrigger.current,
+                                          'Failed to copy certificate request content to clipboard',
+                                      );
+                                  },
+                              },
+                          ]
+                        : []),
                     {
                         title: 'REQ (.req)',
                         onClick: () =>
@@ -84,7 +89,7 @@ export default function CertificateRequestContent({ certificate, isBusy, getFres
                 ]}
             />
         ),
-        [certificate, fileNameToDownload, copyToClipboard],
+        [certificate, fileNameToDownload, copyToClipboard, isX509Request],
     );
 
     // The download formats and the PEM copy are those of a PKCS#10 request, so a request of another type has neither.
@@ -105,12 +110,15 @@ export default function CertificateRequestContent({ certificate, isBusy, getFres
     );
 
     const csrPropertiesData: TableDataRow[] = useMemo(() => {
+        const shown = (value: unknown) => isX509Request || (value !== undefined && value !== null);
         return certificate?.certificateRequest
             ? ([
-                  {
-                      id: 'commonName',
-                      columns: ['Common Name', certificate?.certificateRequest?.commonName ?? ''],
-                  },
+                  shown(certificate.certificateRequest.commonName)
+                      ? {
+                            id: 'commonName',
+                            columns: ['Common Name', certificate?.certificateRequest?.commonName ?? ''],
+                        }
+                      : null,
                   {
                       id: 'certificateType',
                       columns: [
@@ -137,27 +145,29 @@ export default function CertificateRequestContent({ certificate, isBusy, getFres
                           ),
                       ],
                   },
-                  {
-                      id: 'publicKeyAlgorithm',
-                      columns: ['Public Key Algorithm', certificate?.certificateRequest?.publicKeyAlgorithm ?? ''],
-                  },
+                  shown(certificate.certificateRequest.publicKeyAlgorithm)
+                      ? {
+                            id: 'publicKeyAlgorithm',
+                            columns: ['Public Key Algorithm', certificate?.certificateRequest?.publicKeyAlgorithm ?? ''],
+                        }
+                      : null,
                   {
                       id: 'signatureAlgorithm',
                       columns: ['Signature Algorithm', certificate?.certificateRequest?.signatureAlgorithm ?? ''],
                   },
-                  certificate.hybridCertificate
+                  isX509Request && certificate.hybridCertificate
                       ? {
                             id: 'altSignatureAlgorithm',
                             columns: ['Alternative Signature Algorithm', certificate?.certificateRequest?.altSignatureAlgorithm ?? ''],
                         }
                       : null,
-                  isX509Certificate(certificate.certificateRequest)
+                  shown(certificate.certificateRequest.subjectDn)
                       ? {
                             id: 'subjectDn',
                             columns: ['Subject DN', certificate?.certificateRequest?.subjectDn ?? ''],
                         }
                       : null,
-                  isX509Certificate(certificate.certificateRequest)
+                  isX509Request
                       ? {
                             id: 'asn1RequestStructure',
                             columns: [
@@ -172,7 +182,7 @@ export default function CertificateRequestContent({ certificate, isBusy, getFres
                       : null,
               ].filter((el) => el !== null) as NonNullable<TableDataRow>[])
             : [];
-    }, [certificate, certificateRequestFormatEnum, certificateTypeEnum]);
+    }, [certificate, certificateRequestFormatEnum, certificateTypeEnum, isX509Request]);
 
     return (
         <>

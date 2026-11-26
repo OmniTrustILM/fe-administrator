@@ -7,7 +7,7 @@ import locationsReducer, { actions as locationActions, initialState as locations
 import { testInitialState, testReducers } from 'ducks/test-reducers';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import type { LocationResponseModel } from 'types/locations';
-import { CertificateState, Resource, type ResourceAction } from 'types/openapi';
+import { type CertificateSimpleDto, CertificateState, Resource, type ResourceAction } from 'types/openapi';
 import { useRecordingStore } from 'utils/test-helpers';
 import CertificateDetail from './index';
 
@@ -21,6 +21,8 @@ type Props = Readonly<{
     locationAnswers?: Record<string, ResourceAction[]>;
     /** The locations a refresh answers with, delivered when the `refresh-locations` button is clicked. */
     refreshedLocations?: LocationResponseModel[];
+    /** Certificates that succeed the shown one. */
+    successorCertificates?: CertificateSimpleDto[];
 }>;
 
 const certificate = {
@@ -67,6 +69,7 @@ export default function CertificateDetailWithStore({
     pushableLocations,
     locationAnswers = NO_ANSWERS,
     refreshedLocations,
+    successorCertificates,
 }: Props) {
     const preloadedState = useMemo(
         () => ({
@@ -76,6 +79,7 @@ export default function CertificateDetailWithStore({
                 ...testInitialState.certificates,
                 certificateDetail: certificate,
                 certificateLocations,
+                ...(successorCertificates && { certificateRelations: { predecessorCertificates: [], successorCertificates } }),
             },
             locations: { ...locationsInitialState, locations: pushableLocations ?? [] },
             resource: {
@@ -95,7 +99,7 @@ export default function CertificateDetailWithStore({
                 },
             },
         }),
-        [allowedListings, allowedActions, certificateLocations, pushableLocations, locationAnswers],
+        [allowedListings, allowedActions, certificateLocations, pushableLocations, locationAnswers, successorCertificates],
     );
     const { store, dispatched } = useRecordingStore(preloadedState as never, recorded, reducer);
 

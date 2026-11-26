@@ -69,6 +69,8 @@ export type ExportDialogAnswers = Readonly<{
     exportAttributeListings?: SchemaAnswer[];
     /** Leaves the download or the export in flight when absent. */
     exportAnswer?: ExportAnswer;
+    /** Base64 content every plain certificate download is answered with; a download stays in flight when absent. */
+    certificateDownloadContent?: string;
     onAction?: (action: UnknownAction) => void;
 }>;
 
@@ -79,7 +81,7 @@ export type ExportDialogAnswers = Readonly<{
  * since a store built in the test body does not cross the Playwright CT boundary.
  */
 export function exportDialogTestStore(
-    { exportAttributeDescriptors = [], exportAttributeListings, exportAnswer, onAction }: ExportDialogAnswers,
+    { exportAttributeDescriptors = [], exportAttributeListings, exportAnswer, certificateDownloadContent, onAction }: ExportDialogAnswers,
     preloadedState: Partial<ExportDialogState> = {},
 ) {
     let listingsAnswered = 0;
@@ -100,6 +102,13 @@ export function exportDialogTestStore(
         } else if (certificateActions.downloadKeystore.match(action)) {
             answerExport(api, exportAnswer, certificateActions.downloadKeystoreSuccess(), (error) =>
                 certificateActions.downloadKeystoreFailure({ error }),
+            );
+        } else if (certificateActions.downloadCertificate.match(action) && certificateDownloadContent !== undefined) {
+            const { certificateFormat: format, encoding } = action.payload;
+            api.dispatch(
+                certificateActions.downloadCertificateSuccess({
+                    certificateDownloadContent: { content: certificateDownloadContent, format, encoding },
+                }),
             );
         } else if (keyActions.exportKey.match(action)) {
             answerExport(api, exportAnswer, keyActions.exportKeySuccess(), keyExportFailure);

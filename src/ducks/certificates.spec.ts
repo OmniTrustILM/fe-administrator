@@ -107,6 +107,21 @@ describe('certificates slice', () => {
         expect(next.isFetchingDetail).toBe(false);
     });
 
+    test('getCertificateDetailSuccess updates the display name of the matching inventory row', () => {
+        const state = {
+            ...initialState,
+            certificates: [
+                { uuid: 'cert-1', displayName: 'old name', commonName: 'app.example' },
+                { uuid: 'cert-2', displayName: 'untouched', commonName: 'other.example' },
+            ] as any,
+        };
+        const cert = { uuid: 'cert-1', displayName: 'new name', commonName: 'app.example' } as any;
+
+        const next = reducer(state, actions.getCertificateDetailSuccess({ certificate: cert }));
+
+        expect(next.certificates.map((row) => row.displayName)).toEqual(['new name', 'untouched']);
+    });
+
     test('getCertificateRelations / success / failure update relations flags and data', () => {
         let next = reducer(initialState, actions.getCertificateRelations({ uuid: 'cert-1' }));
         expect(next.isFetchingRelations).toBe(true);
