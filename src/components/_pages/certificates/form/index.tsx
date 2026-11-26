@@ -22,7 +22,8 @@ import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { type AttributeDescriptorModel, isDataAttributeModel } from 'types/attributes';
 import { splitAttributeValidationErrors } from 'utils/raProfileValidation';
 import type { CertificateDetailResponseModel } from '../../../../types/certificate';
-import { CertificateRequestFormat, CertificateType, PlatformEnum, Resource } from '../../../../types/openapi';
+import { CertificateType, PlatformEnum, Resource } from '../../../../types/openapi';
+import { issueRequestFormatFor } from 'utils/certificate';
 import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { validateRegistrationChallenge } from 'utils/validators';
@@ -543,7 +544,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
             const customAttrs = collectFormAttributes('customCertificate', resourceCustomAttributes, combinedValues);
 
             const payload: Parameters<typeof certificateActions.issueCertificate>[0]['signRequest'] = {
-                format: CertificateRequestFormat.Pkcs10,
+                format: issueRequestFormatFor(formValues.certificateType),
                 certificateType: formValues.certificateType,
                 request: fileContent,
                 attributes: issuanceAttributes,

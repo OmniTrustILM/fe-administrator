@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from 'vitest';
 import {
     CertificateEventHistoryDtoStatusEnum,
     CertificateOperation,
+    CertificateRequestFormat,
     CertificateState,
     CertificateSubjectType,
     CertificateType,
@@ -16,6 +17,7 @@ import {
     getCertificateStatusColor,
     downloadFile,
     isX509Certificate,
+    issueRequestFormatFor,
     supportsOperation,
 } from './certificate';
 
@@ -285,5 +287,18 @@ describe('supportsOperation', () => {
         ['no certificate', undefined],
     ])('restricts nothing for %s', (_name, certificate) => {
         expect(supportsOperation(certificate, CertificateOperation.Revoke)).toBe(true);
+    });
+});
+
+describe('issueRequestFormatFor', () => {
+    test.each([
+        ['X.509', CertificateType.X509],
+        ['a request that names no type', undefined],
+    ])('names PKCS#10 for %s', (_name, certificateType) => {
+        expect(issueRequestFormatFor(certificateType)).toBe(CertificateRequestFormat.Pkcs10);
+    });
+
+    test('names no format for another type, leaving the default of that type to Core', () => {
+        expect(issueRequestFormatFor(CertificateType.Ssh)).toBeUndefined();
     });
 });

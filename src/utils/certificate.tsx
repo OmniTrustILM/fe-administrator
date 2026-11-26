@@ -6,6 +6,7 @@ import type { CertificateDetailResponseModel } from 'types/certificate';
 import {
     CertificateEventHistoryDtoStatusEnum,
     type CertificateOperation,
+    CertificateRequestFormat,
     CertificateState,
     CertificateSubjectType,
     CertificateType,
@@ -29,6 +30,14 @@ export function supportsOperation(
     operation: CertificateOperation,
 ): boolean {
     return certificate?.supportedOperations?.includes(operation) ?? true;
+}
+
+/**
+ * The request format to send for a certificate of the type. The form builds a PKCS#10 request, which is the format of
+ * X.509; for another type no format is named, so that Core applies the default of that type.
+ */
+export function issueRequestFormatFor(certificateType: CertificateType | undefined): CertificateRequestFormat | undefined {
+    return !certificateType || certificateType === CertificateType.X509 ? CertificateRequestFormat.Pkcs10 : undefined;
 }
 
 export const emptyCertificate: CertificateDetailResponseModel = {
