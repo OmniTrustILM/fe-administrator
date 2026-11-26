@@ -26,6 +26,8 @@ type Props = Readonly<{
     scenario?: string;
     /** Opens a profile that has no authority, under the route's `unknown` segment. */
     withoutAuthority?: boolean;
+    /** The route's authority segment, when it should differ from the loaded profile's authority. */
+    authoritySegment?: string;
 }>;
 
 const raProfile = {
@@ -53,6 +55,7 @@ export default function RaProfileDetailWithStore({
     objectAccess,
     scenario,
     withoutAuthority = false,
+    authoritySegment,
 }: Props) {
     const loaded = withoutAuthority ? { ...raProfile, authorityInstanceUuid: undefined, authorityInstanceName: undefined } : raProfile;
     const [store] = useState(() => {
@@ -79,7 +82,9 @@ export default function RaProfileDetailWithStore({
 
     return (
         <Provider store={store}>
-            <MemoryRouter initialEntries={[`/raprofiles/detail/${loaded.authorityInstanceUuid ?? 'unknown'}/${loaded.uuid}`]}>
+            <MemoryRouter
+                initialEntries={[`/raprofiles/detail/${authoritySegment ?? loaded.authorityInstanceUuid ?? 'unknown'}/${loaded.uuid}`]}
+            >
                 <Routes>
                     <Route path="/raprofiles/detail/:authorityId/:id" element={<RaProfileDetail />} />
                 </Routes>
