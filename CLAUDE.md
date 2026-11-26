@@ -74,6 +74,35 @@ Vite is configured with path aliases — always use these instead of relative pa
 - **Unit tests (Vitest):** For utilities (`src/utils/**/*.spec.ts`) and Redux slices/epics (`src/ducks/**/*.spec.ts`). Environment: happy-dom.
 - **Component tests (Playwright CT):** For React components (`src/**/*.spec.tsx`). Multi-browser (Chromium, Firefox, WebKit). Test server runs on port 3100.
 
+**Writing component tests:**
+
+- A Redux store built in the Node test body does not reach the browser, so its preloaded state never
+  applies. Preload through a `*WithStore.tsx` component that creates the store once with
+  `useState(() => createMockStore(preloadedState))` and mount that wrapper; a store built on every
+  render drops whatever state the test has dispatched into it. CT runs no epics, so state that a fetch would normally fill
+  never changes on its own. Most reducers in `ducks/test-reducers.ts` are stubs that handle only the
+  actions a component test dispatches. To run a slice's real reducer, build one with
+  `overlaySliceReducer` from `utils/test-helpers.tsx` and pass it to `useRecordingStore` inside the
+  wrapper, which also records the dispatched actions. It rebuilds the store whenever an argument
+  changes identity, so build the reducer at module scope and pass a constant or memoised preload. It
+  merges that preload only at the top level, so each preloaded slice spreads `testInitialState.<slice>`.
+- Import a component from its own module, not through a barrel's named re-export. CT registers
+  components by identifier, and a name reachable both ways fails the whole run with
+  `Identifier 'X' has already been declared`.
+- `npm run typecheck` excludes `*.spec.*` files, so a type error in a spec passes it. Check edited
+  specs with `npx tsc --noEmit -p tsconfig.json --ignoreDeprecations 6.0` and filter the output to
+  the files you changed: the specs carry existing errors, so a clean run is not the bar.
+- Assert the property the requirement names, not a correlate of it: a contrast requirement asserts
+  the computed ratio against its threshold, not that two colours differ. After writing a regression
+  test, revert only the fix and confirm the test fails.
+- Sonar rule S2699 does not count `expect.poll` as an assertion, and it only sees assertions written
+  directly in the test body. When a test waits with `expect.poll`, follow it with a plain `expect` on
+  the settled value.
+- New tests use neither a forced click nor a fixed wait; Sonar flags both. To prove an
+  `aria-disabled` control does nothing, click it with `dispatchEvent`. For a natively `disabled`
+  element assert `toBeDisabled()` instead: a dispatched click never reaches its handler,
+  so that test could not fail. Advance a fake clock rather than waiting.
+
 ### Styling
 
 Tailwind CSS 4 with Preline UI components. The main CSS entry is `src/tailwindcss.css`.
@@ -238,6 +267,132 @@ duplicates, so a count axis carries no `tickFormatter`.
 ### Code Style
 
 Biome enforces linting and formatting: 4-space indent, 140-char line width, single quotes, trailing commas everywhere, semicolons required. Suppress rules only with a justified `biome-ignore` comment.
+
+- Delete unused code, imports and variables outright. Never rename them with a `_` prefix to silence
+  `noUnusedVariables`, and never apply Biome's `--unsafe` fix for that rule, which does exactly that.
+  Parameters a signature requires, such as a reducer's `_action`, stay.
+- Removing `any` or narrowing a type does not make a runtime guard redundant. Keep `?.`, `??` and
+  null checks on values that come from the store, the API or the router: types are erased at runtime,
+  and selectors are called with `undefined` state in tests.
+- When an object or array prop feeds an effect that fetches or dispatches, never depend on its
+  identity. A caller passing it as a literal gives it a new identity every render, which refires the
+  effect and loops until React aborts with error #185. Depend on primitive fields or a serialised key
+  instead, as `PagedList` keys its fetch on a JSON snapshot of the request, and memoise such config
+  at the call site.
+- Comments explain why, never what. Add one only for something the code cannot say itself: a
+  non-obvious algorithm, a workaround, or an invariant a reader would otherwise break. No issue
+  references, `TODO`s, changelog narration or commented-out code.
+
+### SonarCloud
+
+SonarCloud analyses every pull request (see [Tests and Sonar](#tests-and-sonar)). A change must not
+add new issues to the analysis.
+
+- Fix the code rather than marking an issue. Where the flagged construct is deliberate, keep it and
+  suppress on the flagged line with `// NOSONAR(<rule>): <reason>`, as `components/ProgressBar` does.
+- Do not apply a rule's suggested rewrite without checking it is equivalent here. Known traps:
+  - S7772 (`node:buffer`): `buffer` is the npm browser polyfill; `node:buffer` breaks the Vite build.
+  - S7741 (compare with `undefined` instead of `typeof`): `window`, `document` and other environment
+    globals must keep `typeof`, because a direct reference throws where the global is not defined.
+  - S6819 (ARIA role where a native element exists): an element already inside a real `<button>`
+    cannot become a `<button>` without nesting interactive content. Biome's `useSemanticElements`
+    flags `role="button"` too, so those sites also carry a `biome-ignore` for it.
+- The Sonar rules that shape tests are listed under [Testing Strategy](#testing-strategy).
+- Trust the SonarCloud results over a local SonarQube scan: the local quality profile omits rules
+  SonarCloud enforces.
+
+## Clean Code and Clean Architecture
+
+Follow the rules of Robert C. Martin's *Clean Code* and *Clean Architecture* in every change.
+
+**General**
+
+- Follow standard conventions.
+- Keep it simple. Reduce complexity as much as possible.
+- Boy Scout rule: leave the code cleaner than you found it.
+- Always find the root cause of a problem.
+
+**Design**
+
+- Keep configurable data at high levels.
+- Prefer polymorphism to if/else or switch/case.
+- Prevent over-configurability.
+- Use dependency injection.
+- Law of Demeter: a module knows only its direct dependencies.
+
+**Understandability**
+
+- Be consistent: do similar things the same way.
+- Use explanatory variables.
+- Encapsulate boundary conditions in one place.
+- Prefer dedicated value objects to primitive types.
+- Avoid logical dependency: a method must not rely on something else in the same class to work correctly.
+- Avoid negative conditionals.
+
+**Names**
+
+- Descriptive and unambiguous.
+- Meaningful distinctions.
+- Pronounceable and searchable.
+- Named constants instead of magic numbers.
+- No encodings, prefixes or type information.
+
+**Functions**
+
+- Small.
+- Do one thing.
+- Descriptive names.
+- Few arguments.
+- No side effects.
+- No flag arguments: split into separate functions instead.
+
+**Comments**
+
+- Explain yourself in code, not in comments.
+- No redundant or obvious comments, no closing-brace comments, no commented-out code.
+- Use a comment only to explain intent, clarify, or warn of consequences.
+
+**Source structure**
+
+- Separate concepts vertically; keep related code vertically dense.
+- Declare variables close to their use.
+- Keep dependent and similar functions close; order functions top-down.
+- Keep lines short; no horizontal alignment; don't break indentation.
+
+**Objects and data structures**
+
+- Hide internal structure.
+- Prefer data structures; avoid hybrids that are half object, half data.
+- Objects are small, do one thing, and have few instance variables.
+- A base class knows nothing about its derivatives.
+- Prefer many functions to passing code into a function to select behaviour.
+- Prefer non-static methods to static methods.
+
+**Tests**
+
+- Readable, fast, independent, repeatable.
+
+**Code smells to avoid**
+
+- Rigidity, fragility, immobility, needless complexity, needless repetition, opacity.
+
+**SOLID**
+
+- Single Responsibility: a module has one reason to change.
+- Open-Closed: open for extension, closed for modification.
+- Liskov Substitution: subtypes are substitutable for their base types.
+- Interface Segregation: don't depend on things you don't use.
+- Dependency Inversion: depend on abstractions, not concretions.
+
+**Architecture**
+
+- Dependency Rule: source code dependencies point only inward, toward higher-level policy.
+- Business rules do not depend on the UI, the framework, the database or external agencies.
+- Keep details (frameworks, I/O, delivery) at the edges, behind boundaries.
+- Components: release together what is reused together (REP); group what changes together (CCP);
+  don't force users to depend on what they don't need (CRP).
+- No cycles in the component dependency graph (ADP); depend in the direction of stability (SDP);
+  stable components are abstract (SAP).
 
 ## Git & Pull Requests
 
