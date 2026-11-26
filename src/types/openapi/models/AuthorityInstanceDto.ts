@@ -10,7 +10,7 @@
  * Do not edit the class manually.
  */
 
-import type { ConnectorInterfaceDto, NameAndUuidDto, ResponseAttribute } from './';
+import type { ConnectorInterfaceDto, MetadataResponseDto, NameAndUuidDto, ResponseAttribute } from './';
 
 /**
  * @export
@@ -77,4 +77,10 @@ export interface AuthorityInstanceDto {
      * @memberof AuthorityInstanceDto
      */
     kind?: string | null;
+    /**
+     * Metadata the connector returned when the authority was last saved; v3 authorities only
+     * @type {Array<MetadataResponseDto>}
+     * @memberof AuthorityInstanceDto
+     */
+    metadata?: Array<MetadataResponseDto>;
 }
