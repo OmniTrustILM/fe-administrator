@@ -114,8 +114,10 @@ export function certificateFileBaseName(certificate?: { displayName?: string; se
 /** The entry name for a file in a zip: the base name, numbered from the second file that has the same one, so that no entry replaces another. */
 function uniqueZipEntryName(baseName: string, fileType: string, usedNames: Set<string>): string {
     let name = `${baseName}.${fileType}`;
-    for (let copy = 2; usedNames.has(name); copy++) {
+    let copy = 2;
+    while (usedNames.has(name)) {
         name = `${baseName} (${copy}).${fileType}`;
+        copy++;
     }
     usedNames.add(name);
     return name;
