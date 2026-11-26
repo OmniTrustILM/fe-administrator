@@ -57,7 +57,13 @@ vi.mock('components/DetailPageSkeleton', () => ({
 }));
 
 vi.mock('components/Attributes/AttributeViewer', () => ({
-    default: () => <div data-testid="attributes">attributes</div>,
+    ATTRIBUTE_VIEWER_TYPE: { ATTRIBUTE: 0, METADATA: 1 },
+    default: ({ viewerType, metadata }: any) =>
+        viewerType === 1 ? (
+            <div data-testid="metadata-viewer">{metadata?.map((item: any) => item.connectorName).join(',')}</div>
+        ) : (
+            <div data-testid="attributes">attributes</div>
+        ),
 }));
 
 vi.mock('components/Attributes/CustomAttributeWidget', () => ({
@@ -145,5 +151,54 @@ describe('AuthorityDetail - connector interface row', () => {
         const kindRow = container.querySelector('[data-testid="row-kind"]');
         expect(kindRow?.textContent).toContain('Kind');
         expect(kindRow?.textContent).toContain('ejbca');
+    });
+});
+
+describe('AuthorityDetail - metadata widget', () => {
+    let container: HTMLDivElement;
+    let root: Root;
+
+    beforeEach(() => {
+        container = document.createElement('div');
+        document.body.appendChild(container);
+        root = createRoot(container);
+        useDispatchMock.mockReturnValue(vi.fn());
+    });
+
+    afterEach(() => {
+        act(() => {
+            root.unmount();
+        });
+        container.remove();
+        vi.clearAllMocks();
+    });
+
+    async function renderWith(authority: any) {
+        const state = buildState(authority);
+        useSelectorMock.mockImplementation((selector: any) => selector(state));
+        await act(async () => {
+            root.render(<AuthorityDetail />);
+        });
+    }
+
+    it('shows the metadata the connector returned', async () => {
+        await renderWith({
+            ...baseAuthority,
+            metadata: [{ connectorUuid: 'conn-1', connectorName: 'ACME Connector', items: [] }],
+        });
+
+        const widget = container.querySelector('[data-testid="widget-Metadata"]');
+        expect(widget).not.toBeNull();
+        expect(widget?.querySelector('[data-testid="metadata-viewer"]')?.textContent).toBe('ACME Connector');
+    });
+
+    it.each([
+        ['missing', undefined],
+        ['empty', []],
+    ])('omits the Metadata widget when metadata is %s', async (_label, metadata) => {
+        await renderWith({ ...baseAuthority, metadata });
+
+        expect(container.querySelector('[data-testid="widget-Metadata"]')).toBeNull();
+        expect(container.querySelector('[data-testid="metadata-viewer"]')).toBeNull();
     });
 });
