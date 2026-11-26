@@ -138,7 +138,6 @@ function recordPolicyFormValuesOf(policy: SigningRecordPolicyDto | undefined) {
     } satisfies Partial<SigningProfileFormValues>;
 }
 
-/** The certificate purpose of a saved raw workflow. A profile saved without one requires no purpose. */
 function rawSigningPurposeValuesOf(workflow: RawSigningWorkflowDto) {
     return {
         requireNonRepudiation: workflow.requireNonRepudiation ?? false,
