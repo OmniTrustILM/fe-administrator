@@ -1316,12 +1316,14 @@ const listSupportedCertificateTypes: AppEpic = (action$, state, deps) => {
                     ),
 
                     // Not reported to the user: without the types the form sends none and Core issues X.509, as before.
+                    // An expired session still leads to the login.
                     catchError((err) =>
                         of(
                             slice.actions.listSupportedCertificateTypesFailure({
                                 raProfileUuid: action.payload.raProfileUuid,
                                 error: extractError(err, 'Failed to list supported certificate types'),
                             }),
+                            ...expiredSession(err, 'Failed to list supported certificate types'),
                         ),
                     ),
                 ),

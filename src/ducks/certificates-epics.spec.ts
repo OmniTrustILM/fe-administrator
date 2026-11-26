@@ -1005,6 +1005,15 @@ describe('certificates epics', () => {
             expect(emitted[0].type).toBe(certificatesActions.listSupportedCertificateTypesFailure.type);
             expect((emitted[0] as any).payload.raProfileUuid).toBe('ra-1');
         });
+
+        test('still reports an expired session, which leads to the login', async () => {
+            const { emitted } = await runListSupportedCertificateTypesEpic(() => throwError(() => coreError(401, {})));
+
+            expect(emitted.map((action) => action.type)).toEqual([
+                certificatesActions.listSupportedCertificateTypesFailure.type,
+                appRedirectActions.fetchError.type,
+            ]);
+        });
     });
 
     describe('getCsrAttributes', () => {

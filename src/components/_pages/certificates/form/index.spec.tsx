@@ -938,6 +938,35 @@ test.describe('CertificateForm — certificate type', () => {
         await expect(page.getByTestId('certificateType-trigger')).toContainText('SSH');
     });
 
+    test('keeps the chosen type when the types of the RA profile are loaded again and still include it', async ({ mount, page }) => {
+        const types = [CertificateType.Ssh, CertificateType.X509];
+        await mount(<CertificateFormTestWrapper preloadedState={withTypes(types)} reloadedCertificateTypes={[...types]} />);
+        await selectRaProfile(page);
+        await page.getByTestId('certificateType-trigger').click();
+        await page.getByRole('option', { name: 'SSH' }).click();
+
+        await page.getByTestId('simulate-types-reload').click();
+
+        await expect(page.getByTestId('certificateType-trigger')).toContainText('SSH');
+    });
+
+    test('falls back to the default when the reloaded types no longer include the chosen one', async ({ mount, page }) => {
+        await mount(
+            <CertificateFormTestWrapper
+                preloadedState={withTypes([CertificateType.Ssh, CertificateType.X509])}
+                reloadedCertificateTypes={[CertificateType.X509]}
+            />,
+        );
+        await selectRaProfile(page);
+        await page.getByTestId('certificateType-trigger').click();
+        await page.getByRole('option', { name: 'SSH' }).click();
+
+        await page.getByTestId('simulate-types-reload').click();
+
+        await expect(page.getByTestId('certificateType-trigger')).toContainText('X.509');
+        await expect(page.getByTestId('certificateType-trigger')).toBeDisabled();
+    });
+
     test('shows no type field while the types of the RA profile are not known', async ({ mount, page }) => {
         await mount(<CertificateFormTestWrapper preloadedState={withTypes()} />);
 

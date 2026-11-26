@@ -234,7 +234,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         },
     });
 
-    const { control, handleSubmit, setValue, setError, clearErrors, formState } = methods;
+    const { control, handleSubmit, getValues, setValue, setError, clearErrors, formState } = methods;
 
     // Attribute-level backend errors (`Extension value of attribute <label>: ...`) are attributed by
     // label to the request-attribute field they belong to; only what cannot be matched stays in the
@@ -328,9 +328,13 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     );
 
     // The only type an RA profile issues is the type requested; among several, X.509 is preselected when it is one of them.
+    // A choice the profile still supports is kept when its types are loaded again.
     useEffect(() => {
+        const chosen = getValues('certificateType');
         if (!raProfileCertificateTypes) {
             setValue('certificateType', undefined);
+        } else if (chosen && raProfileCertificateTypes.includes(chosen)) {
+            return;
         } else if (raProfileCertificateTypes.length === 1) {
             setValue('certificateType', raProfileCertificateTypes[0]);
         } else if (raProfileCertificateTypes.includes(CertificateType.X509)) {
@@ -338,7 +342,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         } else {
             setValue('certificateType', undefined);
         }
-    }, [raProfileCertificateTypes, setValue]);
+    }, [raProfileCertificateTypes, selectedRaProfileUuid, getValues, setValue]);
 
     useEffect(() => {
         if (!selectedRaProfileUuid) {
@@ -675,6 +679,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                 const uuid = (selected ?? '') as string;
                                                 onChange(uuid);
                                                 onRaProfileChange(uuid);
+                                                setValue('certificateType', undefined);
                                                 setValue('tokenProfileUuid', undefined);
                                                 setValue('keyUuid', undefined);
                                                 setValue('includeAltKey', false);
