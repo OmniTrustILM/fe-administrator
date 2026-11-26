@@ -1,5 +1,5 @@
 import type React from 'react';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import { AddNewAttributeList, type AddNewAttributeType } from 'types/user-interface';
@@ -13,7 +13,7 @@ import {
 import { AttributeContentType } from 'types/openapi';
 import { findAddNewAttribute } from '../../../../utils/attributes/secretPicker';
 import { actions as userInterfaceActions, selectors as userInterfaceSelectors } from '../../../../ducks/user-interface';
-import { type AttributeSelectOption, getAttributeContent } from '../../../../utils/attributes/attributes';
+import { type AttributeSelectOption, blankFile, getAttributeContent } from '../../../../utils/attributes/attributes';
 import { AttributeInfo } from './AttributeInfo';
 import { AttributeFieldSelect } from './AttributeFieldSelect';
 import { AttributeFieldFile } from './AttributeFieldFile';
@@ -37,7 +37,7 @@ export function Attribute({
     userInteractedRef: userInteractionRef,
     deleteButton,
 }: Readonly<Props>): React.ReactNode {
-    const { setValue } = useFormContext();
+    const { setValue, setFocus } = useFormContext();
     const [addNewAttributeValue, setAddNewAttributeValue] = useState<AddNewAttributeType | undefined>();
     const [isAddingNew, setIsAddingNew] = useState(false);
     const attributeCallbackValue = useSelector(userInterfaceSelectors.selectAttributeCallbackValue);
@@ -94,27 +94,45 @@ export function Attribute({
         [setValue, name],
     );
 
-    const onFileChanged = useCallback(
-        (e: React.ChangeEvent<HTMLInputElement>) => {
-            if (!e.target.files || e.target.files.length === 0) return;
-            const fileName = e.target.files[0].name;
+    // Only the latest read writes the form. A read that Clear or a newer pick overtook is dropped.
+    const activeReaderRef = useRef<FileReader>(undefined);
+
+    const readFile = useCallback(
+        (file: File) => {
             const reader = new FileReader();
-            reader.readAsDataURL(e.target.files[0]);
-            reader.onload = (data) => onFileLoaded(data, fileName);
+            activeReaderRef.current = reader;
+            reader.onload = (data) => {
+                if (activeReaderRef.current === reader) onFileLoaded(data, file.name);
+            };
+            reader.readAsDataURL(file);
         },
         [onFileLoaded],
     );
+
+    const onFileChanged = useCallback(
+        (e: React.ChangeEvent<HTMLInputElement>) => {
+            if (!e.target.files || e.target.files.length === 0) return;
+            const file = e.target.files[0];
+            // The browser fires a change only when the selection differs. An empty input lets the same file be picked again after Clear.
+            e.target.value = '';
+            readFile(file);
+        },
+        [readFile],
+    );
+
+    const onFileCleared = useCallback(() => {
+        activeReaderRef.current = undefined;
+        setValue(name, blankFile, { shouldValidate: true, shouldDirty: true });
+        setFocus(`${name}.content`);
+    }, [setValue, setFocus, name]);
 
     const onFileDrop = useCallback(
         (e: React.DragEvent<HTMLInputElement>) => {
             e.preventDefault();
             if (!e.dataTransfer?.files?.length) return;
-            const fileName = e.dataTransfer.files[0].name;
-            const reader = new FileReader();
-            reader.readAsDataURL(e.dataTransfer.files[0]);
-            reader.onload = (data) => onFileLoaded(data, fileName);
+            readFile(e.dataTransfer.files[0]);
         },
-        [onFileLoaded],
+        [readFile],
     );
 
     const onFileDragOver = useCallback((e: React.DragEvent<HTMLInputElement>) => {
@@ -195,6 +213,7 @@ export function Attribute({
                     onFileDrop={onFileDrop}
                     onFileDragOver={onFileDragOver}
                     onFileChanged={onFileChanged}
+                    onFileCleared={onFileCleared}
                 />
             );
         }
