@@ -4,7 +4,7 @@ import { selectors as customAttributesSelectors } from 'ducks/customAttributes';
 import { selectors as signingProfileSelectors } from 'ducks/signing-profiles';
 import { Resource, type SigningProfileRequestDto, SigningWorkflowType, type WorkflowInterface } from 'types/openapi';
 import { collectFormAttributes } from 'utils/attributes/attributes';
-import { isContentSigningWorkflow, isRawSigningWorkflow } from 'utils/type-guards';
+import { isContentSigningWorkflow } from 'utils/type-guards';
 import { contentSigningAttributesEditorId, contentSigningWorkflowRequest } from './ContentSigningWorkflowFields';
 import {
     customAttributesEditorId,
@@ -39,9 +39,7 @@ export function useSigningProfileRequest(
                     savedWorkflow && isContentSigningWorkflow(savedWorkflow) ? savedWorkflow : undefined,
                 );
             }
-            if (values.workflowType === SigningWorkflowType.RawSigning && savedWorkflow && isRawSigningWorkflow(savedWorkflow)) {
-                return rawSigningWorkflowRequest(savedWorkflow);
-            }
+            if (values.workflowType === SigningWorkflowType.RawSigning) return rawSigningWorkflowRequest(values);
             return timestampingWorkflowRequest(
                 values,
                 collectFormAttributes(timestampingAttributesEditorId, timestampingDescriptors, values),

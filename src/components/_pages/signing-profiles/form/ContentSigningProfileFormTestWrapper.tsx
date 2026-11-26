@@ -59,6 +59,8 @@ export interface CoreAnswers {
     pendingProfileUuid?: string;
     /** Profile an earlier page left in the store. */
     cachedProfile?: SigningProfileDto;
+    /** Reason Core gives for refusing every profile create and update; both go unanswered without it. */
+    saveRefusal?: string;
 }
 
 /** Requests the form sends, in order, as the action type without the slice prefix and its payload. */
@@ -109,6 +111,12 @@ function answer(core: CoreAnswers, action: UnknownAction): UnknownAction | undef
         if (core.timestampSourcesPending) return undefined;
         const { candidates, ineligible = [], unreadable } = core.timestampSources ?? { candidates: [], unreadable: [] };
         return actions.listTimestampSourceCandidatesSuccess({ candidates: candidates as SigningProfileDto[], ineligible, unreadable });
+    }
+    if (actions.createSigningProfile.match(action) && core.saveRefusal) {
+        return actions.createSigningProfileFailure({ error: core.saveRefusal });
+    }
+    if (actions.updateSigningProfile.match(action) && core.saveRefusal) {
+        return actions.updateSigningProfileFailure({ error: core.saveRefusal });
     }
     if (actions.getSigningProfile.match(action) && core.editedProfile) {
         return actions.getSigningProfileSuccess({ signingProfile: core.editedProfile });

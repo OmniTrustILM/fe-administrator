@@ -19,6 +19,7 @@ import { isContentSigningWorkflow, isStaticKeyManagedSigning, isTimestampingWork
 
 import ContentSigningWorkflowFields, { embedsTimestamp } from './ContentSigningWorkflowFields';
 import GeneralFields, { workflowTypeLabels } from './GeneralFields';
+import RawSigningWorkflowFields from './RawSigningWorkflowFields';
 import RecordPolicyFields from './RecordPolicyFields';
 import SigningSchemeFields from './SigningSchemeFields';
 import {
@@ -123,7 +124,7 @@ export default function SigningProfileForm() {
         [SigningWorkflowType.ContentSigning]: (
             <ContentSigningWorkflowFields signingProfileUuid={id} savedWorkflow={savedContentSigningWorkflow} />
         ),
-        [SigningWorkflowType.RawSigning]: <p className="text-sm text-content-muted">The raw-signing workflow is kept as saved.</p>,
+        [SigningWorkflowType.RawSigning]: <RawSigningWorkflowFields />,
     }[workflowType];
 
     const tabs = [

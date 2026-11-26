@@ -15,17 +15,13 @@ export const workflowTypeLabels: Record<SigningWorkflowType, string> = {
 
 const workflowTypeOption = (workflowType: SigningWorkflowType) => ({ value: workflowType, label: workflowTypeLabels[workflowType] });
 
-const creatableWorkflowTypes = [SigningWorkflowType.Timestamping, SigningWorkflowType.ContentSigning];
+const workflowTypeOptions = [SigningWorkflowType.Timestamping, SigningWorkflowType.ContentSigning, SigningWorkflowType.RawSigning].map(
+    workflowTypeOption,
+);
 
 export default function GeneralFields(): ReactElement {
-    const { control, setValue, formState } = useFormContext<SigningProfileFormValues>();
+    const { control, setValue } = useFormContext<SigningProfileFormValues>();
     const workflowType = useWatch({ control, name: 'workflowType' });
-    const savedWorkflowType = formState.defaultValues?.workflowType;
-    const workflowTypeOptions = (
-        savedWorkflowType && !creatableWorkflowTypes.includes(savedWorkflowType)
-            ? [...creatableWorkflowTypes, savedWorkflowType]
-            : creatableWorkflowTypes
-    ).map(workflowTypeOption);
 
     const switchWorkflow = (next: SigningWorkflowType) => {
         setValue('workflowType', next, { shouldDirty: true });
