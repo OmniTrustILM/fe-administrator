@@ -66,7 +66,11 @@ vi.mock('components/Attributes/AttributeViewer', () => ({
     default: () => <div data-testid="attributes">attributes</div>,
     ATTRIBUTE_VIEWER_TYPE: { METADATA: 'metadata' },
 }));
-vi.mock('components/Attributes/CustomAttributeWidget', () => ({ default: () => <div data-testid="custom-attributes" /> }));
+vi.mock('components/Attributes/CustomAttributeWidget', () => ({
+    default: ({ requires }: { requires?: { available: boolean } }) => (
+        <div data-testid="custom-attributes" data-editable={String(requires?.available ?? true)} />
+    ),
+}));
 vi.mock('components/EnumDescription', () => ({ EnumColumnDescription: () => <span /> }));
 vi.mock('components/ConnectorLink', () => ({ default: ({ name }: any) => <span>{name}</span> }));
 vi.mock('components/_pages/notifications/events-settings/ObjectEventHistoryWidget', () => ({ default: () => <div /> }));
@@ -331,6 +335,16 @@ describe('DiscoveryDetail', () => {
             );
             expect(deleteButton?.disabled).toBe(true);
             expect(actionAvailabilityFake.requests).toContainEqual({ resource: Resource.Discoveries, objects: undefined });
+        });
+
+        it('lets only a user with the update permission on discoveries edit custom attributes', async () => {
+            const editable = () => container.querySelector('[data-testid="custom-attributes"]')?.getAttribute('data-editable');
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Completed }));
+            expect(editable()).toBe('true');
+
+            actionAvailabilityFake.reset([ResourceAction.Delete]);
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Completed }));
+            expect(editable()).toBe('false');
         });
 
         it('hides a control the user lacks permission for rather than disabling it', async () => {

@@ -51,6 +51,21 @@ vi.mock('components/Layout/TabLayout', () => ({
 }));
 vi.mock('./est-profiles/form', () => ({ default: () => null }));
 
+const acmeAccount = {
+    uuid: 'acc-1',
+    accountId: 'a1',
+    enabled: true,
+    status: AccountStatus.Valid,
+    contact: [],
+    termsOfServiceAgreed: true,
+    totalOrders: 0,
+    successfulOrders: 0,
+    failedOrders: 0,
+    pendingOrders: 0,
+    validOrders: 0,
+    processingOrders: 0,
+};
+
 const commonState = { users: { users: [] }, certificateGroups: { certificateGroups: [] }, enums: { platformEnums: {} } };
 
 type PageCase = {
@@ -63,6 +78,7 @@ type PageCase = {
     object: string | undefined;
     controls: { tooltip: string; action: ResourceAction }[];
     customAttributes: boolean;
+    disabledObjectState?: Record<string, unknown>;
 };
 
 const pages: PageCase[] = [
@@ -82,6 +98,9 @@ const pages: PageCase[] = [
             { tooltip: 'Disable', action: ResourceAction.Enable },
         ],
         customAttributes: true,
+        disabledObjectState: {
+            estProfiles: { ...estProfilesInitialState, estProfile: { uuid: 'est-1', name: 'est', enabled: false, customAttributes: [] } },
+        },
     },
     {
         name: 'ACME account',
@@ -90,20 +109,7 @@ const pages: PageCase[] = [
         state: {
             acmeAccounts: {
                 ...acmeAccountsInitialState,
-                account: {
-                    uuid: 'acc-1',
-                    accountId: 'a1',
-                    enabled: true,
-                    status: AccountStatus.Valid,
-                    contact: [],
-                    termsOfServiceAgreed: true,
-                    totalOrders: 0,
-                    successfulOrders: 0,
-                    failedOrders: 0,
-                    pendingOrders: 0,
-                    validOrders: 0,
-                    processingOrders: 0,
-                },
+                account: acmeAccount,
             },
         },
         widget: 'ACME Account Details',
@@ -114,6 +120,9 @@ const pages: PageCase[] = [
             { tooltip: 'Disable', action: ResourceAction.Enable },
         ],
         customAttributes: false,
+        disabledObjectState: {
+            acmeAccounts: { ...acmeAccountsInitialState, account: { ...acmeAccount, enabled: false } },
+        },
     },
     {
         name: 'signing record',
@@ -164,10 +173,10 @@ describe('detail page actions follow the user permissions', () => {
         vi.clearAllMocks();
     });
 
-    async function render(page: PageCase, granted: ResourceAction[]) {
+    async function render(page: PageCase, granted: ResourceAction[], pageState = page.state) {
         routeParams.current = page.params;
         actionAvailabilityFake.reset(granted);
-        const state = { ...commonState, ...page.state };
+        const state = { ...commonState, ...pageState };
         useSelectorMock.mockImplementation((selector: (value: unknown) => unknown) => selector(state));
         await act(async () => root.render(page.page()));
     }
@@ -203,6 +212,17 @@ describe('detail page actions follow the user permissions', () => {
                     expect(container.querySelector('[data-testid="custom-attributes"]')?.getAttribute('data-editable')).toBe('false');
                 }
             });
+
+            const disabledObjectState = page.disabledObjectState;
+            if (disabledObjectState) {
+                it('offers Enable on a disabled object only to a user holding the enable permission', async () => {
+                    await render(page, [ResourceAction.Enable], disabledObjectState);
+                    expect(button(page, 'Enable')?.disabled).toBe(false);
+
+                    await render(page, [ResourceAction.List, ResourceAction.Detail], disabledObjectState);
+                    expect(button(page, 'Enable')?.disabled).toBe(true);
+                });
+            }
         });
     }
 });
