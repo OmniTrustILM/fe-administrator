@@ -659,6 +659,7 @@ function AttributeEditorInner({
 
             if (
                 descriptor.contentType === AttributeContentType.Secret &&
+                !descriptor.properties.list &&
                 typeof formAttributeValue === 'object' &&
                 formAttributeValue !== null
             ) {

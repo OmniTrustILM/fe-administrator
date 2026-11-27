@@ -555,6 +555,33 @@ test.describe('AttributeEditor', () => {
         await expect(page.getByLabel('PIN', { exact: true })).toHaveValue('1234');
     });
 
+    test('prefills a saved secret list selection', async ({ mount, page }) => {
+        const vaultSecret = { reference: 'vault-b', data: { secret: 'b' } };
+        const descriptors = [
+            dataDescriptor({
+                name: 'credential',
+                uuid: 'credential-uuid',
+                contentType: AttributeContentType.Secret,
+                properties: { label: 'Credential', required: false, readOnly: false, visible: true, list: true, multiSelect: false },
+                content: [{ reference: 'vault-a', data: { secret: 'a' } }, vaultSecret] as any,
+            }),
+        ];
+        const attributes = [
+            {
+                name: 'credential',
+                uuid: 'credential-uuid',
+                label: 'Credential',
+                type: AttributeType.Data,
+                contentType: AttributeContentType.Secret,
+                version: AttributeVersion.V2,
+                content: [{ contentType: AttributeContentType.Secret, ...vaultSecret }],
+            },
+        ] satisfies AttributeResponseModel[];
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} attributes={attributes} />);
+
+        await expect(page.getByTestId('select-__attributes__testEditor__.credentialSelect-trigger')).toHaveText('vault-b');
+    });
+
     test('shows an empty file field for a file descriptor with an empty content list', async ({ mount, page }) => {
         const descriptors = [
             dataDescriptor({
