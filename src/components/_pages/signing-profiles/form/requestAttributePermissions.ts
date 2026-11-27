@@ -58,9 +58,9 @@ export function splitRequestGroupOf(pane: string): string | undefined {
 const paneOf = (descriptor: AttributeDescriptorModel): string | undefined => groupOf(descriptor as BaseAttributeDto);
 
 /**
- * The descriptors regrouped so each pane holds one kind of attribute under a title. An attribute without a group moves to the pane of
- * its kind, and a request group's profile attributes move to a pane right after the group, so the group's switch covers only what it
- * allows.
+ * The descriptors regrouped so each pane holds one kind of attribute under a title, listed pane by pane. An attribute without a group
+ * moves to the pane of its kind, and a request group's profile attributes move to a pane right after the group, so the group's switch
+ * covers only what it allows.
  */
 export function withPanesByKind(
     descriptors: AttributeDescriptorModel[],
@@ -80,13 +80,11 @@ export function withPanesByKind(
         return pane ? ({ ...descriptor, properties: { ...descriptor.properties, group: pane } } as AttributeDescriptorModel) : descriptor;
     });
     const isProfileHalf = (descriptor: AttributeDescriptorModel) => splitRequestGroupOf(paneOf(descriptor) ?? '') !== undefined;
-    const profileHalves = regrouped.filter(isProfileHalf);
-    // The editor orders panes by their first attribute, so each profile half follows the last attribute of its request group.
-    const ordered = regrouped.filter((descriptor) => !isProfileHalf(descriptor));
-    const lastIndexOf = new Map(ordered.map((descriptor, index) => [paneOf(descriptor), index]));
-    return ordered.flatMap((descriptor, index) => {
-        const group = paneOf(descriptor);
-        if (group === undefined || lastIndexOf.get(group) !== index) return [descriptor];
-        return [descriptor, ...profileHalves.filter((half) => paneOf(half) === profileHalfOf(group))];
-    });
+    const panes = new Map<string | undefined, AttributeDescriptorModel[]>();
+    for (const descriptor of regrouped.filter((descriptor) => !isProfileHalf(descriptor))) {
+        panes.set(paneOf(descriptor), [...(panes.get(paneOf(descriptor)) ?? []), descriptor]);
+    }
+    const profileHalfFor = (pane: string | undefined) =>
+        pane === undefined ? [] : regrouped.filter((descriptor) => paneOf(descriptor) === profileHalfOf(pane));
+    return [...panes].flatMap(([pane, members]) => [...members, ...profileHalfFor(pane)]);
 }

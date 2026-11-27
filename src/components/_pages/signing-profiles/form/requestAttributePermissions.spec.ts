@@ -62,6 +62,18 @@ describe('withPanesByKind', () => {
         ]);
     });
 
+    it("keeps a request group's profile pane next to the group when another group interleaves with it", () => {
+        const page = descriptor('page', 'appearance');
+        const corner = descriptor('corner', 'placement');
+        const image = descriptor('image', 'appearance');
+        const requestAttributes = [page, corner, image] as unknown as BaseAttributeDto[];
+
+        const regrouped = withPanesByKind([descriptor('font', 'appearance'), page, corner, image], requestAttributes);
+
+        const paneOrder = [...new Set(panes(regrouped).map(([, group]) => group))];
+        expect(paneOrder).toEqual(['appearance', '__profile__:appearance', 'placement']);
+    });
+
     it('keeps a group that holds only profile attributes in one pane', () => {
         expect(panes(withPanesByKind([descriptor('font', 'appearance')], []))).toEqual([['font', 'appearance']]);
     });
