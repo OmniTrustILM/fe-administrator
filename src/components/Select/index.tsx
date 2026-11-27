@@ -185,6 +185,8 @@ function getErrorState(id: string, error: string | undefined, invalid: boolean |
     return { isInvalid: invalid ?? !!error, errorId, describedBy };
 }
 
+const emptyListMessage = (optionCount: number, noOptionsMessage: string) => (optionCount === 0 ? noOptionsMessage : 'No options');
+
 function isInsideAny(target: Node | null, ...containers: Array<HTMLElement | null>): boolean {
     return containers.some((container) => container?.contains(target));
 }
@@ -613,7 +615,7 @@ function Select({
                                 tabIndex={-1}
                             >
                                 {visibleOptions.length === 0 ? (
-                                    <div className={NO_OPTIONS_CLASSES}>{options.length === 0 ? noOptionsMessage : 'No options'}</div>
+                                    <div className={NO_OPTIONS_CLASSES}>{emptyListMessage(options.length, noOptionsMessage)}</div>
                                 ) : (
                                     visibleOptions.map((opt, idx) => {
                                         const selected = isOptionSelected(opt);

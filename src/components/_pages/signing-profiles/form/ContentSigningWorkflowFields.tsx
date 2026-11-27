@@ -294,12 +294,12 @@ export default function ContentSigningWorkflowFields({ signingProfileUuid, saved
                             groupSummaryNote={(group) =>
                                 group === ungroupedRequestGroup ? requestMaySetNote(allowedUngroupedLabels) : undefined
                             }
-                            groupControl={(group) => {
+                            renderGroupControl={(group) => {
                                 if (requestGroupCodes.has(group))
                                     return <AllowedRequestAttributeSwitch permissionName={group} label={readableGroupTitle(group)} />;
                                 return group === profileOnlyGroup && profileOnlyNote;
                             }}
-                            attributeControl={(descriptor) =>
+                            renderAttributeControl={(descriptor) =>
                                 ungroupedRequestAttributeNames.has(descriptor.name) && (
                                     <AllowedRequestAttributeSwitch permissionName={descriptor.name} label={descriptor.properties.label} />
                                 )

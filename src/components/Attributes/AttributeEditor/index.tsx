@@ -117,9 +117,9 @@ export type Props = {
     /** Title of a group's section. Without one, the section shows the group code. */
     groupTitle?: (group: string) => string;
     /** Control shown in the header of a group's section. */
-    groupControl?: (group: string) => React.ReactNode;
+    renderGroupControl?: (group: string) => React.ReactNode;
     /** Control shown beside an attribute. */
-    attributeControl?: (descriptor: DataAttributeModel | InfoAttributeModel | CustomAttributeModel) => React.ReactNode;
+    renderAttributeControl?: (descriptor: DataAttributeModel | InfoAttributeModel | CustomAttributeModel) => React.ReactNode;
     /** Shows each section in a bordered pane, and lets a titled group fold to a summary line. */
     collapsibleGroups?: boolean;
     /** Text a folded group's summary line adds after its values. */
@@ -141,8 +141,8 @@ function AttributeEditorInner({
     setGroupAttributesCallbackAttributes = () => emptyGroupAttributesCallbackAttributes,
     withRemoveAction = true,
     groupTitle = groupCodeAsTitle,
-    groupControl,
-    attributeControl,
+    renderGroupControl,
+    renderAttributeControl,
     collapsibleGroups = false,
     groupSummaryNote,
 }: Readonly<Props>) {
@@ -1454,7 +1454,7 @@ function AttributeEditorInner({
                                     }
                                 />
                             </div>
-                            {attributeControl?.(descriptor)}
+                            {renderAttributeControl?.(descriptor)}
                         </div>
                     ))}
                     {i === arr.length - 1 && notYetShownCustomAttributeDescriptors.length > 0 && attributeSelector}
@@ -1467,7 +1467,7 @@ function AttributeEditorInner({
                         editorId={id}
                         group={group}
                         title={groupTitle(group)}
-                        control={groupControl?.(group)}
+                        control={renderGroupControl?.(group)}
                         descriptors={groupedAttributesDescriptors[group]}
                         summaryNote={groupSummaryNote?.(group)}
                         busy={isRunningCb}
@@ -1482,7 +1482,7 @@ function AttributeEditorInner({
                     noBorder={!collapsibleGroups}
                     key={group}
                     title={group === untitledSectionKey ? '' : groupTitle(group)}
-                    widgetExtraTopNode={group === untitledSectionKey ? undefined : groupControl?.(group)}
+                    widgetExtraTopNode={group === untitledSectionKey ? undefined : renderGroupControl?.(group)}
                     busy={isRunningCb}
                     innerContainerProps={collapsibleGroups ? { className: 'relative [&>div:last-child]:mb-0' } : undefined}
                 >
@@ -1500,8 +1500,8 @@ function AttributeEditorInner({
         withRemoveAction,
         deleteButton,
         groupTitle,
-        groupControl,
-        attributeControl,
+        renderGroupControl,
+        renderAttributeControl,
         collapsibleGroups,
         groupSummaryNote,
         setValue,
