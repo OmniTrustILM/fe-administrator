@@ -64,6 +64,10 @@ export default function RaProfileDetail() {
     const raProfile = useSelector(raProfilesSelectors.raProfile);
 
     const routeAuthorityUuid = authorityId && authorityId !== 'unknown' && authorityId !== 'undefined' ? authorityId : undefined;
+    // Actions whose endpoint or loaded state uses the route's authority stay disabled on a route without one.
+    const routeWithoutAuthority = !routeAuthorityUuid;
+    // The validation dialogs submit the loaded profile's own authority, so they follow that profile instead of the route.
+    const profileWithoutAuthority = !raProfile?.authorityInstanceUuid;
     const requestAttributesAuthorityUuid = raProfile?.authorityInstanceUuid ?? routeAuthorityUuid;
     const acmeDetails = useSelector(raProfilesSelectors.acmeDetails);
     const scepDetails = useSelector(raProfilesSelectors.scepDetails);
@@ -374,7 +378,7 @@ export default function RaProfileDetail() {
             {
                 id: 'edit',
                 icon: 'pencil',
-                disabled: authorityId === 'unknown',
+                disabled: routeWithoutAuthority,
                 requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: () => {
@@ -422,7 +426,7 @@ export default function RaProfileDetail() {
                 },
             },
         ],
-        [raProfile, onEditClick, onDisableClick, onEnableClick, authorityId, can, canOnComplianceProfiles],
+        [raProfile, onEditClick, onDisableClick, onEnableClick, routeWithoutAuthority, can, canOnComplianceProfiles],
     );
 
     const complianceProfileButtons: WidgetButtonProps[] = useMemo(
@@ -446,7 +450,7 @@ export default function RaProfileDetail() {
             {
                 id: 'add',
                 icon: 'plus',
-                disabled: false,
+                disabled: routeWithoutAuthority,
                 requires: canOnApprovalProfiles(ResourceAction.Update, { onObjects: true }),
                 tooltip: 'Associate Approval Profile',
                 onClick: () => {
@@ -455,7 +459,7 @@ export default function RaProfileDetail() {
                 },
             },
         ],
-        [getFreshAllApprovalProfiles, canOnApprovalProfiles],
+        [getFreshAllApprovalProfiles, canOnApprovalProfiles, routeWithoutAuthority],
     );
 
     const certificateValidationButtons: WidgetButtonProps[] = useMemo(
@@ -463,7 +467,7 @@ export default function RaProfileDetail() {
             {
                 id: 'edit',
                 icon: 'pencil',
-                disabled: false,
+                disabled: profileWithoutAuthority,
                 requires: can(ResourceAction.Update),
                 tooltip: 'Edit Validation Settings',
                 onClick: () => {
@@ -471,7 +475,7 @@ export default function RaProfileDetail() {
                 },
             },
         ],
-        [can],
+        [can, profileWithoutAuthority],
     );
 
     const requestValidationButtons: WidgetButtonProps[] = useMemo(
@@ -479,7 +483,7 @@ export default function RaProfileDetail() {
             {
                 id: 'edit',
                 icon: 'pencil',
-                disabled: false,
+                disabled: profileWithoutAuthority,
                 requires: can(ResourceAction.Update),
                 tooltip: 'Edit Request Validation Settings',
                 onClick: () => {
@@ -487,7 +491,7 @@ export default function RaProfileDetail() {
                 },
             },
         ],
-        [can],
+        [can, profileWithoutAuthority],
     );
 
     const renewalSettingsButtons: WidgetButtonProps[] = useMemo(
@@ -559,7 +563,7 @@ export default function RaProfileDetail() {
                                   {
                                       id: 'remove',
                                       icon: 'minus-square',
-                                      disabled: false,
+                                      disabled: routeWithoutAuthority,
                                       requires: canOnApprovalProfiles(ResourceAction.Update, { onObjects: true }),
                                       tooltip: 'Remove',
                                       onClick: () => {
@@ -575,7 +579,7 @@ export default function RaProfileDetail() {
                       ],
                   }))
                 : [],
-        [associatedApprovalProfiles, canOnApprovalProfiles],
+        [associatedApprovalProfiles, canOnApprovalProfiles, routeWithoutAuthority],
     );
 
     const complianceProfileHeaders: TableHeader[] = useMemo(
@@ -812,6 +816,7 @@ export default function RaProfileDetail() {
                     <ProgressButton
                         key="action"
                         type="button"
+                        disabled={routeWithoutAuthority}
                         requires={can(ResourceAction.Update)}
                         title={acmeDetails?.acmeAvailable ? 'Deactivate' : 'Activate'}
                         inProgressTitle={acmeDetails?.acmeAvailable ? 'Deactivating...' : 'Activating...'}
@@ -841,6 +846,7 @@ export default function RaProfileDetail() {
                     <ProgressButton
                         key="action"
                         type="button"
+                        disabled={routeWithoutAuthority}
                         requires={can(ResourceAction.Update)}
                         title={scepDetails?.scepAvailable ? 'Deactivate' : 'Activate'}
                         inProgressTitle={scepDetails?.scepAvailable ? 'Deactivating...' : 'Activating...'}
@@ -869,6 +875,7 @@ export default function RaProfileDetail() {
                     <ProgressButton
                         key="action"
                         type="button"
+                        disabled={routeWithoutAuthority}
                         requires={can(ResourceAction.Update)}
                         title={cmpDetails?.cmpAvailable ? 'Deactivate' : 'Activate'}
                         inProgressTitle={cmpDetails?.cmpAvailable ? 'Deactivating...' : 'Activating...'}
@@ -898,6 +905,7 @@ export default function RaProfileDetail() {
                     <ProgressButton
                         key="action"
                         type="button"
+                        disabled={routeWithoutAuthority}
                         requires={can(ResourceAction.Update)}
                         title={estDetails?.estAvailable ? 'Deactivate' : 'Activate'}
                         inProgressTitle={estDetails?.estAvailable ? 'Deactivating...' : 'Activating...'}
@@ -942,6 +950,7 @@ export default function RaProfileDetail() {
             openCmpActivationDialog,
             openEstActivationDialog,
             can,
+            routeWithoutAuthority,
         ],
     );
 

@@ -682,6 +682,44 @@ describe('attributes utils', () => {
             expect(collectOmittingEmpty('bundle', AttributeContentType.File, selectedFile)).toEqual([[{ data: selectedFile }]]);
         });
 
+        const collect = (name: string, contentType: AttributeContentType, value: unknown) =>
+            collectFormAttributes('id1', [optionalDescriptor(name, contentType)], { __attributes__id1__: { [name]: value } }).map(
+                (attribute) => attribute.content,
+            );
+
+        test.each([
+            ['cleared', { content: '', fileName: '', mimeType: '' }],
+            ['never selected', { content: undefined, fileName: undefined, mimeType: undefined }],
+        ])('leaves out a %s file from a form that keeps blank values', (_state, emptyFile) => {
+            // when
+            const result = collect('captionFont', AttributeContentType.File, emptyFile);
+
+            // then
+            expect(result).toEqual([]);
+        });
+
+        test('sends a named zero-byte file from a form that keeps blank values', () => {
+            // given
+            const zeroByteFile = { content: '', fileName: 'empty.ttf', mimeType: 'font/ttf' };
+
+            // when
+            const result = collect('captionFont', AttributeContentType.File, zeroByteFile);
+
+            // then
+            expect(result).toEqual([[{ data: zeroByteFile }]]);
+        });
+
+        test('sends a selected file from a form that keeps blank values', () => {
+            // given
+            const selectedFile = { content: btoa('font'), fileName: 'caption.ttf', mimeType: 'font/ttf' };
+
+            // when
+            const result = collect('captionFont', AttributeContentType.File, selectedFile);
+
+            // then
+            expect(result).toEqual([[{ data: selectedFile }]]);
+        });
+
         test('omits a cleared date or datetime attribute instead of failing to normalise it', () => {
             expect(collectOmittingEmpty('notBefore', AttributeContentType.Date, '')).toEqual([]);
             expect(collectOmittingEmpty('notBefore', AttributeContentType.Datetime, '')).toEqual([]);

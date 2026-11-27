@@ -8,13 +8,15 @@ type State = TestState & Record<string, unknown>;
 /**
  * A store for a detail page whose allowed-actions answer for one object is already in, with a profile holding only the
  * given resource grants (none by default), so every control on the object follows that answer. `realSlices` stand in
- * for slices the test reducers lack, and `middleware` stands in for the epics.
+ * for slices the test reducers lack, `objectAccess` names the resources the user holds object access on, and `middleware`
+ * stands in for the epics.
  */
 export function createObjectPermissionStore({
     resource,
     uuid,
     allowedActions,
     resourceGrants = [],
+    objectAccess = [],
     realSlices = [],
     preloadedState = {},
     middleware = [],
@@ -23,6 +25,7 @@ export function createObjectPermissionStore({
     uuid: string;
     allowedActions: ResourceAction[];
     resourceGrants?: { resource: Resource; actions: ResourceAction[] }[];
+    objectAccess?: Resource[];
     realSlices?: Slice[];
     preloadedState?: Record<string, unknown>;
     middleware?: Middleware[];
@@ -47,6 +50,7 @@ export function createObjectPermissionStore({
             resource: {
                 ...testInitialState.resource,
                 objectAllowedActions: { [`${resource}/${uuid}`]: { status: 'loaded', allowedActions } },
+                resourcesList: objectAccess.map((entry) => ({ resource: entry, hasObjectAccess: true, hasOwner: false })),
             },
             ...preloadedState,
         } as State,
