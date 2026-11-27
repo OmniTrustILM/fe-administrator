@@ -41,6 +41,8 @@ export type AttributeEditorTestWrapperProps = {
     /** Renders a button that mounts a second editor with these descriptors in the same form and store, as pages with
      *  several editors do. */
     secondEditorDescriptors?: AttributeDescriptorModel[];
+    /** Shows each group in a pane that folds. */
+    collapsibleGroups?: boolean;
 };
 
 function FormValidityProbe() {
@@ -93,6 +95,7 @@ export function AttributeEditorTestWrapper({
     laterCallbackResponses,
     renderFormValidity = false,
     secondEditorDescriptors,
+    collapsibleGroups,
 }: Readonly<AttributeEditorTestWrapperProps>) {
     const store = useMemo(() => createMockStore(preloadedState), [preloadedState]);
     const [refreshCount, setRefreshCount] = useState(0);
@@ -134,6 +137,7 @@ export function AttributeEditorTestWrapper({
                         functionGroupCode={functionGroupCode}
                         kind={kind}
                         withRemoveAction={withRemoveAction}
+                        collapsibleGroups={collapsibleGroups}
                     />
                     {withGroupCallbackState && (
                         <button

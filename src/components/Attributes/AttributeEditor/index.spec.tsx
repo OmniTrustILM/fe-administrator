@@ -8,8 +8,9 @@ import type {
     InfoAttributeModel,
     AttributeDescriptorModel,
     GroupAttributeModel,
+    AttributeResponseModel,
 } from 'types/attributes';
-import { AttributeContentType, AttributeType } from 'types/openapi';
+import { AttributeContentType, AttributeType, AttributeVersion } from 'types/openapi';
 
 const editorId = 'testEditor';
 
@@ -82,6 +83,27 @@ test.describe('AttributeEditor', () => {
         await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} />);
         await expect(page.getByText('My Group')).toBeVisible({ timeout: 10000 });
         await expect(page.getByPlaceholder('Enter Grouped')).toBeVisible();
+    });
+
+    test('names in a folded summary the fields that fail validation', async ({ mount, page }) => {
+        const stampPage = dataDescriptor({
+            name: 'stampPage',
+            uuid: 'stamp-page-uuid',
+            properties: {
+                label: 'Stamp page',
+                required: true,
+                readOnly: false,
+                visible: true,
+                list: false,
+                multiSelect: false,
+                group: 'appearance',
+            },
+        });
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={[stampPage]} collapsibleGroups />);
+
+        await page.getByTestId('attribute-group-toggle-appearance').click();
+
+        await expect(page.getByTestId('attribute-group-summary-appearance')).toHaveText('Nothing set · Needs attention: Stamp page');
     });
 
     test('renders Info attribute', async ({ mount, page }) => {
@@ -476,6 +498,104 @@ test.describe('AttributeEditor', () => {
         const switchOrCheck = page.locator('button[role="switch"]').or(page.getByRole('checkbox'));
         await expect(switchOrCheck).toBeAttached({ timeout: 5000 });
         await expect(switchOrCheck).not.toBeChecked();
+    });
+
+    test('prefills a saved file from its content', async ({ mount, page }) => {
+        const pixel = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+        const descriptors = [
+            dataDescriptor({
+                name: 'stamp',
+                uuid: 'stamp-uuid',
+                contentType: AttributeContentType.File,
+                properties: { label: 'Stamp image', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
+            }),
+        ];
+        const attributes = [
+            {
+                name: 'stamp',
+                uuid: 'stamp-uuid',
+                label: 'Stamp image',
+                type: AttributeType.Data,
+                contentType: AttributeContentType.File,
+                version: AttributeVersion.V3,
+                content: [
+                    { contentType: AttributeContentType.File, data: { content: pixel, fileName: 'stamp.png', mimeType: 'image/png' } },
+                ],
+            },
+        ] satisfies AttributeResponseModel[];
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} attributes={attributes} />);
+
+        await expect(page.getByRole('img', { name: 'Stamp image' })).toBeVisible();
+        await expect(page.locator('[id="__attributes__testEditor__.stamp-content"]')).toHaveValue(pixel);
+        await expect(page.locator('[id="__attributes__testEditor__.stamp-fileName"]')).toHaveValue('stamp.png');
+    });
+
+    test('prefills a saved secret with its text', async ({ mount, page }) => {
+        const descriptors = [
+            dataDescriptor({
+                name: 'pin',
+                uuid: 'pin-uuid',
+                contentType: AttributeContentType.Secret,
+                properties: { label: 'PIN', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
+            }),
+        ];
+        const attributes = [
+            {
+                name: 'pin',
+                uuid: 'pin-uuid',
+                label: 'PIN',
+                type: AttributeType.Data,
+                contentType: AttributeContentType.Secret,
+                version: AttributeVersion.V2,
+                content: [{ contentType: AttributeContentType.Secret, data: { secret: '1234' } }],
+            },
+        ] satisfies AttributeResponseModel[];
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} attributes={attributes} />);
+
+        await expect(page.getByLabel('PIN', { exact: true })).toHaveValue('1234');
+    });
+
+    test('prefills a saved secret list selection', async ({ mount, page }) => {
+        const vaultSecret = { reference: 'vault-b', data: { secret: 'b' } };
+        const descriptors = [
+            dataDescriptor({
+                name: 'credential',
+                uuid: 'credential-uuid',
+                contentType: AttributeContentType.Secret,
+                properties: { label: 'Credential', required: false, readOnly: false, visible: true, list: true, multiSelect: false },
+                content: [{ reference: 'vault-a', data: { secret: 'a' } }, vaultSecret] as any,
+            }),
+        ];
+        const attributes = [
+            {
+                name: 'credential',
+                uuid: 'credential-uuid',
+                label: 'Credential',
+                type: AttributeType.Data,
+                contentType: AttributeContentType.Secret,
+                version: AttributeVersion.V2,
+                content: [{ contentType: AttributeContentType.Secret, ...vaultSecret }],
+            },
+        ] satisfies AttributeResponseModel[];
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} attributes={attributes} />);
+
+        await expect(page.getByTestId('select-__attributes__testEditor__.credentialSelect-trigger')).toHaveText('vault-b');
+    });
+
+    test('shows an empty file field for a file descriptor with an empty content list', async ({ mount, page }) => {
+        const descriptors = [
+            dataDescriptor({
+                name: 'stamp',
+                uuid: 'stamp-uuid',
+                contentType: AttributeContentType.File,
+                content: [],
+                properties: { label: 'Stamp image', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
+            }),
+        ];
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} />);
+
+        await expect(page.getByText('Stamp image')).toBeVisible();
+        await expect(page.locator('[id="__attributes__testEditor__.stamp-content"]')).toHaveValue('');
     });
 });
 

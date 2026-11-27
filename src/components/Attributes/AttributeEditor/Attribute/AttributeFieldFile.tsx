@@ -6,6 +6,7 @@ import TextInput from 'components/TextInput';
 import cn from 'classnames';
 import type { CustomAttributeModel, DataAttributeModel } from 'types/attributes';
 import { isBlankFile } from 'utils/attributes/attributes';
+import AttributeFileImagePreview from './AttributeFileImagePreview';
 import { buildAttributeValidators, isAttributeErrorVisible } from './attributeHelpers';
 
 type AttributeFieldFileProps = {
@@ -148,6 +149,7 @@ export function AttributeFieldFile({
                     </div>
                     <div className="w-full h-0"></div>
                     <div className="text-sm text-content-subtle text-center w-full mt-4">Select or Drag &amp; Drop file to Drop Zone.</div>
+                    <AttributeFileImagePreview name={name} label={descriptor.properties.label} />
                     {deleteButton}
                 </section>
             )}

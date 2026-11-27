@@ -81,6 +81,8 @@ interface BaseProps {
     showSelectedDescriptionAsHelp?: boolean;
     /** An action pinned below the list, outside the options and their keyboard navigation. */
     footerAction?: SelectFooterAction;
+    /** Text the trigger and the list show while the supplied list is empty; a search that matches nothing shows `No options`. */
+    noOptionsMessage?: string;
 }
 
 interface SingleSelectProps extends BaseProps {
@@ -183,6 +185,8 @@ function getErrorState(id: string, error: string | undefined, invalid: boolean |
     return { isInvalid: invalid ?? !!error, errorId, describedBy };
 }
 
+const emptyListMessage = (optionCount: number, noOptionsMessage: string) => (optionCount === 0 ? noOptionsMessage : 'No options');
+
 function isInsideAny(target: Node | null, ...containers: Array<HTMLElement | null>): boolean {
     return containers.some((container) => container?.contains(target));
 }
@@ -213,6 +217,7 @@ function Select({
     showOptionDescriptionInDropdown = false,
     showSelectedDescriptionAsHelp = false,
     footerAction,
+    noOptionsMessage = 'No options',
 }: Props) {
     const searchInputRef = useRef<HTMLInputElement>(null);
     const triggerRef = useRef<HTMLButtonElement>(null);
@@ -410,7 +415,7 @@ function Select({
             if (!multiValues || multiValues.length === 0) {
                 return (
                     <span className={canOpen ? PLACEHOLDER_CLASSES : TRIGGER_NO_OPTIONS_CLASSES}>
-                        {canOpen ? placeholder : 'No options'}
+                        {canOpen ? placeholder : noOptionsMessage}
                     </span>
                 );
             }
@@ -444,7 +449,9 @@ function Select({
         // single
         if (singleRawValue == null || singleRawValue === '') {
             return (
-                <span className={canOpen ? PLACEHOLDER_CLASSES : TRIGGER_NO_OPTIONS_CLASSES}>{canOpen ? placeholder : 'No options'}</span>
+                <span className={canOpen ? PLACEHOLDER_CLASSES : TRIGGER_NO_OPTIONS_CLASSES}>
+                    {canOpen ? placeholder : noOptionsMessage}
+                </span>
             );
         }
         const matched = options.find((o) => valuesMatch(o.value, singleRawValue));
@@ -453,7 +460,7 @@ function Select({
             return <span>{renderColorizedVersionLabel(labelText)}</span>;
         }
         return <span title={labelText}>{labelText}</span>;
-    }, [isMulti, multiValues, singleRawValue, options, canOpen, placeholder, colorizeVersionLabel, toggleMulti]);
+    }, [isMulti, multiValues, singleRawValue, options, canOpen, placeholder, noOptionsMessage, colorizeVersionLabel, toggleMulti]);
 
     // Build the listbox option nodes.
     const renderOptionLabel = (opt: (typeof options)[number]) => {
@@ -608,7 +615,7 @@ function Select({
                                 tabIndex={-1}
                             >
                                 {visibleOptions.length === 0 ? (
-                                    <div className={NO_OPTIONS_CLASSES}>No options</div>
+                                    <div className={NO_OPTIONS_CLASSES}>{emptyListMessage(options.length, noOptionsMessage)}</div>
                                 ) : (
                                     visibleOptions.map((opt, idx) => {
                                         const selected = isOptionSelected(opt);

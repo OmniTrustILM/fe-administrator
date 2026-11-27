@@ -129,12 +129,47 @@ function buildRangeValidator(descriptor: DataAttributeModel): FieldValidator | u
     return validateRange(from, to, rangeValidator.errorMessage);
 }
 
-function addDataAttributeConstraintValidators(descriptor: DataAttributeModel, validators: FieldValidator[], trustsOptions: boolean): void {
-    const regexValidator = descriptor.constraints?.find((c) => c.type === AttributeConstraintType.RegExp);
-    if (regexValidator) {
-        const pattern = new RegExp((regexValidator as RegexpAttributeConstraintModel).data ?? '');
-        validators.push(validatePattern(pattern, regexValidator.errorMessage));
+/** Java's leading inline flags that JavaScript takes as RegExp flags. */
+const javaInlineFlags = /^\(\?([ims]+)\)/;
+
+/**
+ * Java's `\A`, `\Z` and `\z` anchors, its `\v` class, its possessive quantifiers and its class intersection `&&`. JavaScript reads
+ * them differently or not at all.
+ */
+const javaOnlyConstruct = /\\[AZzv]|[*+?}]\+|&&/;
+
+/** Java escapes such as `\p{Alnum}`, `\R` or `\e`, which JavaScript reads as literal letters outside Unicode mode. */
+const unicodeModeEscape = /\\[pPQhHRXae]/;
+
+/** Anchors a pattern at the very start and end of the value, as Java's `matches()` does. The anchors hold under every flag. */
+const wholeValue = (body: string) => String.raw`(?<![\s\S])(?:${body})(?![\s\S])`;
+
+function compiled(source: string, flags: string): RegExp | undefined {
+    try {
+        return new RegExp(source, flags);
+    } catch {
+        return undefined;
     }
+}
+
+/**
+ * The server checks a connector's Java pattern that JavaScript would misread. Unicode mode counts by code point as Java
+ * does, and a needless escape such as `\-` compiles only without it.
+ */
+function connectorRegExp(pattern: string): RegExp | undefined {
+    if (javaOnlyConstruct.test(pattern)) return undefined;
+    const inlineFlags = javaInlineFlags.exec(pattern);
+    const source = wholeValue(inlineFlags ? pattern.slice(inlineFlags[0].length) : pattern);
+    const flags = inlineFlags?.[1] ?? '';
+    return compiled(source, `${flags}u`) ?? (unicodeModeEscape.test(pattern) ? undefined : compiled(source, flags));
+}
+
+function addDataAttributeConstraintValidators(descriptor: DataAttributeModel, validators: FieldValidator[], trustsOptions: boolean): void {
+    const regexpConstraint = getRegexpConstraint(descriptor);
+    const source = regexpConstraint?.data ?? '';
+    const pattern = regexpConstraint && connectorRegExp(source);
+    if (regexpConstraint && pattern)
+        validators.push(validatePattern(pattern, regexpConstraint.errorMessage || `Value must conform to /${source}/`));
     const rangeValidator = trustsOptions ? undefined : buildRangeValidator(descriptor);
     if (rangeValidator) validators.push(rangeValidator);
 }

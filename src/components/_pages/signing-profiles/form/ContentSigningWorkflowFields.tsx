@@ -1,28 +1,83 @@
-import { type ReactElement, useEffect, useRef, useState } from 'react';
-import { useController, useFormContext } from 'react-hook-form';
+import { type ReactElement, useEffect, useMemo, useRef, useState } from 'react';
+import { type FieldValues, useController, useFormContext, useWatch } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import AttributeEditor from 'components/Attributes/AttributeEditor';
 import HostnameListInput from 'components/Input/HostnameListInput';
 import Switch from 'components/Switch';
 import Widget from 'components/Widget';
-import { actions as signingProfileActions, selectors as signingProfileSelectors } from 'ducks/signing-profiles';
+import { isListedFor, actions as signingProfileActions, selectors as signingProfileSelectors } from 'ducks/signing-profiles';
 import {
-    type BaseAttributeDto,
     type ContentSigningWorkflowDto,
     type ContentSigningWorkflowRequestDto,
     type RequestAttribute,
-    type ResponseAttribute,
     SignatureLevel,
     SigningWorkflowType,
     TimestampSourceType,
 } from 'types/openapi';
+import {
+    type AttributeDescriptorModel,
+    type AttributeRequestModel,
+    type AttributeResponseModel,
+    type CustomAttributeModel,
+    type DataAttributeModel,
+    isCustomAttributeModel,
+    isDataAttributeModel,
+} from 'types/attributes';
+import {
+    asEditorAttributes,
+    buildAttributeRequestModel,
+    collectFormAttributes,
+    resolveAttributeVersion,
+} from 'utils/attributes/attributes';
 import { validateOid, validateRequired } from 'utils/validators';
 import { buildValidationRules } from 'utils/validators-helper';
 import ContentSigningFormattingFields, { type ContentSigningFormattingDraft } from './ContentSigningFormattingFields';
+import AllowedRequestAttributeSwitch from './AllowedRequestAttributeSwitch';
+import {
+    labelOf,
+    permissionNamesOf,
+    profileOnlyGroup,
+    readableGroupTitle,
+    requestGroupCodesOf,
+    splitRequestGroupOf,
+    ungroupedRequestAttributeNamesOf,
+    ungroupedRequestGroup,
+    withPanesByKind,
+} from './requestAttributePermissions';
 import TimestampSourceField from './TimestampSourceField';
 
-/** Id of the profile-attribute editor, which prefixes the form values `collectFormAttributes` reads. */
-export const contentSigningAttributesEditorId = 'contentSigningProfileAttrs';
+/** Id of the formatting-attribute editor. It prefixes the form values the editor writes. */
+const contentSigningAttributesEditorId = 'contentSigningProfileAttrs';
+
+/** The formatting editor's values, leaving out a field that was visited but left empty, such as a file never chosen. */
+export function collectContentSigningAttributes(
+    descriptors: AttributeDescriptorModel[] | undefined,
+    values: FieldValues,
+): AttributeRequestModel[] {
+    return collectFormAttributes(contentSigningAttributesEditorId, descriptors, values, undefined, { omitEmptyContent: true });
+}
+
+/** The formatting editor's values with numbers as typed, so a reloaded editor shows a rejected value and its error again. */
+function draftContentSigningAttributes(descriptors: AttributeDescriptorModel[], values: FieldValues): AttributeRequestModel[] {
+    return collectFormAttributes(contentSigningAttributesEditorId, descriptors, values, undefined, {
+        omitEmptyContent: true,
+        keepNumbersAsTyped: true,
+    });
+}
+
+/**
+ * An empty entry for each listed attribute the collected values leave out. A remounted editor keeps such a field empty, where a missing
+ * entry takes the connector default.
+ */
+function clearedAttributes(descriptors: AttributeDescriptorModel[], collected: AttributeRequestModel[]): AttributeRequestModel[] {
+    const collectedNames = new Set(collected.map((attribute) => attribute.name));
+    return descriptors
+        .filter(
+            (descriptor): descriptor is DataAttributeModel | CustomAttributeModel =>
+                (isDataAttributeModel(descriptor) || isCustomAttributeModel(descriptor)) && !collectedNames.has(descriptor.name),
+        )
+        .map((descriptor) => buildAttributeRequestModel(descriptor.name, [], descriptor, resolveAttributeVersion(descriptor)));
+}
 
 /** Form values the content-signing workflow tab owns; the connector shares `signatureFormattingConnectorUuid` with timestamping. */
 export interface ContentSigningFormValues {
@@ -32,6 +87,8 @@ export interface ContentSigningFormValues {
     requireNonRepudiation: boolean;
     requiredExtendedKeyUsageOids: string[];
     timestampSourceProfileUuid: string;
+    /** Request-attribute groups and ungrouped request attributes a signing request may set. */
+    allowedRequestAttributes: string[];
 }
 
 export const emptyContentSigningFormValues: Omit<ContentSigningFormValues, 'signatureFormattingConnectorUuid'> = {
@@ -40,6 +97,7 @@ export const emptyContentSigningFormValues: Omit<ContentSigningFormValues, 'sign
     requireNonRepudiation: false,
     requiredExtendedKeyUsageOids: [],
     timestampSourceProfileUuid: '',
+    allowedRequestAttributes: [],
 };
 
 export function contentSigningFormValuesOf(workflow: ContentSigningWorkflowDto): ContentSigningFormValues {
@@ -50,6 +108,7 @@ export function contentSigningFormValuesOf(workflow: ContentSigningWorkflowDto):
         requireNonRepudiation: workflow.requireNonRepudiation ?? false,
         requiredExtendedKeyUsageOids: workflow.requiredExtendedKeyUsageOids ?? [],
         timestampSourceProfileUuid: workflow.timestampSource?.signingProfile.uuid ?? '',
+        allowedRequestAttributes: workflow.allowedRequestAttributes ?? [],
     };
 }
 
@@ -58,38 +117,20 @@ function savedForConnector(connectorUuid: string, saved: ContentSigningWorkflowD
     return saved?.signatureFormattingConnector?.uuid === connectorUuid ? saved : undefined;
 }
 
-/** The name a profile allows a request attribute by: its group, or its own name when it has none. */
-function permissionName(descriptor: BaseAttributeDto): string {
-    return ('properties' in descriptor && descriptor.properties?.group) || descriptor.name;
-}
-
-const asRequestAttribute = ({ uuid, name, contentType, content, version }: ResponseAttribute) =>
-    ({ uuid, name, contentType, content, version }) as RequestAttribute;
-
 /** A level above SIGNED embeds a timestamp and so needs a timestamp source. */
 export const embedsTimestamp = (level: SignatureLevel | ''): level is SignatureLevel => level !== '' && level !== SignatureLevel.Signed;
 
-/**
- * The content-signing workflow of a profile request. Its request-attribute values and allowed names come from the saved workflow,
- * filtered by the declarations of the chosen level.
- */
+/** Core rejects an allowed name the level does not declare. The request keeps only the names the current listing declares. */
 export function contentSigningWorkflowRequest(
     values: ContentSigningFormValues,
-    profileAttributeValues: RequestAttribute[],
-    requestAttributeDescriptors: BaseAttributeDto[],
-    savedWorkflow?: ContentSigningWorkflowDto,
+    formattingAttributeValues: RequestAttribute[],
+    declaredPermissionNames: Set<string>,
 ): ContentSigningWorkflowRequestDto {
     const level = values.signatureLevel || undefined;
-    const saved = savedForConnector(values.signatureFormattingConnectorUuid, savedWorkflow);
-    const declaredNames = new Set(requestAttributeDescriptors.map((descriptor) => descriptor.name));
-    const permissionNames = new Set(requestAttributeDescriptors.map(permissionName));
-    const requestAttributeValues = (saved?.signatureFormattingConnectorAttributes ?? [])
-        .filter((attribute) => declaredNames.has(attribute.name))
-        .map(asRequestAttribute);
     return {
         type: SigningWorkflowType.ContentSigning,
         signatureFormattingConnectorUuid: values.signatureFormattingConnectorUuid,
-        signatureFormattingConnectorAttributes: [...profileAttributeValues, ...requestAttributeValues],
+        signatureFormattingConnectorAttributes: formattingAttributeValues,
         family: values.signatureFamilyCode,
         level,
         timestampSource: embedsTimestamp(values.signatureLevel)
@@ -97,7 +138,7 @@ export function contentSigningWorkflowRequest(
             : undefined,
         requireNonRepudiation: values.requireNonRepudiation,
         requiredExtendedKeyUsageOids: values.requiredExtendedKeyUsageOids,
-        allowedRequestAttributes: saved?.allowedRequestAttributes?.filter((name) => permissionNames.has(name)),
+        allowedRequestAttributes: values.allowedRequestAttributes.filter((name) => declaredPermissionNames.has(name)),
     };
 }
 
@@ -110,12 +151,40 @@ interface Props {
 
 const required = buildValidationRules([validateRequired()]);
 
+const paneTitles: Record<string, string> = { [profileOnlyGroup]: 'Profile settings', [ungroupedRequestGroup]: 'Request attributes' };
+const groupTitleOf = (group: string) => {
+    const requestGroup = splitRequestGroupOf(group);
+    if (requestGroup !== undefined) return `${readableGroupTitle(requestGroup)} (profile only)`;
+    return paneTitles[group] ?? readableGroupTitle(group);
+};
+
+const profileOnlyNote = <span className="text-sm text-content-subtle">Request cannot set</span>;
+
+/** Folding the pane hides the switches beside its attributes, so its summary names the ones they allow. */
+const requestMaySetNote = (allowedLabels: string[]) =>
+    allowedLabels.length > 0 ? `Requests may set: ${allowedLabels.join(', ')}` : 'Requests may set none';
+
 export default function ContentSigningWorkflowFields({ signingProfileUuid, savedWorkflow }: Readonly<Props>): ReactElement {
     const dispatch = useDispatch();
-    const profileAttributeModels = useSelector(signingProfileSelectors.contentSigningProfileAttributeModels);
+    const formattingAttributeModels = useSelector(signingProfileSelectors.contentSigningProfileAndRequestAttributeModels);
     const isFetchingProfileAttributes = useSelector(signingProfileSelectors.isFetchingContentSigningProfileAttributes);
     const failedProfileAttributesFetch = useSelector(signingProfileSelectors.failedContentSigningProfileAttributesFetch);
-    const { control, trigger } = useFormContext<ContentSigningFormValues>();
+    const requestAttributeDescriptors = useSelector(signingProfileSelectors.contentSigningRequestAttributeDescriptors);
+    const requestGroupCodes = requestGroupCodesOf(requestAttributeDescriptors);
+    const permissionNames = permissionNamesOf(requestAttributeDescriptors);
+    const ungroupedRequestAttributeNames = ungroupedRequestAttributeNamesOf(requestAttributeDescriptors);
+    const editorDescriptors = useMemo(
+        () => withPanesByKind(formattingAttributeModels, requestAttributeDescriptors),
+        [formattingAttributeModels, requestAttributeDescriptors],
+    );
+    const listedFor = useSelector(signingProfileSelectors.contentSigningAttributesListedFor);
+    const { control, trigger, getValues, setValue } = useFormContext<ContentSigningFormValues>();
+    const allowedNames = useWatch({ control, name: 'allowedRequestAttributes' });
+    const allowedUngroupedLabels = requestAttributeDescriptors
+        .filter((descriptor) => ungroupedRequestAttributeNames.has(descriptor.name) && allowedNames.includes(descriptor.name))
+        .map(labelOf);
+    // The editor unmounts while a listing is pending. These values hold the draft, so the editor shows it again when it reloads.
+    const [draftAttributes, setDraftAttributes] = useState<{ connectorUuid: string; attributes: AttributeResponseModel[] }>();
     const { field: connector } = useController({ control, name: 'signatureFormattingConnectorUuid', rules: required });
     const { field: family } = useController({ control, name: 'signatureFamilyCode', rules: required });
     // The rule reads the picker's verdict through this ref. A Controller captures its rules at registration.
@@ -150,6 +219,18 @@ export default function ContentSigningWorkflowFields({ signingProfileUuid, saved
         );
     }, [dispatch, connector.value, family.value, level.value, signingProfileUuid]);
 
+    // Clearing the connector keeps the draft. Choosing the same connector again resumes it.
+    const chosenConnectorRef = useRef(connector.value);
+    useEffect(() => {
+        const previousConnector = chosenConnectorRef.current;
+        if (!connector.value || previousConnector === connector.value) return;
+        chosenConnectorRef.current = connector.value;
+        const isFirstChosenConnector = !previousConnector;
+        if (isFirstChosenConnector) return;
+        setDraftAttributes(undefined);
+        setValue('allowedRequestAttributes', savedForConnector(connector.value, savedWorkflow)?.allowedRequestAttributes ?? []);
+    }, [connector.value, savedWorkflow, setValue]);
+
     // biome-ignore lint/correctness/useExhaustiveDependencies: the level is re-validated whenever the picker's verdict changes.
     useEffect(() => {
         void trigger('signatureLevel');
@@ -160,7 +241,22 @@ export default function ContentSigningWorkflowFields({ signingProfileUuid, saved
         familyCode: family.value || undefined,
         level: level.value || undefined,
     };
+    const savedAttributes = savedForConnector(connector.value, savedWorkflow)?.signatureFormattingConnectorAttributes;
+    const shownAttributes = draftAttributes?.connectorUuid === connector.value ? draftAttributes.attributes : savedAttributes;
+    const keepEditorValues = () => {
+        const shown = { connectorUuid: connector.value, family: family.value, level: level.value };
+        if (!isListedFor(listedFor, shown)) return;
+        const listedNames = new Set(formattingAttributeModels.map((model) => model.name));
+        const collected = draftContentSigningAttributes(formattingAttributeModels, getValues());
+        const edited = asEditorAttributes(
+            [...collected, ...clearedAttributes(formattingAttributeModels, collected)],
+            formattingAttributeModels,
+        );
+        const unlisted = (shownAttributes ?? []).filter((attribute) => !listedNames.has(attribute.name));
+        setDraftAttributes({ connectorUuid: connector.value, attributes: [...edited, ...unlisted] });
+    };
     const changeDraft = (next: ContentSigningFormattingDraft) => {
+        keepEditorValues();
         connector.onChange(next.connectorUuid ?? '');
         family.onChange(next.familyCode ?? '');
         level.onChange(next.level ?? '');
@@ -184,19 +280,43 @@ export default function ContentSigningWorkflowFields({ signingProfileUuid, saved
                 <Widget title="Content Signing Formatting Connector Attributes" noBorder busy={isFetchingProfileAttributes}>
                     {failedProfileAttributesFetch && (
                         <p className="text-xs text-danger">
-                            Failed to list the profile attributes
+                            Failed to list the formatting connector attributes
                             {failedProfileAttributesFetch.reason ? `: ${failedProfileAttributesFetch.reason}` : ''}
                         </p>
                     )}
-                    {profileAttributeModels.length > 0 && (
+                    {formattingAttributeModels.length > 0 && (
                         <AttributeEditor
                             id={contentSigningAttributesEditorId}
-                            attributeDescriptors={profileAttributeModels}
-                            attributes={savedForConnector(connector.value, savedWorkflow)?.signatureFormattingConnectorAttributes}
+                            attributeDescriptors={editorDescriptors}
+                            attributes={shownAttributes}
+                            groupTitle={groupTitleOf}
+                            collapsibleGroups
+                            groupSummaryNote={(group) =>
+                                group === ungroupedRequestGroup ? requestMaySetNote(allowedUngroupedLabels) : undefined
+                            }
+                            renderGroupControl={(group) => {
+                                if (requestGroupCodes.has(group))
+                                    return <AllowedRequestAttributeSwitch permissionName={group} label={readableGroupTitle(group)} />;
+                                return group === profileOnlyGroup && profileOnlyNote;
+                            }}
+                            renderAttributeControl={(descriptor) =>
+                                ungroupedRequestAttributeNames.has(descriptor.name) && (
+                                    <AllowedRequestAttributeSwitch permissionName={descriptor.name} label={descriptor.properties.label} />
+                                )
+                            }
                         />
                     )}
-                    {!isFetchingProfileAttributes && !failedProfileAttributesFetch && profileAttributeModels.length === 0 && (
-                        <p className="text-xs text-content-subtle">The connector declares no profile attributes for this level.</p>
+                    {requestAttributeDescriptors.length > 0 && (
+                        <output className="block" data-testid="allowed-request-attributes-status">
+                            {!allowedNames.some((name) => permissionNames.has(name)) && (
+                                <p className="text-xs text-content-subtle">
+                                    Signing requests under this profile can set no request attribute.
+                                </p>
+                            )}
+                        </output>
+                    )}
+                    {!isFetchingProfileAttributes && !failedProfileAttributesFetch && formattingAttributeModels.length === 0 && (
+                        <p className="text-xs text-content-subtle">The connector declares no attributes for this level.</p>
                     )}
                 </Widget>
             )}

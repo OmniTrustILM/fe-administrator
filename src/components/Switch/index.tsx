@@ -16,6 +16,8 @@ type Props = {
     /** Id of an element describing the control (typically an error paragraph) — announced by screen readers. */
     ariaDescribedBy?: string;
     ariaInvalid?: boolean;
+    /** Accessible name of the control when its visible labels leave out what it switches. */
+    ariaLabel?: string;
 };
 
 function Switch({
@@ -30,6 +32,7 @@ function Switch({
     dataTestId,
     ariaDescribedBy,
     ariaInvalid,
+    ariaLabel,
 }: Readonly<Props>) {
     return (
         <div className={cn('flex items-center gap-x-3', className)} data-testid={dataTestId ?? `switch-${id}`}>
@@ -57,6 +60,7 @@ function Switch({
                         }}
                         disabled={disabled}
                         aria-invalid={ariaInvalid || undefined}
+                        aria-label={ariaLabel}
                         aria-describedby={ariaDescribedBy}
                         data-testid={dataTestId ? `${dataTestId}-input` : `switch-${id}-input`}
                     />

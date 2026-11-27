@@ -1,10 +1,17 @@
 import { test, expect } from 'playwright/ct-test';
 import type { Page } from '@playwright/test';
-import { SignatureLevel, SigningWorkflowType, TimestampSourceType } from 'types/openapi';
+import { AttributeContentType, AttributeVersion, SignatureLevel, SigningWorkflowType, TimestampSourceType } from 'types/openapi';
 import { ContentSigningProfileFormTestWrapper, type RecordedRequest } from './ContentSigningProfileFormTestWrapper';
 import {
     core,
+    coreWithDefaultStampPage,
+    coreWithMixedAppearanceGroup,
+    coreWithRequiredStampPage,
+    coreWithSigningPin,
+    coreWithStampHeight,
+    coreWithStampImage,
     DOCUMENT_SIGNING_EKU,
+    invoiceSigningProfile,
     packagingAttribute,
     profileWithSavedPackaging,
     profileWithRetiredSource,
@@ -40,11 +47,41 @@ async function toggleSwitch(page: Page, id: string, expected: boolean) {
     await expect(page.locator(`#${id}`)).toBeChecked({ checked: expected });
 }
 
+const allowedSwitch = (permissionName: string) => `allowedRequestAttribute-${permissionName}`;
+
 async function chooseFormatting(page: Page, level: string) {
     await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();
     await choose(page, 'contentSigningFormattingConnector', 'PAdES Connector');
     await choose(page, 'signatureFamily', 'PAdES');
     await choose(page, 'signatureLevel', level);
+}
+
+const groupToggle = (page: Page, title: string) => page.getByRole('button', { name: title, exact: true });
+
+async function showGroup(page: Page, title: string) {
+    await expect(groupToggle(page, title)).toHaveAttribute('aria-expanded', 'false');
+    await groupToggle(page, title).click();
+}
+
+const NOTHING_ALLOWED = 'Signing requests under this profile can set no request attribute.';
+
+// A text input stays read-only until it has focus.
+async function typeInto(page: Page, label: string, value: string) {
+    const input = page.getByLabel(label, { exact: true });
+    await input.click();
+    await input.fill(value);
+}
+
+async function startPadesProfile(page: Page, mount: (component: JSX.Element) => Promise<unknown>, answers = core) {
+    await mount(<ContentSigningProfileFormTestWrapper core={answers} />);
+    const nameInput = page.locator('#signingProfileName');
+    await nameInput.focus();
+    await nameInput.fill('DocumentSigning');
+    await chooseWorkflow(page, 'Content Signing');
+    await page.getByRole('tab', { name: TAB_SIGNING_SCHEME }).click();
+    await choose(page, 'certificateUuid', 'Plain Cert (1)');
+    await chooseFormatting(page, 'PAdES-B-T');
+    await choose(page, 'timestampSource', 'Durable TSA');
 }
 
 async function lastWorkflow(page: Page, type: 'createSigningProfile' | 'updateSigningProfile') {
@@ -182,6 +219,7 @@ test.describe('SigningProfileForm - content signing workflow', () => {
         await expect
             .poll(async () => (await requests(page, 'listContentSigningProfileAttributes')).at(-1))
             .toEqual({ connectorUuid: 'c-pades', family: 'pades', level: SignatureLevel.Signed });
+        await showGroup(page, 'Profile settings');
         await expect(page.getByLabel('Signing Reason')).toBeVisible();
     });
 
@@ -191,7 +229,158 @@ test.describe('SigningProfileForm - content signing workflow', () => {
 
         await chooseFormatting(page, 'PAdES-B');
 
-        await expect(page.getByText('Failed to list the profile attributes: connector unavailable')).toBeVisible();
+        await expect(page.getByText('Failed to list the formatting connector attributes: connector unavailable')).toBeVisible();
+    });
+
+    test('sections the request attributes by group with a toggle per group and per ungrouped request attribute', async ({
+        mount,
+        page,
+    }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={core} />);
+        await chooseWorkflow(page, 'Content Signing');
+
+        await chooseFormatting(page, 'PAdES-B-T');
+
+        await expect(page.getByText('Signature appearance', { exact: true })).toBeVisible();
+        await showGroup(page, 'Signature appearance');
+        await expect(page.getByLabel('stamp-page', { exact: true })).toBeVisible();
+        await showGroup(page, 'Request attributes');
+        await expect(page.getByLabel('timestamp-policy', { exact: true })).toBeVisible();
+        await expect(page.locator(`#${allowedSwitch('signature_appearance')}`)).not.toBeChecked();
+        await expect(page.locator(`#${allowedSwitch('timestamp-policy')}`)).not.toBeChecked();
+        await expect(page.locator(`#${allowedSwitch('stamp-page')}`)).toHaveCount(0);
+        await expect(page.locator(`#${allowedSwitch('reason')}`)).toHaveCount(0);
+    });
+
+    test('gathers the profile attributes without a group in a pane that requests cannot set', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={core} />);
+        await chooseWorkflow(page, 'Content Signing');
+        await chooseFormatting(page, 'PAdES-B-T');
+
+        await showGroup(page, 'Profile settings');
+
+        const pane = page.getByTestId('attribute-group-__profile__');
+        await expect(pane).toContainText('Request cannot set');
+        await expect(pane.getByLabel('Signing Reason')).toBeVisible();
+        await expect(pane.getByLabel('timestamp-policy', { exact: true })).toHaveCount(0);
+    });
+
+    test('gathers the request attributes without a group in a titled pane, each with its own switch', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={core} />);
+        await chooseWorkflow(page, 'Content Signing');
+        await chooseFormatting(page, 'PAdES-B-T');
+
+        await showGroup(page, 'Request attributes');
+
+        const pane = page.getByTestId('attribute-group-__request__');
+        await expect(pane).not.toContainText('Request cannot set');
+        await expect(pane.getByLabel('timestamp-policy', { exact: true })).toBeVisible();
+        await expect(pane.getByRole('checkbox', { name: 'Request may set timestamp-policy' })).toBeVisible();
+        await expect(pane.getByLabel('stamp-page', { exact: true })).toHaveCount(0);
+    });
+
+    test('names in a folded summary the request attributes without a group that requests may set', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={core} />);
+        await chooseWorkflow(page, 'Content Signing');
+        await chooseFormatting(page, 'PAdES-B-T');
+        const summary = page.getByTestId('attribute-group-summary-__request__');
+        await expect(summary).toHaveText('Nothing set · Requests may set none');
+
+        await showGroup(page, 'Request attributes');
+        await toggleSwitch(page, allowedSwitch('timestamp-policy'), true);
+        await groupToggle(page, 'Request attributes').click();
+
+        await expect(summary).toHaveText('Nothing set · Requests may set: timestamp-policy');
+    });
+
+    test('folds a request-attribute group that holds no value to a summary line', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={core} />);
+        await chooseWorkflow(page, 'Content Signing');
+
+        await chooseFormatting(page, 'PAdES-B-T');
+
+        await expect(groupToggle(page, 'Signature appearance')).toHaveAttribute('aria-expanded', 'false');
+        await expect(page.getByTestId('attribute-group-summary-signature_appearance')).toHaveText('Nothing set');
+        await expect(page.getByLabel('stamp-page', { exact: true })).toBeHidden();
+    });
+
+    test('shows a folded group on demand', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={core} />);
+        await chooseWorkflow(page, 'Content Signing');
+        await chooseFormatting(page, 'PAdES-B-T');
+
+        await showGroup(page, 'Signature appearance');
+
+        await expect(groupToggle(page, 'Signature appearance')).toHaveAttribute('aria-expanded', 'true');
+        await expect(page.getByLabel('stamp-page', { exact: true })).toBeVisible();
+        await expect(page.getByTestId('attribute-group-summary-signature_appearance')).toHaveCount(0);
+    });
+
+    test('opens a group that holds a saved value', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={{ ...core, editedProfile: savedProfile }} />);
+        await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();
+
+        await expect(page.getByLabel('stamp-page', { exact: true })).toHaveValue('last');
+    });
+
+    test('opens a group that holds a required attribute', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={coreWithRequiredStampPage} />);
+        await chooseWorkflow(page, 'Content Signing');
+
+        await chooseFormatting(page, 'PAdES-B-T');
+
+        await expect(page.getByLabel('stamp-page')).toBeVisible();
+    });
+
+    test('names the values of a folded group in its summary and saves them', async ({ mount, page }) => {
+        await startPadesProfile(page, mount);
+        await showGroup(page, 'Signature appearance');
+        await typeInto(page, 'stamp-page', 'first');
+
+        await groupToggle(page, 'Signature appearance').click();
+
+        await expect(page.getByTestId('attribute-group-summary-signature_appearance')).toHaveText('Set: stamp-page');
+        await page.getByRole('button', { name: 'Create', exact: true }).click();
+        await expect.poll(() => lastWorkflow(page, 'createSigningProfile')).toBeDefined();
+        const workflow = await lastWorkflow(page, 'createSigningProfile');
+        expect(workflow.signatureFormattingConnectorAttributes).toContainEqual(
+            expect.objectContaining({ name: 'stamp-page', content: [{ data: 'first' }] }),
+        );
+    });
+
+    test("gives a group's profile attributes a pane after the group, apart from its switch", async ({ mount, page }) => {
+        await startPadesProfile(page, mount, coreWithMixedAppearanceGroup);
+
+        await toggleSwitch(page, allowedSwitch('signature_appearance'), true);
+        await showGroup(page, 'Signature appearance (profile only)');
+        await typeInto(page, 'stamp-font', 'Helvetica');
+
+        await expect(page.locator('[data-testid^="attribute-group-toggle-"]')).toHaveText([
+            'Profile settings',
+            'Signature appearance',
+            'Signature appearance (profile only)',
+            'Request attributes',
+        ]);
+        await expect(page.getByTestId('attribute-group-__profile__:signature_appearance')).not.toContainText('Request may set');
+        await page.getByRole('button', { name: 'Create', exact: true }).click();
+        await expect.poll(() => lastWorkflow(page, 'createSigningProfile')).toBeDefined();
+        const workflow = await lastWorkflow(page, 'createSigningProfile');
+        expect(workflow.allowedRequestAttributes).toEqual(['signature_appearance']);
+        expect(workflow.signatureFormattingConnectorAttributes).toContainEqual(
+            expect.objectContaining({ name: 'stamp-font', content: [{ data: 'Helvetica' }] }),
+        );
+    });
+
+    test('lets requests be allowed to set a folded group', async ({ mount, page }) => {
+        await startPadesProfile(page, mount);
+
+        await toggleSwitch(page, allowedSwitch('signature_appearance'), true);
+
+        await expect(page.getByLabel('stamp-page', { exact: true })).toBeHidden();
+        await page.getByRole('button', { name: 'Create', exact: true }).click();
+        await expect
+            .poll(() => lastWorkflow(page, 'createSigningProfile'))
+            .toMatchObject({ allowedRequestAttributes: ['signature_appearance'] });
     });
 
     test('asks for a timestamp source only above the SIGNED level', async ({ mount, page }) => {
@@ -254,6 +443,7 @@ test.describe('SigningProfileForm - content signing workflow', () => {
         await chooseWorkflow(page, 'Content Signing');
         await chooseFormatting(page, 'PAdES-B-T');
         await choose(page, 'timestampSource', 'Durable TSA');
+        await showGroup(page, 'Profile settings');
         await page.getByLabel('Signing Reason').focus();
         await page.getByLabel('Signing Reason').fill('Contract');
         await page.getByRole('tab', { name: TAB_SIGNING_SCHEME }).click();
@@ -274,7 +464,135 @@ test.describe('SigningProfileForm - content signing workflow', () => {
                 timestampSource: { signingProfileUuid: 'tsa-1', type: TimestampSourceType.Internal },
                 requireNonRepudiation: false,
                 requiredExtendedKeyUsageOids: [],
+                allowedRequestAttributes: [],
             });
+    });
+
+    test('creates a profile with an uploaded stamp image', async ({ mount, page }) => {
+        const pixel = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=';
+        await mount(<ContentSigningProfileFormTestWrapper core={coreWithStampImage} />);
+        const nameInput = page.locator('#signingProfileName');
+        await nameInput.focus();
+        await nameInput.fill('DocumentSigning');
+        await chooseWorkflow(page, 'Content Signing');
+        await chooseFormatting(page, 'PAdES-B-T');
+        await choose(page, 'timestampSource', 'Durable TSA');
+        await showGroup(page, 'Signature appearance');
+        await page
+            .locator('input[type="file"][id$="stamp-image"]')
+            .setInputFiles({ name: 'stamp.png', mimeType: 'image/png', buffer: Buffer.from(pixel, 'base64') });
+        await expect(page.getByRole('img', { name: 'stamp-image' })).toBeVisible();
+        await page.getByRole('tab', { name: TAB_SIGNING_SCHEME }).click();
+        await choose(page, 'certificateUuid', 'Plain Cert (1)');
+
+        await page.getByRole('button', { name: 'Create', exact: true }).click();
+
+        await expect.poll(() => lastWorkflow(page, 'createSigningProfile')).toBeDefined();
+        const workflow = await lastWorkflow(page, 'createSigningProfile');
+        expect(workflow.signatureFormattingConnectorAttributes).toContainEqual(
+            expect.objectContaining({
+                name: 'stamp-image',
+                version: AttributeVersion.V3,
+                contentType: AttributeContentType.File,
+                content: [
+                    { contentType: AttributeContentType.File, data: { content: pixel, fileName: 'stamp.png', mimeType: 'image/png' } },
+                ],
+            }),
+        );
+    });
+
+    test('leaves a file attribute that was visited but left empty out of the profile', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={coreWithStampImage} />);
+        const nameInput = page.locator('#signingProfileName');
+        await nameInput.focus();
+        await nameInput.fill('DocumentSigning');
+        await chooseWorkflow(page, 'Content Signing');
+        await chooseFormatting(page, 'PAdES-B-T');
+        await choose(page, 'timestampSource', 'Durable TSA');
+        await showGroup(page, 'Signature appearance');
+        await expect(page.getByText('stamp-image')).toBeVisible();
+        await showGroup(page, 'Profile settings');
+        await typeInto(page, 'Signing Reason', 'Contract');
+        const stampImageContent = page.locator('input[id$="stamp-image-content"]');
+        await stampImageContent.focus();
+        await stampImageContent.blur();
+        await page.getByRole('tab', { name: TAB_SIGNING_SCHEME }).click();
+        await choose(page, 'certificateUuid', 'Plain Cert (1)');
+
+        await page.getByRole('button', { name: 'Create', exact: true }).click();
+
+        await expect.poll(() => lastWorkflow(page, 'createSigningProfile')).toBeDefined();
+        expect(savedNames(await lastWorkflow(page, 'createSigningProfile'))).toEqual(['reason']);
+    });
+
+    test('names each allowed-request-attribute switch after what it allows', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={core} />);
+        await chooseWorkflow(page, 'Content Signing');
+        await chooseFormatting(page, 'PAdES-B-T');
+        await showGroup(page, 'Request attributes');
+
+        await expect(page.getByRole('checkbox', { name: 'Request may set Signature appearance' })).toBeVisible();
+        await expect(page.getByRole('checkbox', { name: 'Request may set timestamp-policy' })).toBeVisible();
+    });
+
+    test('announces that requests may set no request attribute', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={core} />);
+        await chooseWorkflow(page, 'Content Signing');
+        await chooseFormatting(page, 'PAdES-B-T');
+        await showGroup(page, 'Request attributes');
+        await toggleSwitch(page, allowedSwitch('timestamp-policy'), true);
+        const status = page.getByTestId('allowed-request-attributes-status');
+        await expect(status).toHaveRole('status');
+        await expect(status).toBeEmpty();
+
+        await toggleSwitch(page, allowedSwitch('timestamp-policy'), false);
+
+        await expect(status).toHaveText(NOTHING_ALLOWED);
+    });
+
+    test('says that requests may set no request attribute while none is allowed', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={core} />);
+        await chooseWorkflow(page, 'Content Signing');
+        await chooseFormatting(page, 'PAdES-B-T');
+
+        await expect(page.getByText(NOTHING_ALLOWED)).toBeVisible();
+        await showGroup(page, 'Request attributes');
+        await toggleSwitch(page, allowedSwitch('timestamp-policy'), true);
+        await expect(page.getByText(NOTHING_ALLOWED)).toHaveCount(0);
+    });
+
+    test('creates a profile that allows the toggled request attributes and keeps their typed values', async ({ mount, page }) => {
+        await startPadesProfile(page, mount);
+        await toggleSwitch(page, allowedSwitch('signature_appearance'), true);
+        await showGroup(page, 'Signature appearance');
+        await typeInto(page, 'stamp-page', 'first');
+
+        await page.getByRole('button', { name: 'Create', exact: true }).click();
+
+        await expect
+            .poll(() => lastWorkflow(page, 'createSigningProfile'))
+            .toMatchObject({ allowedRequestAttributes: ['signature_appearance'] });
+        const workflow = await lastWorkflow(page, 'createSigningProfile');
+        expect(workflow.signatureFormattingConnectorAttributes).toContainEqual(
+            expect.objectContaining({ name: 'stamp-page', content: [{ data: 'first' }] }),
+        );
+    });
+
+    test('keeps a request-attribute value whether or not requests may set it', async ({ mount, page }) => {
+        await startPadesProfile(page, mount);
+        await showGroup(page, 'Request attributes');
+        await typeInto(page, 'timestamp-policy', '1.2.3');
+        await toggleSwitch(page, allowedSwitch('timestamp-policy'), true);
+        await toggleSwitch(page, allowedSwitch('timestamp-policy'), false);
+
+        await expect(page.getByLabel('timestamp-policy', { exact: true })).toHaveValue('1.2.3');
+        await page.getByRole('button', { name: 'Create', exact: true }).click();
+
+        await expect.poll(() => lastWorkflow(page, 'createSigningProfile')).toMatchObject({ allowedRequestAttributes: [] });
+        const workflow = await lastWorkflow(page, 'createSigningProfile');
+        expect(workflow.signatureFormattingConnectorAttributes).toContainEqual(
+            expect.objectContaining({ name: 'timestamp-policy', content: [{ data: '1.2.3' }] }),
+        );
     });
 
     test('creates a content-signing profile that records the raw signature and the data to be signed', async ({ mount, page }) => {
@@ -385,7 +703,7 @@ test.describe('SigningProfileForm - content signing workflow', () => {
 
         await expect
             .poll(() => lastWorkflow(page, 'updateSigningProfile'))
-            .toMatchObject({ level: SignatureLevel.Signed, allowedRequestAttributes: ['signature-appearance'] });
+            .toMatchObject({ level: SignatureLevel.Signed, allowedRequestAttributes: ['signature_appearance'] });
         const workflow = await lastWorkflow(page, 'updateSigningProfile');
         expect(savedNames(workflow)).toEqual(['reason', 'stamp-page']);
         expect(workflow.signatureFormattingConnectorAttributes).toContainEqual(requestValue('attr-stamp-page', 'stamp-page', 'last'));
@@ -401,11 +719,203 @@ test.describe('SigningProfileForm - content signing workflow', () => {
         await choose(page, 'signatureLevel', 'PAdES-B-T');
 
         await expect(page.getByLabel('Signing Reason')).toHaveValue('');
+        await expect(page.locator(`#${allowedSwitch('signature_appearance')}`)).not.toBeChecked();
         await page.getByRole('button', { name: 'Update', exact: true }).click();
         await expect.poll(() => lastWorkflow(page, 'updateSigningProfile')).toMatchObject({ signatureFormattingConnectorUuid: 'c-cades' });
         const workflow = await lastWorkflow(page, 'updateSigningProfile');
-        expect(workflow).not.toHaveProperty('allowedRequestAttributes');
+        expect(workflow.allowedRequestAttributes).toEqual([]);
         expect(savedNames(workflow)).toEqual([]);
+    });
+
+    test('keeps the edits when the level is listed again', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={{ ...core, editedProfile: savedProfile }} />);
+        await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();
+        await expect(page.getByLabel('Signing Reason')).toHaveValue('Contract');
+        await typeInto(page, 'Signing Reason', 'Typed');
+        await typeInto(page, 'stamp-page', 'first');
+        await toggleSwitch(page, allowedSwitch('timestamp-policy'), false);
+
+        await choose(page, 'signatureLevel', 'PAdES-B');
+        await choose(page, 'signatureLevel', 'PAdES-B-T');
+
+        await expect(page.getByLabel('timestamp-policy', { exact: true })).toBeVisible();
+        await expect(page.getByLabel('Signing Reason')).toHaveValue('Typed');
+        await expect(page.getByLabel('stamp-page', { exact: true })).toHaveValue('first');
+        await expect(page.locator(`#${allowedSwitch('signature_appearance')}`)).toBeChecked();
+        await expect(page.locator(`#${allowedSwitch('timestamp-policy')}`)).not.toBeChecked();
+    });
+
+    test('keeps an integer the editor rejects as typed across a level change', async ({ mount, page }) => {
+        await startPadesProfile(page, mount, coreWithStampHeight);
+        await showGroup(page, 'Profile settings');
+        await typeInto(page, 'stamp-height', '1.5');
+
+        await choose(page, 'signatureLevel', 'PAdES-B');
+        await choose(page, 'signatureLevel', 'PAdES-B-T');
+
+        await expect(page.getByLabel('stamp-height', { exact: true })).toHaveValue('1.5');
+        await expect(page.getByText('Value must be an integer')).toBeVisible();
+    });
+
+    test('saves a secret typed before a level change as typed', async ({ mount, page }) => {
+        await startPadesProfile(page, mount, coreWithSigningPin);
+        await showGroup(page, 'Profile settings');
+        await typeInto(page, 'signing-pin', '1234');
+
+        await choose(page, 'signatureLevel', 'PAdES-B');
+        await choose(page, 'signatureLevel', 'PAdES-B-T');
+        await choose(page, 'timestampSource', 'Durable TSA');
+        await page.getByRole('button', { name: 'Create', exact: true }).click();
+
+        await expect
+            .poll(async () => (await lastWorkflow(page, 'createSigningProfile')).signatureFormattingConnectorAttributes)
+            .toContainEqual(expect.objectContaining({ name: 'signing-pin', content: [{ data: { secret: '1234' } }] }));
+    });
+
+    test('keeps a list selection when the chosen level is chosen again', async ({ mount, page }) => {
+        const profileAttributesByLevel = { [SignatureLevel.Timestamped]: [packagingAttribute] };
+        await mount(
+            <ContentSigningProfileFormTestWrapper core={{ ...core, profileAttributesByLevel, editedProfile: profileWithSavedPackaging }} />,
+        );
+        await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();
+        const packaging = page.getByTestId('select-__attributes__contentSigningProfileAttrs__.packagingSelect-trigger');
+        await expect(packaging).toContainText('Enveloped');
+        await packaging.click();
+        await page.getByRole('option', { name: 'Enveloping' }).click();
+
+        await choose(page, 'signatureLevel', 'PAdES-B-T');
+
+        await expect(packaging).toContainText('Enveloping');
+    });
+
+    test("shows the saved values of a profile opened from another profile's edit page", async ({ mount, page }) => {
+        await mount(
+            <ContentSigningProfileFormTestWrapper core={{ ...core, editedProfile: savedProfile, linkedProfile: invoiceSigningProfile }} />,
+        );
+        await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();
+        await typeInto(page, 'Signing Reason', 'Typed');
+        await choose(page, 'signatureLevel', 'PAdES-B');
+
+        await page.getByRole('link', { name: 'Edit InvoiceSigning' }).click();
+
+        await expect(page.locator('#signingProfileName')).toHaveValue('InvoiceSigning');
+        await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();
+        await expect(page.getByLabel('Signing Reason')).toHaveValue('Invoice');
+    });
+
+    test('keeps a cleared field empty when the next level declares a default for it', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={coreWithDefaultStampPage} />);
+        await chooseWorkflow(page, 'Content Signing');
+        await chooseFormatting(page, 'PAdES-B-T');
+        await expect(page.getByLabel('stamp-page', { exact: true })).toHaveValue('first');
+        await typeInto(page, 'stamp-page', '');
+
+        await choose(page, 'signatureLevel', 'PAdES-B');
+
+        await expect(page.getByTestId('attribute-group-toggle-signature_appearance')).toBeVisible();
+        await expect(page.getByLabel('stamp-page', { exact: true })).toHaveValue('');
+    });
+
+    test('keeps the edits the new level still declares and drops the rest', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={{ ...core, editedProfile: savedProfile }} />);
+        await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();
+        await expect(page.getByLabel('stamp-page', { exact: true })).toHaveValue('last');
+        await typeInto(page, 'stamp-page', 'first');
+        await typeInto(page, 'timestamp-policy', '9.9');
+
+        await choose(page, 'signatureLevel', 'PAdES-B');
+        await expect(page.getByLabel('timestamp-policy', { exact: true })).toHaveCount(0);
+        await page.getByRole('button', { name: 'Update', exact: true }).click();
+
+        await expect
+            .poll(() => lastWorkflow(page, 'updateSigningProfile'))
+            .toMatchObject({ level: SignatureLevel.Signed, allowedRequestAttributes: ['signature_appearance'] });
+        const workflow = await lastWorkflow(page, 'updateSigningProfile');
+        expect(savedNames(workflow)).toEqual(['reason', 'stamp-page']);
+        expect(workflow.signatureFormattingConnectorAttributes).toContainEqual(requestValue('attr-stamp-page', 'stamp-page', 'first'));
+    });
+
+    test('keeps the edits across a level whose listing fails', async ({ mount, page }) => {
+        const refusal = 'Signature level LONG_TERM is not available yet';
+        await mount(
+            <ContentSigningProfileFormTestWrapper
+                core={{ ...core, editedProfile: savedProfile, profileAttributeRefusalsByLevel: { [SignatureLevel.LongTerm]: refusal } }}
+            />,
+        );
+        await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();
+        await expect(page.getByLabel('Signing Reason')).toHaveValue('Contract');
+        await typeInto(page, 'Signing Reason', 'Typed');
+
+        await choose(page, 'signatureLevel', 'PAdES-B-LT');
+        await expect(page.getByText(`Failed to list the formatting connector attributes: ${refusal}`)).toBeVisible();
+        await choose(page, 'signatureLevel', 'PAdES-B-T');
+
+        await expect(page.getByLabel('Signing Reason')).toHaveValue('Typed');
+    });
+
+    test('keeps the saved values and allowed names across a level that does not declare them', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={{ ...core, editedProfile: savedProfile }} />);
+        await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();
+        await expect(page.getByLabel('timestamp-policy', { exact: true })).toHaveValue('1.2.3.4');
+
+        await choose(page, 'signatureLevel', 'PAdES-B');
+        await expect(page.getByLabel('timestamp-policy', { exact: true })).toHaveCount(0);
+        await choose(page, 'signatureLevel', 'PAdES-B-T');
+
+        await expect(page.getByLabel('timestamp-policy', { exact: true })).toHaveValue('1.2.3.4');
+        await expect(page.locator(`#${allowedSwitch('timestamp-policy')}`)).toBeChecked();
+        await page.getByRole('button', { name: 'Update', exact: true }).click();
+        await expect
+            .poll(() => lastWorkflow(page, 'updateSigningProfile'))
+            .toMatchObject({ level: SignatureLevel.Timestamped, allowedRequestAttributes: SAVED_REQUEST_ATTRIBUTES });
+        const workflow = await lastWorkflow(page, 'updateSigningProfile');
+        expect(savedNames(workflow)).toEqual(['reason', 'stamp-page', 'timestamp-policy']);
+    });
+
+    test('keeps the saved values when another profile left a listing of another level', async ({ mount, page }) => {
+        await mount(
+            <ContentSigningProfileFormTestWrapper
+                core={{ ...core, editedProfile: savedProfile, cachedListing: { connectorUuid: 'c-pades', level: SignatureLevel.Signed } }}
+            />,
+        );
+        await editDescription(page);
+
+        await page.getByRole('button', { name: 'Update', exact: true }).click();
+
+        await expect
+            .poll(async () => savedNames(await lastWorkflow(page, 'updateSigningProfile')))
+            .toEqual(['reason', 'stamp-page', 'timestamp-policy']);
+    });
+
+    test('keeps the edits when the connector is cleared and chosen again', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={{ ...core, editedProfile: savedProfile }} />);
+        await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();
+        await expect(page.getByLabel('Signing Reason')).toHaveValue('Contract');
+        await typeInto(page, 'Signing Reason', 'Typed');
+
+        await page.getByTestId('select-contentSigningFormattingConnector-clear').click();
+        await choose(page, 'contentSigningFormattingConnector', 'PAdES Connector');
+        await choose(page, 'signatureFamily', 'PAdES');
+        await choose(page, 'signatureLevel', 'PAdES-B-T');
+
+        await expect(page.getByLabel('Signing Reason')).toHaveValue('Typed');
+    });
+
+    test('keeps the saved allowed request attributes when the saved connector is cleared and chosen again', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileFormTestWrapper core={{ ...core, editedProfile: savedProfile }} />);
+        await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();
+        await expect(page.locator(`#${allowedSwitch('signature_appearance')}`)).toBeChecked();
+
+        await page.getByTestId('select-contentSigningFormattingConnector-clear').click();
+        await choose(page, 'contentSigningFormattingConnector', 'PAdES Connector');
+        await choose(page, 'signatureFamily', 'PAdES');
+        await choose(page, 'signatureLevel', 'PAdES-B-T');
+
+        await expect(page.locator(`#${allowedSwitch('signature_appearance')}`)).toBeChecked();
+        await page.getByRole('button', { name: 'Update', exact: true }).click();
+        await expect
+            .poll(() => lastWorkflow(page, 'updateSigningProfile'))
+            .toMatchObject({ signatureFormattingConnectorUuid: 'c-pades', allowedRequestAttributes: SAVED_REQUEST_ATTRIBUTES });
     });
 
     test('keeps Update disabled while the formatting attributes are pending', async ({ mount, page }) => {
@@ -448,7 +958,7 @@ test.describe('SigningProfileForm - content signing workflow', () => {
         await editDescription(page);
 
         await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();
-        await expect(page.getByText('Failed to list the profile attributes: connector unavailable')).toBeVisible();
+        await expect(page.getByText('Failed to list the formatting connector attributes: connector unavailable')).toBeVisible();
         await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeDisabled();
     });
 
@@ -465,7 +975,7 @@ test.describe('SigningProfileForm - content signing workflow', () => {
         await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();
         await choose(page, 'signatureLevel', 'PAdES-B-LT');
 
-        await expect(page.getByText(`Failed to list the profile attributes: ${refusal}`)).toBeVisible();
+        await expect(page.getByText(`Failed to list the formatting connector attributes: ${refusal}`)).toBeVisible();
         await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeDisabled();
     });
 

@@ -5,7 +5,14 @@ import { Link, MemoryRouter, Route, Routes } from 'react-router';
 import { createObjectPermissionStore } from 'components/_pages/test-utils/objectPermissionStore';
 import { actions, slice as signingProfilesSlice } from 'ducks/signing-profiles';
 import { slice as tspProfilesSlice } from 'ducks/tsp-profiles';
-import { Resource, ResourceAction, type SignatureFamilyDeclaration, type SigningProfileDto, type SigningProtocol } from 'types/openapi';
+import {
+    type BaseAttributeDto,
+    Resource,
+    ResourceAction,
+    type SignatureFamilyDeclaration,
+    type SigningProfileDto,
+    type SigningProtocol,
+} from 'types/openapi';
 import SigningProfileDetail from './SigningProfileDetail';
 
 export interface DetailCoreAnswers {
@@ -14,6 +21,8 @@ export interface DetailCoreAnswers {
     declarations: SignatureFamilyDeclaration[] | { refusal: string };
     /** Protocols Core supports for the profile's workflow, or the reason Core gives for refusing them. */
     supportedProtocols: SigningProtocol[] | { refusal: string };
+    /** Request attributes the connector declares for the workflow, or the reason Core gives for refusing them. */
+    requestAttributes: BaseAttributeDto[] | { refusal: string };
 }
 
 /** Route of a profile other than the one the page opens on. */
@@ -26,6 +35,7 @@ const recordedTypes = new Set<string>([
     actions.getTspActivationDetails.type,
     actions.listSupportedProtocols.type,
     actions.listSignatureFormattingConnectorDeclarations.type,
+    actions.listContentSigningProfileAttributes.type,
     actions.activateIlmNative.type,
     actions.deactivateIlmNative.type,
 ]);
@@ -42,6 +52,11 @@ function answer(core: DetailCoreAnswers, action: UnknownAction): UnknownAction |
     if (actions.listSupportedProtocols.match(action)) {
         if ('refusal' in core.supportedProtocols) return actions.listSupportedProtocolsFailure({ error: core.supportedProtocols.refusal });
         return actions.listSupportedProtocolsSuccess({ supportedProtocols: core.supportedProtocols });
+    }
+    if (actions.listContentSigningProfileAttributes.match(action)) {
+        if ('refusal' in core.requestAttributes)
+            return actions.listContentSigningProfileAttributesFailure({ reason: core.requestAttributes.refusal });
+        return actions.listContentSigningProfileAttributesSuccess({ profileAttributes: [], requestAttributes: core.requestAttributes });
     }
     if (actions.activateIlmNative.match(action)) return actions.activateIlmNativeSuccess(action.payload);
     if (actions.deactivateIlmNative.match(action)) return actions.deactivateIlmNativeSuccess(action.payload);

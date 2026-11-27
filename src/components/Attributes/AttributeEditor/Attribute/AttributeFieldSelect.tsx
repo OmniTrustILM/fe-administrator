@@ -26,6 +26,9 @@ type AttributeFieldSelectProps = {
     onSelectChangeSingle: (fieldOnChange: (v: unknown) => void) => (newValue: unknown) => void;
 };
 
+const acceptsCustomValues = (descriptor: DataAttributeModel | CustomAttributeModel) =>
+    descriptor.properties.extensibleList === true && !descriptor.properties.readOnly;
+
 export function AttributeFieldSelect({
     name,
     descriptor,
@@ -67,6 +70,7 @@ export function AttributeFieldSelect({
                               .map((v) => ({ label: String(v), value: v as AttributeSelectOption['value'] }))
                         : [];
                 const selectOptions = [...baseOptions, ...extra];
+                const noOptionsMessage = acceptsCustomValues(descriptor) ? 'No values yet: use Add custom value below' : undefined;
                 // Creating leaves the field as it was, so mark it touched or a cancelled create would hide its error.
                 const footerAction = createNewAction && {
                     ...createNewAction,
@@ -100,6 +104,7 @@ export function AttributeFieldSelect({
                                         onBlur={field.onBlur}
                                         ariaDescribedBy={describedBy}
                                         footerAction={footerAction}
+                                        noOptionsMessage={noOptionsMessage}
                                     />
                                 ) : (
                                     <Select
@@ -116,12 +121,13 @@ export function AttributeFieldSelect({
                                         onBlur={field.onBlur}
                                         ariaDescribedBy={describedBy}
                                         footerAction={footerAction}
+                                        noOptionsMessage={noOptionsMessage}
                                     />
                                 )}
                             </div>
                             {deleteButton}
                         </div>
-                        {descriptor.properties.extensibleList === true && !descriptor.properties.readOnly && (
+                        {acceptsCustomValues(descriptor) && (
                             <>
                                 {!showAddCustom && (
                                     <Button

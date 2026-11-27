@@ -41,6 +41,14 @@ export interface ContentSigningFormattingSelection {
     level: SignatureLevel;
 }
 
+/** Tells whether Core listed the formatting attributes of exactly this selection. */
+export function isListedFor(
+    listedFor: ContentSigningFormattingSelection | undefined,
+    { connectorUuid, family, level }: { connectorUuid: string; family: string; level: string },
+): boolean {
+    return listedFor?.connectorUuid === connectorUuid && listedFor.family === family && listedFor.level === level;
+}
+
 /** Filters `listSigningCertificates` applies: the workflow's floor and the profile's certificate purpose. */
 export interface SigningCertificatesQuery {
     workflowType: SigningWorkflowType;
@@ -662,10 +670,12 @@ const failedSignatureFormattingConnectorDeclarationsFetch = createSelector(
 );
 const signingRecords = createSelector(state, (state) => state.signingRecords);
 const contentSigningProfileAttributeDescriptors = createSelector(state, (state) => state.contentSigningProfileAttributeDescriptors);
-const contentSigningProfileAttributeModels = createSelector(contentSigningProfileAttributeDescriptors, (descriptors) =>
-    descriptors.map(transformAttributeDescriptorDtoToModel),
-);
 const contentSigningRequestAttributeDescriptors = createSelector(state, (state) => state.contentSigningRequestAttributeDescriptors);
+/** Profile attributes and request attributes of the listed formatting, as the one attribute editor shows them. */
+const contentSigningProfileAndRequestAttributeModels = createSelector(
+    [contentSigningProfileAttributeDescriptors, contentSigningRequestAttributeDescriptors],
+    (profileAttributes, requestAttributes) => [...profileAttributes, ...requestAttributes].map(transformAttributeDescriptorDtoToModel),
+);
 const isFetchingContentSigningProfileAttributes = createSelector(state, (state) => state.isFetchingContentSigningProfileAttributes);
 const failedContentSigningProfileAttributesFetch = createSelector(state, (state) => state.failedContentSigningProfileAttributesFetch);
 /** The selection whose formatting attributes Core listed, or nothing while a listing is pending or after it failed. */
@@ -757,8 +767,8 @@ export const selectors = {
     signatureFormattingConnectorDeclarations,
     failedSignatureFormattingConnectorDeclarationsFetch,
     signingRecords,
-    contentSigningProfileAttributeModels,
     contentSigningRequestAttributeDescriptors,
+    contentSigningProfileAndRequestAttributeModels,
     contentSigningAttributesListedFor,
     isFetchingContentSigningProfileAttributes,
     failedContentSigningProfileAttributesFetch,

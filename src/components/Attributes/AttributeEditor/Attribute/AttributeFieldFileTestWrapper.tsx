@@ -16,6 +16,7 @@ export type AttributeFieldFileTestWrapperProps = {
     validateOnMount?: boolean;
     withSubmit?: boolean;
     withNextField?: boolean;
+    initialFile?: { content: string; fileName: string; mimeType: string };
 };
 
 export function AttributeFieldFileTestWrapper({
@@ -29,11 +30,12 @@ export function AttributeFieldFileTestWrapper({
     validateOnMount = false,
     withSubmit = false,
     withNextField = false,
+    initialFile = blankFile,
 }: Readonly<AttributeFieldFileTestWrapperProps>) {
     const methods = ReactHookForm.useForm({
         mode,
         defaultValues: {
-            [name]: blankFile,
+            [name]: initialFile,
         },
     });
     useEffect(() => {

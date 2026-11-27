@@ -29,17 +29,17 @@ const signingReason = {
     properties: { label: 'Signing Reason', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
 } as BaseAttributeDto;
 
-const requestAttribute = (uuid: string, name: string, group?: string) =>
+export const requestAttribute = (uuid: string, name: string, group?: string, required = false, label = name) =>
     ({
         uuid,
         name,
         type: AttributeType.Data,
         contentType: AttributeContentType.String,
         version: 2,
-        properties: { label: name, group, required: false, readOnly: false, visible: true, list: false, multiSelect: false },
+        properties: { label, group, required, readOnly: false, visible: true, list: false, multiSelect: false },
     }) as BaseAttributeDto;
 
-const stampPage = requestAttribute('attr-stamp-page', 'stamp-page', 'signature-appearance');
+const stampPage = requestAttribute('attr-stamp-page', 'stamp-page', 'signature_appearance');
 const timestampPolicy = requestAttribute('attr-timestamp-policy', 'timestamp-policy');
 
 export const core: CoreAnswers = {
@@ -102,7 +102,63 @@ export const core: CoreAnswers = {
     },
 };
 
-export const SAVED_REQUEST_ATTRIBUTES = ['signature-appearance', 'timestamp-policy'];
+const stampImage = {
+    ...requestAttribute('attr-stamp-image', 'stamp-image', 'signature_appearance'),
+    contentType: AttributeContentType.File,
+    version: 3,
+} as BaseAttributeDto;
+
+export const coreWithStampImage: CoreAnswers = {
+    ...core,
+    requestAttributesByLevel: { [SignatureLevel.Timestamped]: [stampPage, timestampPolicy, stampImage] },
+};
+
+const stampPageWithDefault = { ...stampPage, content: [{ data: 'first' }] } as BaseAttributeDto;
+
+/** Core declares a default stamp page at both levels that list request attributes. */
+export const coreWithDefaultStampPage: CoreAnswers = {
+    ...core,
+    requestAttributesByLevel: {
+        [SignatureLevel.Signed]: [stampPageWithDefault],
+        [SignatureLevel.Timestamped]: [stampPageWithDefault, timestampPolicy],
+    },
+};
+
+const requiredStampPage = requestAttribute('attr-stamp-page', 'stamp-page', 'signature_appearance', true);
+
+export const coreWithRequiredStampPage: CoreAnswers = {
+    ...core,
+    requestAttributesByLevel: { [SignatureLevel.Timestamped]: [requiredStampPage, timestampPolicy] },
+};
+
+const stampFont = requestAttribute('attr-stamp-font', 'stamp-font', 'signature_appearance');
+
+/** Core lists a profile attribute in the same group as the stamp page, a request attribute. */
+export const coreWithMixedAppearanceGroup: CoreAnswers = {
+    ...core,
+    profileAttributesByLevel: { [SignatureLevel.Timestamped]: [signingReason, stampFont] },
+};
+
+const stampHeight = {
+    ...requestAttribute('attr-stamp-height', 'stamp-height'),
+    contentType: AttributeContentType.Integer,
+} as BaseAttributeDto;
+
+/** Core lists an integer profile attribute at both levels. */
+export const coreWithStampHeight: CoreAnswers = {
+    ...core,
+    profileAttributesByLevel: { [SignatureLevel.Signed]: [stampHeight], [SignatureLevel.Timestamped]: [stampHeight] },
+};
+
+const signingPin = { ...requestAttribute('attr-signing-pin', 'signing-pin'), contentType: AttributeContentType.Secret } as BaseAttributeDto;
+
+/** Core lists a secret profile attribute at both levels. */
+export const coreWithSigningPin: CoreAnswers = {
+    ...core,
+    profileAttributesByLevel: { [SignatureLevel.Signed]: [signingPin], [SignatureLevel.Timestamped]: [signingPin] },
+};
+
+export const SAVED_REQUEST_ATTRIBUTES = ['signature_appearance', 'timestamp-policy'];
 
 const savedValue = (uuid: string, name: string, data: string) => ({
     uuid,
@@ -234,5 +290,16 @@ export const profileWithSavedPackaging: SigningProfileDto = {
     workflow: {
         ...savedProfile.workflow,
         signatureFormattingConnectorAttributes: [savedValue('attr-packaging', 'packaging', 'Enveloped')],
+    },
+} as SigningProfileDto;
+
+/** Another saved profile on the same connector and level, with a reason of its own. */
+export const invoiceSigningProfile: SigningProfileDto = {
+    ...savedProfile,
+    uuid: 'sp-invoice',
+    name: 'InvoiceSigning',
+    workflow: {
+        ...savedProfile.workflow,
+        signatureFormattingConnectorAttributes: [savedValue('attr-reason', 'reason', 'Invoice')],
     },
 } as SigningProfileDto;

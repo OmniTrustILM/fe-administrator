@@ -1,6 +1,6 @@
 // Runtime values for ContentSigningProfileDetail.spec.tsx. Playwright CT rewrites imports from a mounted component's module, so they
 // live apart from ContentSigningProfileDetailTestWrapper.
-import { core as formCore, savedProfile } from 'components/_pages/signing-profiles/form/contentSigningFormFixtures';
+import { core as formCore, requestAttribute, savedProfile } from 'components/_pages/signing-profiles/form/contentSigningFormFixtures';
 import {
     type CertificateSimpleDto,
     CertificateType,
@@ -17,10 +17,13 @@ export { DOCUMENT_SIGNING_EKU } from 'components/_pages/signing-profiles/form/co
 
 const savedWorkflow = savedProfile.workflow as ContentSigningWorkflowDto;
 
+const labelledTimestampPolicy = requestAttribute('attr-timestamp-policy', 'timestamp-policy', undefined, false, 'Timestamp policy');
+
 export const detailCore: DetailCoreAnswers = {
     profile: savedProfile,
     declarations: formCore.declarationsByConnector['c-pades'],
     supportedProtocols: [SigningProtocol.IlmNative],
+    requestAttributes: [requestAttribute('attr-stamp-page', 'stamp-page', 'signature_appearance'), labelledTimestampPolicy],
 };
 
 export const signedProfile: SigningProfileDto = {
@@ -30,6 +33,7 @@ export const signedProfile: SigningProfileDto = {
         level: SignatureLevel.Signed,
         timestampSource: undefined,
         requiredExtendedKeyUsageOids: [],
+        allowedRequestAttributes: [],
     } as ContentSigningWorkflowDto,
 };
 

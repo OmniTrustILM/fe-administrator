@@ -52,6 +52,31 @@ test.describe('Content-signing profile detail', () => {
         });
     });
 
+    test('names the allowed request attributes as the form does, with the saved name as the tooltip', async ({ mount, page }) => {
+        await mount(<ContentSigningProfileDetailTestWrapper core={detailCore} />);
+        await openTab(page, 'Content Signing Properties');
+
+        const allowed = row(page, 'Allowed Request Attributes');
+        await expect(allowed.getByText('Signature appearance', { exact: true })).toHaveAttribute('title', 'signature_appearance');
+        await expect(allowed.getByText('Timestamp policy', { exact: true })).toHaveAttribute('title', 'timestamp-policy');
+        expect(await requests(page)).toContainEqual({
+            type: 'listContentSigningProfileAttributes',
+            payload: { connectorUuid: 'c-pades', family: 'pades', level: 'timestamped', signingProfileUuid: 'sp-pades' },
+        });
+    });
+
+    test('shows the saved request attribute names when the connector’s attributes cannot be read', async ({ mount, page }) => {
+        await mount(
+            <ContentSigningProfileDetailTestWrapper core={{ ...detailCore, requestAttributes: { refusal: 'Connector is down' } }} />,
+        );
+        await openTab(page, 'Content Signing Properties');
+        await expect.poll(() => answers(page)).toContain('listContentSigningProfileAttributesFailure');
+
+        const allowed = row(page, 'Allowed Request Attributes');
+        await expect(allowed.getByText('signature_appearance', { exact: true })).not.toHaveAttribute('title');
+        await expect(allowed.getByText('timestamp-policy', { exact: true })).toBeVisible();
+    });
+
     test('falls back to the family code and level when the declarations cannot be read', async ({ mount, page }) => {
         await mount(<ContentSigningProfileDetailTestWrapper core={{ ...detailCore, declarations: { refusal: 'Connector is down' } }} />);
         await openTab(page, 'Content Signing Properties');
@@ -67,6 +92,7 @@ test.describe('Content-signing profile detail', () => {
 
         await expect(row(page, 'Timestamp Source')).toContainText('None');
         await expect(row(page, 'Required Extended Key Usages')).toContainText('Any');
+        await expect(row(page, 'Allowed Request Attributes')).toContainText('None');
     });
 
     test('offers ILM Native instead of the TSP protocol', async ({ mount, page }) => {
