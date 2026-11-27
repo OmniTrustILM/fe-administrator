@@ -11,8 +11,10 @@ import type { WidgetButtonProps } from 'components/WidgetButtons';
 import CustomAttributeWidget from 'components/Attributes/CustomAttributeWidget';
 import StatusBadge from 'components/StatusBadge';
 
+import { actions as resourceActions } from 'ducks/resource';
 import { actions, selectors } from 'ducks/time-quality-configurations';
-import { Resource } from 'types/openapi';
+import { Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { createWidgetDetailHeaders } from 'utils/widget';
 import { getInputStringFromIso8601String } from 'utils/duration';
@@ -22,8 +24,10 @@ export const TimeQualityConfigurationDetail = () => {
     const navigate = useNavigate();
 
     const { id } = useParams();
-
     const timeQualityConfiguration = useSelector(selectors.timeQualityConfiguration);
+    // Ask about the loaded configuration, which the actions act on: after a route change it is the previous one until
+    // the new one arrives.
+    const can = useActionAvailability(Resource.TimeQualityConfigurations, timeQualityConfiguration?.uuid);
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
     const isDeleting = useSelector(selectors.isDeleting);
     const deleteErrorMessage = useSelector(selectors.deleteErrorMessage);
@@ -44,6 +48,18 @@ export const TimeQualityConfigurationDetail = () => {
         getFreshData();
     }, [getFreshData]);
 
+    const refreshData = useCallback(() => {
+        getFreshData();
+        if (timeQualityConfiguration) {
+            dispatch(
+                resourceActions.listObjectAllowedActions({
+                    resource: Resource.TimeQualityConfigurations,
+                    uuids: [timeQualityConfiguration.uuid],
+                }),
+            );
+        }
+    }, [dispatch, getFreshData, timeQualityConfiguration]);
+
     const onEditClick = useCallback(() => {
         if (!timeQualityConfiguration) return;
         void navigate(`../${Resource.TimeQualityConfigurations.toLowerCase()}/edit/${timeQualityConfiguration.uuid}`);
@@ -61,6 +77,7 @@ export const TimeQualityConfigurationDetail = () => {
                 id: 'edit',
                 icon: 'pencil',
                 disabled: false,
+                requires: can(ResourceAction.Update),
                 tooltip: 'Edit',
                 onClick: onEditClick,
             },
@@ -68,11 +85,12 @@ export const TimeQualityConfigurationDetail = () => {
                 id: 'delete',
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => setConfirmDelete(true),
             },
         ],
-        [onEditClick],
+        [onEditClick, can],
     );
 
     const tableHeader: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
@@ -225,7 +243,7 @@ export const TimeQualityConfigurationDetail = () => {
                             title="Time Quality Configuration Details"
                             widgetButtons={buttons}
                             titleSize="large"
-                            refreshAction={getFreshData}
+                            refreshAction={refreshData}
                         >
                             <CustomTable headers={tableHeader} data={generalData} />
                         </Widget>
@@ -235,6 +253,7 @@ export const TimeQualityConfigurationDetail = () => {
                                 resource={Resource.TimeQualityConfigurations}
                                 resourceUuid={timeQualityConfiguration.uuid}
                                 attributes={timeQualityConfiguration.customAttributes}
+                                requires={can(ResourceAction.Update)}
                             />
                         )}
                     </Container>

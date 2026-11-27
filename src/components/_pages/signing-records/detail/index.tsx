@@ -13,7 +13,8 @@ import Widget from 'components/Widget';
 import type { WidgetButtonProps } from 'components/WidgetButtons';
 
 import { actions, selectors } from 'ducks/signing-records';
-import { Resource } from 'types/openapi';
+import { Resource, ResourceAction } from 'types/openapi';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import { LockWidgetNameEnum } from 'types/user-interface';
 import { useRunOnSuccessfulFinish } from 'utils/common-hooks';
 import { dateFormatter } from 'utils/dateUtil';
@@ -23,6 +24,7 @@ export default function SigningRecordDetail() {
     const dispatch = useDispatch();
     const navigate = useNavigate();
     const { id = '' } = useParams();
+    const can = useActionAvailability(Resource.SigningRecords);
 
     const detail = useSelector(selectors.selectSigningRecordDetail);
     const detailError = useSelector(selectors.selectSigningRecordDetailError);
@@ -61,11 +63,12 @@ export default function SigningRecordDetail() {
                 id: 'delete',
                 icon: 'trash',
                 disabled: false,
+                requires: can(ResourceAction.Delete),
                 tooltip: 'Delete',
                 onClick: () => setConfirmDelete(true),
             },
         ],
-        [],
+        [can],
     );
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);

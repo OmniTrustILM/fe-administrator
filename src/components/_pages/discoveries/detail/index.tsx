@@ -27,6 +27,7 @@ import { LockWidgetNameEnum } from 'types/user-interface';
 import { dateFormatter, durationFormatter } from 'utils/dateUtil';
 import { getInputStringFromIso8601String } from 'utils/duration';
 import { hasResourceAction } from 'utils/permissions';
+import { useActionAvailability } from 'utils/useActionAvailability';
 import DiscoveryStatus from '../DiscoveryStatus';
 import DiscoveryProgressWidget from './DiscoveryProgressWidget';
 import DiscoveryResults from './DiscoveryResults';
@@ -60,6 +61,7 @@ export default function DiscoveryDetail() {
     const dispatch = useDispatch();
 
     const { id } = useParams();
+    const can = useActionAvailability(Resource.Discoveries);
 
     const discovery = useSelector(selectors.discovery);
     const discoveryMessages = useSelector(selectors.discoveryMessages);
@@ -202,13 +204,14 @@ export default function DiscoveryDetail() {
             {
                 icon: 'trash',
                 disabled: isMutating || !deletable,
+                requires: can(ResourceAction.Delete),
                 tooltip: deleteTooltip(discovery?.status, deletable),
                 onClick: () => {
                     setConfirmDelete(true);
                 },
             },
         ];
-    }, [discovery, profile, isMutating, dispatch]);
+    }, [discovery, profile, isMutating, dispatch, can]);
 
     const detailHeaders: TableHeader[] = useMemo(() => createWidgetDetailHeaders(), []);
 
@@ -527,6 +530,7 @@ export default function DiscoveryDetail() {
                                             resource={Resource.Discoveries}
                                             resourceUuid={discovery.uuid}
                                             attributes={discovery.customAttributes}
+                                            requires={can(ResourceAction.Update)}
                                             className="w-full md:w-1/2"
                                         />
                                     )}
