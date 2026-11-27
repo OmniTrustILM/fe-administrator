@@ -22,7 +22,9 @@ import { Controller, FormProvider, useForm, useWatch } from 'react-hook-form';
 import { type AttributeDescriptorModel, isDataAttributeModel } from 'types/attributes';
 import { splitAttributeValidationErrors } from 'utils/raProfileValidation';
 import type { CertificateDetailResponseModel } from '../../../../types/certificate';
-import { CertificateRequestFormat, Resource } from '../../../../types/openapi';
+import { CertificateType, PlatformEnum, Resource } from '../../../../types/openapi';
+import { issueRequestFormatFor } from 'utils/certificate';
+import { selectors as enumSelectors, getEnumLabel } from 'ducks/enums';
 import { collectFormAttributes } from 'utils/attributes/attributes';
 import { validateRegistrationChallenge } from 'utils/validators';
 import { buildValidationRules } from 'utils/validators-helper';
@@ -51,6 +53,7 @@ import TextInput from 'components/TextInput';
 
 type CertificateFormValues = {
     raProfileUuid: string;
+    certificateType?: CertificateType;
     requestType: 'issue' | 'register';
     uploadCsrSource?: 'external' | 'existing';
     includeAltKey: boolean;
@@ -189,6 +192,9 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const certificateGroups = useSelector(certificateGroupSelectors.certificateGroups);
     const issuanceAttributeDescriptors = useSelector(certificateSelectors.issuanceAttributes);
     const registerAttributeDescriptors = useSelector(certificateSelectors.registerAttributes);
+    const supportedCertificateTypes = useSelector(certificateSelectors.supportedCertificateTypes);
+    const fetchingSupportedCertificateTypes = useSelector(certificateSelectors.isFetchingSupportedCertificateTypes);
+    const certificateTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateType));
     const isFetchingRegisterAttributes = useSelector(certificateSelectors.isFetchingRegisterAttributes);
     const resourceCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
     const isFetchingResourceCustomAttributes = useSelector(customAttributesSelectors.isFetchingResourceCustomAttributes);
@@ -229,7 +235,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         },
     });
 
-    const { control, handleSubmit, setValue, setError, clearErrors, formState } = methods;
+    const { control, handleSubmit, getValues, setValue, setError, clearErrors, formState } = methods;
 
     // Attribute-level backend errors (`Extension value of attribute <label>: ...`) are attributed by
     // label to the request-attribute field they belong to; only what cannot be matched stays in the
@@ -309,12 +315,41 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const tokenProfileUuid = useWatch({ control, name: 'tokenProfileUuid' });
     const altTokenProfileUuid = useWatch({ control, name: 'altTokenProfileUuid' });
     const requestType = useWatch({ control, name: 'requestType' });
+    const chosenCertificateType = useWatch({ control, name: 'certificateType' });
+    // The preview parses a PKCS#10 request, the request of an X.509 certificate and of a request that names no type.
+    const previewsRequest = !chosenCertificateType || chosenCertificateType === CertificateType.X509;
     const isRegister = requestType === 'register';
     const authorizationSecret = useWatch({ control, name: 'authorizationSecret' });
     // Core decides with String.isBlank(), so an all-whitespace value creates no authorization row —
     // treat it as unchallenged here too, or the operator would see a challenge-gated form for a
     // pre-registration Core leaves open.
     const hasChallenge = !!authorizationSecret?.trim();
+
+    const raProfileCertificateTypes = selectedRaProfileUuid ? supportedCertificateTypes?.[selectedRaProfileUuid] : undefined;
+    // Until the types of the chosen RA profile are known, an issue request would name no type and be taken for X.509.
+    const isFetchingCertificateTypes =
+        !isRegister && !!selectedRaProfileUuid && !!fetchingSupportedCertificateTypes?.[selectedRaProfileUuid];
+    const certificateTypeOptions = useMemo(
+        () => (raProfileCertificateTypes ?? []).map((type) => ({ value: type, label: getEnumLabel(certificateTypeEnum, type) })),
+        [raProfileCertificateTypes, certificateTypeEnum],
+    );
+
+    // The only type an RA profile issues is the type requested; among several, X.509 is preselected when it is one of them.
+    // A choice the profile still supports is kept when its types are loaded again.
+    useEffect(() => {
+        const chosen = getValues('certificateType');
+        if (!raProfileCertificateTypes) {
+            setValue('certificateType', undefined);
+        } else if (chosen && raProfileCertificateTypes.includes(chosen)) {
+            return;
+        } else if (raProfileCertificateTypes.length === 1) {
+            setValue('certificateType', raProfileCertificateTypes[0], { shouldValidate: true });
+        } else if (raProfileCertificateTypes.includes(CertificateType.X509)) {
+            setValue('certificateType', CertificateType.X509, { shouldValidate: true });
+        } else {
+            setValue('certificateType', undefined);
+        }
+    }, [raProfileCertificateTypes, selectedRaProfileUuid, getValues, setValue]);
 
     useEffect(() => {
         if (!selectedRaProfileUuid) {
@@ -400,6 +435,12 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                     authorityUuid: profile.authorityInstanceUuid,
                 }),
             );
+            dispatch(
+                certificateActions.listSupportedCertificateTypes({
+                    raProfileUuid: profile.uuid,
+                    authorityUuid: profile.authorityInstanceUuid,
+                }),
+            );
         },
         [
             dispatch,
@@ -441,6 +482,22 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     );
 
     const isExternalSource = uploadCsrSource === 'external';
+
+    // A preview and a parse error belong to the type they were made for, so both go when the request stops or starts being previewed.
+    const previewedRequest = useRef(previewsRequest);
+    useEffect(() => {
+        if (previewedRequest.current === previewsRequest) return;
+        previewedRequest.current = previewsRequest;
+        dispatch(utilsCertificateRequestActions.reset());
+        if (previewsRequest && fileContent && health) {
+            dispatch(
+                utilsCertificateRequestActions.parseCertificateRequest({
+                    content: fileContent,
+                    requestParseType: ParseRequestRequestDtoParseTypeEnum.Basic,
+                }),
+            );
+        }
+    }, [dispatch, previewsRequest, fileContent, health]);
     const isExistingKeySource = uploadCsrSource === 'existing';
 
     // A single Request Properties tab strip serves both modes; tabs are shown/hidden per mode so the
@@ -514,7 +571,8 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
             const customAttrs = collectFormAttributes('customCertificate', resourceCustomAttributes, combinedValues);
 
             const payload: Parameters<typeof certificateActions.issueCertificate>[0]['signRequest'] = {
-                format: CertificateRequestFormat.Pkcs10,
+                format: issueRequestFormatFor(formValues.certificateType),
+                certificateType: formValues.certificateType,
                 request: fileContent,
                 attributes: issuanceAttributes,
                 csrAttributes: csrAttrs,
@@ -568,12 +626,12 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         (event: React.SyntheticEvent<HTMLFormElement>) => {
             event.preventDefault();
             // Enter in a field would still submit once the request was accepted and Create is gone.
-            if (isFetchingRequestAttributes || issueWarnings) {
+            if (isFetchingRequestAttributes || isFetchingCertificateTypes || issueWarnings) {
                 return;
             }
             void handleSubmit(onSubmit)(event);
         },
-        [handleSubmit, isFetchingRequestAttributes, issueWarnings, onSubmit],
+        [handleSubmit, isFetchingRequestAttributes, isFetchingCertificateTypes, issueWarnings, onSubmit],
     );
 
     return (
@@ -644,6 +702,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                                 const uuid = (selected ?? '') as string;
                                                 onChange(uuid);
                                                 onRaProfileChange(uuid);
+                                                setValue('certificateType', undefined);
                                                 setValue('tokenProfileUuid', undefined);
                                                 setValue('keyUuid', undefined);
                                                 setValue('includeAltKey', false);
@@ -654,6 +713,28 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         />
                                     )}
                                 />
+
+                                {!isRegister && certificateTypeOptions.length > 0 && (
+                                    <Controller
+                                        control={control}
+                                        name="certificateType"
+                                        rules={{ required: true }}
+                                        render={({ field: { value, onChange }, fieldState: { error } }) => (
+                                            <Select
+                                                id="certificateType"
+                                                dataTestId="certificateType"
+                                                options={certificateTypeOptions}
+                                                placeholder="Select Certificate Type"
+                                                value={value ?? ''}
+                                                label="Certificate Type"
+                                                required
+                                                isDisabled={certificateTypeOptions.length === 1}
+                                                onChange={(selected) => onChange((selected || undefined) as CertificateType | undefined)}
+                                                error={error && 'Certificate Type is required'}
+                                            />
+                                        )}
+                                    />
+                                )}
 
                                 {!isRegister && (
                                     <Controller
@@ -707,7 +788,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         onFileContentLoaded={(uploadedContent) => {
                                             setFileContent(uploadedContent);
                                             dispatch(certificateActions.clearIssueErrors());
-                                            if (health) {
+                                            if (health && previewsRequest) {
                                                 dispatch(
                                                     utilsCertificateRequestActions.parseCertificateRequest({
                                                         content: uploadedContent,
@@ -983,7 +1064,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         title="Create"
                                         inProgressTitle="Creating"
                                         inProgress={issuingCertificate}
-                                        disabled={!formState.isValid || isFetchingRequestAttributes}
+                                        disabled={!formState.isValid || isFetchingRequestAttributes || isFetchingCertificateTypes}
                                     />
                                 )}
                             </div>

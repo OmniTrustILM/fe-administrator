@@ -652,6 +652,7 @@ export * from './StatisticsDto';
 export * from './StringAttributeContentV2';
 export * from './StringAttributeContentV3';
 export * from './SubjectPermissionsDto';
+export * from './SupportedCertificateTypeDto';
 export * from './SyncVaultProfileDto';
 export * from './TextAttributeContentV2';
 export * from './TextAttributeContentV3';

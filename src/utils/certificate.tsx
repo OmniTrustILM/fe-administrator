@@ -5,6 +5,8 @@ import { useSelector } from 'react-redux';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import {
     CertificateEventHistoryDtoStatusEnum,
+    type CertificateOperation,
+    CertificateRequestFormat,
     CertificateState,
     CertificateSubjectType,
     CertificateType,
@@ -17,6 +19,25 @@ import {
 /** Whether the certificate is X.509, the only type that has the X.509 parts of the detail. An unknown type is not. */
 export function isX509Certificate(certificate?: { certificateType?: CertificateType }): boolean {
     return certificate?.certificateType === CertificateType.X509;
+}
+
+/**
+ * Whether the type of the certificate supports the operation. A certificate that carries no list of operations
+ * restricts nothing, so that an action is not hidden for want of an answer; Core refuses an unsupported one anyway.
+ */
+export function supportsOperation(
+    certificate: { supportedOperations?: Array<CertificateOperation> } | undefined,
+    operation: CertificateOperation,
+): boolean {
+    return certificate?.supportedOperations?.includes(operation) ?? true;
+}
+
+/**
+ * The request format to send for a certificate of the type. The form builds a PKCS#10 request, which is the format of
+ * X.509; for another type no format is named, so that Core applies the default of that type.
+ */
+export function issueRequestFormatFor(certificateType: CertificateType | undefined): CertificateRequestFormat | undefined {
+    return !certificateType || certificateType === CertificateType.X509 ? CertificateRequestFormat.Pkcs10 : undefined;
 }
 
 export const emptyCertificate: CertificateDetailResponseModel = {

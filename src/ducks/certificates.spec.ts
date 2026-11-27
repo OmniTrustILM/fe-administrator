@@ -1,5 +1,5 @@
 import { describe, expect, test, vi } from 'vitest';
-import { BulkOperationResponseStatusEnum } from 'types/openapi';
+import { BulkOperationResponseStatusEnum, CertificateType } from 'types/openapi';
 import reducer, { actions, initialState, selectors } from './certificates';
 
 vi.mock('utils/download', () => ({
@@ -120,6 +120,18 @@ describe('certificates slice', () => {
         const next = reducer(state, actions.getCertificateDetailSuccess({ certificate: cert }));
 
         expect(next.certificates.map((row) => row.displayName)).toEqual(['new name', 'untouched']);
+    });
+
+    test('listSupportedCertificateTypes marks the RA profile as loading until its types or a failure arrive', () => {
+        const request = { raProfileUuid: 'ra-1', authorityUuid: 'auth-1' };
+
+        const loading = reducer(initialState, actions.listSupportedCertificateTypes(request));
+        const loaded = reducer(loading, actions.listSupportedCertificateTypesSuccess({ raProfileUuid: 'ra-1', certificateTypes: [] }));
+        const failed = reducer(loading, actions.listSupportedCertificateTypesFailure({ raProfileUuid: 'ra-1', error: 'err' }));
+
+        expect(loading.isFetchingSupportedCertificateTypes).toEqual({ 'ra-1': true });
+        expect(loaded.isFetchingSupportedCertificateTypes).toEqual({});
+        expect(failed.isFetchingSupportedCertificateTypes).toEqual({});
     });
 
     test('getCertificateRelations / success / failure update relations flags and data', () => {
@@ -689,6 +701,41 @@ describe('certificates slice', () => {
         );
         expect(next.isFetchingRegisterAttributes).toBe(false);
         expect(next.registerAttributes['ra-1']).toBeUndefined();
+    });
+
+    test('listSupportedCertificateTypes keeps the loaded types until the answer replaces them', () => {
+        const loaded = reducer(
+            initialState,
+            actions.listSupportedCertificateTypesSuccess({ raProfileUuid: 'ra-1', certificateTypes: [CertificateType.X509] }),
+        );
+
+        const reloading = reducer(loaded, actions.listSupportedCertificateTypes({ raProfileUuid: 'ra-1', authorityUuid: 'auth-1' }));
+        const replaced = reducer(
+            reloading,
+            actions.listSupportedCertificateTypesSuccess({
+                raProfileUuid: 'ra-1',
+                certificateTypes: [CertificateType.X509, CertificateType.Ssh],
+            }),
+        );
+
+        expect(reloading.supportedCertificateTypes['ra-1']).toEqual([CertificateType.X509]);
+        expect(replaced.supportedCertificateTypes['ra-1']).toEqual([CertificateType.X509, CertificateType.Ssh]);
+    });
+
+    test('listSupportedCertificateTypesFailure drops the types of that profile only', () => {
+        let loaded = reducer(
+            initialState,
+            actions.listSupportedCertificateTypesSuccess({ raProfileUuid: 'ra-1', certificateTypes: [CertificateType.X509] }),
+        );
+        loaded = reducer(
+            loaded,
+            actions.listSupportedCertificateTypesSuccess({ raProfileUuid: 'ra-2', certificateTypes: [CertificateType.Ssh] }),
+        );
+
+        const next = reducer(loaded, actions.listSupportedCertificateTypesFailure({ raProfileUuid: 'ra-1', error: 'err' }));
+
+        expect(next.supportedCertificateTypes['ra-1']).toBeUndefined();
+        expect(next.supportedCertificateTypes['ra-2']).toEqual([CertificateType.Ssh]);
     });
 
     test('getRegisterAttributesFailure leaves other profiles descriptors intact', () => {

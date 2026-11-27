@@ -2,7 +2,7 @@ import { test, expect, type Page } from '../../../../../playwright/ct-test';
 import { failFileRead, holdFileReads } from '../../../../../playwright/fileReads';
 import { testInitialState } from 'ducks/test-reducers';
 import type { AttributeDescriptorModel } from 'types/attributes';
-import { AttributeContentType, AttributeType } from 'types/openapi';
+import { AttributeContentType, AttributeType, CertificateType } from 'types/openapi';
 import {
     csrAttributesState,
     type DispatchedAction,
@@ -901,5 +901,125 @@ test.describe('CertificateForm', () => {
             await expect(page.getByTestId('compliance-errors-panel')).toHaveCount(0);
             await expect(page.getByRole('button', { name: 'Create' })).toBeVisible();
         });
+    });
+});
+
+test.describe('CertificateForm — certificate type', () => {
+    const withTypes = (certificateTypes?: CertificateType[]) => ({
+        raprofiles: { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] },
+        certificates: {
+            ...testInitialState.certificates,
+            supportedCertificateTypes: certificateTypes ? { 'ra-1': certificateTypes } : {},
+        },
+    });
+
+    const selectRaProfile = async (page: Page) => {
+        await page.getByTestId('select-raProfile-trigger').click();
+        await page.getByRole('option', { name: 'RA One' }).click();
+    };
+
+    test('shows the only type of the RA profile, read-only', async ({ mount, page }) => {
+        await mount(<CertificateFormTestWrapper preloadedState={withTypes([CertificateType.X509])} />);
+
+        await selectRaProfile(page);
+
+        await expect(page.getByTestId('certificateType-trigger')).toContainText('X.509');
+        await expect(page.getByTestId('certificateType-trigger')).toBeDisabled();
+    });
+
+    test('lets the user choose among several types, with X.509 preselected', async ({ mount, page }) => {
+        await mount(<CertificateFormTestWrapper preloadedState={withTypes([CertificateType.Ssh, CertificateType.X509])} />);
+
+        await selectRaProfile(page);
+
+        await expect(page.getByTestId('certificateType-trigger')).toContainText('X.509');
+        await page.getByTestId('certificateType-trigger').click();
+        await page.getByRole('option', { name: 'SSH' }).click();
+        await expect(page.getByTestId('certificateType-trigger')).toContainText('SSH');
+    });
+
+    test('keeps the chosen type when the types of the RA profile are loaded again and still include it', async ({ mount, page }) => {
+        const types = [CertificateType.Ssh, CertificateType.X509];
+        await mount(<CertificateFormTestWrapper preloadedState={withTypes(types)} reloadedCertificateTypes={[...types]} />);
+        await selectRaProfile(page);
+        await page.getByTestId('certificateType-trigger').click();
+        await page.getByRole('option', { name: 'SSH' }).click();
+
+        await page.getByTestId('simulate-types-reload').click();
+
+        await expect(page.getByTestId('certificateType-trigger')).toContainText('SSH');
+    });
+
+    test('falls back to the default when the reloaded types no longer include the chosen one', async ({ mount, page }) => {
+        await mount(
+            <CertificateFormTestWrapper
+                preloadedState={withTypes([CertificateType.Ssh, CertificateType.X509])}
+                reloadedCertificateTypes={[CertificateType.X509]}
+            />,
+        );
+        await selectRaProfile(page);
+        await page.getByTestId('certificateType-trigger').click();
+        await page.getByRole('option', { name: 'SSH' }).click();
+
+        await page.getByTestId('simulate-types-reload').click();
+
+        await expect(page.getByTestId('certificateType-trigger')).toContainText('X.509');
+        await expect(page.getByTestId('certificateType-trigger')).toBeDisabled();
+    });
+
+    test('shows no type field while the types of the RA profile are not known', async ({ mount, page }) => {
+        await mount(<CertificateFormTestWrapper preloadedState={withTypes()} />);
+
+        await selectRaProfile(page);
+
+        await expect(page.getByTestId('certificateType-trigger')).toHaveCount(0);
+    });
+
+    test('shows no type field when pre-registering', async ({ mount, page }) => {
+        await mount(<CertificateFormTestWrapper preloadedState={withTypes([CertificateType.X509])} />);
+
+        await page.getByTestId('requestType-register').click();
+        await selectRaProfile(page);
+
+        await expect(page.getByTestId('certificateType-trigger')).toHaveCount(0);
+    });
+
+    test('keeps Create disabled while the types of the RA profile are loading', async ({ mount, page }) => {
+        const raprofiles = { ...testInitialState.raprofiles, raProfiles: [selectableRaProfile] };
+        const certificates = { ...csrAttributesState.certificates, isFetchingSupportedCertificateTypes: { 'ra-1': true } };
+        await mount(<CertificateFormTestWrapper preloadedState={{ raprofiles, ...existingKeyState, certificates }} />);
+        await selectRaProfile(page);
+        await selectExistingKey(page, 'keySource');
+        await page.getByRole('tab', { name: 'Request Attributes' }).click();
+
+        await fillCommonNameAndClearSan(page);
+
+        await expect(page.getByRole('button', { name: 'Create' })).toBeDisabled();
+    });
+
+    test('previews an uploaded request only while the chosen type is X.509', async ({ mount, page }) => {
+        const dispatched: DispatchedAction[] = [];
+        const parses = () => dispatched.filter((action) => action.type === 'utilsCertificateRequest/parseCertificateRequest').length;
+        await mount(
+            <CertificateFormTestWrapper
+                onAction={(action) => dispatched.push(action)}
+                preloadedState={{ ...withTypes([CertificateType.Ssh, CertificateType.X509]), utilsActuator: { health: {} } as never }}
+            />,
+        );
+        await selectRaProfile(page);
+        await page.getByTestId('certificateType-trigger').click();
+        await page.getByRole('option', { name: 'SSH' }).click();
+        await page.getByTestId('keySource-trigger').click();
+        await page.getByRole('option', { name: 'External' }).click();
+
+        await page
+            .locator('input[type="file"]')
+            .setInputFiles({ name: 'request.pub', mimeType: 'text/plain', buffer: Buffer.from('request') });
+        await expect(page.getByLabel('File content')).not.toHaveValue('');
+        expect(parses()).toBe(0);
+
+        await page.getByTestId('certificateType-trigger').click();
+        await page.getByRole('option', { name: 'X.509' }).click();
+        await expect.poll(parses).toBe(1);
     });
 });

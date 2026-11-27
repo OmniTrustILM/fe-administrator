@@ -723,6 +723,7 @@ models/StatisticsDto.ts
 models/StringAttributeContentV2.ts
 models/StringAttributeContentV3.ts
 models/SubjectPermissionsDto.ts
+models/SupportedCertificateTypeDto.ts
 models/SyncVaultProfileDto.ts
 models/TextAttributeContentV2.ts
 models/TextAttributeContentV3.ts
