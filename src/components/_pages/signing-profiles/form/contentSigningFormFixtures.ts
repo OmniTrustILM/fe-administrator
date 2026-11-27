@@ -29,14 +29,14 @@ const signingReason = {
     properties: { label: 'Signing Reason', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
 } as BaseAttributeDto;
 
-const requestAttribute = (uuid: string, name: string, group?: string, required = false) =>
+export const requestAttribute = (uuid: string, name: string, group?: string, required = false, label = name) =>
     ({
         uuid,
         name,
         type: AttributeType.Data,
         contentType: AttributeContentType.String,
         version: 2,
-        properties: { label: name, group, required, readOnly: false, visible: true, list: false, multiSelect: false },
+        properties: { label, group, required, readOnly: false, visible: true, list: false, multiSelect: false },
     }) as BaseAttributeDto;
 
 const stampPage = requestAttribute('attr-stamp-page', 'stamp-page', 'signature_appearance');

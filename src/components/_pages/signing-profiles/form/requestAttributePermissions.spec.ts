@@ -1,7 +1,7 @@
 import type { AttributeDescriptorModel } from 'types/attributes';
 import type { BaseAttributeDto } from 'types/openapi';
 import { describe, expect, it } from 'vitest';
-import { readableGroupTitle, withPanesByKind, withPermission } from './requestAttributePermissions';
+import { permissionTitleOf, readableGroupTitle, withPanesByKind, withPermission } from './requestAttributePermissions';
 
 describe('readableGroupTitle', () => {
     it('reads a snake_case group code as a sentence', () => {
@@ -10,6 +10,26 @@ describe('readableGroupTitle', () => {
 
     it('capitalizes a one-word group code', () => {
         expect(readableGroupTitle('scope')).toBe('Scope');
+    });
+});
+
+describe('permissionTitleOf', () => {
+    const declared = [
+        { name: 'stamp-page', properties: { label: 'Stamp page', group: 'signature_appearance' } },
+        { name: 'timestamp-policy', properties: { label: 'Timestamp policy' } },
+    ] as BaseAttributeDto[];
+
+    it('names a request group by its readable title', () => {
+        expect(permissionTitleOf('signature_appearance', declared)).toBe('Signature appearance');
+    });
+
+    it('names an ungrouped request attribute by its label', () => {
+        expect(permissionTitleOf('timestamp-policy', declared)).toBe('Timestamp policy');
+    });
+
+    it('keeps a name the connector no longer declares, including one inside a group', () => {
+        expect(permissionTitleOf('retired-policy', declared)).toBe('retired-policy');
+        expect(permissionTitleOf('stamp-page', declared)).toBe('stamp-page');
     });
 });
 

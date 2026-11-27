@@ -9,6 +9,7 @@ import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
 import { actions as signingProfileActions, selectors as signingProfileSelectors } from 'ducks/signing-profiles';
 import { type ContentSigningWorkflowDto, PlatformEnum, Resource } from 'types/openapi';
 import { createWidgetDetailHeaders } from 'utils/widget';
+import { permissionTitleOf } from 'components/_pages/signing-profiles/form/requestAttributePermissions';
 
 interface Props {
     workflow: ContentSigningWorkflowDto;
@@ -22,14 +23,16 @@ const absent = (text: string) => (
     </span>
 );
 
-const chips = (values: string[]) => (
+/** One chip per value, named by `nameOf`, with the raw value as tooltip when the name differs. */
+const chips = (values: string[], nameOf: (value: string) => string = (value) => value) => (
     <div key="value" className="flex flex-wrap gap-1">
         {values.map((value) => (
             <span
                 key={value}
+                title={nameOf(value) === value ? undefined : value}
                 className="inline-flex items-center rounded-full bg-surface-sunken px-2.5 py-0.5 text-xs font-medium text-content-muted"
             >
-                {value}
+                {nameOf(value)}
             </span>
         ))}
     </div>
@@ -43,7 +46,10 @@ export default function ContentSigningWorkflowDetail({ workflow, signingProfileU
     const dispatch = useDispatch();
     const declarations = useSelector(signingProfileSelectors.signatureFormattingConnectorDeclarations);
     const levelEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.SignatureLevel));
+    const listedFor = useSelector(signingProfileSelectors.contentSigningAttributesListedFor);
+    const listedRequestAttributes = useSelector(signingProfileSelectors.contentSigningRequestAttributeDescriptors);
     const connector = workflow.signatureFormattingConnector;
+    const { family, level } = workflow;
 
     useEffect(() => {
         if (connector) {
@@ -52,6 +58,19 @@ export default function ContentSigningWorkflowDetail({ workflow, signingProfileU
             );
         }
     }, [dispatch, connector, signingProfileUuid]);
+
+    useEffect(() => {
+        if (connector && family && level) {
+            dispatch(
+                signingProfileActions.listContentSigningProfileAttributes({
+                    connectorUuid: connector.uuid,
+                    family,
+                    level,
+                    signingProfileUuid,
+                }),
+            );
+        }
+    }, [dispatch, connector, family, level, signingProfileUuid]);
 
     const headers = useMemo(() => createWidgetDetailHeaders(), []);
 
@@ -62,6 +81,9 @@ export default function ContentSigningWorkflowDetail({ workflow, signingProfileU
         const timestampSource = workflow.timestampSource?.signingProfile;
         const extendedKeyUsages = workflow.requiredExtendedKeyUsageOids ?? [];
         const allowedRequestAttributes = workflow.allowedRequestAttributes ?? [];
+        const listsThisWorkflow =
+            listedFor?.connectorUuid === connector?.uuid && listedFor?.family === workflow.family && listedFor?.level === workflow.level;
+        const requestAttributes = listsThisWorkflow ? listedRequestAttributes : [];
 
         return [
             {
@@ -111,11 +133,13 @@ export default function ContentSigningWorkflowDetail({ workflow, signingProfileU
                 id: 'allowedRequestAttributes',
                 columns: [
                     'Allowed Request Attributes',
-                    allowedRequestAttributes.length > 0 ? chips(allowedRequestAttributes) : absent('None'),
+                    allowedRequestAttributes.length > 0
+                        ? chips(allowedRequestAttributes, (name) => permissionTitleOf(name, requestAttributes))
+                        : absent('None'),
                 ],
             },
         ];
-    }, [workflow, connector, declarations, levelEnum]);
+    }, [workflow, connector, declarations, levelEnum, listedFor, listedRequestAttributes]);
 
     const attributes = workflow.signatureFormattingConnectorAttributes ?? [];
 

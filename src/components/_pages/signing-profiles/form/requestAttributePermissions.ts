@@ -40,6 +40,13 @@ export function readableGroupTitle(group: string): string {
     return words.charAt(0).toUpperCase() + words.slice(1);
 }
 
+/** Name the form shows for an allowed entry: a group's title or an ungrouped attribute's label, or the entry itself once undeclared. */
+export function permissionTitleOf(permissionName: string, requestAttributeDescriptors: BaseAttributeDto[]): string {
+    if (requestGroupCodesOf(requestAttributeDescriptors).has(permissionName)) return readableGroupTitle(permissionName);
+    const attribute = requestAttributeDescriptors.find((descriptor) => !isGrouped(descriptor) && descriptor.name === permissionName);
+    return attribute ? labelOf(attribute) : permissionName;
+}
+
 /** Group code of the pane holding the profile attributes that have no connector group. */
 export const profileOnlyGroup = '__profile__';
 
