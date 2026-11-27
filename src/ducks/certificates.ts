@@ -107,6 +107,7 @@ export type State = {
     registerAttributes: { [raProfileId: string]: AttributeDescriptorModel[] };
     /** The certificate types each RA profile issues, as loaded; a profile whose types are not loaded has no entry. */
     supportedCertificateTypes: { [raProfileId: string]: CertificateType[] };
+    isFetchingSupportedCertificateTypes: { [raProfileId: string]: boolean };
     revocationAttributes: AttributeDescriptorModel[];
     renewAttributes: AttributeDescriptorModel[];
     identifyAttributes: AttributeDescriptorModel[];
@@ -200,6 +201,7 @@ export const initialState: State = {
     issuanceAttributes: {},
     registerAttributes: {},
     supportedCertificateTypes: {},
+    isFetchingSupportedCertificateTypes: {},
     revocationAttributes: [],
     renewAttributes: [],
     identifyAttributes: [],
@@ -1031,17 +1033,21 @@ export const slice = createSlice({
         },
 
         // The types already loaded for the profile stay until the answer arrives: they rarely change.
-        listSupportedCertificateTypes: (_state, _action: PayloadAction<{ raProfileUuid: string; authorityUuid: string }>) => {},
+        listSupportedCertificateTypes: (state, action: PayloadAction<{ raProfileUuid: string; authorityUuid: string }>) => {
+            state.isFetchingSupportedCertificateTypes[action.payload.raProfileUuid] = true;
+        },
 
         listSupportedCertificateTypesSuccess: (
             state,
             action: PayloadAction<{ raProfileUuid: string; certificateTypes: CertificateType[] }>,
         ) => {
             state.supportedCertificateTypes[action.payload.raProfileUuid] = action.payload.certificateTypes;
+            delete state.isFetchingSupportedCertificateTypes[action.payload.raProfileUuid];
         },
 
         listSupportedCertificateTypesFailure: (state, action: PayloadAction<{ raProfileUuid: string; error: string | undefined }>) => {
             delete state.supportedCertificateTypes[action.payload.raProfileUuid];
+            delete state.isFetchingSupportedCertificateTypes[action.payload.raProfileUuid];
         },
 
         getRevocationAttributes: (state, action: PayloadAction<{ raProfileUuid: string; authorityUuid: string }>) => {
@@ -1332,6 +1338,7 @@ const certificateLocations = createSelector(state, (state) => state.certificateL
 const issuanceAttributes = createSelector(state, (state) => state.issuanceAttributes);
 const registerAttributes = createSelector(state, (state) => state.registerAttributes);
 const supportedCertificateTypes = createSelector(state, (state) => state.supportedCertificateTypes);
+const isFetchingSupportedCertificateTypes = createSelector(state, (state) => state.isFetchingSupportedCertificateTypes);
 const revocationAttributes = createSelector(state, (state) => state.revocationAttributes);
 const renewAttributes = createSelector(state, (state) => state.renewAttributes);
 const identifyAttributes = createSelector(state, (state) => state.identifyAttributes);
@@ -1430,6 +1437,7 @@ export const selectors = {
     issuanceAttributes,
     registerAttributes,
     supportedCertificateTypes,
+    isFetchingSupportedCertificateTypes,
     revocationAttributes,
     renewAttributes,
     identifyAttributes,

@@ -837,6 +837,7 @@ export type CertificatesTestState = {
     issuanceAttributes: Record<string, any[]>;
     registerAttributes: Record<string, any[]>;
     supportedCertificateTypes: Record<string, any[]>;
+    isFetchingSupportedCertificateTypes: Record<string, boolean>;
     isFetchingRegisterAttributes: boolean;
     csrAttributeDescriptors: any[];
     isFetchingCsrAttributes: boolean;
@@ -865,6 +866,7 @@ const certificatesTestInitialState: CertificatesTestState = {
     issuanceAttributes: {},
     registerAttributes: {},
     supportedCertificateTypes: {},
+    isFetchingSupportedCertificateTypes: {},
     isFetchingRegisterAttributes: false,
     csrAttributeDescriptors: [],
     isFetchingCsrAttributes: false,

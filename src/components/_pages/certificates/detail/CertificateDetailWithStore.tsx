@@ -7,7 +7,13 @@ import locationsReducer, { actions as locationActions, initialState as locations
 import { testInitialState, testReducers } from 'ducks/test-reducers';
 import type { CertificateDetailResponseModel } from 'types/certificate';
 import type { LocationResponseModel } from 'types/locations';
-import { type CertificateSimpleDto, CertificateState, Resource, type ResourceAction } from 'types/openapi';
+import {
+    type CertificateSimpleDto,
+    CertificateState,
+    type CertificateValidationStatus,
+    Resource,
+    type ResourceAction,
+} from 'types/openapi';
 import { useRecordingStore } from 'utils/test-helpers';
 import CertificateDetail from './index';
 
@@ -23,6 +29,10 @@ type Props = Readonly<{
     refreshedLocations?: LocationResponseModel[];
     /** Certificates that succeed the shown one. */
     successorCertificates?: CertificateSimpleDto[];
+    /** Fields the certificate has beside the fixture's. */
+    certificateFields?: Partial<CertificateDetailResponseModel>;
+    /** A validation result the store already holds, as one left by the certificate shown before. */
+    storedValidationResult?: { resultStatus: CertificateValidationStatus };
 }>;
 
 const certificate = {
@@ -70,6 +80,8 @@ export default function CertificateDetailWithStore({
     locationAnswers = NO_ANSWERS,
     refreshedLocations,
     successorCertificates,
+    certificateFields,
+    storedValidationResult,
 }: Props) {
     const preloadedState = useMemo(
         () => ({
@@ -77,7 +89,8 @@ export default function CertificateDetailWithStore({
             certificates: {
                 ...certificatesInitialState,
                 ...testInitialState.certificates,
-                certificateDetail: certificate,
+                certificateDetail: certificateFields ? { ...certificate, ...certificateFields } : certificate,
+                ...(storedValidationResult && { validationResult: storedValidationResult }),
                 certificateLocations,
                 ...(successorCertificates && { certificateRelations: { predecessorCertificates: [], successorCertificates } }),
             },
@@ -99,7 +112,16 @@ export default function CertificateDetailWithStore({
                 },
             },
         }),
-        [allowedListings, allowedActions, certificateLocations, pushableLocations, locationAnswers, successorCertificates],
+        [
+            allowedListings,
+            allowedActions,
+            certificateLocations,
+            pushableLocations,
+            locationAnswers,
+            successorCertificates,
+            certificateFields,
+            storedValidationResult,
+        ],
     );
     const { store, dispatched } = useRecordingStore(preloadedState as never, recorded, reducer);
 

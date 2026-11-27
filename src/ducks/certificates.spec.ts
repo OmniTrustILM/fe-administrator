@@ -122,6 +122,18 @@ describe('certificates slice', () => {
         expect(next.certificates.map((row) => row.displayName)).toEqual(['new name', 'untouched']);
     });
 
+    test('listSupportedCertificateTypes marks the RA profile as loading until its types or a failure arrive', () => {
+        const request = { raProfileUuid: 'ra-1', authorityUuid: 'auth-1' };
+
+        const loading = reducer(initialState, actions.listSupportedCertificateTypes(request));
+        const loaded = reducer(loading, actions.listSupportedCertificateTypesSuccess({ raProfileUuid: 'ra-1', certificateTypes: [] }));
+        const failed = reducer(loading, actions.listSupportedCertificateTypesFailure({ raProfileUuid: 'ra-1', error: 'err' }));
+
+        expect(loading.isFetchingSupportedCertificateTypes).toEqual({ 'ra-1': true });
+        expect(loaded.isFetchingSupportedCertificateTypes).toEqual({});
+        expect(failed.isFetchingSupportedCertificateTypes).toEqual({});
+    });
+
     test('getCertificateRelations / success / failure update relations flags and data', () => {
         let next = reducer(initialState, actions.getCertificateRelations({ uuid: 'cert-1' }));
         expect(next.isFetchingRelations).toBe(true);

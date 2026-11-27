@@ -203,7 +203,7 @@ export default function CertificateDetail() {
     const approvals = useSelector(selectors.approvals);
     const currentFilters = useSelector(filterSelectors.currentFilters(EntityType.CERTIFICATE));
 
-    const validationResult = useSelector(selectors.validationResult);
+    const storedValidationResult = useSelector(selectors.validationResult);
 
     const locations = useSelector(locationSelectors.locations);
 
@@ -418,6 +418,8 @@ export default function CertificateDetail() {
     }, [dispatch, id, getFreshCertificateDetail]);
 
     const validates = supportsOperation(certificate, CertificateOperation.Validate);
+    // The stored result may be the one of the certificate shown before, which a certificate that is not validated never replaces.
+    const validationResult = validates ? storedValidationResult : undefined;
     const checksCompliance = supportsOperation(certificate, CertificateOperation.CheckCompliance);
 
     const getFreshCertificateValidations = useCallback(() => {

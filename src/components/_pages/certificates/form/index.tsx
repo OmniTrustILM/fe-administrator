@@ -193,6 +193,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const issuanceAttributeDescriptors = useSelector(certificateSelectors.issuanceAttributes);
     const registerAttributeDescriptors = useSelector(certificateSelectors.registerAttributes);
     const supportedCertificateTypes = useSelector(certificateSelectors.supportedCertificateTypes);
+    const fetchingSupportedCertificateTypes = useSelector(certificateSelectors.isFetchingSupportedCertificateTypes);
     const certificateTypeEnum = useSelector(enumSelectors.platformEnum(PlatformEnum.CertificateType));
     const isFetchingRegisterAttributes = useSelector(certificateSelectors.isFetchingRegisterAttributes);
     const resourceCustomAttributes = useSelector(customAttributesSelectors.resourceCustomAttributes);
@@ -314,6 +315,9 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const tokenProfileUuid = useWatch({ control, name: 'tokenProfileUuid' });
     const altTokenProfileUuid = useWatch({ control, name: 'altTokenProfileUuid' });
     const requestType = useWatch({ control, name: 'requestType' });
+    const chosenCertificateType = useWatch({ control, name: 'certificateType' });
+    // The preview parses a PKCS#10 request, the request of an X.509 certificate and of a request that names no type.
+    const previewsRequest = !chosenCertificateType || chosenCertificateType === CertificateType.X509;
     const isRegister = requestType === 'register';
     const authorizationSecret = useWatch({ control, name: 'authorizationSecret' });
     // Core decides with String.isBlank(), so an all-whitespace value creates no authorization row —
@@ -322,6 +326,9 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     const hasChallenge = !!authorizationSecret?.trim();
 
     const raProfileCertificateTypes = selectedRaProfileUuid ? supportedCertificateTypes?.[selectedRaProfileUuid] : undefined;
+    // Until the types of the chosen RA profile are known, an issue request would name no type and be taken for X.509.
+    const isFetchingCertificateTypes =
+        !isRegister && !!selectedRaProfileUuid && !!fetchingSupportedCertificateTypes?.[selectedRaProfileUuid];
     const certificateTypeOptions = useMemo(
         () => (raProfileCertificateTypes ?? []).map((type) => ({ value: type, label: getEnumLabel(certificateTypeEnum, type) })),
         [raProfileCertificateTypes, certificateTypeEnum],
@@ -336,9 +343,9 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         } else if (chosen && raProfileCertificateTypes.includes(chosen)) {
             return;
         } else if (raProfileCertificateTypes.length === 1) {
-            setValue('certificateType', raProfileCertificateTypes[0]);
+            setValue('certificateType', raProfileCertificateTypes[0], { shouldValidate: true });
         } else if (raProfileCertificateTypes.includes(CertificateType.X509)) {
-            setValue('certificateType', CertificateType.X509);
+            setValue('certificateType', CertificateType.X509, { shouldValidate: true });
         } else {
             setValue('certificateType', undefined);
         }
@@ -475,6 +482,22 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
     );
 
     const isExternalSource = uploadCsrSource === 'external';
+
+    // A preview and a parse error belong to the type they were made for, so both go when the request stops or starts being previewed.
+    const previewedRequest = useRef(previewsRequest);
+    useEffect(() => {
+        if (previewedRequest.current === previewsRequest) return;
+        previewedRequest.current = previewsRequest;
+        dispatch(utilsCertificateRequestActions.reset());
+        if (previewsRequest && fileContent && health) {
+            dispatch(
+                utilsCertificateRequestActions.parseCertificateRequest({
+                    content: fileContent,
+                    requestParseType: ParseRequestRequestDtoParseTypeEnum.Basic,
+                }),
+            );
+        }
+    }, [dispatch, previewsRequest, fileContent, health]);
     const isExistingKeySource = uploadCsrSource === 'existing';
 
     // A single Request Properties tab strip serves both modes; tabs are shown/hidden per mode so the
@@ -603,12 +626,12 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
         (event: React.SyntheticEvent<HTMLFormElement>) => {
             event.preventDefault();
             // Enter in a field would still submit once the request was accepted and Create is gone.
-            if (isFetchingRequestAttributes || issueWarnings) {
+            if (isFetchingRequestAttributes || isFetchingCertificateTypes || issueWarnings) {
                 return;
             }
             void handleSubmit(onSubmit)(event);
         },
-        [handleSubmit, isFetchingRequestAttributes, issueWarnings, onSubmit],
+        [handleSubmit, isFetchingRequestAttributes, isFetchingCertificateTypes, issueWarnings, onSubmit],
     );
 
     return (
@@ -765,7 +788,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         onFileContentLoaded={(uploadedContent) => {
                                             setFileContent(uploadedContent);
                                             dispatch(certificateActions.clearIssueErrors());
-                                            if (health) {
+                                            if (health && previewsRequest) {
                                                 dispatch(
                                                     utilsCertificateRequestActions.parseCertificateRequest({
                                                         content: uploadedContent,
@@ -1041,7 +1064,7 @@ export default function CertificateForm({ onCancel }: CertificateFormProps = {})
                                         title="Create"
                                         inProgressTitle="Creating"
                                         inProgress={issuingCertificate}
-                                        disabled={!formState.isValid || isFetchingRequestAttributes}
+                                        disabled={!formState.isValid || isFetchingRequestAttributes || isFetchingCertificateTypes}
                                     />
                                 )}
                             </div>

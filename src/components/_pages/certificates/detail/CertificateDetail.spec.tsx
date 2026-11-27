@@ -1,5 +1,13 @@
 import type { Locator, Page } from '@playwright/test';
-import { CertificateRelationType, CertificateState, CertificateType, Resource, ResourceAction } from 'types/openapi';
+import {
+    CertificateOperation,
+    CertificateRelationType,
+    CertificateState,
+    CertificateType,
+    CertificateValidationStatus,
+    Resource,
+    ResourceAction,
+} from 'types/openapi';
 import { expect, test } from '../../../../../playwright/ct-test';
 import CertificateDetailWithStore from './CertificateDetailWithStore';
 
@@ -225,4 +233,35 @@ test.describe('CertificateDetail — permission to change each location', () => 
             }
         });
     }
+});
+
+test.describe('CertificateDetail — validation result of the certificate shown before', () => {
+    const stored = { resultStatus: CertificateValidationStatus.Revoked };
+    const validationStatus = (page: Page) =>
+        page.getByRole('row').filter({ has: page.getByRole('cell', { name: 'Validation Status', exact: true }) });
+
+    test('shows the stored result for a certificate that is validated', async ({ mount, page }) => {
+        await mount(
+            <CertificateDetailWithStore
+                allowedListings={[Resource.Certificates]}
+                certificateFields={{ supportedOperations: [CertificateOperation.Validate] }}
+                storedValidationResult={stored}
+            />,
+        );
+
+        await expect(validationStatus(page)).toContainText('Revoked');
+    });
+
+    test('does not show it for a certificate whose type is not validated', async ({ mount, page }) => {
+        await mount(
+            <CertificateDetailWithStore
+                allowedListings={[Resource.Certificates]}
+                certificateFields={{ certificateType: CertificateType.Ssh, supportedOperations: [] }}
+                storedValidationResult={stored}
+            />,
+        );
+
+        await expect(validationStatus(page)).toBeVisible();
+        await expect(validationStatus(page)).not.toContainText('Revoked');
+    });
 });
