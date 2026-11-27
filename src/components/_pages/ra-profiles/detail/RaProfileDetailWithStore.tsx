@@ -20,10 +20,14 @@ type Props = Readonly<{
     allowedActions?: ResourceAction[];
     /** Actions the user holds on whole resources; none when omitted. */
     resourceGrants?: { resource: Resource; actions: ResourceAction[] }[];
-    /** A permission scenario by name, whose profile and answer replace the two props above. */
+    /** Resources the user holds object access on; none when omitted. */
+    objectAccess?: Resource[];
+    /** A permission scenario by name, whose profile and answer replace the grant props above. */
     scenario?: string;
-    /** Loads an RA profile that has no authority. */
+    /** Opens a profile that has no authority, under the route's `unknown` segment. */
     withoutAuthority?: boolean;
+    /** The route's authority segment, when it should differ from the loaded profile's authority. */
+    authoritySegment?: string;
 }>;
 
 const raProfile = {
@@ -48,10 +52,12 @@ const raProfile = {
 export default function RaProfileDetailWithStore({
     allowedActions = Object.values(ResourceAction),
     resourceGrants,
+    objectAccess,
     scenario,
     withoutAuthority = false,
+    authoritySegment,
 }: Props) {
-    const loaded = withoutAuthority ? { ...raProfile, authorityInstanceUuid: undefined } : raProfile;
+    const loaded = withoutAuthority ? { ...raProfile, authorityInstanceUuid: undefined, authorityInstanceName: undefined } : raProfile;
     const [store] = useState(() => {
         const permissions = scenario
             ? scenarioState(PERMISSION_SCENARIOS.find((candidate) => candidate.name === scenario)!, {
@@ -64,6 +70,7 @@ export default function RaProfileDetailWithStore({
             uuid: raProfile.uuid,
             allowedActions,
             resourceGrants,
+            objectAccess,
             realSlices: [acmeProfilesSlice, approvalProfilesSlice, cmpProfilesSlice, estProfilesSlice, scepProfilesSlice],
             preloadedState: {
                 raprofiles: { ...raProfilesInitialState, ...testInitialState.raprofiles, raProfile: loaded },
@@ -75,7 +82,9 @@ export default function RaProfileDetailWithStore({
 
     return (
         <Provider store={store}>
-            <MemoryRouter initialEntries={[`/raprofiles/detail/${raProfile.authorityInstanceUuid}/${raProfile.uuid}`]}>
+            <MemoryRouter
+                initialEntries={[`/raprofiles/detail/${authoritySegment ?? loaded.authorityInstanceUuid ?? 'unknown'}/${loaded.uuid}`]}
+            >
                 <Routes>
                     <Route path="/raprofiles/detail/:authorityId/:id" element={<RaProfileDetail />} />
                 </Routes>
