@@ -57,12 +57,13 @@ test.describe('SecretsList actions by permission', () => {
         await expect(page.getByRole('tooltip')).toHaveText('You need the Update permission on Secrets.');
     });
 
-    test('offers changing actions to a fully privileged user as before', async ({ mount }) => {
+    test('offers changing actions to a fully privileged user as before', async ({ mount, page }) => {
         const component = await mount(<SecretsListWithStore preloadedState={{ auth: { profile: profileWith(allActions) }, enums }} />);
 
         await expect(component.getByTestId('plus-button')).toBeEnabled();
-        // Enable waits for a selection; a permission denial would wrap the button to carry its reason.
-        await expect(component.getByTestId('check-button').locator('xpath=..')).not.toHaveClass(/inline-flex/);
+        // Enable waits for a selection, so it is disabled with its plain title rather than a missing permission.
+        await component.getByTestId('check-button').locator('..').hover();
+        await expect(page.getByRole('tooltip')).toHaveText('Enable selected Secrets');
     });
 
     test('keeps Delete disabled on a selected secret without the delete permission and names it', async ({ mount, page }) => {

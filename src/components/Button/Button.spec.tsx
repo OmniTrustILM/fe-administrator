@@ -129,6 +129,18 @@ test.describe('Button', () => {
         await expect(page.getByRole('tooltip')).toHaveText('A retry is already in flight');
     });
 
+    test('should still show its title on a button disabled without a reason', async ({ mount, page }) => {
+        const component = await mount(
+            <Button disabled title="Delete">
+                Delete
+            </Button>,
+        );
+
+        await expect(component.getByRole('button')).toBeDisabled();
+        await component.locator('span.inline-flex').hover();
+        await expect(page.getByRole('tooltip')).toHaveText('Delete');
+    });
+
     test('should disable a button its requirement denies and show the missing permission', async ({ mount, page }) => {
         const component = await mount(
             <Button requires={{ available: false, hidden: false, loading: false, reason: 'You need the Update permission on Secrets.' }}>
