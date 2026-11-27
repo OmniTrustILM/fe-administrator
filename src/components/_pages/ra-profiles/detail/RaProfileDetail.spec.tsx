@@ -49,6 +49,52 @@ test.describe('RaProfileDetail actions by permission', () => {
         await expect(page.getByTestId('check-compliance-button')).toBeDisabled();
     });
 
+    test('offers the actions addressed by authority on a profile under one', async ({ mount, page }) => {
+        await mount(<RaProfileDetailWithStore objectAccess={[Resource.ApprovalProfiles]} />);
+
+        await expect(page.getByTestId('add-button')).toBeEnabled();
+        await page.getByRole('tab', { name: 'Validation' }).click();
+        const edit = page.getByTestId('edit-button');
+        await expect(edit).toHaveCount(3);
+        for (let index = 0; index < 3; index++) await expect(edit.nth(index)).toBeEnabled();
+    });
+
+    test('disables the actions addressed by authority on a profile without one, whatever the user may update', async ({ mount, page }) => {
+        await mount(<RaProfileDetailWithStore withoutAuthority objectAccess={[Resource.ApprovalProfiles]} />);
+
+        await expect(page.getByTestId('edit-button')).toBeDisabled();
+        await expect(page.getByTestId('add-button')).toBeDisabled();
+        await page.getByRole('tab', { name: 'Protocols' }).click();
+        const activate = page.getByRole('button', { name: 'Activate' });
+        await expect(activate).toHaveCount(4);
+        for (let index = 0; index < 4; index++) await expect(activate.nth(index)).toBeDisabled();
+        await page.getByRole('tab', { name: 'Validation' }).click();
+        const edit = page.getByTestId('edit-button');
+        await expect(edit).toHaveCount(3);
+        for (let index = 0; index < 3; index++) await expect(edit.nth(index)).toBeDisabled();
+    });
+
+    test('keeps the settings editors of a reattached profile opened under its old unknown route', async ({ mount, page }) => {
+        await mount(<RaProfileDetailWithStore authoritySegment="unknown" objectAccess={[Resource.ApprovalProfiles]} />);
+
+        await expect(page.getByTestId('add-button')).toBeDisabled();
+        await page.getByRole('tab', { name: 'Validation' }).click();
+        const edit = page.getByTestId('edit-button');
+        await expect(edit).toHaveCount(3);
+        for (let index = 0; index < 3; index++) await expect(edit.nth(index)).toBeEnabled();
+        await page.getByRole('tab', { name: 'Protocols' }).click();
+        const activate = page.getByRole('button', { name: 'Activate' });
+        await expect(activate).toHaveCount(4);
+        for (let index = 0; index < 4; index++) await expect(activate.nth(index)).toBeDisabled();
+    });
+
+    test('disables the actions addressed by the route authority under an undefined segment', async ({ mount, page }) => {
+        await mount(<RaProfileDetailWithStore authoritySegment="undefined" objectAccess={[Resource.ApprovalProfiles]} />);
+
+        await expect(page.getByTestId('edit-button')).toBeDisabled();
+        await expect(page.getByTestId('add-button')).toBeDisabled();
+    });
+
     test('disables editing the renewal settings of an RA profile without an authority', async ({ mount, page }) => {
         await mount(<RaProfileDetailWithStore withoutAuthority />);
         await page.getByRole('tab', { name: 'Validation' }).click();

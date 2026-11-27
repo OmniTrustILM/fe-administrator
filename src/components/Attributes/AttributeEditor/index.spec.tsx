@@ -479,6 +479,182 @@ test.describe('AttributeEditor', () => {
     });
 });
 
+test.describe('AttributeEditor file attributes', () => {
+    const fontFile = { content: 'Rm9udA==', fileName: 'caption.ttf', mimeType: 'font/ttf' };
+
+    const fontDescriptor = (overrides: Partial<DataAttributeModel> = {}) =>
+        dataDescriptor({
+            name: 'captionFont',
+            uuid: 'caption-font-uuid',
+            contentType: AttributeContentType.File,
+            properties: { ...dataDescriptor().properties, label: 'Caption font', required: false },
+            ...overrides,
+        });
+
+    const savedFont = () => [{ name: 'captionFont', uuid: 'caption-font-uuid', content: [{ data: fontFile }] }] as any[];
+
+    // The wrapper seeds the form's defaults from the saved attributes, so the field shows a saved file either way.
+    // These tests read the form values instead, because a save sends those.
+    const fontFormValue = async (page: Page) =>
+        JSON.parse((await page.getByTestId('form-values').textContent()) ?? '{}')[`__attributes__${editorId}__`]?.captionFont;
+
+    test('keeps the content of a saved file', async ({ mount, page }) => {
+        // given
+        const descriptors = [fontDescriptor()];
+
+        // when
+        await mount(
+            <AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} attributes={savedFont()} renderFormValues />,
+        );
+
+        // then
+        await expect.poll(() => fontFormValue(page), { timeout: 10000 }).toEqual(fontFile);
+    });
+
+    test('fills in the content of a default file', async ({ mount, page }) => {
+        // given
+        const descriptors = [fontDescriptor({ content: [{ data: fontFile }] as any })];
+
+        // when
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} renderFormValues />);
+
+        // then
+        await expect.poll(() => fontFormValue(page), { timeout: 10000 }).toEqual(fontFile);
+    });
+
+    test('prefers a saved file over a default file', async ({ mount, page }) => {
+        // given
+        const defaultFont = { content: 'RGVmYXVsdA==', fileName: 'default.ttf', mimeType: 'font/ttf' };
+        const descriptors = [fontDescriptor({ content: [{ data: defaultFont }] as any })];
+
+        // when
+        await mount(
+            <AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} attributes={savedFont()} renderFormValues />,
+        );
+
+        // then
+        await expect.poll(() => fontFormValue(page), { timeout: 10000 }).toEqual(fontFile);
+    });
+
+    test('offers to clear an optional saved file', async ({ mount, page }) => {
+        // when
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={[fontDescriptor()]} attributes={savedFont()} />);
+
+        // then
+        await expect(page.getByRole('button', { name: 'Clear' })).toBeVisible({ timeout: 10000 });
+    });
+
+    test('offers to clear an optional saved zero-byte file', async ({ mount, page }) => {
+        // given
+        const emptyFont = [{ name: 'captionFont', uuid: 'caption-font-uuid', content: [{ data: { ...fontFile, content: '' } }] }] as any[];
+
+        // when
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={[fontDescriptor()]} attributes={emptyFont} />);
+
+        // then
+        await expect(page.getByRole('button', { name: 'Clear' })).toBeVisible({ timeout: 10000 });
+    });
+
+    test('lets the same file be selected again', async ({ mount, page }) => {
+        // given
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={[fontDescriptor()]} renderFormValues />);
+        const fileInput = page.locator('input[type="file"]');
+
+        // when
+        await fileInput.setInputFiles({ name: 'caption.ttf', mimeType: 'font/ttf', buffer: Buffer.from('Font') });
+
+        // then
+        await expect.poll(() => fontFormValue(page), { timeout: 10000 }).toMatchObject({ content: 'Rm9udA==', fileName: 'caption.ttf' });
+        await expect(fileInput).toHaveValue('');
+    });
+
+    test('empties the file when Clear is clicked', async ({ mount, page }) => {
+        // given
+        await mount(
+            <AttributeEditorTestWrapper
+                id={editorId}
+                attributeDescriptors={[fontDescriptor()]}
+                attributes={savedFont()}
+                renderFormValues
+            />,
+        );
+
+        // when
+        await page.getByRole('button', { name: 'Clear' }).click({ timeout: 10000 });
+
+        // then
+        await expect.poll(() => fontFormValue(page), { timeout: 10000 }).toEqual({ content: '', fileName: '', mimeType: '' });
+        await expect(page.getByRole('button', { name: 'Clear' })).toHaveCount(0);
+    });
+
+    test('keeps the file cleared when a read still in flight completes', async ({ mount, page }) => {
+        // given
+        await mount(
+            <AttributeEditorTestWrapper
+                id={editorId}
+                attributeDescriptors={[fontDescriptor()]}
+                attributes={savedFont()}
+                renderFormValues
+            />,
+        );
+        await expect(page.getByRole('button', { name: 'Clear' })).toBeVisible({ timeout: 10000 });
+
+        // when
+        // One browser task picks a file and then clicks Clear. The read is still in flight when Clear lands.
+        await page.evaluate(async () => {
+            const input = document.querySelector<HTMLInputElement>('input[type="file"]')!;
+            const transfer = new DataTransfer();
+            transfer.items.add(new File(['Other'], 'other.ttf', { type: 'font/ttf' }));
+            input.files = transfer.files;
+            input.dispatchEvent(new Event('change', { bubbles: true }));
+            document.querySelector<HTMLButtonElement>('button[aria-label="Clear Caption font"]')!.click();
+            await new Promise((resolve) => setTimeout(resolve, 200));
+        });
+
+        // then
+        expect(await fontFormValue(page)).toEqual({ content: '', fileName: '', mimeType: '' });
+    });
+
+    test('names the file on its Clear button', async ({ mount, page }) => {
+        // when
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={[fontDescriptor()]} attributes={savedFont()} />);
+
+        // then
+        await expect(page.getByRole('button', { name: 'Clear Caption font', exact: true })).toBeVisible({ timeout: 10000 });
+    });
+
+    test('moves focus to the file content when Clear is clicked', async ({ mount, page }) => {
+        // given
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={[fontDescriptor()]} attributes={savedFont()} />);
+
+        // when
+        await page.getByRole('button', { name: 'Clear' }).click({ timeout: 10000 });
+
+        // then
+        await expect(page.locator('input[id$=".captionFont-content"]')).toBeFocused();
+    });
+
+    test.describe('offers no Clear', () => {
+        const fileProperties = { ...dataDescriptor().properties, label: 'Caption font' };
+        const cases: [string, DataAttributeModel, any[] | undefined][] = [
+            ['for a required file', fontDescriptor({ properties: { ...fileProperties, required: true } }), savedFont()],
+            ['for a read-only file', fontDescriptor({ properties: { ...fileProperties, required: false, readOnly: true } }), savedFont()],
+            ['while no file is selected', fontDescriptor(), undefined],
+        ];
+
+        for (const [label, descriptor, attributes] of cases) {
+            test(label, async ({ mount, page }) => {
+                // when
+                await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={[descriptor]} attributes={attributes} />);
+
+                // then
+                await expect(page.getByText('Select file...')).toBeVisible({ timeout: 10000 });
+                await expect(page.getByRole('button', { name: 'Clear' })).toHaveCount(0);
+            });
+        }
+    });
+});
+
 test.describe('AttributeEditor NG (dependsOn) callbacks', () => {
     // The mock store has no epics, so a dispatched callback leaves isRunningCallback=true and the
     // editor's busy spinner stays visible — its presence is the observable "callback fired" signal.
