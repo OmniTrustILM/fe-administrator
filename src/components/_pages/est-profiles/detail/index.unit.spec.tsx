@@ -3,6 +3,8 @@ import { createRoot, type Root } from 'react-dom/client';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { initialState } from 'ducks/est-profiles';
+import { ResourceAction } from 'types/openapi';
+import { actionAvailabilityFake } from '../../test-utils/actionAvailabilityFake';
 import { setupReactActEnvironment } from '../../test-utils/reactActEnvironment';
 import { useDispatchMock, useSelectorMock } from '../../test-utils/reactReduxMockModule';
 import EstProfileDetail from './index';
@@ -10,10 +12,9 @@ import EstProfileDetail from './index';
 setupReactActEnvironment();
 
 vi.mock('react-redux', async () => await import('../../test-utils/reactReduxMockModule'));
-vi.mock('utils/useActionAvailability', async () => {
-    const { actionAvailabilityMockModule } = await import('../../test-utils/mockModules');
-    return actionAvailabilityMockModule();
-});
+vi.mock('utils/useActionAvailability', async () =>
+    (await import('../../test-utils/actionAvailabilityFake')).actionAvailabilityFakeModule(),
+);
 vi.mock('react-router', () => ({ useParams: () => ({ id: 'est-1' }), Link: ({ children }: any) => <a href="/">{children}</a> }));
 vi.mock('components/CustomTable', async () => {
     const { customTableMockModule } = await import('../../test-utils/mockModules');
@@ -25,7 +26,13 @@ vi.mock('components/Dialog', () => ({
         isOpen ? (
             <div data-testid={`dialog-${caption}`}>
                 {buttons.map((button: any) => (
-                    <button key={button.body} data-testid={`dialog-button-${button.body}`} onClick={button.onClick} />
+                    <button
+                        type="button"
+                        key={button.body}
+                        data-testid={`dialog-button-${button.body}`}
+                        onClick={button.onClick}
+                        disabled={button.disabled}
+                    />
                 ))}
             </div>
         ) : null,
@@ -65,6 +72,7 @@ describe('EstProfileDetail response timing', () => {
         document.body.appendChild(container);
         root = createRoot(container);
         useDispatchMock.mockReturnValue(vi.fn());
+        actionAvailabilityFake.reset([ResourceAction.Delete]);
         const state = {
             estProfiles: { ...initialState, estProfile: profile },
             users: { users: [] },
@@ -115,5 +123,33 @@ describe('EstProfileDetail response timing', () => {
             'estProfiles/clearDeleteErrorMessages',
             'estProfiles/bulkForceDeleteEstProfiles',
         ]);
+    });
+
+    it('clears a delete error another profile left when the page opens', async () => {
+        const dispatch = vi.fn();
+        useDispatchMock.mockReturnValue(dispatch);
+
+        await act(async () => {
+            root.render(<EstProfileDetail />);
+        });
+
+        expect(dispatch.mock.calls.map(([action]) => action.type)).toContain('estProfiles/clearDeleteErrorMessages');
+    });
+
+    it('disables Force for a user without the delete permission', async () => {
+        actionAvailabilityFake.reset([]);
+        const state = {
+            estProfiles: { ...initialState, estProfile: profile, deleteErrorMessage: 'has dependents' },
+            users: { users: [] },
+            certificateGroups: { certificateGroups: [] },
+            enums: { platformEnums: {} },
+        };
+        useSelectorMock.mockImplementation((selector: any) => selector(state));
+
+        await act(async () => {
+            root.render(<EstProfileDetail />);
+        });
+
+        expect(container.querySelector<HTMLButtonElement>('[data-testid="dialog-button-Force"]')?.disabled).toBe(true);
     });
 });

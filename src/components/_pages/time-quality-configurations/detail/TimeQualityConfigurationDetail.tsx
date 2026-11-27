@@ -11,6 +11,7 @@ import type { WidgetButtonProps } from 'components/WidgetButtons';
 import CustomAttributeWidget from 'components/Attributes/CustomAttributeWidget';
 import StatusBadge from 'components/StatusBadge';
 
+import { actions as resourceActions } from 'ducks/resource';
 import { actions, selectors } from 'ducks/time-quality-configurations';
 import { Resource, ResourceAction } from 'types/openapi';
 import { useActionAvailability } from 'utils/useActionAvailability';
@@ -23,9 +24,10 @@ export const TimeQualityConfigurationDetail = () => {
     const navigate = useNavigate();
 
     const { id } = useParams();
-    const can = useActionAvailability(Resource.TimeQualityConfigurations, id);
-
     const timeQualityConfiguration = useSelector(selectors.timeQualityConfiguration);
+    // Ask about the loaded configuration, which the actions act on: after a route change it is the previous one until
+    // the new one arrives.
+    const can = useActionAvailability(Resource.TimeQualityConfigurations, timeQualityConfiguration?.uuid);
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
     const isDeleting = useSelector(selectors.isDeleting);
     const deleteErrorMessage = useSelector(selectors.deleteErrorMessage);
@@ -45,6 +47,18 @@ export const TimeQualityConfigurationDetail = () => {
     useEffect(() => {
         getFreshData();
     }, [getFreshData]);
+
+    const refreshData = useCallback(() => {
+        getFreshData();
+        if (timeQualityConfiguration) {
+            dispatch(
+                resourceActions.listObjectAllowedActions({
+                    resource: Resource.TimeQualityConfigurations,
+                    uuids: [timeQualityConfiguration.uuid],
+                }),
+            );
+        }
+    }, [dispatch, getFreshData, timeQualityConfiguration]);
 
     const onEditClick = useCallback(() => {
         if (!timeQualityConfiguration) return;
@@ -229,7 +243,7 @@ export const TimeQualityConfigurationDetail = () => {
                             title="Time Quality Configuration Details"
                             widgetButtons={buttons}
                             titleSize="large"
-                            refreshAction={getFreshData}
+                            refreshAction={refreshData}
                         >
                             <CustomTable headers={tableHeader} data={generalData} />
                         </Widget>

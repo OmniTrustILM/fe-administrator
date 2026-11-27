@@ -4,6 +4,7 @@ import { Link, useParams } from 'react-router';
 
 import { actions, selectors } from 'ducks/est-profiles';
 import { actions as groupsActions, selectors as groupsSelectors } from 'ducks/certificateGroups';
+import { actions as resourceActions } from 'ducks/resource';
 import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
 import { actions as userActions, selectors as userSelectors } from 'ducks/users';
 
@@ -46,9 +47,10 @@ function LinkList({ items, basePath }: Readonly<{ items: NameAndUuidDto[] | unde
 export default function EstProfileDetail() {
     const dispatch = useDispatch();
     const { id } = useParams();
-    const can = useActionAvailability(Resource.EstProfiles, id);
-
     const estProfile = useSelector(selectors.estProfile);
+    // Ask about the loaded profile, which the actions act on: after a route change it is the previous one until the
+    // new one arrives.
+    const can = useActionAvailability(Resource.EstProfiles, estProfile?.uuid);
     const isFetchingDetail = useSelector(selectors.isFetchingDetail);
     const isDisabling = useSelector(selectors.isDisabling);
     const isEnabling = useSelector(selectors.isEnabling);
@@ -67,12 +69,19 @@ export default function EstProfileDetail() {
 
     const getFreshEstProfile = useCallback(() => {
         if (!id) return;
+        // The delete error lives in the shared slice, so one another profile left must not offer Force on this one.
+        dispatch(actions.clearDeleteErrorMessages());
         dispatch(actions.getEstProfile({ uuid: id }));
     }, [dispatch, id]);
 
     useEffect(() => {
         getFreshEstProfile();
     }, [getFreshEstProfile]);
+
+    const refreshEstProfile = useCallback(() => {
+        getFreshEstProfile();
+        if (estProfile) dispatch(resourceActions.listObjectAllowedActions({ resource: Resource.EstProfiles, uuids: [estProfile.uuid] }));
+    }, [dispatch, estProfile, getFreshEstProfile]);
 
     useEffect(() => {
         dispatch(userActions.list());
@@ -298,7 +307,7 @@ export default function EstProfileDetail() {
                             title="EST Profile Details"
                             widgetButtons={buttons}
                             titleSize="large"
-                            refreshAction={getFreshEstProfile}
+                            refreshAction={refreshEstProfile}
                             lockSize="large"
                         >
                             <CustomTable headers={tableHeader} data={detailData} />
@@ -373,7 +382,7 @@ export default function EstProfileDetail() {
                 }
                 toggle={() => dispatch(actions.clearDeleteErrorMessages())}
                 buttons={[
-                    { color: 'danger', onClick: onForceDelete, body: 'Force' },
+                    { color: 'danger', onClick: onForceDelete, body: 'Force', disabled: !can(ResourceAction.Delete).available },
                     { color: 'secondary', variant: 'outline', onClick: () => dispatch(actions.clearDeleteErrorMessages()), body: 'Cancel' },
                 ]}
             />

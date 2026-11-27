@@ -337,6 +337,19 @@ describe('DiscoveryDetail', () => {
             expect(actionAvailabilityFake.requests).toContainEqual({ resource: Resource.Discoveries, objects: undefined });
         });
 
+        it('gates delete on the delete permission alone, not on update', async () => {
+            const deleteButton = () =>
+                container.querySelector<HTMLButtonElement>('[data-testid="widget-Discovery Details"] > button[title^="Delete"]');
+
+            actionAvailabilityFake.reset([ResourceAction.Delete]);
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Completed }));
+            expect(deleteButton()?.disabled).toBe(false);
+
+            actionAvailabilityFake.reset([ResourceAction.Update]);
+            await render(buildState({ ...v2Run, status: DiscoveryStatus.Completed }));
+            expect(deleteButton()?.disabled).toBe(true);
+        });
+
         it('lets only a user with the update permission on discoveries edit custom attributes', async () => {
             const editable = () => container.querySelector('[data-testid="custom-attributes"]')?.getAttribute('data-editable');
             await render(buildState({ ...v2Run, status: DiscoveryStatus.Completed }));

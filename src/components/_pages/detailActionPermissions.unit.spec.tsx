@@ -18,13 +18,13 @@ import { useDispatchMock, useSelectorMock } from './test-utils/reactReduxMockMod
 setupReactActEnvironment();
 
 const routeParams = vi.hoisted(() => ({ current: {} as Record<string, string> }));
+const navigate = vi.hoisted(() => () => undefined);
 
 vi.mock('react-redux', async () => await import('./test-utils/reactReduxMockModule'));
 vi.mock('utils/useActionAvailability', async () => (await import('./test-utils/actionAvailabilityFake')).actionAvailabilityFakeModule());
 vi.mock('react-router', () => ({
     useParams: () => routeParams.current,
-    useNavigate: () => vi.fn(),
-    useSearchParams: () => [new URLSearchParams(), () => undefined],
+    useNavigate: () => navigate,
     Link: ({ children }: { children: ReactElement }) => <span>{children}</span>,
 }));
 vi.mock('components/Widget', async () => (await import('./test-utils/mockModules')).widgetMockModule());
@@ -212,6 +212,44 @@ describe('detail page actions follow the user permissions', () => {
                     expect(container.querySelector('[data-testid="custom-attributes"]')?.getAttribute('data-editable')).toBe('false');
                 }
             });
+
+            it('enables only the controls whose own permission is granted', async () => {
+                for (const granted of new Set(page.controls.map((control) => control.action))) {
+                    await render(page, [granted]);
+
+                    for (const control of page.controls) {
+                        expect(button(page, control.tooltip)?.disabled, `${control.tooltip} with ${granted}`).toBe(
+                            control.action !== granted,
+                        );
+                    }
+                    if (page.customAttributes) {
+                        expect(container.querySelector('[data-testid="custom-attributes"]')?.getAttribute('data-editable')).toBe(
+                            String(granted === ResourceAction.Update),
+                        );
+                    }
+                }
+            });
+
+            it('enables an action whose permission arrives after the page rendered', async () => {
+                await render(page, []);
+                const [first] = page.controls;
+                expect(button(page, first.tooltip)?.disabled).toBe(true);
+
+                actionAvailabilityFake.reset([first.action]);
+                await act(async () => root.render(page.page()));
+
+                expect(button(page, first.tooltip)?.disabled).toBe(false);
+            });
+
+            const object = page.object;
+            if (object) {
+                it('asks about the loaded object while the route already names the next one', async () => {
+                    await render({ ...page, params: { ...page.params, id: 'next-object' } }, []);
+
+                    expect(actionAvailabilityFake.requests).toContainEqual({ resource: page.resource, objects: object });
+                    expect(actionAvailabilityFake.requests).not.toContainEqual({ resource: page.resource, objects: 'next-object' });
+                });
+            }
 
             const disabledObjectState = page.disabledObjectState;
             if (disabledObjectState) {

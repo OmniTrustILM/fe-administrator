@@ -14,12 +14,24 @@ export const actionAvailabilityFake = {
     },
 };
 
+// One function per grant set, like the real hook, which returns a new function only when an answer changes.
+const resolvers = new WeakMap<Set<ResourceAction>, (action: ResourceAction) => Availability>();
+
+const resolverFor = (granted: Set<ResourceAction>) => {
+    let resolver = resolvers.get(granted);
+    if (!resolver) {
+        resolver = (action: ResourceAction): Availability =>
+            granted.has(action)
+                ? { available: true, hidden: false, loading: false }
+                : { available: false, hidden: false, loading: false, reason: `You need the ${action} permission.` };
+        resolvers.set(granted, resolver);
+    }
+    return resolver;
+};
+
 export const actionAvailabilityFakeModule = () => ({
     useActionAvailability: (resource: Resource, objects?: string | readonly string[]) => {
         actionAvailabilityFake.requests.push({ resource, objects });
-        return (action: ResourceAction): Availability =>
-            actionAvailabilityFake.granted.has(action)
-                ? { available: true, hidden: false, loading: false }
-                : { available: false, hidden: false, loading: false, reason: `You need the ${action} permission.` };
+        return resolverFor(actionAvailabilityFake.granted);
     },
 });
