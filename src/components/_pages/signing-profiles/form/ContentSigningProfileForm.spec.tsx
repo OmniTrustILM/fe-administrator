@@ -1,7 +1,7 @@
 import { test, expect } from 'playwright/ct-test';
 import type { Page } from '@playwright/test';
 import { SignatureLevel, SigningWorkflowType, TimestampSourceType } from 'types/openapi';
-import { ContentSigningProfileFormTestWrapper, type RecordedRequest } from './ContentSigningProfileFormTestWrapper';
+import { ContentSigningProfileFormTestWrapper } from './ContentSigningProfileFormTestWrapper';
 import {
     core,
     DOCUMENT_SIGNING_EKU,
@@ -15,30 +15,18 @@ import {
     SAVED_REQUEST_ATTRIBUTES,
     savedProfile,
 } from './contentSigningFormFixtures';
-
-const TAB_CONTENT_SIGNING = '2 · Content Signing Properties';
-const TAB_SIGNING_SCHEME = '3 · Signing Scheme';
-const TAB_RECORD_POLICY = '4 · Record Policy';
-
-async function requests(page: Page, type: string): Promise<unknown[]> {
-    const recorded: RecordedRequest[] = JSON.parse((await page.getByTestId('requests').textContent()) ?? '[]');
-    return recorded.filter((request) => request.type === type).map((request) => request.payload);
-}
-
-async function chooseWorkflow(page: Page, label: string) {
-    await page.getByRole('radio', { name: label }).check();
-}
-
-async function choose(page: Page, selectId: string, option: string) {
-    await page.getByTestId(`select-${selectId}-trigger`).click();
-    await page.getByRole('option', { name: option, exact: true }).click();
-}
-
-// Switch renders its checkbox as `sr-only`, so its label is the hit target.
-async function toggleSwitch(page: Page, id: string, expected: boolean) {
-    await page.locator(`label[for="${id}"]`).first().click();
-    await expect(page.locator(`#${id}`)).toBeChecked({ checked: expected });
-}
+import {
+    addExtendedKeyUsage,
+    choose,
+    chooseWorkflow,
+    editDescription,
+    lastWorkflow,
+    requests,
+    TAB_CONTENT_SIGNING,
+    TAB_RECORD_POLICY,
+    TAB_SIGNING_SCHEME,
+    toggleSwitch,
+} from './signingProfileFormTestHelpers';
 
 async function chooseFormatting(page: Page, level: string) {
     await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();
@@ -47,34 +35,23 @@ async function chooseFormatting(page: Page, level: string) {
     await choose(page, 'signatureLevel', level);
 }
 
-async function lastWorkflow(page: Page, type: 'createSigningProfile' | 'updateSigningProfile') {
-    return ((await requests(page, type)).at(-1) as any)?.signingProfileRequestDto?.workflow;
-}
-
-async function editDescription(page: Page, name = 'DocumentSigning') {
-    await expect(page.locator('#signingProfileName')).toHaveValue(name);
-    const descriptionInput = page.locator('#description');
-    await descriptionInput.focus();
-    await descriptionInput.fill('Signs contracts');
-}
-
 const savedNames = (workflow: { signatureFormattingConnectorAttributes: { name: string }[] }) =>
     workflow.signatureFormattingConnectorAttributes.map((attribute) => attribute.name);
 
 async function requireDocumentSigningPurpose(page: Page) {
     await page.getByRole('tab', { name: TAB_CONTENT_SIGNING }).click();
     await toggleSwitch(page, 'requireNonRepudiation', true);
-    await page.getByTestId('hostname-list-input-requiredExtendedKeyUsageOidInput').fill(DOCUMENT_SIGNING_EKU);
-    await page.getByRole('button', { name: 'Add', exact: true }).click();
+    await addExtendedKeyUsage(page, DOCUMENT_SIGNING_EKU);
 }
 
 test.describe('SigningProfileForm - content signing workflow', () => {
-    test('offers Content Signing beside Timestamping', async ({ mount, page }) => {
+    test('offers every signing workflow', async ({ mount, page }) => {
         await mount(<ContentSigningProfileFormTestWrapper core={core} />);
 
-        await expect(page.getByRole('radio')).toHaveCount(2);
+        await expect(page.getByRole('radio')).toHaveCount(3);
         await expect(page.getByRole('radio', { name: 'Timestamping' })).toBeEnabled();
         await expect(page.getByRole('radio', { name: 'Content Signing' })).toBeEnabled();
+        await expect(page.getByRole('radio', { name: 'Raw Signing' })).toBeEnabled();
     });
 
     test('asks for the connectors and certificates of the chosen workflow', async ({ mount, page }) => {
@@ -498,33 +475,6 @@ test.describe('SigningProfileForm - content signing workflow', () => {
         await expect(page.getByTestId('select-timestampSource-trigger')).toContainText('Unlisted TSA');
         await expect(page.getByText('Unlisted TSA is not among the timestamping profiles this account can list.')).toBeVisible();
         await expect(page.getByRole('button', { name: 'Update', exact: true })).toBeEnabled();
-    });
-
-    test('keeps the saved raw-signing workflow on update', async ({ mount, page }) => {
-        await mount(<ContentSigningProfileFormTestWrapper core={{ ...core, editedProfile: rawSigningProfile }} />);
-        await editDescription(page, 'RawSigning');
-
-        await page.getByRole('button', { name: 'Update', exact: true }).click();
-
-        await expect
-            .poll(() => lastWorkflow(page, 'updateSigningProfile'))
-            .toEqual({
-                type: SigningWorkflowType.RawSigning,
-                requireNonRepudiation: true,
-                requiredExtendedKeyUsageOids: [DOCUMENT_SIGNING_EKU],
-            });
-    });
-
-    test('filters the certificates by the saved raw-signing certificate purpose', async ({ mount, page }) => {
-        await mount(<ContentSigningProfileFormTestWrapper core={{ ...core, editedProfile: rawSigningProfile }} />);
-
-        await expect
-            .poll(async () => (await requests(page, 'listSigningCertificates')).at(-1))
-            .toEqual({
-                workflowType: SigningWorkflowType.RawSigning,
-                requireNonRepudiation: true,
-                requiredExtendedKeyUsageOids: [DOCUMENT_SIGNING_EKU],
-            });
     });
 
     test('ignores a cached profile other than the one being edited', async ({ mount, page }) => {

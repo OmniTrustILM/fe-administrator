@@ -3,24 +3,18 @@ import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router';
 import AttributeViewer from 'components/Attributes/AttributeViewer';
 import CustomTable, { type TableDataRow } from 'components/CustomTable';
-import StatusBadge from 'components/StatusBadge';
 import Widget from 'components/Widget';
 import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
 import { actions as signingProfileActions, selectors as signingProfileSelectors } from 'ducks/signing-profiles';
 import { type ContentSigningWorkflowDto, PlatformEnum, Resource } from 'types/openapi';
 import { createWidgetDetailHeaders } from 'utils/widget';
+import { absent, certificatePurposeRows } from './certificatePurposeRows';
 
 interface Props {
     workflow: ContentSigningWorkflowDto;
     /** Profile shown. Core authorizes the connector's declarations fetch against it. */
     signingProfileUuid: string;
 }
-
-const absent = (text: string) => (
-    <span key="value" className="text-content-subtle text-sm">
-        {text}
-    </span>
-);
 
 /**
  * Content-signing workflow widgets: the configuration under the connector's own family and level names, and the formatting
@@ -47,7 +41,6 @@ export default function ContentSigningWorkflowDetail({ workflow, signingProfileU
         const familyDeclaration = connectorDeclarations.find((declaration) => declaration.code === workflow.family);
         const levelName = familyDeclaration?.levels.find((declared) => declared.level === workflow.level)?.name;
         const timestampSource = workflow.timestampSource?.signingProfile;
-        const extendedKeyUsages = workflow.requiredExtendedKeyUsageOids ?? [];
 
         return [
             {
@@ -85,30 +78,7 @@ export default function ContentSigningWorkflowDetail({ workflow, signingProfileU
                     ),
                 ],
             },
-            {
-                id: 'requireNonRepudiation',
-                columns: ['Require Non-Repudiation', <StatusBadge key="value" enabled={workflow.requireNonRepudiation ?? false} />],
-            },
-            {
-                id: 'requiredExtendedKeyUsages',
-                columns: [
-                    'Required Extended Key Usages',
-                    extendedKeyUsages.length > 0 ? (
-                        <div key="value" className="flex flex-wrap gap-1">
-                            {extendedKeyUsages.map((oid) => (
-                                <span
-                                    key={oid}
-                                    className="inline-flex items-center rounded-full bg-surface-sunken px-2.5 py-0.5 text-xs font-medium text-content-muted"
-                                >
-                                    {oid}
-                                </span>
-                            ))}
-                        </div>
-                    ) : (
-                        absent('Any')
-                    ),
-                ],
-            },
+            ...certificatePurposeRows(workflow),
         ];
     }, [workflow, connector, declarations, levelEnum]);
 

@@ -18,6 +18,7 @@ import {
 } from 'types/openapi';
 import { mapProfileAttribute, transformAttributes } from 'utils/attributes/attributes';
 import { isContentSigningWorkflow, isRawSigningWorkflow, isStaticKeyManagedSigning, isTimestampingWorkflow } from 'utils/type-guards';
+import type { CertificatePurposeFormValues } from './CertificatePurposeFields';
 import { type ContentSigningFormValues, contentSigningFormValuesOf, emptyContentSigningFormValues } from './ContentSigningWorkflowFields';
 
 /** Ids of the attribute editors, which prefix the form values `collectFormAttributes` reads. */
@@ -137,7 +138,6 @@ function recordPolicyFormValuesOf(policy: SigningRecordPolicyDto | undefined) {
     } satisfies Partial<SigningProfileFormValues>;
 }
 
-/** The certificate purpose of a saved raw workflow, which the certificate picker filters by while the workflow is kept as saved. */
 function rawSigningPurposeValuesOf(workflow: RawSigningWorkflowDto) {
     return {
         requireNonRepudiation: workflow.requireNonRepudiation ?? false,
@@ -180,12 +180,11 @@ export function timestampingWorkflowRequest(
     };
 }
 
-/** The saved raw-signing workflow as an update request. The form has no raw-signing controls. */
-export function rawSigningWorkflowRequest(saved: RawSigningWorkflowDto): RawSigningWorkflowRequestDto {
+export function rawSigningWorkflowRequest(values: CertificatePurposeFormValues): RawSigningWorkflowRequestDto {
     return {
         type: SigningWorkflowType.RawSigning,
-        requireNonRepudiation: saved.requireNonRepudiation,
-        requiredExtendedKeyUsageOids: saved.requiredExtendedKeyUsageOids,
+        requireNonRepudiation: values.requireNonRepudiation,
+        requiredExtendedKeyUsageOids: values.requiredExtendedKeyUsageOids,
     };
 }
 

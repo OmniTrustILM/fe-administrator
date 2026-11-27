@@ -2,8 +2,6 @@ import { type ReactElement, useEffect, useRef, useState } from 'react';
 import { useController, useFormContext } from 'react-hook-form';
 import { useDispatch, useSelector } from 'react-redux';
 import AttributeEditor from 'components/Attributes/AttributeEditor';
-import HostnameListInput from 'components/Input/HostnameListInput';
-import Switch from 'components/Switch';
 import Widget from 'components/Widget';
 import { actions as signingProfileActions, selectors as signingProfileSelectors } from 'ducks/signing-profiles';
 import {
@@ -16,8 +14,9 @@ import {
     SigningWorkflowType,
     TimestampSourceType,
 } from 'types/openapi';
-import { validateOid, validateRequired } from 'utils/validators';
+import { validateRequired } from 'utils/validators';
 import { buildValidationRules } from 'utils/validators-helper';
+import CertificatePurposeFields, { type CertificatePurposeFormValues, emptyCertificatePurposeFormValues } from './CertificatePurposeFields';
 import ContentSigningFormattingFields, { type ContentSigningFormattingDraft } from './ContentSigningFormattingFields';
 import TimestampSourceField from './TimestampSourceField';
 
@@ -25,20 +24,17 @@ import TimestampSourceField from './TimestampSourceField';
 export const contentSigningAttributesEditorId = 'contentSigningProfileAttrs';
 
 /** Form values the content-signing workflow tab owns; the connector shares `signatureFormattingConnectorUuid` with timestamping. */
-export interface ContentSigningFormValues {
+export interface ContentSigningFormValues extends CertificatePurposeFormValues {
     signatureFormattingConnectorUuid: string;
     signatureFamilyCode: string;
     signatureLevel: SignatureLevel | '';
-    requireNonRepudiation: boolean;
-    requiredExtendedKeyUsageOids: string[];
     timestampSourceProfileUuid: string;
 }
 
 export const emptyContentSigningFormValues: Omit<ContentSigningFormValues, 'signatureFormattingConnectorUuid'> = {
     signatureFamilyCode: '',
     signatureLevel: '',
-    requireNonRepudiation: false,
-    requiredExtendedKeyUsageOids: [],
+    ...emptyCertificatePurposeFormValues,
     timestampSourceProfileUuid: '',
 };
 
@@ -127,12 +123,6 @@ export default function ContentSigningWorkflowFields({ signingProfileUuid, saved
         name: 'signatureLevel',
         rules: buildValidationRules([validateRequired(), () => selectionErrorRef.current]),
     });
-    const { field: nonRepudiation } = useController({ control, name: 'requireNonRepudiation' });
-    const { field: ekuOids, fieldState: ekuOidsState } = useController({
-        control,
-        name: 'requiredExtendedKeyUsageOids',
-        rules: buildValidationRules([validateOid()]),
-    });
 
     useEffect(() => {
         dispatch(signingProfileActions.listSignatureFormattingConnectors({ workflowType: SigningWorkflowType.ContentSigning }));
@@ -200,29 +190,7 @@ export default function ContentSigningWorkflowFields({ signingProfileUuid, saved
                     )}
                 </Widget>
             )}
-            <Switch
-                id="requireNonRepudiation"
-                checked={nonRepudiation.value}
-                onChange={nonRepudiation.onChange}
-                secondaryLabel="Require Non-Repudiation"
-            />
-            <div className="flex flex-col gap-1">
-                <label htmlFor="requiredExtendedKeyUsageOidInput" className="block text-sm font-medium text-content-muted">
-                    Required Extended Key Usages
-                </label>
-                <HostnameListInput
-                    id="requiredExtendedKeyUsageOidInput"
-                    values={ekuOids.value}
-                    onValuesChange={ekuOids.onChange}
-                    placeholder="Enter an OID and press Add"
-                    validateValue={validateOid()}
-                    invalid={!!ekuOidsState.error}
-                />
-                {ekuOidsState.error && <p className="text-xs text-danger mt-0.5">{ekuOidsState.error.message}</p>}
-                {ekuOids.value.length === 0 && (
-                    <p className="text-xs text-content-subtle">A certificate with any extended key usage qualifies.</p>
-                )}
-            </div>
+            <CertificatePurposeFields />
         </div>
     );
 }

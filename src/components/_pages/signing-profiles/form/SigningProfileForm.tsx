@@ -14,11 +14,12 @@ import Widget from 'components/Widget';
 import { actions as customAttributesActions, selectors as customAttributesSelectors } from 'ducks/customAttributes';
 import { getEnumLabel, selectors as enumSelectors } from 'ducks/enums';
 import { actions as signingProfileActions, selectors as signingProfileSelectors } from 'ducks/signing-profiles';
-import { PlatformEnum, Resource, SigningWorkflowType } from 'types/openapi';
+import { PlatformEnum, Resource, SigningProtocol, SigningWorkflowType } from 'types/openapi';
 import { isContentSigningWorkflow, isStaticKeyManagedSigning, isTimestampingWorkflow } from 'utils/type-guards';
 
 import ContentSigningWorkflowFields, { embedsTimestamp } from './ContentSigningWorkflowFields';
 import GeneralFields, { workflowTypeLabels } from './GeneralFields';
+import RawSigningWorkflowFields from './RawSigningWorkflowFields';
 import RecordPolicyFields from './RecordPolicyFields';
 import SigningSchemeFields from './SigningSchemeFields';
 import {
@@ -123,11 +124,14 @@ export default function SigningProfileForm() {
         [SigningWorkflowType.ContentSigning]: (
             <ContentSigningWorkflowFields signingProfileUuid={id} savedWorkflow={savedContentSigningWorkflow} />
         ),
-        [SigningWorkflowType.RawSigning]: <p className="text-sm text-content-muted">The raw-signing workflow is kept as saved.</p>,
+        [SigningWorkflowType.RawSigning]: <RawSigningWorkflowFields />,
     }[workflowType];
 
     const tabs = [
-        { title: '1 · General', content: <GeneralFields /> },
+        {
+            title: '1 · General',
+            content: <GeneralFields ilmNativeEnabled={savedProfile?.enabledProtocols?.includes(SigningProtocol.IlmNative) ?? false} />,
+        },
         { title: `2 · ${workflowTypeLabels[workflowType] ?? 'Signing Workflow'} Properties`, content: workflowFields },
         { title: '3 · Signing Scheme', content: <SigningSchemeFields savedSigningOperationAttributes={savedSigningOperationAttributes} /> },
         { title: '4 · Record Policy', content: <RecordPolicyFields /> },
