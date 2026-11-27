@@ -250,6 +250,15 @@ describe('attributes utils', () => {
             expect(result).toEqual({ data: 12 });
         });
 
+        test('keeps a number field as typed when asked to', () => {
+            expect(getAttributeFormValue(AttributeContentType.Integer, undefined, '12.9', { keepNumbersAsTyped: true })).toEqual({
+                data: '12.9',
+            });
+            expect(getAttributeFormValue(AttributeContentType.Float, undefined, '1e3', { keepNumbersAsTyped: true })).toEqual({
+                data: '1e3',
+            });
+        });
+
         test('keeps original value when Integer parsing fails', () => {
             const result = getAttributeFormValue(AttributeContentType.Integer, undefined, { value: 'NaN-value' });
             expect(result).toEqual({ data: 'NaN-value' });

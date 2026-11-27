@@ -132,14 +132,17 @@ function buildRangeValidator(descriptor: DataAttributeModel): FieldValidator | u
 /** Java's leading inline flags that JavaScript takes as RegExp flags. */
 const javaInlineFlags = /^\(\?([ims]+)\)/;
 
-/** Java's `\A`, `\Z` and `\z` anchors and its possessive quantifiers. JavaScript reads them differently or not at all. */
-const javaOnlyConstruct = /\\[AZz]|[*+?}]\+/;
+/**
+ * Java's `\A`, `\Z` and `\z` anchors, its `\v` class, its possessive quantifiers and its class intersection `&&`. JavaScript reads
+ * them differently or not at all.
+ */
+const javaOnlyConstruct = /\\[AZzv]|[*+?}]\+|&&/;
 
-/** Java escapes such as `\p{Alnum}` or `\R`, which JavaScript reads as literal letters outside Unicode mode. */
-const unicodeModeEscape = /\\[pPQhHRX]/;
+/** Java escapes such as `\p{Alnum}`, `\R` or `\e`, which JavaScript reads as literal letters outside Unicode mode. */
+const unicodeModeEscape = /\\[pPQhHRXae]/;
 
 /** Anchors a pattern at the very start and end of the value, as Java's `matches()` does. The anchors hold under every flag. */
-const wholeValue = (body: string) => `(?<![\\s\\S])(?:${body})(?![\\s\\S])`;
+const wholeValue = (body: string) => String.raw`(?<![\s\S])(?:${body})(?![\s\S])`;
 
 function compiled(source: string, flags: string): RegExp | undefined {
     try {
@@ -163,8 +166,10 @@ function connectorRegExp(pattern: string): RegExp | undefined {
 
 function addDataAttributeConstraintValidators(descriptor: DataAttributeModel, validators: FieldValidator[], trustsOptions: boolean): void {
     const regexpConstraint = getRegexpConstraint(descriptor);
-    const pattern = regexpConstraint && connectorRegExp(regexpConstraint.data ?? '');
-    if (regexpConstraint && pattern) validators.push(validatePattern(pattern, regexpConstraint.errorMessage));
+    const source = regexpConstraint?.data ?? '';
+    const pattern = regexpConstraint && connectorRegExp(source);
+    if (regexpConstraint && pattern)
+        validators.push(validatePattern(pattern, regexpConstraint.errorMessage || `Value must conform to /${source}/`));
     const rangeValidator = trustsOptions ? undefined : buildRangeValidator(descriptor);
     if (rangeValidator) validators.push(rangeValidator);
 }

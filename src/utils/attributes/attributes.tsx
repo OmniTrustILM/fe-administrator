@@ -200,10 +200,14 @@ const getResourceFormValue = (item: unknown): FormAttributeContentItem => {
     return { data: source };
 };
 
+/** `keepNumbersAsTyped` keeps a number field's text, so a draft holds a value the editor rejects. */
+type FormValueOptions = { keepNumbersAsTyped?: boolean };
+
 export const getAttributeFormValue = (
     contentType: AttributeContentType,
     descriptorContent: BaseAttributeContentModel[] | undefined,
     item: unknown,
+    options?: FormValueOptions,
 ): FormAttributeContentItem => {
     const normalizeContentItem = (value: Record<string, unknown>): FormAttributeContentItem => {
         const normalized: FormAttributeContentItem = {};
@@ -221,6 +225,7 @@ export const getAttributeFormValue = (
     const normalizePrimitiveAttributeValue = (value: unknown): unknown => {
         if (value === undefined || value === null || value === '') return value;
 
+        if (options?.keepNumbersAsTyped) return value;
         if (contentType === AttributeContentType.Integer || contentType === AttributeContentType.Float) {
             const parsedNumber = typeof value === 'number' ? value : Number(value);
             if (Number.isNaN(parsedNumber)) return value;
@@ -397,14 +402,19 @@ function shouldSkipAttribute(
 const normalizeAttributeValue = (
     descriptor: DataAttributeModel | CustomAttributeModel,
     value: unknown,
+    options?: FormValueOptions,
 ): FormAttributeContentItem | FormAttributeContentItem[] =>
     Array.isArray(value)
-        ? value.map((item: unknown) => getAttributeFormValue(descriptor.contentType, descriptor.content, item))
-        : getAttributeFormValue(descriptor.contentType, descriptor.content, value);
+        ? value.map((item: unknown) => getAttributeFormValue(descriptor.contentType, descriptor.content, item, options))
+        : getAttributeFormValue(descriptor.contentType, descriptor.content, value, options);
 
 // Undefined leaves the attribute out of the request.
-function toAttributeContent(descriptor: DataAttributeModel | CustomAttributeModel, value: unknown): FormAttributeContentItem[] | undefined {
-    const normalized = normalizeAttributeValue(descriptor, value);
+function toAttributeContent(
+    descriptor: DataAttributeModel | CustomAttributeModel,
+    value: unknown,
+    options?: FormValueOptions,
+): FormAttributeContentItem[] | undefined {
+    const normalized = normalizeAttributeValue(descriptor, value, options);
     const content = descriptor.contentType === AttributeContentType.Resource ? stripEmptyResourceContent(normalized) : normalized;
     if (content === undefined || Array.isArray(content)) return content;
     const blank = content.data === undefined || (descriptor.contentType === AttributeContentType.File && isBlankFile(content.data));
@@ -420,10 +430,11 @@ export const isBlankFile = (file: unknown): boolean => isEmptyAttributeContentIt
 function toNonEmptyAttributeContent(
     descriptor: DataAttributeModel | CustomAttributeModel,
     value: unknown,
+    options?: FormValueOptions,
 ): FormAttributeContentItem[] | undefined {
     const nonBlankValue = withoutBlankItems(value);
     if (isBlankValue(nonBlankValue)) return undefined;
-    const normalized = normalizeAttributeValue(descriptor, nonBlankValue);
+    const normalized = normalizeAttributeValue(descriptor, nonBlankValue, options);
     const content = (Array.isArray(normalized) ? normalized : [normalized]).filter(
         (item) => !isEmptyAttributeContentItem(item, descriptor.contentType),
     );
@@ -450,7 +461,7 @@ export function collectFormAttributes(
     descriptors: AttributeDescriptorModel[] | undefined,
     values: FieldValues,
     existingAttributes?: Array<AttributeResponseModel | { name: string; version?: AttributeVersion }>,
-    options?: { omitEmptyContent?: boolean },
+    options?: { omitEmptyContent?: boolean } & FormValueOptions,
 ): AttributeRequestModel[] {
     if (!descriptors || !values[`__attributes__${id}__`]) return [];
 
@@ -465,8 +476,8 @@ export function collectFormAttributes(
         const { descriptor, attributeName } = guard;
 
         const contentArray = options?.omitEmptyContent
-            ? toNonEmptyAttributeContent(descriptor, attributes[attribute])
-            : toAttributeContent(descriptor, attributes[attribute]);
+            ? toNonEmptyAttributeContent(descriptor, attributes[attribute], options)
+            : toAttributeContent(descriptor, attributes[attribute], options);
         if (contentArray === undefined) continue;
 
         const existing = existingAttributes?.find((a) => a.name === attributeName);

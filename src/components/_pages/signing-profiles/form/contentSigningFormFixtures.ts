@@ -139,6 +139,25 @@ export const coreWithMixedAppearanceGroup: CoreAnswers = {
     profileAttributesByLevel: { [SignatureLevel.Timestamped]: [signingReason, stampFont] },
 };
 
+const stampHeight = {
+    ...requestAttribute('attr-stamp-height', 'stamp-height'),
+    contentType: AttributeContentType.Integer,
+} as BaseAttributeDto;
+
+/** Core lists an integer profile attribute at both levels. */
+export const coreWithStampHeight: CoreAnswers = {
+    ...core,
+    profileAttributesByLevel: { [SignatureLevel.Signed]: [stampHeight], [SignatureLevel.Timestamped]: [stampHeight] },
+};
+
+const signingPin = { ...requestAttribute('attr-signing-pin', 'signing-pin'), contentType: AttributeContentType.Secret } as BaseAttributeDto;
+
+/** Core lists a secret profile attribute at both levels. */
+export const coreWithSigningPin: CoreAnswers = {
+    ...core,
+    profileAttributesByLevel: { [SignatureLevel.Signed]: [signingPin], [SignatureLevel.Timestamped]: [signingPin] },
+};
+
 export const SAVED_REQUEST_ATTRIBUTES = ['signature_appearance', 'timestamp-policy'];
 
 const savedValue = (uuid: string, name: string, data: string) => ({

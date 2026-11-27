@@ -7,6 +7,8 @@ import {
     coreWithDefaultStampPage,
     coreWithMixedAppearanceGroup,
     coreWithRequiredStampPage,
+    coreWithSigningPin,
+    coreWithStampHeight,
     coreWithStampImage,
     DOCUMENT_SIGNING_EKU,
     invoiceSigningProfile,
@@ -741,6 +743,33 @@ test.describe('SigningProfileForm - content signing workflow', () => {
         await expect(page.getByLabel('stamp-page', { exact: true })).toHaveValue('first');
         await expect(page.locator(`#${allowedSwitch('signature_appearance')}`)).toBeChecked();
         await expect(page.locator(`#${allowedSwitch('timestamp-policy')}`)).not.toBeChecked();
+    });
+
+    test('keeps an integer the editor rejects as typed across a level change', async ({ mount, page }) => {
+        await startPadesProfile(page, mount, coreWithStampHeight);
+        await showGroup(page, 'Profile settings');
+        await typeInto(page, 'stamp-height', '1.5');
+
+        await choose(page, 'signatureLevel', 'PAdES-B');
+        await choose(page, 'signatureLevel', 'PAdES-B-T');
+
+        await expect(page.getByLabel('stamp-height', { exact: true })).toHaveValue('1.5');
+        await expect(page.getByText('Value must be an integer')).toBeVisible();
+    });
+
+    test('saves a secret typed before a level change as typed', async ({ mount, page }) => {
+        await startPadesProfile(page, mount, coreWithSigningPin);
+        await showGroup(page, 'Profile settings');
+        await typeInto(page, 'signing-pin', '1234');
+
+        await choose(page, 'signatureLevel', 'PAdES-B');
+        await choose(page, 'signatureLevel', 'PAdES-B-T');
+        await choose(page, 'timestampSource', 'Durable TSA');
+        await page.getByRole('button', { name: 'Create', exact: true }).click();
+
+        await expect
+            .poll(async () => (await lastWorkflow(page, 'createSigningProfile')).signatureFormattingConnectorAttributes)
+            .toContainEqual(expect.objectContaining({ name: 'signing-pin', content: [{ data: { secret: '1234' } }] }));
     });
 
     test('keeps a list selection when the chosen level is chosen again', async ({ mount, page }) => {

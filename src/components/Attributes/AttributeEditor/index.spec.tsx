@@ -530,6 +530,31 @@ test.describe('AttributeEditor', () => {
         await expect(page.locator('[id="__attributes__testEditor__.stamp-fileName"]')).toHaveValue('stamp.png');
     });
 
+    test('prefills a saved secret with its text', async ({ mount, page }) => {
+        const descriptors = [
+            dataDescriptor({
+                name: 'pin',
+                uuid: 'pin-uuid',
+                contentType: AttributeContentType.Secret,
+                properties: { label: 'PIN', required: false, readOnly: false, visible: true, list: false, multiSelect: false },
+            }),
+        ];
+        const attributes = [
+            {
+                name: 'pin',
+                uuid: 'pin-uuid',
+                label: 'PIN',
+                type: AttributeType.Data,
+                contentType: AttributeContentType.Secret,
+                version: AttributeVersion.V2,
+                content: [{ contentType: AttributeContentType.Secret, data: { secret: '1234' } }],
+            },
+        ] satisfies AttributeResponseModel[];
+        await mount(<AttributeEditorTestWrapper id={editorId} attributeDescriptors={descriptors} attributes={attributes} />);
+
+        await expect(page.getByLabel('PIN', { exact: true })).toHaveValue('1234');
+    });
+
     test('shows an empty file field for a file descriptor with an empty content list', async ({ mount, page }) => {
         const descriptors = [
             dataDescriptor({

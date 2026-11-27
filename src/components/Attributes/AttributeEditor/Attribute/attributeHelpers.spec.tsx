@@ -243,6 +243,29 @@ test.describe('attributeHelpers', () => {
             expect(fn('0A1F')).toBeUndefined();
         });
 
+        test('leaves a Java class intersection to the server', () => {
+            const fn = buildAttributeValidators(withPattern('[a-z&&[^e]]'));
+            expect(fn('a')).toBeUndefined();
+        });
+
+        for (const [pattern, value] of [
+            [String.raw`^\v+$`, '\n'],
+            [String.raw`^\a$`, '\u0007'],
+            [String.raw`^\e$`, '\u001b'],
+        ]) {
+            test(`leaves the Java escape in ${pattern}, which JavaScript reads differently, to the server`, () => {
+                expect(buildAttributeValidators(withPattern(pattern))(value)).toBeUndefined();
+            });
+        }
+
+        test("names the connector's own pattern when the constraint has no message", () => {
+            const d = {
+                ...minimalDataDescriptor(AttributeContentType.String, false),
+                constraints: [{ type: AttributeConstraintType.RegExp, data: String.raw`^\d+$` }],
+            };
+            expect(buildAttributeValidators(d)('abc')).toBe(String.raw`Value must conform to /^\d+$/`);
+        });
+
         test('enforces a Unicode property escape JavaScript reads as Java does', () => {
             const fn = buildAttributeValidators(withPattern(String.raw`^\p{L}{3}$`));
             expect(fn('abc')).toBeUndefined();

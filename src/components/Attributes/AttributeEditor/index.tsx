@@ -21,6 +21,7 @@ import {
     isDataAttributeModel,
     isGroupAttributeModel,
     isInfoAttributeModel,
+    type SecretAttributeContentDataModel,
 } from 'types/attributes';
 import type { CallbackAttributeModel } from 'types/connectors';
 import { AttributeContentType, AttributeValueTarget, type ConnectorVersion, type FunctionGroupCode, type Resource } from 'types/openapi';
@@ -654,6 +655,14 @@ function AttributeEditorInner({
                 // editable field also opens pre-filled with its configured default (see Issue: #1906).
                 const firstDescriptorContent = descriptor.content[0] as { reference?: string; data?: unknown } | undefined;
                 formAttributeValue = firstDescriptorContent?.data ?? firstDescriptorContent?.reference;
+            }
+
+            if (
+                descriptor.contentType === AttributeContentType.Secret &&
+                typeof formAttributeValue === 'object' &&
+                formAttributeValue !== null
+            ) {
+                formAttributeValue = (formAttributeValue as SecretAttributeContentDataModel).secret;
             }
 
             if (descriptor.contentType === AttributeContentType.Codeblock && formAttributeValue !== undefined) {

@@ -57,6 +57,14 @@ export function collectContentSigningAttributes(
     return collectFormAttributes(contentSigningAttributesEditorId, descriptors, values, undefined, { omitEmptyContent: true });
 }
 
+/** The formatting editor's values with numbers as typed, so a reloaded editor shows a rejected value and its error again. */
+function draftContentSigningAttributes(descriptors: AttributeDescriptorModel[], values: FieldValues): AttributeRequestModel[] {
+    return collectFormAttributes(contentSigningAttributesEditorId, descriptors, values, undefined, {
+        omitEmptyContent: true,
+        keepNumbersAsTyped: true,
+    });
+}
+
 /**
  * An empty entry for each listed attribute the collected values leave out. A remounted editor keeps such a field empty, where a missing
  * entry takes the connector default.
@@ -239,7 +247,7 @@ export default function ContentSigningWorkflowFields({ signingProfileUuid, saved
         const shown = { connectorUuid: connector.value, family: family.value, level: level.value };
         if (!isListedFor(listedFor, shown)) return;
         const listedNames = new Set(formattingAttributeModels.map((model) => model.name));
-        const collected = collectContentSigningAttributes(formattingAttributeModels, getValues());
+        const collected = draftContentSigningAttributes(formattingAttributeModels, getValues());
         const edited = asEditorAttributes(
             [...collected, ...clearedAttributes(formattingAttributeModels, collected)],
             formattingAttributeModels,
@@ -299,13 +307,13 @@ export default function ContentSigningWorkflowFields({ signingProfileUuid, saved
                         />
                     )}
                     {requestAttributeDescriptors.length > 0 && (
-                        <div role="status" data-testid="allowed-request-attributes-status">
+                        <output className="block" data-testid="allowed-request-attributes-status">
                             {!allowedNames.some((name) => permissionNames.has(name)) && (
                                 <p className="text-xs text-content-subtle">
                                     Signing requests under this profile can set no request attribute.
                                 </p>
                             )}
-                        </div>
+                        </output>
                     )}
                     {!isFetchingProfileAttributes && !failedProfileAttributesFetch && formattingAttributeModels.length === 0 && (
                         <p className="text-xs text-content-subtle">The connector declares no attributes for this level.</p>
