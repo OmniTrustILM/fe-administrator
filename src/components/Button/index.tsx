@@ -102,9 +102,9 @@ function Button({
     if (tooltipContent) {
         // `Tooltip` hands its Radix trigger to the child it is given. Merged onto a disabled button that trigger can
         // never fire: `disabled:pointer-events-none` swallows the hover and the disabled attribute takes the button
-        // out of the focus order, so the reason for the disabled state would be unreachable. A wrapper is the trigger
-        // instead, and it does receive the hover -- the pointer passes through the button onto it.
-        if (isDisabled && disabledReason) {
+        // out of the focus order, so the tooltip would be unreachable. A wrapper is the trigger instead, and it does
+        // receive the hover -- the pointer passes through the button onto it.
+        if (isDisabled) {
             return (
                 <Tooltip content={tooltipContent}>
                     <span className="inline-flex">{buttonElement}</span>
